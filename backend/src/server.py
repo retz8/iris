@@ -8,7 +8,15 @@ sys.path.insert(0, os.path.dirname(__file__))
 from converter.main import convert_cpp_to_python
 
 app = Flask(__name__, static_folder='static')
-CORS(app)
+# Configure CORS to allow requests from GitHub and LeetCode domains
+CORS(app, resources={
+    r"/*": {
+        "origins": ["https://github.com", "https://www.github.com", "https://gist.github.com"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
 
 @app.route('/')
 def index():
