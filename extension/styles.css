@@ -1,0 +1,162 @@
+/* Floating Convert Button */
+.cpp-to-python-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 10000;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s ease;
+}
+
+.cpp-to-python-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.cpp-to-python-btn:active {
+  transform: translateY(0);
+}
+
+/* Overlay Panel */
+.cpp-to-python-overlay {
+  position: fixed;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  width: 500px;
+  max-height: 80vh;
+  background: #1e1e1e;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  z-index: 10001;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-50%) translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(-50%) translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Overlay Header */
+.cpp-to-python-overlay-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #2d2d2d;
+  border-bottom: 1px solid #3d3d3d;
+}
+
+.cpp-to-python-overlay-header h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.cpp-to-python-close-btn {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.cpp-to-python-close-btn:hover {
+  background: #3d3d3d;
+  color: #fff;
+}
+
+/* Overlay Content */
+.cpp-to-python-overlay-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: #1e1e1e;
+}
+
+.cpp-to-python-overlay-content pre {
+  margin: 0;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.cpp-to-python-overlay-content code {
+  color: #d4d4d4;
+}
+
+/* Overlay Footer */
+.cpp-to-python-overlay-footer {
+  padding: 16px 20px;
+  background: #2d2d2d;
+  border-top: 1px solid #3d3d3d;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cpp-to-python-copy-btn {
+  padding: 10px 20px;
+  background: #0e639c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cpp-to-python-copy-btn:hover {
+  background: #1177bb;
+}
+
+.cpp-to-python-copy-btn:active {
+  transform: scale(0.98);
+}
+
+/* Scrollbar styling for dark theme */
+.cpp-to-python-overlay-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.cpp-to-python-overlay-content::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.cpp-to-python-overlay-content::-webkit-scrollbar-thumb {
+  background: #3d3d3d;
+  border-radius: 5px;
+}
+
+.cpp-to-python-overlay-content::-webkit-scrollbar-thumb:hover {
+  background: #4d4d4d;
+}
