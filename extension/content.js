@@ -22,7 +22,19 @@ function createConvertButton() {
 
 // Extract code from GitHub code viewer
 function extractCode() {
-  // Method 1: Try to get code from the blob content div
+  // Method 1: Try to get code from the read-only textarea (new GitHub UI)
+  const textarea = document.querySelector('textarea#read-only-cursor-text-area[aria-label="file content"]');
+  if (textarea && textarea.value) {
+    return textarea.value;
+  }
+  
+  // Method 2: Try alternative textarea selector
+  const readOnlyTextarea = document.querySelector('textarea[readonly]');
+  if (readOnlyTextarea && readOnlyTextarea.value) {
+    return readOnlyTextarea.value;
+  }
+  
+  // Method 3: Try to get code from the blob content div (old GitHub UI)
   const blobContent = document.querySelector('.blob-wrapper table');
   if (blobContent) {
     const lines = blobContent.querySelectorAll('td.blob-code');
@@ -33,13 +45,13 @@ function extractCode() {
     }
   }
   
-  // Method 2: Try raw text from pre tag
+  // Method 4: Try raw text from pre tag
   const preElement = document.querySelector('.blob-wrapper pre');
   if (preElement) {
     return preElement.textContent;
   }
   
-  // Method 3: Try Lines component (new GitHub UI)
+  // Method 5: Try Lines component
   const codeLines = document.querySelectorAll('[data-code-text]');
   if (codeLines.length > 0) {
     return Array.from(codeLines)
