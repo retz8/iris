@@ -3,10 +3,7 @@
   "name": "LeetCode C++ to Python",
   "version": "1.0.0",
   "description": "Convert C++ LeetCode solutions to Python on GitHub",
-  "permissions": [
-    "activeTab",
-    "scripting"
-  ],
+  "permissions": ["activeTab", "scripting"],
   "host_permissions": [
     "https://github.com/*",
     "https://vnw20xbg-8080.asse.devtunnels.ms/*",
@@ -18,8 +15,19 @@
   "content_scripts": [
     {
       "matches": ["https://github.com/*/*"],
-      "js": ["config.js", "content.js"],
+      "js": ["config.js"],
       "css": ["styles.css"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "content.js",
+        "modules/dom-helpers.js",
+        "modules/textarea-handler.js",
+        "modules/event-handlers.js"
+      ],
+      "matches": ["https://github.com/*/*"]
     }
   ],
   "action": {
