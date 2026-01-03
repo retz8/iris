@@ -2,7 +2,7 @@
 // DOM Helpers - GitHub DOM queries and code manipulation
 // =============================================================================
 
-export const DOMHelpers = {
+window.DOMHelpers = {
   /**
    * Escape HTML for safe rendering
    */

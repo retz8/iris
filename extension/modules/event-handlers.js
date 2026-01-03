@@ -2,9 +2,7 @@
 // Event Handlers - Drag, copy, keyboard, button, and mutation observer
 // =============================================================================
 
-import { DOMHelpers } from "./dom-helpers.js";
-
-export class EventHandlers {
+window.EventHandlers = class EventHandlers {
   constructor(config, state, callbacks) {
     this.config = config;
     this.state = state;
@@ -250,4 +248,4 @@ export class EventHandlers {
       this.state.button = null;
     }
   }
-}
+};

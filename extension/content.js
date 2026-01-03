@@ -6,10 +6,6 @@
 // textarea - just clean DOM replacement.
 // =============================================================================
 
-import { DOMHelpers } from "./modules/dom-helpers.js";
-import { TextareaHandler } from "./modules/textarea-handler.js";
-import { EventHandlers } from "./modules/event-handlers.js";
-
 (function () {
   "use strict";
 
@@ -70,9 +66,7 @@ import { EventHandlers } from "./modules/event-handlers.js";
       lensState.originalState.textareaValue = textarea.value;
     }
 
-    const lineElements = DOMHelpers.getCodeLineElements(
-      LENS_CONFIG.selectors
-    );
+    const lineElements = DOMHelpers.getCodeLineElements(LENS_CONFIG.selectors);
     lensState.originalState.lineElements = lineElements.map((el) => ({
       element: el,
       originalHTML: el.innerHTML,
@@ -89,9 +83,7 @@ import { EventHandlers } from "./modules/event-handlers.js";
   }
 
   function replaceWithPython() {
-    const lineElements = DOMHelpers.getCodeLineElements(
-      LENS_CONFIG.selectors
-    );
+    const lineElements = DOMHelpers.getCodeLineElements(LENS_CONFIG.selectors);
 
     lineElements.forEach((el) => {
       const lineNum = DOMHelpers.getLineNumber(el);
@@ -100,11 +92,7 @@ import { EventHandlers } from "./modules/event-handlers.js";
       const pythonLine = lensState.pythonLines[lineNum - 1];
       const displayText = pythonLine !== undefined ? pythonLine : "";
 
-      DOMHelpers.applyPythonToElement(
-        el,
-        displayText,
-        LENS_CONFIG.pythonColor
-      );
+      DOMHelpers.applyPythonToElement(el, displayText, LENS_CONFIG.pythonColor);
     });
 
     // Update the textarea
@@ -132,9 +120,7 @@ import { EventHandlers } from "./modules/event-handlers.js";
   function handleNewLines() {
     if (!lensState.active) return;
 
-    const lineElements = DOMHelpers.getCodeLineElements(
-      LENS_CONFIG.selectors
-    );
+    const lineElements = DOMHelpers.getCodeLineElements(LENS_CONFIG.selectors);
 
     lineElements.forEach((el) => {
       const isAlreadyProcessed = el.querySelector(".pl-lens-python") !== null;

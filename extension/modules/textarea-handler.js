@@ -2,7 +2,7 @@
 // Textarea Handler - Manages textarea element replacement
 // =============================================================================
 
-export class TextareaHandler {
+window.TextareaHandler = class TextareaHandler {
   constructor(selectors) {
     this.selectors = selectors;
     this.originalTextarea = null;
@@ -80,4 +80,4 @@ export class TextareaHandler {
     this.originalTextarea = null;
     this.replacementTextarea = null;
   }
-}
+};
