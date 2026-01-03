@@ -84,3 +84,4 @@ https://github.com/neetcode-gh/leetcode
 
 - Python conversion has problem (e.g. long comments should be """, not #/ Python fails to identify global keywork in c++ like INT_MAX)
 - So, I need to think about more sophiscated conversion logics (at the same time, need to consider about more general conversion logic)
+- UI bug on responsiveness: sometimes, whole textarea (code) is not rendered properly. can't see entire code sometimes.
