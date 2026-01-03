@@ -1,6 +1,9 @@
 // Background service worker to handle API calls
 // This avoids CORS issues since the extension has host_permissions
 
+// Import config
+importScripts('config.js');
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'convertCode') {
     handleConvertCode(request.code)
@@ -13,7 +16,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function handleConvertCode(code) {
-  const apiUrl = "https://vnw20xbg-8080.asse.devtunnels.ms/convert";
+  const apiUrl = `${CONFIG.BACKEND_URL}${CONFIG.API_ENDPOINTS.CONVERT}`;
   
   const response = await fetch(apiUrl, {
     method: 'POST',

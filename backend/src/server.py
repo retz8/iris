@@ -14,10 +14,7 @@ app = Flask(__name__, static_folder='static')
 CORS(app, resources={
     r"/*": {
         "origins": [
-            "https://leetcode.com",
             "https://github.com",
-            "https://*.devtunnels.ms",
-            "http://localhost:*"
         ],
         "allow_headers": ["Content-Type"],
         "methods": ["GET", "POST", "OPTIONS"]
