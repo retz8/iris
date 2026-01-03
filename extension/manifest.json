@@ -9,8 +9,12 @@
   ],
   "host_permissions": [
     "https://github.com/*",
-    "http://localhost:5000/*"
+    "https://vnw20xbg-8080.asse.devtunnels.ms/*",
+    "http://localhost:8080/*"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": ["https://github.com/*/*"],

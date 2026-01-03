@@ -8,16 +8,30 @@ sys.path.insert(0, os.path.dirname(__file__))
 from converter.main import convert_cpp_to_python
 
 app = Flask(__name__, static_folder='static')
-# Configure CORS to allow requests from GitHub and LeetCode domains
-CORS(app, origins=[
-    "https://leetcode.com",
-    "https://github.com",
-    "chrome-extension://*"
-])
+
+# Configure CORS to allow requests from GitHub and Chrome Extension
+# Using resources parameter with origins for proper CORS handling
+CORS(app, resources={
+    r"/*": {
+        "origins": [
+            "https://leetcode.com",
+            "https://github.com",
+            "https://*.devtunnels.ms",
+            "http://localhost:*"
+        ],
+        "allow_headers": ["Content-Type"],
+        "methods": ["GET", "POST", "OPTIONS"]
+    }
+})
 
 @app.route('/')
 def index():
     return jsonify({"message": "Welcome to the C++ to Python converter API"})
+
+@app.route('/health', methods=['GET'])
+def health():
+    """Health check endpoint"""
+    return jsonify({"status": "ok"})
 
 @app.route('/convert', methods=['POST'])
 def convert():

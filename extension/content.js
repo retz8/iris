@@ -72,24 +72,21 @@ async function handleConvert() {
   }
   
   try {
-    // const apiUrl = `${window.CONFIG.BACKEND_URL}${window.CONFIG.API_ENDPOINTS.CONVERT}`;
-    const apiUrl = "https://vnw20xbg-8080.asse.devtunnels.ms/convert";
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ code })
+    // Send message to background script to make the API call
+    // This avoids CORS issues since the background script has host_permissions
+    const response = await chrome.runtime.sendMessage({
+      action: 'convertCode',
+      code: code
     });
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.success) {
+      throw new Error(response.error);
     }
     
-    const data = await response.json();
-    showOverlay(data.python_code || data.result || 'Conversion completed');
+    const data = response.data;
+    showOverlay(data.python || data.python_code || data.result || 'Conversion completed');
   } catch (error) {
-    showOverlay(`Error: ${error.message}\n\nMake sure the backend server is running on ${window.CONFIG.BACKEND_URL}`);
+    showOverlay(`Error: ${error.message}\n\nMake sure the backend server is running.`);
   }
 }
 

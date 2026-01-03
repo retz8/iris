@@ -1,0 +1,32 @@
+// Background service worker to handle API calls
+// This avoids CORS issues since the extension has host_permissions
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'convertCode') {
+    handleConvertCode(request.code)
+      .then(result => sendResponse({ success: true, data: result }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    
+    // Return true to indicate we'll send a response asynchronously
+    return true;
+  }
+});
+
+async function handleConvertCode(code) {
+  const apiUrl = "https://vnw20xbg-8080.asse.devtunnels.ms/convert";
+  
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ code })
+  });
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  const data = await response.json();
+  return data;
+}
