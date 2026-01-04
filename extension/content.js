@@ -14,7 +14,6 @@
   // CONFIGURATION
   // ===========================================================================
   const LENS_CONFIG = {
-    pythonColor: "#2563eb",
     buttonActiveColor: "#16a34a",
     buttonInactiveColor: "#2563eb",
 
@@ -27,8 +26,6 @@
       legacyBlobCode: ".blob-wrapper table td.blob-code",
       legacyBlobPre: ".blob-wrapper pre",
     },
-
-    supportedExtensions: [".cpp", ".cc", ".cxx", ".hpp", ".h"],
   };
 
   // ===========================================================================
@@ -61,17 +58,6 @@
       totalCodeLines: 0,
     },
 
-    // Legacy state maintained for backward compatibility during transition
-    pythonLines: [],
-    pythonFullCode: "",
-
-    originalState: {
-      textareaValue: "",
-      // WeakMap allows garbage collection when elements are removed from DOM
-      elementData: new WeakMap(),  // element -> { originalHTML, originalWhiteSpace, originalTabSize, lineNum }
-      lineNumbers: [],  // Track which line numbers we've processed
-    },
-
     observer: null,
     button: null,
     settingsPanel: null,
@@ -81,7 +67,6 @@
   // ===========================================================================
   // INITIALIZE HANDLERS
   // ===========================================================================
-  const textareaHandler = new TextareaHandler(LENS_CONFIG.selectors);
   const eventHandlers = new EventHandlers(LENS_CONFIG, lensState, {
     onToggle: handleButtonClick,
   });
@@ -303,76 +288,6 @@
   }
 
   // ===========================================================================
-  // CORE LENS FUNCTIONS
-  // ===========================================================================
-
-  function storeOriginalState() {
-    const textarea = document.querySelector(LENS_CONFIG.selectors.codeTextarea);
-    if (textarea) {
-      lensState.originalState.textareaValue = textarea.value;
-    }
-
-    const lineElements = DOMHelpers.getCodeLineElements(LENS_CONFIG.selectors);
-    
-    lineElements.forEach((el) => {
-      const lineNum = DOMHelpers.getLineNumber(el);
-      
-      lensState.originalState.elementData.set(el, {
-        originalHTML: el.innerHTML,
-        originalWhiteSpace: el.style.whiteSpace,
-        originalTabSize: el.style.tabSize,
-        lineNum: lineNum,
-      });
-      
-      if (!lensState.originalState.lineNumbers.includes(lineNum)) {
-        lensState.originalState.lineNumbers.push(lineNum);
-      }
-    });
-
-    console.log(
-      "[Lens] Stored original state for",
-      lineElements.length,
-      "lines"
-    );
-  }
-
-  function replaceWithPython() {
-    const lineElements = DOMHelpers.getCodeLineElements(LENS_CONFIG.selectors);
-
-    lineElements.forEach((el) => {
-      const lineNum = DOMHelpers.getLineNumber(el);
-      if (lineNum === null || lineNum < 1) return;
-
-      const pythonLine = lensState.pythonLines[lineNum - 1];
-      const displayText = pythonLine !== undefined ? pythonLine : "";
-
-      DOMHelpers.applyPythonToElement(el, displayText, LENS_CONFIG.pythonColor);
-    });
-
-    // Update the textarea
-    textareaHandler.replaceWithPython(lensState.pythonFullCode);
-
-    console.log("[Lens] Replaced", lineElements.length, "lines with Python");
-  }
-
-  function restoreOriginal() {
-    const lineElements = DOMHelpers.getCodeLineElements(LENS_CONFIG.selectors);
-    
-    lineElements.forEach((element) => {
-      const data = lensState.originalState.elementData.get(element);
-      if (data && element.isConnected) {
-        element.innerHTML = data.originalHTML;
-        element.style.whiteSpace = data.originalWhiteSpace || "";
-        element.style.tabSize = data.originalTabSize || "";
-      }
-    });
-
-    textareaHandler.restore();
-
-    console.log("[Lens] Restored original C++ code");
-  }
-
-  // ===========================================================================
   // NOISE DIMMING FUNCTIONS (Noise Eraser v1)
   // ===========================================================================
 
@@ -484,34 +399,6 @@
     });
   }
 
-  // Legacy convert function (maintained for backward compatibility)
-  async function convertCode(cppCode) {
-    return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage(
-        { action: "convertCode", code: cppCode },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            reject(new Error(chrome.runtime.lastError.message));
-            return;
-          }
-          if (response && response.success) {
-            const data = response.data;
-            let lines = data.lines;
-            if (!lines || lines.length === 0) {
-              lines = data.python.split("\n");
-            }
-            resolve({
-              python: data.python,
-              lines: lines,
-            });
-          } else {
-            reject(new Error(response?.error || "Conversion failed"));
-          }
-        }
-      );
-    });
-  }
-
   // ===========================================================================
   // BUTTON HANDLER
   // ===========================================================================
@@ -577,15 +464,6 @@
     lensState.noiseRanges = [];
     lensState.dimmedElements = new WeakMap();
     lensState.language = null;
-    
-    // Reset legacy state
-    lensState.pythonLines = [];
-    lensState.pythonFullCode = "";
-    lensState.originalState.elementData = new WeakMap();
-    lensState.originalState.lineNumbers = [];
-    lensState.originalState.textareaValue = "";
-
-    textareaHandler.reset();
   }
 
   function initializeLens() {

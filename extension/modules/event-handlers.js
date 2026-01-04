@@ -27,8 +27,9 @@ window.EventHandlers = class EventHandlers {
     const selection = window.getSelection();
     let selectedText = selection.toString();
 
+    // If no selection, use the full code
     if (!selectedText) {
-      selectedText = this.state.pythonFullCode;
+      selectedText = DOMHelpers.extractCode(this.config.selectors);
     }
 
     if (e.dataTransfer.clearData) {
@@ -41,7 +42,7 @@ window.EventHandlers = class EventHandlers {
     e.dataTransfer.setData("Text", selectedText);
 
     console.log(
-      "[Lens] Drag intercepted - providing Python code:",
+      "[Lens] Drag intercepted:",
       selectedText.substring(0, 100)
     );
   }
@@ -57,7 +58,7 @@ window.EventHandlers = class EventHandlers {
       e.clipboardData.setData("text/plain", selectedText);
       e.clipboardData.setData("text/html", selectedText);
 
-      console.log("[Lens] Copy intercepted - providing Python code");
+      console.log("[Lens] Copy intercepted");
     }
   }
 

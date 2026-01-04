@@ -44,8 +44,6 @@ IRIS bridges the gap between high-speed AI code generation and the human bottlen
   - Python
   - Go
   - Java
-  - C/C++
-  - Rust, Ruby, PHP
 
 - **Performance Optimized**:
   - Chunk-based processing for large files (1000+ lines)
@@ -82,8 +80,6 @@ Backend runs on `http://localhost:8080` by default.
 4. Select the `extension/` directory
 5. Update `extension/config.js` with your backend URL if needed
 
----
-
 ## 📖 Usage
 
 1. Navigate to any code file on GitHub (e.g., `https://github.com/user/repo/blob/main/src/file.js`)
@@ -102,7 +98,6 @@ Backend runs on `http://localhost:8080` by default.
 
 - `Alt + P` - Toggle Focus Mode on/off
 
----
 
 ## 🏗️ Architecture
 
@@ -115,16 +110,14 @@ iris/
 │   ├── styles.css      # UI styling
 │   └── modules/        # Modular helper functions
 │       ├── dom-helpers.js
-│       ├── event-handlers.js
-│       └── textarea-handler.js
+│       └── event-handlers.js
 │
 ├── backend/            # Flask REST API
 │   ├── src/
 │   │   ├── server.py           # Main Flask server
-│   │   ├── analyzer/           # Noise detection engine
-│   │   │   ├── noise_detector.py
-│   │   │   └── patterns.py
-│   │   └── converter/          # Legacy C++ converter
+│   │   └── analyzer/           # Noise detection engine
+│   │       ├── noise_detector.py
+│   │       └── patterns.py
 │   └── tests/                  # Test suite
 │
 └── scripts/            # Utility scripts
@@ -156,8 +149,6 @@ python -m pytest tests/ -v
 python tests/manual_validation.py
 ```
 
----
-
 ## 🛠️ Development Roadmap
 
 ### ✅ Phase 1-5: Noise Eraser v1 (Complete)
@@ -179,33 +170,9 @@ python tests/manual_validation.py
 - **Multi-file support**: Context preservation across PR files
 - **Diff mode**: Focus on changed lines in PR views
 
----
-
-## 🎯 Success Metrics
-
-- **50% reduction** in time to understand core logic during PR reviews
-- **85%+ accuracy** in noise detection
-- User confidence: "I only see what matters"
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! This project is actively developed by a developer in military service with limited lab access.
-
-**Priority areas:**
-- Additional language support (Rust, Ruby, PHP patterns)
-- Noise pattern refinement (false positive reduction)
-- UI/UX improvements
-- Performance testing with very large files (5000+ lines)
-
----
-
 ## 📝 License
 
 MIT License - See LICENSE file for details
-
----
 
 ## 🙏 Acknowledgments
 
@@ -213,14 +180,7 @@ MIT License - See LICENSE file for details
 - Inspired by the "Vibe Coding" phenomenon and the need for better AI-code auditing tools
 - GitHub Copilot for development assistance
 
----
 
 ## 📧 Contact
+- Project maintained by @retz8
 
-For questions, suggestions, or collaboration:
-- Open an issue on GitHub
-- Project maintained by @jiohin
-
----
-
-**"Reduce the noise. Amplify the signal. Code faster. Review smarter."**
