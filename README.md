@@ -1,7 +1,7 @@
 # IRIS - Intelligent Review & Insight System
 
 <p align="center">
-  <img width="251" height="116" alt="iris_no_background" src="https://github.com/user-attachments/assets/b8e4e295-35bd-4708-a8a2-b52e64198063" />
+  <img width="251" height="116" alt="iris_no_background" src="https://github.com/user-attachments/assets/9da5e421-12d5-41e5-bc48-bb85e345cc4b" />
 </p>
 
 > **The Auditor's Lens: Optimizing Code Perception for the AI Era**
