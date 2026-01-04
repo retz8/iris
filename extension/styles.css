@@ -186,3 +186,13 @@
 .cpp-lens-table-line {
   background: rgba(102, 126, 234, 0.08);
 }
+
+/* Noise Eraser v1 - Dimming Styles */
+.iris-noise-dimmed {
+  opacity: 0.2 !important;
+  transition: opacity 0.3s ease;
+}
+
+.iris-noise-dimmed:hover {
+  opacity: 0.6 !important;  /* Slightly visible on hover */
+}

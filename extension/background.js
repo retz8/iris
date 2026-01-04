@@ -5,11 +5,18 @@
 importScripts("config.js");
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (!request || request.action !== "convertCode") return;
+  if (!request || !request.action) return;
 
   (async () => {
     try {
-      const result = await handleConvertCode(request.code);
+      let result;
+      if (request.action === "analyzeCode") {
+        result = await handleAnalyzeCode(request.code, request.language);
+      } else if (request.action === "convertCode") {
+        result = await handleConvertCode(request.code);
+      } else {
+        throw new Error("Unknown action: " + request.action);
+      }
       sendResponse({ success: true, data: result });
     } catch (error) {
       sendResponse({
@@ -22,6 +29,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Return true to indicate we'll send a response asynchronously
   return true;
 });
+
+async function handleAnalyzeCode(code, language) {
+  const apiUrl = `${CONFIG.BACKEND_URL}${CONFIG.API_ENDPOINTS.ANALYZE}`;
+
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ code, language }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data;
+}
 
 async function handleConvertCode(code) {
   const apiUrl = `${CONFIG.BACKEND_URL}${CONFIG.API_ENDPOINTS.CONVERT}`;

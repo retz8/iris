@@ -93,9 +93,9 @@ window.DOMHelpers = {
   },
 
   /**
-   * Extract C++ code from the page
+   * Extract code from the page
    */
-  extractCppCode(selectors) {
+  extractCodeFromPage(selectors) {
     const textarea = document.querySelector(selectors.codeTextarea);
     if (textarea && textarea.value) {
       return textarea.value;
@@ -157,5 +157,50 @@ window.DOMHelpers = {
       document.querySelector(selectors.reactCodeContainer) ||
       document.querySelector(".blob-wrapper")
     );
+  },
+
+  /**
+   * Detect programming language from file extension in URL
+   */
+  detectLanguage() {
+    const path = window.location.pathname;
+    
+    const langMap = {
+      '.js': 'javascript',
+      '.jsx': 'javascript',
+      '.ts': 'javascript',
+      '.tsx': 'javascript',
+      '.mjs': 'javascript',
+      '.cjs': 'javascript',
+      '.py': 'python',
+      '.pyw': 'python',
+      '.pyi': 'python',
+      '.go': 'go',
+      '.java': 'java',
+      '.cpp': 'cpp',
+      '.cc': 'cpp',
+      '.cxx': 'cpp',
+      '.c': 'c',
+      '.h': 'c',
+      '.hpp': 'cpp',
+      '.rs': 'rust',
+      '.rb': 'ruby',
+      '.php': 'php'
+    };
+    
+    for (const [ext, lang] of Object.entries(langMap)) {
+      if (path.toLowerCase().endsWith(ext)) {
+        return lang;
+      }
+    }
+    
+    return 'javascript';  // default fallback
+  },
+
+  /**
+   * Extract code from the page (language-agnostic, renamed from extractCodeFromPage)
+   */
+  extractCode(selectors) {
+    return this.extractCodeFromPage(selectors);
   },
 };

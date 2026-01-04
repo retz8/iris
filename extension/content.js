@@ -1,9 +1,10 @@
 // =============================================================================
-// LeetCode C++ to Python Lens - Content Script
+// IRIS - Intelligent Review & Insight System (Noise Eraser v1)
 // =============================================================================
-// Simple approach: Store original code, completely replace with Python,
-// restore original when toggling back. No overlays, no fighting with GitHub's
-// textarea - just clean DOM replacement.
+// Cognitive audit lens that reduces noise in code review by dimming
+// non-essential code patterns (error handling, logging, imports, guards).
+// Approach: Visual hierarchy modification through CSS opacity rather than
+// content replacement, allowing quick toggle between focused and full view.
 // =============================================================================
 
 (function () {
@@ -35,6 +36,12 @@
   // ===========================================================================
   const lensState = {
     active: false,
+    noiseLines: [],           // [3, 4, 5, 12, 13]
+    noiseRanges: [],          // [{start, end, type}]
+    dimmedElements: new WeakMap(),  // element -> {originalOpacity, originalClassName}
+    language: null,
+
+    // Legacy state maintained for backward compatibility during transition
     pythonLines: [],
     pythonFullCode: "",
 
@@ -128,90 +135,109 @@
     console.log("[Lens] Restored original C++ code");
   }
 
+  // ===========================================================================
+  // NOISE DIMMING FUNCTIONS (Noise Eraser v1)
+  // ===========================================================================
+
+  function applyNoiseDimming(noiseLines) {
+    const lineElements = DOMHelpers.getCodeLineElements(LENS_CONFIG.selectors);
+    
+    lineElements.forEach((el) => {
+      const lineNum = DOMHelpers.getLineNumber(el);
+      
+      if (lineNum !== null && noiseLines.includes(lineNum)) {
+        // Store original state
+        lensState.dimmedElements.set(el, {
+          opacity: el.style.opacity || '1',
+          className: el.className
+        });
+        
+        // Apply dimming
+        el.style.opacity = '0.2';
+        el.classList.add('iris-noise-dimmed');
+      }
+    });
+
+    console.log("[Lens] Dimmed", noiseLines.length, "noise lines");
+  }
+
+  function removeDimming() {
+    const lineElements = DOMHelpers.getCodeLineElements(LENS_CONFIG.selectors);
+    
+    lineElements.forEach((el) => {
+      const original = lensState.dimmedElements.get(el);
+      if (original) {
+        el.style.opacity = original.opacity;
+        el.classList.remove('iris-noise-dimmed');
+      }
+    });
+    
+    lensState.dimmedElements = new WeakMap();
+    console.log("[Lens] Removed all dimming");
+  }
+
+  // ===========================================================================
+  // MUTATION HANDLER
+  // ===========================================================================
+
   function handleNewLines() {
     if (!lensState.active) return;
 
-    const lineElements = DOMHelpers.getCodeLineElements(LENS_CONFIG.selectors);
-
-    lineElements.forEach((el) => {
-      const isAlreadyProcessed = el.querySelector(".pl-lens-python") !== null;
-      if (isAlreadyProcessed) return;
-
-      const stored = lensState.originalState.elementData.has(el);
-
-      if (!stored) {
-        const lineNum = DOMHelpers.getLineNumber(el);
-        if (lineNum === null || lineNum < 1) return;
-
-        // Store in WeakMap with all CSS properties
-        lensState.originalState.elementData.set(el, {
-          originalHTML: el.innerHTML,
-          originalWhiteSpace: el.style.whiteSpace,
-          originalTabSize: el.style.tabSize,
-          lineNum: lineNum,
-        });
-
-        if (!lensState.originalState.lineNumbers.includes(lineNum)) {
-          lensState.originalState.lineNumbers.push(lineNum);
-        }
-
-        const pythonLine = lensState.pythonLines[lineNum - 1];
-        const displayText = pythonLine !== undefined ? pythonLine : "";
-
-        DOMHelpers.applyPythonToElement(
-          el,
-          displayText,
-          LENS_CONFIG.pythonColor
-        );
-      }
-    });
+    // Re-apply dimming to any new lines that match our noise pattern
+    applyNoiseDimming(lensState.noiseLines);
   }
 
-  function activateLens(pythonCode, pythonLines) {
-    lensState.pythonFullCode = pythonCode;
-    lensState.pythonLines = pythonLines;
+  function activateLens() {
+    console.log("[Lens] Activating Focus Mode with", lensState.noiseLines.length, "noise lines");
 
-    console.log("[Lens] Activating with", pythonLines.length, "lines");
-
-    storeOriginalState();
-    replaceWithPython();
+    applyNoiseDimming(lensState.noiseLines);
     eventHandlers.setupMutationObserver(handleNewLines);
-    eventHandlers.setupDragAndCopyListeners();
 
     lensState.active = true;
     eventHandlers.updateButtonState();
 
-    console.log("[Lens] Activated - Python code now displayed");
+    console.log("[Lens] Focus Mode activated - Noise dimmed");
   }
 
   function deactivateLens() {
     eventHandlers.disconnectObserver();
-    eventHandlers.removeDragAndCopyListeners();
 
-    restoreOriginal();
+    removeDimming();
 
-    // Log memory stats for large files
-    if (lensState.originalState.lineNumbers.length > 1000) {
-      console.warn(
-        `[Lens] Large file: tracked ${lensState.originalState.lineNumbers.length} lines`
-      );
-    }
-
-    // Clear WeakMap by creating new instance (allows GC of detached elements)
-    lensState.originalState.elementData = new WeakMap();
-    lensState.originalState.lineNumbers = [];
-    lensState.originalState.textareaValue = "";
     lensState.active = false;
-
     eventHandlers.updateButtonState();
 
-    console.log("[Lens] Deactivated - Original C++ code restored");
+    console.log("[Lens] Focus Mode deactivated - All code visible");
   }
 
   // ===========================================================================
   // BACKEND COMMUNICATION
   // ===========================================================================
 
+  async function analyzeCode(code, language) {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(
+        { 
+          action: "analyzeCode",
+          code: code,
+          language: language 
+        },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
+          if (response && response.success) {
+            resolve(response.data);
+          } else {
+            reject(new Error(response?.error || "Analysis failed"));
+          }
+        }
+      );
+    });
+  }
+
+  // Legacy convert function (maintained for backward compatibility)
   async function convertCode(cppCode) {
     return new Promise((resolve, reject) => {
       chrome.runtime.sendMessage(
@@ -247,31 +273,44 @@
     if (lensState.isConverting) return;
 
     if (lensState.active) {
+      // Deactivate: remove dimming
       deactivateLens();
     } else {
-      if (lensState.pythonLines.length > 0) {
-        activateLens(lensState.pythonFullCode, lensState.pythonLines);
+      // Check if we already have noise data (for re-activation)
+      if (lensState.noiseLines.length > 0) {
+        activateLens();
       } else {
-        const cppCode = DOMHelpers.extractCppCode(LENS_CONFIG.selectors);
-        if (!cppCode) {
-          console.error("[Lens] Could not extract C++ code");
+        // First activation: analyze code
+        const code = DOMHelpers.extractCode(LENS_CONFIG.selectors);
+        if (!code) {
+          console.error("[Lens] Could not extract code");
           alert("Could not extract code from this page.");
           return;
         }
 
-        console.log("[Lens] Extracting and converting C++ code...");
+        const language = DOMHelpers.detectLanguage();
+        console.log("[Lens] Analyzing code...", "Language:", language);
+        
         lensState.isConverting = true;
         eventHandlers.updateButtonState();
 
         try {
-          const result = await convertCode(cppCode);
+          const result = await analyzeCode(code, language);
           lensState.isConverting = false;
-          activateLens(result.python, result.lines);
+          
+          // Store noise data
+          lensState.noiseLines = result.noise_lines || [];
+          lensState.noiseRanges = result.noise_ranges || [];
+          lensState.language = result.language || language;
+          
+          console.log("[Lens] Analysis complete:", lensState.noiseLines.length, "noise lines detected");
+          
+          activateLens();
         } catch (error) {
           lensState.isConverting = false;
           eventHandlers.updateButtonState();
-          console.error("[Lens] Conversion error:", error);
-          alert(`Conversion failed: ${error.message}`);
+          console.error("[Lens] Analysis error:", error);
+          alert(`Analysis failed: ${error.message}`);
         }
       }
     }
@@ -285,6 +324,14 @@
     if (lensState.active) {
       deactivateLens();
     }
+    
+    // Reset noise-related state
+    lensState.noiseLines = [];
+    lensState.noiseRanges = [];
+    lensState.dimmedElements = new WeakMap();
+    lensState.language = null;
+    
+    // Reset legacy state
     lensState.pythonLines = [];
     lensState.pythonFullCode = "";
     lensState.originalState.elementData = new WeakMap();
@@ -297,10 +344,14 @@
   function initializeLens() {
     resetLensState();
 
-    if (
-      !DOMHelpers.isGitHubBlobPage() ||
-      !DOMHelpers.isCppFile(LENS_CONFIG.supportedExtensions)
-    ) {
+    if (!DOMHelpers.isGitHubBlobPage()) {
+      eventHandlers.removeButton();
+      return;
+    }
+
+    // Show button for all code files (not just C++)
+    const language = DOMHelpers.detectLanguage();
+    if (!language) {
       eventHandlers.removeButton();
       return;
     }
@@ -310,7 +361,7 @@
     }
 
     eventHandlers.updateButtonState();
-    console.log("[Lens] Initialized for C++ file");
+    console.log("[Lens] Initialized for", language, "file");
   }
 
   function setupNavigationDetection() {

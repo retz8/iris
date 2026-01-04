@@ -3,7 +3,8 @@ const CONFIG = {
   // NOTE: 사지방 dev env is based on vscode tunnel
   BACKEND_URL: 'https://vnw20xbg-8080.asse.devtunnels.ms',
   API_ENDPOINTS: {
-    CONVERT: '/convert',
+    CONVERT: '/convert',  // Legacy
+    ANALYZE: '/analyze',  // New - Noise Eraser v1
     HEALTH: '/health'
   }
 };

@@ -106,8 +106,7 @@ window.EventHandlers = class EventHandlers {
       e.preventDefault();
       if (
         this.state.button &&
-        DOMHelpers.isGitHubBlobPage() &&
-        DOMHelpers.isCppFile(this.config.supportedExtensions)
+        DOMHelpers.isGitHubBlobPage()
       ) {
         this.callbacks.onToggle();
       }
@@ -180,7 +179,7 @@ window.EventHandlers = class EventHandlers {
 
     const button = document.createElement("button");
     button.id = "lens-toggle-button";
-    button.textContent = "Convert to Python";
+    button.textContent = "Focus Mode";
 
     Object.assign(button.style, {
       position: "fixed",
@@ -225,17 +224,17 @@ window.EventHandlers = class EventHandlers {
     if (!this.state.button) return;
 
     if (this.state.isConverting) {
-      this.state.button.textContent = "Converting...";
+      this.state.button.textContent = "Analyzing...";
       this.state.button.disabled = true;
       this.state.button.style.backgroundColor = "#9ca3af";
       this.state.button.style.cursor = "wait";
     } else if (this.state.active) {
-      this.state.button.textContent = "Show Original (C++)";
+      this.state.button.textContent = "Show All Code";
       this.state.button.disabled = false;
       this.state.button.style.backgroundColor = this.config.buttonActiveColor;
       this.state.button.style.cursor = "pointer";
     } else {
-      this.state.button.textContent = "Convert to Python";
+      this.state.button.textContent = "Focus Mode";
       this.state.button.disabled = false;
       this.state.button.style.backgroundColor = this.config.buttonInactiveColor;
       this.state.button.style.cursor = "pointer";
