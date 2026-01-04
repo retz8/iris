@@ -49,6 +49,8 @@ def analyze():
         
         # Perform noise detection
         result = detect_noise(code, language)
+
+        print("[DEBUG] Analysis result:", result)
         
         return jsonify(result), (200 if result.get("success") else 400)
         

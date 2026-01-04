@@ -293,7 +293,7 @@
 
   function applyNoiseDimming(noiseLines) {
     const lineElements = DOMHelpers.getCodeLineElements(LENS_CONFIG.selectors);
-    
+    console.log("[Lens] Applying dimming to", noiseLines.length, "lines");
     // Apply custom opacity from settings
     document.documentElement.style.setProperty('--iris-noise-opacity', lensState.settings.noiseOpacity);
     
@@ -337,18 +337,15 @@
   function handleNewLines() {
     if (!lensState.active) return;
 
-    // Re-apply dimming to any new lines that match our noise pattern
-    const filteredNoiseLines = filterNoiseLinesByType(lensState.noiseRanges);
-    applyNoiseDimming(filteredNoiseLines);
+    // Re-apply dimming to noise lines
+    applyNoiseDimming(lensState.noiseLines);
   }
 
   function activateLens() {
     console.log("[Lens] Activating Focus Mode with", lensState.noiseLines.length, "noise lines");
 
-    // Filter noise lines by enabled types
-    const filteredNoiseLines = filterNoiseLinesByType(lensState.noiseRanges);
-    
-    applyNoiseDimming(filteredNoiseLines);
+    // Use noise lines directly (heuristic scoring doesn't use type filtering)
+    applyNoiseDimming(lensState.noiseLines);
     eventHandlers.setupMutationObserver(handleNewLines);
 
     lensState.active = true;
@@ -356,7 +353,7 @@
 
     // Track analytics
     const totalLines = DOMHelpers.getCodeLineElements(LENS_CONFIG.selectors).length;
-    trackActivation(lensState.language, filteredNoiseLines.length, totalLines);
+    trackActivation(lensState.language, lensState.noiseLines.length, totalLines);
 
     console.log("[Lens] Focus Mode activated - Noise dimmed");
   }
