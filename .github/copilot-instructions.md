@@ -95,3 +95,52 @@ Test by:
 2. Extension should inject "Convert to Python" button
 3. Click to see inline Python conversion
 4. Verify indentation matches GitHub's rendering exactly
+
+좋습니다. copilot-instructions.md 파일은 AI 가이드라인 역할을 하므로, 프로젝트의 바뀐 철학과 목표를 명확히 명시하는 것이 중요합니다. 아래 내용을 그대로 복사해서 사용하시면 됩니다.
+
+Markdown
+
+# Copilot Instructions [Pivoted 1/4/26]
+
+## 🚨 PROJECT PIVOT NOTICE (January 4, 2026)
+As of January 4, 2026, this project has pivoted from a simple syntax translation tool (C++ to Python) to a **Universal Cognitive Audit Lens**. The core objective is now focused on reducing the cognitive load for human developers when auditing and reviewing complex or AI-generated code.
+
+---
+
+## 1. Project Vision
+**"The Auditor’s Lens: Optimizing Code Perception for the AI Era"**
+This tool is designed to bridge the gap between high-speed AI code generation ("Vibe Coding") and the human bottleneck of code verification. It aims to innovate how humans perceive and process code by prioritizing "Signal" over "Noise."
+
+## 2. Retrospective & Rationale
+* **Initial Prototype:** Successfully built a "C++ to Python" lens for GitHub in 6 hours.
+* **Key Insight:** Syntax translation is secondary to the real problem: **Information Overload** and **Context Switching**.
+* **Pivot Goal:** To build a tool that helps reviewers and open-source explorers understand "The Why" and "The Core Logic" faster than ever.
+
+## 3. Core Cognitive Load Factors & Solution Ideas
+* **Low Signal-to-Noise Ratio:** Crucial logic is buried under boilerplate.
+    * *Solution:* **Noise Eraser** (Dimming/hiding non-essential code).
+* **Hidden Intent:** Understanding "How" is easy, but "Why" is hard.
+    * *Solution:* **Semantic Intent Overlay** (LLM-generated intent chips).
+* **Mental State Simulation:** Tracking variable changes across files is exhausting.
+    * *Solution:* **Variable Life-cycle Highlight** (Focusing on a variable's journey).
+* **Control Flow Complexity:** Deep nesting leads to losing track of logic branches.
+    * *Solution:* **Flow Breadcrumbs** (Visual path of conditions).
+
+## 4. Operational Context (Developer Experience)
+* **Main Target Audience:** * **PR Reviewers:** Auditing AI-generated or peer code on GitHub.
+    * **Open-Source Explorers:** Analyzing unfamiliar codebases for learning or integration.
+* **Target Environment:** Primarily **Chrome Extension** for GitHub, allowing maximum UI flexibility for cognitive experiments.
+
+---
+
+## 🚀 CURRENT DEVELOPMENT FOCUS (Work-in-Progress)
+
+Currently, we are building the first milestone of the pivoted vision:
+
+* **Primary Feature:** **Noise Eraser v1**
+    * Implementing a Regex-based engine to identify "Noise" (Error handling, logging, imports, guard clauses).
+    * Developing CSS injection logic to dim the identified noise (e.g., `opacity: 0.2`).
+    * Refining the "Focus Mode" toggle UI on the GitHub blob page.
+* **Technical Implementation:** * Transitioning `content.js` from "code replacement" to "visual hierarchy modification."
+    * Defining initial noise patterns: `if (err != nil)`, `try-catch`, `console.log`, etc.
+* **Immediate Goal:** Achieve a 2x faster "Logic Scanning" experience on GitHub PR pages.

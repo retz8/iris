@@ -1,4 +1,6 @@
-# LeetCode C++ to Python Converter
+# LeetCode C++ to Python Converter [Developed at 1/3/2026]
+
+**NOTICE**: this project is now pivoted and moved to new [repo](https://github.com/retz8/iris)
 
 ## What is this?
 
