@@ -1,6 +1,6 @@
 """
 Test suite for noise_detector.py
-Tests noise detection across multiple languages and edge cases
+Tests heuristic-based noise detection with high precision scoring
 """
 
 import sys
@@ -10,7 +10,7 @@ import unittest
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.analyzer.noise_detector import detect_noise, _group_into_ranges, _classify_range
+from src.analyzer.noise_detector import detect_noise, _group_into_ranges
 
 
 class TestJavaScriptNoiseDetection(unittest.TestCase):

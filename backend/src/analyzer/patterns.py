@@ -1,6 +1,6 @@
 """
-Noise pattern definitions for multiple languages
-Defines regex patterns to identify non-essential code (logging, error handling, imports, guards)
+Heuristic-based noise pattern definitions for multiple languages
+Uses weighted scoring system to identify non-essential code with high precision
 """
 
 import re
@@ -12,114 +12,264 @@ _pattern_cache = {}
 def get_compiled_patterns(language):
     """
     Get compiled regex patterns for a language with caching.
-    This improves performance by avoiding repeated regex compilation.
+    Returns patterns organized by confidence level for heuristic scoring.
     """
     if language not in _pattern_cache:
         patterns = NOISE_PATTERNS.get(language.lower(), {})
         compiled = {}
         
-        for noise_type, pattern_list in patterns.items():
-            compiled[noise_type] = [
-                re.compile(pattern, re.IGNORECASE) 
-                for pattern in pattern_list
-            ]
+        for confidence_level, categories in patterns.items():
+            compiled[confidence_level] = {}
+            for category, pattern_info in categories.items():
+                compiled[confidence_level][category] = {
+                    'weight': pattern_info['weight'],
+                    'patterns': [re.compile(p, re.IGNORECASE) for p in pattern_info['patterns']]
+                }
         
         _pattern_cache[language] = compiled
     
     return _pattern_cache[language]
 
+
+# Heuristic scoring system with confidence-based weights
+# Each pattern has a weight (0-40) indicating confidence it's noise
+# Higher weight = more confident it's pure noise
+
 NOISE_PATTERNS = {
     "javascript": {
-        "error_handling": [
-            r"try\s*{",
-            r"catch\s*\(",
-            r"finally\s*{",
-            r"if\s*\(.*error.*\)",
-            r"throw\s+new\s+",
-            r"\.catch\(",
-        ],
-        "logging": [
-            r"console\.(log|error|warn|info|debug)",
-            r"logger\.",
-            r"debug\(",
-        ],
-        "imports": [
-            r"^import\s+",
-            r"^require\(",
-            r"^export\s+(default\s+)?",
-            r"^from\s+",
-        ],
-        "guards": [
-            r"if\s*\(!.*\)\s*return",
-            r"if\s*\(.*==\s*null\)",
-            r"if\s*\(.*===\s*undefined\)",
-            r"if\s*\(!.*\)\s*{",
-        ],
+        "high_confidence": {
+            "logging": {
+                "weight": 40,
+                "patterns": [
+                    r"console\.(log|debug)\(",  # Debug logging (not error/warn)
+                    r"//\s*(TODO|FIXME|DEBUG|XXX)",  # Dev comments
+                    r"debugger;",  # Debugger statements
+                ]
+            }
+        },
+        "medium_confidence": {
+            "error_logging": {
+                "weight": 25,
+                "patterns": [
+                    r"console\.(error|warn)\(",  # Error logging (might be important)
+                    r"logger\.(debug|trace)\(",  # Low-level logging
+                ]
+            },
+            "imports": {
+                "weight": 20,
+                "patterns": [
+                    r"^import\s+.*from\s+['\"]",  # Standard imports
+                    r"^require\(['\"]",  # CommonJS requires
+                    r"^export\s+(default\s+)?(const|let|var|function|class)",  # Exports
+                ]
+            },
+            "simple_guards": {
+                "weight": 20,
+                "patterns": [
+                    r"if\s*\(!.*\)\s*return\s*;?\s*$",  # Simple early returns
+                    r"if\s*\(.*===\s*undefined\)\s*return",  # Undefined checks
+                ]
+            }
+        },
+        "low_confidence": {
+            "contextual_error_handling": {
+                "weight": 10,
+                "patterns": [
+                    r"catch\s*\(\w+\)\s*{\s*$",  # Empty catch blocks only
+                    r"finally\s*{\s*$",  # Finally blocks (often cleanup)
+                ]
+            }
+        }
     },
+    
     "python": {
-        "error_handling": [
-            r"try\s*:",
-            r"except\s+",
-            r"finally\s*:",
-            r"if\s+.*error.*:",
-            r"raise\s+",
-        ],
-        "logging": [
-            r"print\(",
-            r"logging\.",
-            r"logger\.",
-            r"log\(",
-        ],
-        "imports": [
-            r"^import\s+",
-            r"^from\s+.*import",
-            r"^__all__\s*=",
-        ],
-        "guards": [
-            r"if\s+not\s+.*:",
-            r"if\s+.*\s+is\s+None:",
-            r"if\s+not\s+.*:",
-        ],
+        "high_confidence": {
+            "logging": {
+                "weight": 40,
+                "patterns": [
+                    r"print\(['\"].*debug",  # Debug prints
+                    r"logging\.debug\(",  # Debug logging
+                    r"#\s*(TODO|FIXME|DEBUG|XXX)",  # Dev comments
+                ]
+            }
+        },
+        "medium_confidence": {
+            "imports": {
+                "weight": 20,
+                "patterns": [
+                    r"^import\s+\w+$",  # Simple imports
+                    r"^from\s+\w+\s+import\s+\w+",  # From imports
+                ]
+            },
+            "simple_guards": {
+                "weight": 20,
+                "patterns": [
+                    r"if\s+not\s+\w+:\s*return",  # Simple guards
+                    r"if\s+\w+\s+is\s+None:\s*return",  # None checks
+                ]
+            }
+        },
+        "low_confidence": {
+            "error_logging": {
+                "weight": 10,
+                "patterns": [
+                    r"logging\.(error|warning)\(",  # Error logs (might be critical)
+                    r"except\s+\w+Error\s*:\s*pass",  # Empty exception handlers
+                ]
+            }
+        }
     },
+    
     "go": {
-        "error_handling": [
-            r"if\s+err\s+!=\s+nil",
-            r"if\s+err\s+==\s+nil",
-            r"panic\(",
-            r"defer\s+",
-        ],
-        "logging": [
-            r"log\.",
-            r"fmt\.(Println|Printf|Print)",
-        ],
-        "imports": [
-            r"^import\s+",
-            r"^import\s*\(",
-        ],
-        "guards": [
-            r"if\s+.*\s+==\s+nil",
-            r"if\s+.*\s+!=\s+nil",
-        ],
+        "high_confidence": {
+            "logging": {
+                "weight": 40,
+                "patterns": [
+                    r"fmt\.Println\(",  # Simple prints
+                    r"log\.Printf\(.*DEBUG",  # Debug logging
+                    r"//\s*(TODO|FIXME|DEBUG)",  # Dev comments
+                ]
+            }
+        },
+        "medium_confidence": {
+            "imports": {
+                "weight": 20,
+                "patterns": [
+                    r"^import\s+\"",  # Single imports
+                ]
+            },
+            "defer_statements": {
+                "weight": 15,
+                "patterns": [
+                    r"defer\s+\w+\.\w+\(\)",  # Simple defer calls
+                ]
+            }
+        },
+        "low_confidence": {
+            "error_checks": {
+                "weight": 10,
+                "patterns": [
+                    r"if\s+err\s+!=\s+nil\s*{\s*return",  # Simple error returns
+                ]
+            }
+        }
     },
+    
     "java": {
-        "error_handling": [
-            r"try\s*{",
-            r"catch\s*\(",
-            r"finally\s*{",
-            r"throw\s+new\s+",
-        ],
-        "logging": [
-            r"logger\.",
-            r"log\.",
-            r"System\.out\.println",
-        ],
-        "imports": [
-            r"^import\s+",
-            r"^package\s+",
-        ],
-        "guards": [
-            r"if\s*\(.*==\s*null\)",
-            r"if\s*\(!.*\)\s*{",
-        ],
+        "high_confidence": {
+            "logging": {
+                "weight": 40,
+                "patterns": [
+                    r"System\.out\.println\(",  # Debug prints
+                    r"logger\.debug\(",  # Debug logging
+                    r"//\s*(TODO|FIXME|DEBUG)",  # Dev comments
+                ]
+            }
+        },
+        "medium_confidence": {
+            "imports": {
+                "weight": 20,
+                "patterns": [
+                    r"^import\s+java\.",  # Java standard library
+                    r"^import\s+\w+\.\w+\.\w+;",  # Package imports
+                ]
+            }
+        },
+        "low_confidence": {
+            "empty_catches": {
+                "weight": 10,
+                "patterns": [
+                    r"catch\s*\(\w+\s+\w+\)\s*{\s*}",  # Empty catch blocks
+                ]
+            }
+        }
     },
+    
+    # C/C++
+    "c": {
+        "high_confidence": {
+            "logging": {
+                "weight": 40,
+                "patterns": [
+                    r"printf\(.*DEBUG",  # Debug prints
+                    r"//\s*(TODO|FIXME|DEBUG)",  # Dev comments
+                ]
+            }
+        },
+        "medium_confidence": {
+            "includes": {
+                "weight": 20,
+                "patterns": [
+                    r"^#include\s+<\w+\.h>",  # Standard library includes
+                ]
+            }
+        }
+    },
+    
+    # Rust
+    "rust": {
+        "high_confidence": {
+            "logging": {
+                "weight": 40,
+                "patterns": [
+                    r"println!\(",  # Debug macros
+                    r"dbg!\(",  # Debug macro
+                    r"//\s*(TODO|FIXME|DEBUG)",  # Dev comments
+                ]
+            }
+        },
+        "medium_confidence": {
+            "uses": {
+                "weight": 20,
+                "patterns": [
+                    r"^use\s+std::",  # Standard library uses
+                ]
+            }
+        }
+    },
+    
+    # Ruby
+    "ruby": {
+        "high_confidence": {
+            "logging": {
+                "weight": 40,
+                "patterns": [
+                    r"puts\s+['\"].*debug",  # Debug prints
+                    r"p\s+\w+",  # p method (debugging)
+                    r"#\s*(TODO|FIXME|DEBUG)",  # Dev comments
+                ]
+            }
+        },
+        "medium_confidence": {
+            "requires": {
+                "weight": 20,
+                "patterns": [
+                    r"^require\s+['\"]",  # Requires
+                ]
+            }
+        }
+    },
+    
+    # PHP
+    "php": {
+        "high_confidence": {
+            "logging": {
+                "weight": 40,
+                "patterns": [
+                    r"var_dump\(",  # Debug dumps
+                    r"print_r\(",  # Debug prints
+                    r"//\s*(TODO|FIXME|DEBUG)",  # Dev comments
+                ]
+            }
+        },
+        "medium_confidence": {
+            "includes": {
+                "weight": 20,
+                "patterns": [
+                    r"^require_once\s+",  # Requires
+                    r"^include_once\s+",  # Includes
+                ]
+            }
+        }
+    }
 }

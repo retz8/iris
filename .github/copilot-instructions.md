@@ -86,18 +86,47 @@ Developed remotely via VS Code Tunnel from a military service computer lab (사�
 
 ## Noise Detection Logic Principles
 
-The noise detector (`backend/src/analyzer/noise_detector.py`) identifies code patterns based on:
+The noise detector (`backend/src/analyzer/noise_detector.py`) uses a **heuristic scoring system** with high precision:
 
-**Noise categories**:
-- **Error handling**: try-catch blocks, error checking conditionals
-- **Logging**: console.log, print statements, debug calls
-- **Imports/Dependencies**: import statements, require calls
-- **Guard clauses**: early returns, null checks, validation
-- **Boilerplate**: getters/setters, basic constructors
+**Core Philosophy: Precision over Recall**
+- Only dim code with confidence score ≥ 60/100 (configurable threshold)
+- Weighted pattern matching with confidence levels (high=40, medium=20, low=10)
+- Context-aware analysis to reduce false positives
+- Multi-factor scoring combining pattern matching + contextual analysis
 
-**Line-level analysis**: Return line numbers/ranges for dimming rather than transformed code
+**Scoring Factors**:
+1. **Pattern Matching** (0-40 points): Confidence-weighted regex patterns
+   - High confidence: Debug logging, TODO comments (40 pts)
+   - Medium confidence: Imports, simple guards (20 pts)
+   - Low confidence: Contextual error handling (10 pts)
 
-**Language support priority**: JavaScript/TypeScript → Python → Go → Java
+2. **Context Modifiers** (-25 to +10 points):
+   - **Precision Boosters** (reduce score, prevent false positives):
+     - Has nearby explanatory comment: -25 pts
+     - Part of dense code block: -10 pts
+     - Deep nesting (>2 levels): -15 pts
+   - **Noise Indicators** (increase score):
+     - Isolated line: +15 pts
+     - Top-level code: +10 pts
+
+3. **Semantic Analysis**:
+   - Check 3 lines before/after for context
+   - Estimate block depth from indentation
+   - Detect substantive comments vs TODO/FIXME
+   - Identify code density patterns
+
+**Result Structure**:
+```python
+{
+    "success": True,
+    "noise_lines": [3, 5, 12],  # Lines with score ≥ threshold
+    "noise_scores": {3: 75, 5: 85, 12: 90},  # Actual scores
+    "noise_ranges": [{"start": 3, "end": 5, "avg_score": 80}],
+    "stats": {"threshold_used": 60, "avg_noise_score": 83.3}
+}
+```
+
+**Language support**: JavaScript, Python, Go, Java, C/C++, Rust, Ruby, PHP
 
 ## Extension DOM Manipulation Strategy
 

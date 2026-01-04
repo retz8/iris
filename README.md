@@ -1,4 +1,4 @@
-# IRIS - Intelligent Review & Insight System
+# IRIS
 
 <p align="center">
   <img width="251" height="116" alt="iris_no_background" src="https://github.com/user-attachments/assets/9da5e421-12d5-41e5-bc48-bb85e345cc4b" />
@@ -22,12 +22,22 @@ IRIS bridges the gap between high-speed AI code generation and the human bottlen
 
 ### 🎨 Noise Eraser v1 (Complete)
 
-- **Smart Code Dimming**: Automatically detects and dims boilerplate code patterns:
-  - ⚠️ Error handling (try-catch, error checks)
-  - 📝 Logging statements
-  - 📦 Import/export declarations
-  - 🛡️ Guard clauses (null checks, early returns)
-  - 🔧 Boilerplate code
+- **Heuristic-Based Smart Dimming**: Uses multi-factor scoring system with high precision:
+  - **Pattern Matching**: Weighted confidence levels (high/medium/low)
+  - **Context Analysis**: Considers nearby comments, code density, nesting depth
+  - **Precision-Focused**: Only dims code with confidence score ≥ 60/100
+  - **Smart Detection**:
+    - 🐛 Debug logging (console.log, print statements)
+    - 📝 TODO/FIXME comments
+    - 📦 Import/export declarations
+    - 🛡️ Simple guard clauses
+    - ⚠️ Empty error handlers
+
+- **Context-Aware Protection**:
+  - ✅ Preserves critical error handling with nearby comments
+  - ✅ Protects deeply nested logic (core business logic)
+  - ✅ Reduces false positives through semantic analysis
+  - ✅ Adjustable threshold for custom sensitivity
 
 - **Customizable Intensity**: 
   - Adjustable opacity slider (10%-50%)
@@ -37,7 +47,8 @@ IRIS bridges the gap between high-speed AI code generation and the human bottlen
 - **Usage Analytics**:
   - Total activations counter
   - Per-language usage statistics
-  - Average noise percentage across all sessions
+  - Average noise score and percentage
+  - Detailed statistics for debugging
 
 - **Multi-Language Support**:
   - JavaScript/TypeScript
@@ -46,9 +57,10 @@ IRIS bridges the gap between high-speed AI code generation and the human bottlen
   - Java
 
 - **Performance Optimized**:
-  - Chunk-based processing for large files (1000+ lines)
+  - Context-window analysis (3 lines before/after)
   - Compiled regex pattern caching
   - WeakMap for memory-efficient DOM tracking
+  - Efficient scoring algorithm
 
 ---
 
@@ -84,7 +96,10 @@ Backend runs on `http://localhost:8080` by default.
 
 1. Navigate to any code file on GitHub (e.g., `https://github.com/user/repo/blob/main/src/file.js`)
 2. Click the **"Focus Mode"** button (bottom right) to activate
-3. Non-essential code patterns will be dimmed to 20% opacity
+3. Non-essential code patterns will be dimmed based on confidence scores:
+   - High confidence noise (score ≥ 80): Very faint dimming
+   - Medium confidence (score 60-79): Standard dimming
+   - Lines with scores below 60 are NOT dimmed (precision-focused)
 4. Hover over dimmed lines to see them more clearly
 5. Click **"Show All Code"** to toggle back to normal view
 
