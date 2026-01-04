@@ -173,13 +173,16 @@ window.EventHandlers = class EventHandlers {
   // BUTTON UI
   // ===========================================================================
 
-  createButton(onClick) {
+  createButton(onClick, onSettingsClick) {
     const existing = document.getElementById("lens-toggle-button");
     if (existing) existing.remove();
 
     const button = document.createElement("button");
     button.id = "lens-toggle-button";
-    button.textContent = "Focus Mode";
+    button.innerHTML = `
+      <span>Focus Mode</span>
+      <span class="iris-settings-icon" style="margin-left: 8px; opacity: 0.8;">⚙️</span>
+    `;
 
     Object.assign(button.style, {
       position: "fixed",
@@ -212,29 +215,50 @@ window.EventHandlers = class EventHandlers {
       button.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
     });
 
-    button.addEventListener("click", onClick);
+    // Left click - toggle focus mode
+    button.addEventListener("click", (e) => {
+      // Check if clicked on settings icon
+      if (e.target.classList.contains('iris-settings-icon') || 
+          e.target.closest('.iris-settings-icon')) {
+        e.stopPropagation();
+        if (onSettingsClick) onSettingsClick();
+      } else {
+        onClick();
+      }
+    });
+
+    // Right click - open settings
+    button.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      if (onSettingsClick) onSettingsClick();
+    });
 
     document.body.appendChild(button);
     this.state.button = button;
 
-    console.log("[Lens] Button created");
+    console.log("[Lens] Button created with settings icon");
   }
 
   updateButtonState() {
     if (!this.state.button) return;
 
+    const textSpan = this.state.button.querySelector('span:first-child');
+    
     if (this.state.isConverting) {
-      this.state.button.textContent = "Analyzing...";
+      if (textSpan) textSpan.textContent = "Analyzing...";
+      else this.state.button.textContent = "Analyzing...";
       this.state.button.disabled = true;
       this.state.button.style.backgroundColor = "#9ca3af";
       this.state.button.style.cursor = "wait";
     } else if (this.state.active) {
-      this.state.button.textContent = "Show All Code";
+      if (textSpan) textSpan.textContent = "Show All Code";
+      else this.state.button.textContent = "Show All Code";
       this.state.button.disabled = false;
       this.state.button.style.backgroundColor = this.config.buttonActiveColor;
       this.state.button.style.cursor = "pointer";
     } else {
-      this.state.button.textContent = "Focus Mode";
+      if (textSpan) textSpan.textContent = "Focus Mode";
+      else this.state.button.textContent = "Focus Mode";
       this.state.button.disabled = false;
       this.state.button.style.backgroundColor = this.config.buttonInactiveColor;
       this.state.button.style.cursor = "pointer";

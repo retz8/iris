@@ -3,6 +3,31 @@ Noise pattern definitions for multiple languages
 Defines regex patterns to identify non-essential code (logging, error handling, imports, guards)
 """
 
+import re
+from functools import lru_cache
+
+# Compiled pattern cache
+_pattern_cache = {}
+
+def get_compiled_patterns(language):
+    """
+    Get compiled regex patterns for a language with caching.
+    This improves performance by avoiding repeated regex compilation.
+    """
+    if language not in _pattern_cache:
+        patterns = NOISE_PATTERNS.get(language.lower(), {})
+        compiled = {}
+        
+        for noise_type, pattern_list in patterns.items():
+            compiled[noise_type] = [
+                re.compile(pattern, re.IGNORECASE) 
+                for pattern in pattern_list
+            ]
+        
+        _pattern_cache[language] = compiled
+    
+    return _pattern_cache[language]
+
 NOISE_PATTERNS = {
     "javascript": {
         "error_handling": [
