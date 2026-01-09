@@ -1,5 +1,5 @@
 """
-Unit Tests for Function Extractor - Phase 0.2
+Unit Tests for Function Extractor
 Tests function extraction across multiple languages
 """
 
@@ -10,7 +10,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from src.parser.ast_parser import ASTParser
-from src.analyzer.function_extractor import FunctionExtractor, Function
+from src.analyzer.function_extractor import FunctionExtractor
 
 
 def test_javascript_functions():
@@ -570,40 +570,152 @@ function second() {
     print("✅ Line numbering test passed!")
 
 
-def run_all_tests():
-    """Run all tests"""
-    print("=" * 60)
-    print("FUNCTION EXTRACTOR UNIT TESTS")
-    print("=" * 60)
+def test_custom_code():
+    """Test custom code snippet"""
+    print("\n=== Testing Custom Code Snippet ===")
 
-    try:
-        test_javascript_functions()
-        test_python_functions()
-        test_go_functions()
-        test_typescript_functions()
-        test_java_functions()
-        test_c_functions()
-        test_cpp_functions()
-        test_function_to_dict()
-        test_edge_cases()
-        test_line_numbering()
+    code = """
+    function loadHumanModel(
+  humanModelFile,
+  humanPosX,
+  humanPosY,
+  humanPosZ,
+  callback
+) {
+  const loader = new PLYLoader();
+  // Load the mean human body model which is used as the initial model
+  // User can modify model's parameters after loading
+  loader.load(humanModelFile, function (geometry) {
+    humanGeometry = geometry;
+    // Ensure geometry normals lines are correct
+    if (!geometry.attributes.normal) {
+      geometry.computeVertexNormals();
+    }
 
-        print("\n" + "=" * 60)
-        print("✅ ALL TESTS PASSED!")
-        print("=" * 60)
-        return True
+    if (geometry.isBufferGeometry) {
+      var positions = geometry.attributes.position;
+      for (let i = 0; i < positions.count; i++) {
+        var x = positions.getX(i);
+        var y = positions.getY(i);
+        var z = positions.getZ(i);
 
-    except AssertionError as e:
-        print(f"\n❌ TEST FAILED: {e}")
-        return False
-    except Exception as e:
-        print(f"\n❌ ERROR: {e}")
-        import traceback
+        // initialize human model's position (geometryZero, centerPoint)
+        geometryZero.push(new THREE.Vector3(x, y, z));
+        centerPoint.add(new THREE.Vector3(x, y, z));
+      }
+    }
 
-        traceback.print_exc()
-        return False
+    // Create material for human model (silver-like skin)
+    humanMaterial = new THREE.MeshPhongMaterial({
+      color: 0xffffff,
+      specular: 0xaaaaaa,
+      shininess: 20,
+      opacity: 1.0,
+      transparent: true,
+    });
+
+    // Remove the previous human mesh if it exists
+    if (humanMesh) {
+      scene.remove(humanMesh);
+    }
+
+    // Create the new mesh
+    humanMesh = new THREE.Mesh(geometry, humanMaterial);
+    // initialize human model's rotation
+    humanMesh.rotation.set(humanRotation.x, humanRotation.y, humanRotation.z);
+
+    // adjust position of human model
+    const humanPosition = calculateHumanPositionOnWheelchair(
+      wheelchairParams,
+      wheelchairMesh,
+      wheelchairType,
+      humanPosX,
+      humanPosY,
+      humanPosZ
+    );
+    humanMesh.position.set(
+      humanPosition.humanX,
+      humanPosition.humanY,
+      humanPosition.humanZ
+    );
+
+    // scale down model to meters (original model is in millimeters)
+    humanMesh.scale.set(0.001, 0.001, 0.001);
+
+    humanMesh.castShadow = true;
+    humanMesh.receiveShadow = true;
+
+    humanMesh.updateMatrixWorld();
+
+    centerPoint.add(
+      new THREE.Vector3(
+        humanPosition.humanX,
+        humanPosition.humanY,
+        humanPosition.humanZ
+      )
+    );
+
+    scene.add(humanMesh);
+
+    // align human model to satisfy constraints
+    optimizeHumanAlignment(humanMesh, wheelchairMesh);
+
+    if (callback) callback();
+  });
+}
+    """
+    parser = ASTParser()
+    extractor = FunctionExtractor()
+
+    tree = parser.parse(code, "javascript")
+    functions = extractor.extract_functions(tree, "javascript")
+    print(f"Found {len(functions)} functions:")
+    for func in functions:
+        print(
+            f"  - {func.name}() at lines {func.start_line}-{func.end_line}, params: {func.params}"
+        )
+
+    assert len(functions) >= 1, f"Expected at least 1 function, found {len(functions)}"
+
+    print("✅ Custom code snippet test passed!")
 
 
+# Run all tests
 if __name__ == "__main__":
-    success = run_all_tests()
-    sys.exit(0 if success else 1)
+    print("=" * 60)
+    print("Function Extractor Unit Tests (Phase 0.2)")
+    print("=" * 60)
+
+    tests = [
+        test_javascript_functions,
+        test_python_functions,
+        test_go_functions,
+        test_typescript_functions,
+        test_java_functions,
+        test_c_functions,
+        test_cpp_functions,
+        test_function_to_dict,
+        test_edge_cases,
+        test_line_numbering,
+        test_custom_code,
+    ]
+
+    passed = 0
+    failed = 0
+
+    for test in tests:
+        try:
+            test()
+            passed += 1
+        except AssertionError as e:
+            print(f"✗ {test.__name__} FAILED: {e}")
+            failed += 1
+        except Exception as e:
+            print(f"✗ {test.__name__} ERROR: {e}")
+            failed += 1
+
+    print("\n" + "=" * 60)
+    print(f"Results: {passed} passed, {failed} failed out of {len(tests)} tests")
+    print("=" * 60)
+
+    sys.exit(0 if failed == 0 else 1)
