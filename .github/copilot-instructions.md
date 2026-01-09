@@ -215,16 +215,27 @@ Current regex-based approach has fundamental limitations:
 - No dependency graph analysis
 
 **Tree-sitter advantages:**
-- ✅ Multi-language support (JS, Python, Go, Java, etc.)
+- ✅ Multi-language support
 - ✅ Fast (written in C)
 - ✅ Incremental parsing (future optimization)
 - ✅ Battle-tested (used by VS Code, Neovim, GitHub)
 
 #### Phase 0 Components
 
+IMPORTANT NOTES:
+
+app should Supports:
+    - JavaScript (including ES6+, JSX)
+    - TypeScript
+    - Python
+    - Go
+    - Java
+    - C
+    - C++
+
 ##### 0.1: AST Parser Setup
 ```python
-# backend/src/ast_parser.py
+# backend/src/parser/ast_parser.py
 
 from tree_sitter import Language, Parser
 import tree_sitter_javascript
@@ -287,7 +298,7 @@ pip install tree-sitter tree-sitter-javascript tree-sitter-python tree-sitter-go
 
 ##### 0.2: Function Extractor
 ```python
-# backend/src/function_extractor.py
+# backend/src/analyzer/function_extractor.py
 
 from typing import List, Dict
 from dataclasses import dataclass
