@@ -12,6 +12,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       let result;
       if (request.action === "analyzeCode") {
         result = await handleAnalyzeCode(request.code, request.language);
+      } else if (request.action === "analyzeStructure") {
+        result = await handleAnalyzeStructure(
+          request.code,
+          request.language,
+          request.filepath
+        );
       } else {
         throw new Error("Unknown action: " + request.action);
       }
@@ -37,6 +43,25 @@ async function handleAnalyzeCode(code, language) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ code, language }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data;
+}
+
+async function handleAnalyzeStructure(code, language, filepath) {
+  const apiUrl = `${CONFIG.BACKEND_URL}/analyze-structure`;
+
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ code, language, filepath }),
   });
 
   if (!response.ok) {

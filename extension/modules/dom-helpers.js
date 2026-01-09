@@ -161,40 +161,66 @@ window.DOMHelpers = {
 
   /**
    * Detect programming language from file extension in URL
+   * Supports: JavaScript, TypeScript, Python, Go, Java, C, C++
+   * 
+   * IMPORTANT: Language identifiers must match backend AST parser:
+   * - Backend expects: 'javascript', 'typescript', 'python', 'go', 'java', 'c', 'cpp'
+   * - Do NOT use 'js', 'ts', 'py', etc. - use full names
+   * - TypeScript MUST be separate from JavaScript for proper AST parsing
+   * 
+   * @returns {string} Language identifier (lowercase)
    */
   detectLanguage() {
     const path = window.location.pathname;
     
+    // Language mappings aligned with backend AST parser
+    // Backend supports: javascript, typescript, python, go, java, c, cpp
     const langMap = {
+      // JavaScript
       '.js': 'javascript',
       '.jsx': 'javascript',
-      '.ts': 'javascript',
-      '.tsx': 'javascript',
       '.mjs': 'javascript',
       '.cjs': 'javascript',
+      
+      // TypeScript (must be separate from JavaScript for AST parsing)
+      '.ts': 'typescript',
+      '.tsx': 'typescript',
+      
+      // Python
       '.py': 'python',
       '.pyw': 'python',
       '.pyi': 'python',
+      
+      // Go
       '.go': 'go',
+      
+      // Java
       '.java': 'java',
+      
+      // C++
       '.cpp': 'cpp',
       '.cc': 'cpp',
       '.cxx': 'cpp',
-      '.c': 'c',
-      '.h': 'c',
       '.hpp': 'cpp',
-      '.rs': 'rust',
-      '.rb': 'ruby',
-      '.php': 'php'
+      '.hxx': 'cpp',
+      '.hh': 'cpp',
+      
+      // C
+      '.c': 'c',
+      '.h': 'c',  // Note: .h could be C or C++, defaulting to C
     };
     
+    // Check file extension (case-insensitive)
+    const lowerPath = path.toLowerCase();
     for (const [ext, lang] of Object.entries(langMap)) {
-      if (path.toLowerCase().endsWith(ext)) {
+      if (lowerPath.endsWith(ext)) {
         return lang;
       }
     }
     
-    return 'javascript';  // default fallback
+    // Default fallback
+    console.warn('[IRIS] Unknown file extension, defaulting to javascript');
+    return 'javascript';
   },
 
   /**

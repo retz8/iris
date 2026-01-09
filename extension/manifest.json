@@ -20,6 +20,7 @@
         "modules/dom-helpers.js",
         "modules/textarea-handler.js",
         "modules/event-handlers.js",
+        "modules/section-panel.js",
         "content.js"
       ],
       "css": ["styles.css"]

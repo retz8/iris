@@ -84,118 +84,126 @@ pip install -r requirements.txt
 
 Backend runs on `http://localhost:8080` by default.
 
-### Extension Setup
-
-1. Open Chrome and navigate to `chrome://extensions/`
-2. Enable "Developer mode" (toggle in top right)
-3. Click "Load unpacked"
-4. Select the `extension/` directory
-5. Update `extension/config.js` with your backend URL if needed
-
-## 📖 Usage
-
-1. Navigate to any code file on GitHub (e.g., `https://github.com/user/repo/blob/main/src/file.js`)
-2. Click the **"Focus Mode"** button (bottom right) to activate
-3. Non-essential code patterns will be dimmed based on confidence scores:
-   - High confidence noise (score ≥ 80): Very faint dimming
-   - Medium confidence (score 60-79): Standard dimming
-   - Lines with scores below 60 are NOT dimmed (precision-focused)
-4. Hover over dimmed lines to see them more clearly
-5. Click **"Show All Code"** to toggle back to normal view
-
-### Settings Panel
-
-- Click the **⚙️ icon** on the Focus Mode button
-- Or **right-click** the Focus Mode button
-- Adjust opacity, toggle noise types, view usage stats
-
-### Keyboard Shortcut
-
-- `Alt + P` - Toggle Focus Mode on/off
 
 
-## 🏗️ Architecture
-
-```
-iris/
-├── extension/           # Chrome Extension (Manifest V3)
-│   ├── content.js      # Main injection script
-│   ├── background.js   # Service worker for API calls
-│   ├── config.js       # Backend URL configuration
-│   ├── styles.css      # UI styling
-│   └── modules/        # Modular helper functions
-│       ├── dom-helpers.js
-│       └── event-handlers.js
-│
-├── backend/            # Flask REST API
-│   ├── src/
-│   │   ├── server.py           # Main Flask server
-│   │   └── analyzer/           # Noise detection engine
-│   │       ├── noise_detector.py
-│   │       └── patterns.py
-│   └── tests/                  # Test suite
-│
-└── scripts/            # Utility scripts
-    ├── start-server.sh
-    └── run-tests.sh
-```
+## Architecture Overview
 
 ### Data Flow
 
 ```
-GitHub Page → Extension extracts code → POST to /analyze endpoint
-→ Backend detects noise patterns → Returns line numbers + types
-→ Extension applies CSS dimming to specific lines → User sees focused code
+GitHub Page Load
+    ↓
+initSectionPanel() called
+    ↓
+SectionPanel instance created
+    ↓
+"Analyze Structure" button added
+    ↓
+User clicks button
+    ↓
+sectionPanel.analyze()
+    ↓
+Extract code from DOM (DOMHelpers)
+    ↓
+Send to background script
+    ↓
+POST /analyze-structure to backend
+    ↓
+Backend: AST → Functions → Sections
+    ↓
+Return structured JSON
+    ↓
+sectionPanel.render()
+    ↓
+Display sidebar panel
+    ↓
+User clicks section
+    ↓
+Scroll to line + Highlight
+```
+
+### Component Interaction
+
+```
+┌─────────────────────────────────────────────────┐
+│            GitHub Web Page (DOM)                │
+│  ┌───────────────────────────────────────────┐  │
+│  │         content.js                        │  │
+│  │  • initSectionPanel()                     │  │
+│  │  • createAnalyzeButton()                  │  │
+│  └─────────────┬─────────────────────────────┘  │
+│                │                                 │
+│  ┌─────────────▼─────────────────────────────┐  │
+│  │      section-panel.js                     │  │
+│  │  • SectionPanel class                     │  │
+│  │  • analyze() → API call                   │  │
+│  │  • render() → UI creation                 │  │
+│  │  • Event handlers                         │  │
+│  └─────────────┬─────────────────────────────┘  │
+└────────────────┼────────────────────────────────┘
+                 │
+                 │ chrome.runtime.sendMessage
+                 │
+       ┌─────────▼──────────────────────┐
+       │   background.js                │
+       │  • handleAnalyzeStructure()    │
+       │  • POST to backend API         │
+       └─────────┬──────────────────────┘
+                 │
+                 │ HTTP POST /analyze-structure
+                 │
+       ┌─────────▼──────────────────────┐
+       │   Backend (Flask)              │
+       │  ┌──────────────────────────┐  │
+       │  │  ast_parser.parse()      │  │
+       │  └──────────┬───────────────┘  │
+       │             │                  │
+       │  ┌──────────▼───────────────┐  │
+       │  │  function_extractor      │  │
+       │  └──────────┬───────────────┘  │
+       │             │                  │
+       │  ┌──────────▼───────────────┐  │
+       │  │  section_detector        │  │
+       │  └──────────┬───────────────┘  │
+       │             │                  │
+       │             ▼                  │
+       │      Structured JSON           │
+       └────────────────────────────────┘
 ```
 
 ---
 
-## 🧪 Testing
+## UI Design
 
-```bash
-# Run all tests
-./scripts/run-tests.sh
+### Panel Layout
 
-# Or manually
-cd backend
-python -m pytest tests/ -v
-
-# Manual validation on real GitHub files
-python tests/manual_validation.py
 ```
-
-## 🛠️ Development Roadmap
-
-### ✅ Phase 1-5: Noise Eraser v1 (Complete)
-- Backend analyzer with pattern matching
-- Extension dimming logic with CSS
-- Settings panel with opacity control
-- Analytics tracking
-- Performance optimizations
-
-### 🔜 Phase 6: Semantic Intent Overlay (Next Milestone)
-- LLM integration for intent analysis
-- Code block segmentation strategy
-- Intent chip UI design
-- Hover overlays with "why" explanations
-
-### 🔮 Future Features
-- **Variable Life-cycle Highlight**: Track variable usage across file
-- **Flow Breadcrumbs**: Visual path of control flow conditions
-- **Multi-file support**: Context preservation across PR files
-- **Diff mode**: Focus on changed lines in PR views
-
-## 📝 License
-
-MIT License - See LICENSE file for details
-
-## 🙏 Acknowledgments
-
-- Built during military service in South Korea (사이버지식정보방)
-- Inspired by the "Vibe Coding" phenomenon and the need for better AI-code auditing tools
-- GitHub Copilot for development assistance
-
-
-## 📧 Contact
-- Project maintained by @retz8
+┌────────────────────────────────────────┐
+│ 🤖 IRIS  Structure View            × │ ← Header (sticky)
+├────────────────────────────────────────┤
+│ 📊 File Overview                       │
+│ 150 lines • 3 functions • medium       │ ← File Summary
+├────────────────────────────────────────┤
+│                                        │
+│ ┌────────────────────────────────────┐ │
+│ │ loadHumanModel(...)                │ │ ← Function Card
+│ │ Lines 1-70 • 7 sections            │ │
+│ ├────────────────────────────────────┤ │
+│ │ 📦 Setup                           │ │ ← Section Items
+│ │ Lines 6-7 • 2 lines                │ │
+│ ├────────────────────────────────────┤ │
+│ │ ✅ Validation                      │ │
+│ │ Lines 10-12 • 3 lines              │ │
+│ ├────────────────────────────────────┤ │
+│ │ 🔧 Processing                      │ │
+│ │ Lines 14-23 • 10 lines             │ │
+│ └────────────────────────────────────┘ │
+│                                        │
+│ ┌────────────────────────────────────┐ │
+│ │ anotherFunction(...)               │ │
+│ │ Lines 72-120 • 4 sections          │ │
+│ └────────────────────────────────────┘ │
+│                                        │
+└────────────────────────────────────────┘
+```
 

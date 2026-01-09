@@ -1,14 +1,18 @@
 // =============================================================================
-// IRIS - Intelligent Review & Insight System (Noise Eraser v1)
-// =============================================================================
-// Cognitive audit lens that reduces noise in code review by dimming
-// non-essential code patterns (error handling, logging, imports, guards).
-// Approach: Visual hierarchy modification through CSS opacity rather than
-// content replacement, allowing quick toggle between focused and full view.
+// IRIS - Intelligent Review & Insight System
 // =============================================================================
 
 (function () {
   "use strict";
+
+  // ===========================================================================
+  // FEATURE FLAGS (Phase 1.1)
+  // ===========================================================================
+  const FEATURES = {
+    noiseEraser: false,      // Phase 3 (later) - Keep code but disabled
+    sectionPanel: true,      // Phase 1 (NOW) - Structure analysis
+    variableTracking: false  // Phase 2 (later) - Not implemented yet
+  };
 
   // ===========================================================================
   // CONFIGURATION
@@ -62,6 +66,10 @@
     button: null,
     settingsPanel: null,
     isConverting: false,
+    
+    // Phase 1: Section Panel
+    sectionPanel: null,
+    analyzeButton: null,
   };
 
   // ===========================================================================
@@ -461,17 +469,31 @@
     lensState.noiseRanges = [];
     lensState.dimmedElements = new WeakMap();
     lensState.language = null;
+    
+    // Clean up section panel
+    if (lensState.sectionPanel && lensState.sectionPanel.isVisible) {
+      lensState.sectionPanel.hide();
+    }
+    
+    // Remove analyze button
+    if (lensState.analyzeButton && lensState.analyzeButton.isConnected) {
+      lensState.analyzeButton.remove();
+      lensState.analyzeButton = null;
+    }
   }
 
-  function initializeLens() {
-    resetLensState();
+  // ===========================================================================
+  // FEATURE INITIALIZATION (Phase 1.1)
+  // ===========================================================================
 
+  function initNoiseEraser() {
+    // Noise Eraser v1 (Phase 3 will replace with AST-based version)
     if (!DOMHelpers.isGitHubBlobPage()) {
       eventHandlers.removeButton();
       return;
     }
 
-    // Show button for all code files (not just C++)
+    // Show button for all code files
     const language = DOMHelpers.detectLanguage();
     if (!language) {
       eventHandlers.removeButton();
@@ -483,7 +505,75 @@
     }
 
     eventHandlers.updateButtonState();
-    console.log("[Lens] Initialized for", language, "file");
+    console.log("[Lens] Noise Eraser initialized for", language, "file");
+  }
+
+  function initSectionPanel() {
+    // Phase 1: Section Panel implementation
+    if (!DOMHelpers.isGitHubBlobPage()) {
+      console.log('[IRIS] Not a GitHub blob page, skipping Section Panel');
+      return;
+    }
+    
+    // Check if language is supported
+    const language = DOMHelpers.detectLanguage();
+    if (!language) {
+      console.log('[IRIS] Could not detect language, skipping Section Panel');
+      return;
+    }
+    
+    // Create section panel instance
+    if (!lensState.sectionPanel) {
+      lensState.sectionPanel = new SectionPanel();
+    }
+    
+    // Create "Analyze Structure" button
+    createAnalyzeButton();
+    
+    console.log('[IRIS] Section Panel initialized for', language, 'file');
+  }
+  
+  function createAnalyzeButton() {
+    // Remove existing button if any
+    if (lensState.analyzeButton && lensState.analyzeButton.isConnected) {
+      lensState.analyzeButton.remove();
+    }
+    
+    const button = document.createElement('button');
+    button.id = 'iris-analyze-btn';
+    button.innerHTML = `
+      <span>🤖</span>
+      <span>Analyze Structure</span>
+    `;
+    
+    button.addEventListener('click', () => {
+      if (lensState.sectionPanel) {
+        lensState.sectionPanel.toggle();
+      }
+    });
+    
+    document.body.appendChild(button);
+    lensState.analyzeButton = button;
+    
+    console.log('[IRIS] Analyze button created');
+  }
+
+  function initializeLens() {
+    resetLensState();
+
+    // Conditional feature initialization based on flags
+    if (FEATURES.sectionPanel) {
+      initSectionPanel();
+    }
+
+    if (FEATURES.noiseEraser) {
+      initNoiseEraser();
+    }
+
+    if (FEATURES.variableTracking) {
+      // TODO Phase 2: Variable tracking initialization
+      console.log("[Lens] Variable Tracking: Not yet implemented");
+    }
   }
 
   function setupNavigationDetection() {
@@ -515,18 +605,24 @@
   // ===========================================================================
 
   function main() {
-    console.log("[Lens] IRIS Noise Eraser v1 loaded");
+    console.log("[Lens] IRIS Extension loaded");
+    console.log("[Lens] Feature flags:", FEATURES);
     
-    // Load saved settings and analytics
-    loadSettings();
-    loadAnalytics();
+    // Load saved settings and analytics (for noise eraser)
+    if (FEATURES.noiseEraser) {
+      loadSettings();
+      loadAnalytics();
+      // Apply saved opacity setting
+      document.documentElement.style.setProperty('--iris-noise-opacity', lensState.settings.noiseOpacity);
+    }
     
-    // Apply saved opacity setting
-    document.documentElement.style.setProperty('--iris-noise-opacity', lensState.settings.noiseOpacity);
-    
+    // Initialize features based on flags
     initializeLens();
     setupNavigationDetection();
-    eventHandlers.setupKeyboardShortcuts();
+    
+    if (FEATURES.noiseEraser) {
+      eventHandlers.setupKeyboardShortcuts();
+    }
   }
 
   if (document.readyState === "loading") {
