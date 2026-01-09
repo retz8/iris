@@ -1,6 +1,7 @@
 # backend
 venv
 __pycache__/
+.pytest_cache/
 
 # extension
 .vscode/
