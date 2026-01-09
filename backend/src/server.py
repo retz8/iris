@@ -14,7 +14,7 @@ app = Flask(__name__, static_folder='static')
 CORS(app, resources={
     r"/*": {
         "origins": [
-            "https://github.com",
+            "https://github.com/*",
         ],
         "allow_headers": ["Content-Type"],
         "methods": ["GET", "POST", "OPTIONS"]
@@ -41,7 +41,7 @@ def analyze():
     data = request.get_json(silent=True) or {}
     code = data.get("code", "")
     language = data.get("language", "javascript")
-    
+
     try:
         # Auto-detect language if not provided
         if not language or language == "auto":
@@ -49,8 +49,6 @@ def analyze():
         
         # Perform noise detection
         result = detect_noise(code, language)
-
-        print("[DEBUG] Analysis result:", result)
         
         return jsonify(result), (200 if result.get("success") else 400)
         

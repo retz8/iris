@@ -1,2 +1,12 @@
 Flask
 flask-cors
+
+# Tree-sitter for AST parsing (Phase 0)
+tree-sitter
+tree-sitter-javascript
+tree-sitter-python
+tree-sitter-go
+tree-sitter-java
+tree-sitter-typescript
+tree-sitter-c
+tree-sitter-cpp

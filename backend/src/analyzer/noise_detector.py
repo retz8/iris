@@ -10,7 +10,7 @@ from .patterns import NOISE_PATTERNS, get_compiled_patterns
 
 # Configuration constants
 DEFAULT_NOISE_THRESHOLD = 20  # Only dim lines with score >= 60 (balanced precision/recall)
-CONTEXT_WINDOW = 1  # Lines before/after to analyze for context
+CONTEXT_WINDOW = 3  # Lines before/after to analyze for context
 
 
 def detect_noise(code: str, language: str, threshold: int = DEFAULT_NOISE_THRESHOLD) -> Dict:
