@@ -132,6 +132,71 @@ window.DOMHelpers = {
     return null;
   },
 
+    /**
+   * Extract code as line-indexed array (for LLM experiments)
+   * Returns array of objects: [{ line: number, text: string }, ...]
+   * This preserves line numbers directly from DOM, avoiding string conversion overhead
+   * 
+   * @param {Object} selectors - Selector configuration
+   * @returns {Array<{line: number, text: string}>} Array of line objects with line numbers and text
+   */
+  getCodeLinesArray(selectors) {
+    // Try textarea first (GitHub's hidden textarea with full code)
+    const textarea = document.querySelector(selectors.codeTextarea);
+    if (textarea && textarea.value) {
+      // Convert string to line array with line numbers
+      return textarea.value.split('\n').map((text, index) => ({
+        line: index + 1,
+        text: text
+      }));
+    }
+
+    // Try DOM elements with line numbers
+    const lineSelectors = [
+      selectors.reactLineContents,
+      selectors.reactLineById,
+      selectors.legacyBlobCode,
+    ];
+
+    for (const selector of lineSelectors) {
+      const elements = document.querySelectorAll(selector);
+      if (elements.length > 0) {
+        const linesMap = new Map(); // Use Map to handle sparse line numbers
+        
+        elements.forEach((el) => {
+          const lineNum = this.getLineNumber(el);
+          if (lineNum !== null) {
+            linesMap.set(lineNum, el.textContent || "");
+          }
+        });
+
+        // Convert Map to sorted array, filling gaps with empty lines
+        const maxLine = Math.max(...linesMap.keys());
+        const linesArray = [];
+        
+        for (let i = 1; i <= maxLine; i++) {
+          linesArray.push({
+            line: i,
+            text: linesMap.get(i) || ""
+          });
+        }
+        
+        return linesArray;
+      }
+    }
+
+    // Fallback: try pre block (legacy GitHub or simple pages)
+    const preBlock = document.querySelector(selectors.legacyBlobPre);
+    if (preBlock) {
+      return preBlock.textContent.split('\n').map((text, index) => ({
+        line: index + 1,
+        text: text
+      }));
+    }
+
+    return [];
+  },
+
   /**
    * Get all code line elements
    */
@@ -157,6 +222,35 @@ window.DOMHelpers = {
       document.querySelector(selectors.reactCodeContainer) ||
       document.querySelector(".blob-wrapper")
     );
+  },
+
+  /**
+   * Extract filename from GitHub's DOM
+   * Looks for the filename in the file-name-id div
+   * Fallback to URL path if div not found
+   * 
+   * @returns {string|null} Filename or null if not found
+   */
+  getFilename() {
+    // Try to get filename from GitHub's file-name-id div
+    const fileNameEl = document.querySelector('#file-name-id');
+    if (fileNameEl && fileNameEl.textContent) {
+      return fileNameEl.textContent.trim();
+    }
+
+    // Fallback: extract from URL path
+    // Example: /owner/repo/blob/main/src/file.py -> file.py
+    const path = window.location.pathname;
+    const parts = path.split('/');
+    if (parts.length > 0) {
+      const filename = parts[parts.length - 1];
+      if (filename) {
+        return filename;
+      }
+    }
+
+    console.warn('[IRIS] Could not extract filename from DOM or URL');
+    return null;
   },
 
   /**

@@ -2,6 +2,10 @@ import os
 import sys
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -9,6 +13,7 @@ from analyzer.noise_detector import detect_noise
 from parser.ast_parser import ASTParser
 from analyzer.function_extractor import FunctionExtractor
 from analyzer.section_detector import SectionDetector
+from exp_single_llm import SingleLLMAnalyzer
 
 app = Flask(__name__, static_folder="static")
 
@@ -27,10 +32,18 @@ CORS(
     },
 )
 
+
 # Initialize Phase 0 components (AST-based analysis)
 ast_parser = ASTParser()
 function_extractor = FunctionExtractor()
 section_detector = SectionDetector()
+
+# Initialize LLM analyzer for experiments
+try:
+    llm_analyzer = SingleLLMAnalyzer()
+except ValueError as e:
+    # API key not configured - will be caught at endpoint call time
+    llm_analyzer = None
 
 
 @app.route("/")
@@ -44,6 +57,96 @@ def index():
 def health():
     """Health check endpoint"""
     return jsonify({"status": "ok"})
+
+
+# LLM Experimentation [MVP - 1/10/26~]
+
+
+# 1st experiment: single LLM - refer to 1st-experiment-single-llm-multi-role.md
+@app.route("/exp-single-llm", methods=["POST"])
+def exp_single_llm():
+    """
+    Single LLM experiment endpoint
+
+    POST: /exp-single-llm
+
+    Expects JSON payload with:
+    - filename: str
+    - lines: list of code lines(str)
+    - language: Programming language (javascript, typescript, python, go, java, c, c++ only)
+
+    Returns JSON response with LLM analysis results.
+    - success: Boolean
+    - file_intent: File Intent object
+    - responsibilities: List of Responsibility objects
+    - language: Detected/provided language
+    - error: Optional error message if analysis failed
+    """
+    data = request.get_json(silent=True) or {}
+
+    # Validate required fields
+    filename = data.get("filename", "")
+    lines = data.get("lines", [])
+    language = data.get("language", "javascript")
+
+    if not filename:
+        return (
+            jsonify({"success": False, "error": "Missing required field: filename"}),
+            400,
+        )
+
+    if not lines or not isinstance(lines, list):
+        return (
+            jsonify(
+                {"success": False, "error": "Missing or invalid required field: lines"}
+            ),
+            400,
+        )
+
+    if not language:
+        return (
+            jsonify({"success": False, "error": "Missing required field: language"}),
+            400,
+        )
+
+    try:
+        # Check if LLM analyzer was initialized
+        if llm_analyzer is None:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "LLM analyzer not available. Ensure OPENAI_API_KEY is configured.",
+                    }
+                ),
+                500,
+            )
+
+        # Perform analysis
+        result = llm_analyzer.analyze(lines, filename, language)
+
+        # Return result
+        return jsonify(result.to_dict()), (200 if result.success else 400)
+
+    except Exception as e:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "filename": filename,
+                    "language": language,
+                    "error": f"Unexpected error: {str(e)}",
+                }
+            ),
+            500,
+        )
+
+
+# [TODO] 2nd experiment: multi agents orchestration
+@app.route("/exp-multi-agents", methods=["POST"])
+def exp_multi_agents():
+    # Implement the multi agents orchestration logic here
+    return jsonify({"message": "Multi agents orchestration experiment endpoint"})
 
 
 @app.route("/analyze", methods=["POST"])

@@ -404,6 +404,37 @@
     });
   }
 
+ 
+  async function postExpLLM(
+    filename,
+    language,
+    lines,
+    metadata
+  ) {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(
+        { 
+          action: "expLLM",
+          filename: filename,
+          language: language,
+          lines: lines,
+          metadata: metadata
+        },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
+          if (response && response.success) {
+            resolve(response.data);
+          } else {
+            reject(new Error(response?.error || "LLM Experimentation failed"));
+          }
+        }
+      );
+    });
+  }
+
   // ===========================================================================
   // BUTTON HANDLER
   // ===========================================================================
@@ -433,24 +464,45 @@
         lensState.isConverting = true;
         eventHandlers.updateButtonState();
 
+        // [1/10/26] BE logic testing first - llm experimentation
+        const filename = DOMHelpers.getFilename() || "unknown.txt";
+        const filepath = window.location.pathname;
         try {
-          const result = await analyzeCode(code, language);
+          const result = await postExpLLM(
+            filename,
+            language,
+            DOMHelpers.getCodeLinesArray(LENS_CONFIG.selectors),
+            { filepath: filepath }
+          )
+
+          console.log("[Lens] LLM Experimentation complete:", result);
+
           lensState.isConverting = false;
-          
-          // Store noise data
-          lensState.noiseLines = result.noise_lines || [];
-          lensState.noiseRanges = result.noise_ranges || [];
-          lensState.language = result.language || language;
-          
-          console.log("[Lens] Analysis complete:", lensState.noiseLines.length, "noise lines detected");
-          
-          activateLens();
         } catch (error) {
           lensState.isConverting = false;
           eventHandlers.updateButtonState();
-          console.error("[Lens] Analysis error:", error);
-          alert(`Analysis failed: ${error.message}`);
+          console.error("[Lens] LLM Experimentation error:", error);
+          alert(`LLM Experimentation failed: ${error.message}`);
         }
+
+      //   try {
+      //     const result = await analyzeCode(code, language);
+      //     lensState.isConverting = false;
+          
+      //     // Store noise data
+      //     lensState.noiseLines = result.noise_lines || [];
+      //     lensState.noiseRanges = result.noise_ranges || [];
+      //     lensState.language = result.language || language;
+          
+      //     console.log("[Lens] Analysis complete:", lensState.noiseLines.length, "noise lines detected");
+          
+      //     activateLens();
+      //   } catch (error) {
+      //     lensState.isConverting = false;
+      //     eventHandlers.updateButtonState();
+      //     console.error("[Lens] Analysis error:", error);
+      //     alert(`Analysis failed: ${error.message}`);
+      //   }
       }
     }
   }
@@ -523,9 +575,9 @@
     }
     
     // Create section panel instance
-    if (!lensState.sectionPanel) {
-      lensState.sectionPanel = new SectionPanel();
-    }
+    // if (!lensState.sectionPanel) {
+    //   lensState.sectionPanel = new SectionPanel();
+    // }
     
     // Create "Analyze Structure" button
     createAnalyzeButton();
@@ -547,9 +599,11 @@
     `;
     
     button.addEventListener('click', () => {
-      if (lensState.sectionPanel) {
-        lensState.sectionPanel.toggle();
-      }
+      // if (lensState.sectionPanel) {
+      //   lensState.sectionPanel.toggle();
+      // }
+      eventHandlers.createButton(handleButtonClick, toggleSettingsPanel);
+   
     });
     
     document.body.appendChild(button);
