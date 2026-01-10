@@ -237,3 +237,143 @@ Administrative endpoints:
 cache_key = f"{repo_owner}_{repo_name}_{file_path}_{commit_sha}"
 # or for simpler case without repo context:
 cache_key = f"{filename}_{hash(content)}"
+```
+
+---
+
+# Experiment 1 Retrospective  
+## Single LLM, Single Prompt for File Intent & Responsibility Map
+
+### Experiment Goal
+
+Experiment 1 aimed to validate whether a **single LLM invocation**, using **only raw source code as input**, could generate:
+
+- **File Intent (WHY)**: Why the file exists
+- **Responsibility Map (WHAT)**: The major conceptual responsibilities of the file
+
+The experiment intentionally treated the LLM as a **black box**, focusing solely on the **usefulness of the final abstraction** for first-time code readers.
+
+---
+
+### Setup Summary
+
+- **Input**
+  - Source code (single file)
+  - Filename
+  - Programming language
+- **Constraints**
+  - No repository-level context
+  - No external documentation
+  - One LLM call per file
+- **Model**
+  - gpt-4o-mini
+- **Prompt Design**
+  - Explicit request for:
+    - 1–4 line File Intent
+    - 3–6 Responsibilities
+    - Human-centric abstraction
+    - Line-range grounding
+  - Strong formatting and schema constraints (JSON-only output)
+
+---
+
+### Observed Output Characteristics
+
+A representative output for `CivetServer.cpp` exhibited the following traits:
+
+- File intent resembled a **README-style description**
+- Responsibilities were:
+  - Functionally correct
+  - Locally grounded in code
+  - Structurally clean and well-formatted
+
+However, deeper issues emerged upon inspection.
+
+---
+
+### Core Failure Modes
+
+#### 1. Responsibility Fragmentation
+
+Responsibilities were identified as isolated functional buckets (e.g. request handling, authentication, parameter extraction), but:
+
+- Lacked a unifying mental model
+- Did not express *why* these responsibilities coexist in a single file
+- Felt additive rather than structural
+
+The result resembled a **feature list**, not a conceptual map.
+
+---
+
+#### 2. Absence of Hypothesis Formation
+
+The LLM never demonstrated behavior analogous to:
+
+- “What role does this file *seem* to play?”
+- “Is this responsibility truly core or incidental?”
+- “If this claim is wrong, what would contradict it?”
+
+All abstractions were asserted, none were *earned*.
+
+---
+
+#### 3. No Internal Tension or Validation
+
+Because the system consisted of a single pass:
+
+- No disagreement was possible
+- No assumptions were challenged
+- No abstraction was revised or rejected
+
+This produced outputs that were:
+- Plausible
+- Polished
+- Shallow
+
+---
+
+### Key Insight
+
+The limitation was **not prompt quality**.
+
+Even with:
+- Explicit abstraction targets
+- Strong anti-fragmentation guidance
+- Concrete examples
+- Strict output schemas
+
+…the system consistently converged toward **surface-level summarization**.
+
+This indicates a **structural limitation**, not a prompting one.
+
+> A single LLM invocation cannot simulate the human process of:
+> hypothesis → doubt → revision → convergence.
+
+---
+
+### Conclusion
+
+Experiment 1 successfully established a **baseline** and demonstrated that:
+
+- Single-pass LLM abstraction is fast and cheap
+- Output is readable and syntactically well-structured
+- But abstraction quality plateaus quickly
+
+Most importantly, it confirmed that:
+
+> **Human-like mental model construction requires iterative reasoning, disagreement, and validation.**
+
+This directly motivates **Experiment 2**, which introduces:
+- Mid-level semantic abstractions
+- Multiple agents with conflicting cognitive roles
+- Feedback loops to challenge and refine abstractions
+
+Experiment 1 did not fail —  
+it **proved the necessity of a more complex architecture**.
+
+---
+
+### Next Step
+
+Proceed to **Experiment 2: Multi-Agent Feedback Loop for Robust File Intent & Responsibility Extraction**  
+as a higher-cost, higher-confidence alternative aligned with IRIS’s core philosophy.

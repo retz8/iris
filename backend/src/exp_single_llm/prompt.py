@@ -9,60 +9,79 @@ from typing import List
 
 
 def build_analysis_prompt(lines: List[str], filename: str, language: str) -> str:
-    """
-    Build a prompt for the LLM to analyze source code and extract:
-    - File Intent (WHY this file exists)
-    - Responsibility Map (WHAT responsibilities this file fulfills)
-
-    Args:
-        lines: Source code as a list of lines
-        filename: Name of the file
-        language: Programming language
-
-    Returns:
-        Formatted prompt string
-    """
-
-    # Join lines and add line numbers for reference
     code = "\n".join(lines)
 
-    prompt = f"""You are a code analysis assistant. Your task is to analyze source code and extract high-level semantic abstractions that help developers understand unfamiliar code quickly.
+    prompt = f"""
+You are an assistant helping developers understand unfamiliar source code.
 
-Given the following {language} source file, extract:
+Your task is NOT to summarize code features or list APIs.
+Your task is to extract the **mental model a first-time reader should form before reading the code in detail**.
 
-1. **File Intent (WHY)**: A concise explanation (1-4 short lines) of why this file exists and what problem it primarily solves. Focus on conceptual purpose, not implementation details.
+Given the following {language} source file, produce two things:
 
-2. **Responsibility Map (WHAT)**: A list of 3-6 major responsibilities this file fulfills. Each responsibility represents a distinct conceptual role or concern. For each responsibility, provide:
-   - `id`: A unique kebab-case identifier (e.g., "data-loading", "search-api")
-   - `label`: A short, clear title (2-4 words)
-   - `description`: A brief explanation of what this responsibility does (1-2 sentences)
-   - `ranges`: An array of [start_line, end_line] pairs indicating which code regions belong to this responsibility (line numbers are 1-indexed)
+---
 
-**Guidelines:**
-- Responsibilities should reflect how a human would mentally chunk the file
-- Avoid over-fragmentation (don't create a responsibility for every function)
-- Group related functions/code regions under a single responsibility
-- Line ranges should cover complete logical units (entire functions, class definitions, etc.)
-- Responsibilities should be understandable without reading the code
-- Focus on WHAT the code does at a high level, not HOW it does it
+## 1. File Intent (WHY)
 
-**Output Format:**
-Return your analysis as a JSON object with this exact structure:
+Answer the question:ㅈ
+
+**“Why does this file exist in the system?”**
+
+Guidelines:
+- Focus on the file’s **conceptual role in the system**
+- Explain what problem this file solves at a structural or architectural level
+- Prefer descriptions like *“acts as a bridge”*, *“coordinates”*, *“dispatches”*, *“integrates”*
+- Avoid phrases like *“implements X”* or listing technologies unless essential
+- 1–4 short lines, readable in under 5 seconds
+
+---
+
+## 2. Responsibility Map (WHAT)
+
+Identify **3–6 major conceptual responsibilities** this file fulfills.
+
+A responsibility:
+This responsibility SHOULD describe a role this file plays in the overall system, not a feature it provides.
+- Represents a **distinct conceptual role**, not a utility or helper
+- Groups related code that a human would naturally read together
+- Explains *why that code exists*, not just what it does
+- Should still make sense **without reading the source code**
+
+### VERY IMPORTANT:
+- Do NOT create responsibilities for minor helpers (e.g. encoding, small utilities)
+- Do NOT simply categorize by API type (e.g. “HTTP”, “WebSocket”, “Cookie”)
+- Prioritize responsibilities that are **central to the file’s purpose**
+- Ask yourself: *“If I removed this responsibility, would the file still make sense?”*
+
+For each responsibility, provide:
+- `id`: unique kebab-case identifier
+- `label`: short conceptual title (2–4 words)
+- `description`: what role this responsibility plays in the file (1–2 sentences)
+- `ranges`: [start_line, end_line] pairs covering complete logical units
+
+Line numbers are 1-indexed.
+
+---
+
+## Output Format
+
+Return ONLY valid JSON in this exact structure:
 
 ```json
 {{
   "file_intent": {{
-    "text": "Brief explanation of why this file exists and its primary purpose..."
+    "text": "Why this file exists..."
   }},
   "responsibilities": [
     {{
-      "id": "responsibility-identifier",
-      "label": "Responsibility Title",
-      "description": "What this responsibility does...",
-      "ranges": [[start_line, end_line], [start_line, end_line]]
+      "id": "conceptual-role",
+      "label": "Conceptual Role",
+      "description": "Why this responsibility exists...",
+      "ranges": [[start_line, end_line]]
     }}
   ]
 }}
+
 ```
 
 **Example Output:**
@@ -102,18 +121,22 @@ Now analyze the code above and return ONLY the JSON output (no additional text o
 
 
 def build_system_message() -> str:
-    """
-    Build the system message for the LLM.
+    return """
+You specialize in extracting **human-centric, conceptual abstractions** from source code.
 
-    Returns:
-        System message string
-    """
-    return """You are a code analysis expert specializing in extracting high-level semantic abstractions from source code. 
+You do NOT produce:
+- Feature lists
+- API documentation
+- Line-by-line summaries
 
-Your goal is to help developers quickly understand unfamiliar code by identifying:
-1. WHY the file exists (File Intent)
-2. WHAT major responsibilities it fulfills (Responsibility Map)
+You DO produce:
+- File intent (why this file exists)
+- Conceptual responsibilities (what roles it plays in the system)
 
-You provide clear, concise, human-centric abstractions that prepare developers to read code, not replace reading it.
+Your output should help a developer decide:
+- What this file is about
+- Which parts matter most
+- Where to start reading
 
-Always respond with valid JSON matching the requested schema. Be accurate with line numbers."""
+Always return valid JSON matching the requested schema.
+"""

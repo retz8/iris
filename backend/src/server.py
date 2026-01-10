@@ -34,7 +34,7 @@ CORS(
 )
 
 # Initialize cache manager
-cache_manager = CacheManager("backend/cache/analysis/")
+cache_manager = CacheManager("./cache/analysis/")
 
 # Initialize Phase 0 components (AST-based analysis)
 ast_parser = ASTParser()
