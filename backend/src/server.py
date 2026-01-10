@@ -14,6 +14,7 @@ from parser.ast_parser import ASTParser
 from analyzer.function_extractor import FunctionExtractor
 from analyzer.section_detector import SectionDetector
 from exp_single_llm import SingleLLMAnalyzer
+from cache.cache_manager import CacheManager
 
 app = Flask(__name__, static_folder="static")
 
@@ -32,6 +33,8 @@ CORS(
     },
 )
 
+# Initialize cache manager
+cache_manager = CacheManager("backend/cache/analysis/")
 
 # Initialize Phase 0 components (AST-based analysis)
 ast_parser = ASTParser()
@@ -109,6 +112,21 @@ def exp_single_llm():
             400,
         )
 
+    # Normalize lines: extract text if lines are dicts, otherwise convert to str
+    normalized_lines = []
+    for line in lines:
+        if isinstance(line, dict):
+            normalized_lines.append(line.get("text", ""))
+        else:
+            normalized_lines.append(str(line))
+
+    content = "\n".join(normalized_lines)
+    content_hash = hash(content)
+    cache_key = f"{filename}_{content_hash}"
+    cached_result = cache_manager.read_cache(cache_key)
+    if cached_result:
+        return jsonify(cached_result), 200
+
     try:
         # Check if LLM analyzer was initialized
         if llm_analyzer is None:
@@ -124,6 +142,9 @@ def exp_single_llm():
 
         # Perform analysis
         result = llm_analyzer.analyze(lines, filename, language)
+
+        # Store result in cache (convert to dict first)
+        cache_manager.write_cache(cache_key, result.to_dict())
 
         # Return result
         return jsonify(result.to_dict()), (200 if result.success else 400)

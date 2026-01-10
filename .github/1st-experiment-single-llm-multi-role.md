@@ -158,3 +158,82 @@ If this approach fails on larger or more complex files, it directly justifies th
 2. **Token budget & cost**: Should we use `gpt-4o-mini` (cheapest) or `gpt-4o` (higher quality) for this experiment? This affects accuracy vs. cost trade-off.
 
 3. **Line range accuracy**: How strictly should responsibilities map to exact line ranges? Should we request the LLM to identify line numbers directly, or validate/adjust them post-processing?
+
+---
+
+## Caching & Performance Optimization (Option 4: Hybrid Approach)
+
+### Problem Context
+
+Real-world testing shows:
+- **Cost**: ~$0.001 per 800 lines of code (acceptable)
+- **Latency**: Single LLM call is too slow for real-time page loads
+- **Scale**: Users view multiple files in a repo, not just one
+
+The core UX requirement: **summaries must be the first thing displayed** when viewing code.
+
+### Solution: Hybrid Caching Strategy
+
+Implement a multi-tier approach combining caching, progressive loading, and background processing:
+
+1. **Cache Layer**: Store analysis results with file versioning
+2. **Instant Serving**: Return cached results immediately for previously analyzed files
+3. **Progressive Loading**: Analyze new/changed files asynchronously
+4. **Background Pre-fetching**: Queue likely-to-view files for analysis
+
+### Implementation Steps
+
+#### Step 6: Add Caching Infrastructure
+
+Create a simple file-based cache (can be upgraded to Redis/DB later):
+
+- Cache key: `{repo_owner}_{repo_name}_{file_path}_{commit_sha}`
+- Cache value: JSON-serialized `AnalysisResult`
+- Cache location: `backend/cache/analysis/`
+- TTL strategy: Invalidate on commit SHA change
+
+**Files to create:**
+- `backend/src/cache/cache_manager.py` - Cache read/write operations
+- `backend/src/cache/models.py` - Cache key generation and validation
+
+#### Step 7: Modify `/exp-single-llm` Endpoint for Cache Integration
+
+Update the endpoint to:
+1. Check cache first using `{filename}_{content_hash}` as key
+2. Return cached result immediately if found and valid
+3. If cache miss, perform LLM analysis
+4. Store result in cache before returning
+5. Add `cached: boolean` field to response
+
+**Modifications:**
+- `backend/src/server.py` - Update `exp_single_llm()` function
+- Add optional `commit_sha` or `content_hash` parameter to request
+
+#### Step 8: Add Background Job Queue (Optional)
+
+For batch processing multiple files:
+
+- Create a simple in-memory job queue
+- Accept batch analysis requests: `POST /exp-single-llm/batch`
+- Process files in parallel (with rate limiting)
+- Return job ID for status polling
+- Endpoint: `GET /exp-single-llm/status/{job_id}`
+
+**Files to create:**
+- `backend/src/exp_single_llm/queue.py` - Job queue management
+- `backend/src/exp_single_llm/worker.py` - Background worker thread
+
+#### Step 9: Add Cache Management Endpoints
+
+Administrative endpoints:
+
+- `GET /cache/stats` - Cache hit rate, size, entry count
+- `DELETE /cache/clear` - Clear all cached results
+- `DELETE /cache/{file_path}` - Clear specific file cache
+
+### Cache Key Strategy
+
+```python
+cache_key = f"{repo_owner}_{repo_name}_{file_path}_{commit_sha}"
+# or for simpler case without repo context:
+cache_key = f"{filename}_{hash(content)}"
