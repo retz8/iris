@@ -163,11 +163,119 @@ def exp_single_llm():
         )
 
 
-# [TODO] 2nd experiment: multi agents orchestration
+# 2nd experiment: multi-agent feedback loop - refer to 2nd-experiment-multi-agent-feedback-loop.md
 @app.route("/exp-multi-agents", methods=["POST"])
 def exp_multi_agents():
-    # Implement the multi agents orchestration logic here
-    return jsonify({"message": "Multi agents orchestration experiment endpoint"})
+    """
+    Multi-agent feedback loop experiment endpoint
+
+    POST: /exp-multi-agents
+
+    Expects JSON payload with:
+    - filename: str
+    - lines: list of code lines(str)
+    - language: Programming language (javascript, typescript, python, go, java, c, c++ only)
+
+    Returns JSON response with multi-agent analysis results.
+    - success: Boolean
+    - file_intent: File Intent object
+    - responsibilities: List of Responsibility objects
+    - iterations: Number of feedback loop iterations
+    - convergence_reason: Why the loop terminated
+    - language: Detected/provided language
+    - error: Optional error message if analysis failed
+    """
+    from exp_multi_agents import run_analysis, MultiAgentAnalysisResult
+
+    data = request.get_json(silent=True) or {}
+
+    # Validate required fields
+    filename = data.get("filename", "")
+    lines = data.get("lines", [])
+    language = data.get("language", "javascript")
+
+    if not filename:
+        return (
+            jsonify({"success": False, "error": "Missing required field: filename"}),
+            400,
+        )
+
+    if not lines or not isinstance(lines, list):
+        return (
+            jsonify(
+                {"success": False, "error": "Missing or invalid required field: lines"}
+            ),
+            400,
+        )
+
+    if not language:
+        return (
+            jsonify({"success": False, "error": "Missing required field: language"}),
+            400,
+        )
+
+    # Normalize lines: extract text if lines are dicts, otherwise convert to str
+    normalized_lines = []
+    for line in lines:
+        if isinstance(line, dict):
+            normalized_lines.append(line.get("text", ""))
+        else:
+            normalized_lines.append(str(line))
+
+    content = "\n".join(normalized_lines)
+    content_hash = hash(content)
+    cache_key = f"multi_agent_{filename}_{content_hash}"
+
+    # Check cache first
+    cached_result = cache_manager.read_cache(cache_key)
+    if cached_result:
+        return jsonify(cached_result), 200
+
+    try:
+        # Check OPENAI_API_KEY is configured
+        if not os.getenv("OPENAI_API_KEY"):
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Multi-agent analyzer not available. Ensure OPENAI_API_KEY is configured.",
+                    }
+                ),
+                500,
+            )
+
+        # Run multi-agent analysis
+        # Note: This may take longer due to multiple LLM calls and feedback loop
+        final_state = run_analysis(
+            raw_code=content, filename=filename, language=language
+        )
+
+        # Convert state to result object
+        result = MultiAgentAnalysisResult.from_graph_state(dict(final_state))
+
+        # Store result in cache
+        cache_manager.write_cache(cache_key, result.to_dict())
+
+        # Return result
+        return jsonify(result.to_dict()), (200 if result.success else 400)
+
+    except Exception as e:
+        import traceback
+
+        error_details = traceback.format_exc()
+        print(f"Multi-agent analysis error: {error_details}", file=sys.stderr)
+
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "filename": filename,
+                    "language": language,
+                    "error": f"Unexpected error: {str(e)}",
+                }
+            ),
+            500,
+        )
 
 
 @app.route("/analyze", methods=["POST"])

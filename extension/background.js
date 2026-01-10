@@ -4,8 +4,8 @@
 // Import config
 importScripts("config.js");
 
-const EXPERIMENT_ROUTE = "/exp-single-llm";
-// const EXPERIMENT_ROUTE = "/exp-multi-agents";
+// const EXPERIMENT_ROUTE = "/exp-single-llm";
+const EXPERIMENT_ROUTE = "/exp-multi-agents";
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (!request || !request.action) return;
