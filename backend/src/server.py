@@ -15,6 +15,7 @@ from analyzer.function_extractor import FunctionExtractor
 from analyzer.section_detector import SectionDetector
 from exp_single_llm import SingleLLMAnalyzer
 from cache.cache_manager import CacheManager
+from iris_agent.routes import iris_bp
 
 app = Flask(__name__, static_folder="static")
 
@@ -35,6 +36,9 @@ CORS(
 
 # Initialize cache manager
 cache_manager = CacheManager("./cache/analysis/")
+
+# Register IRIS blueprint (Phase 3 API)
+app.register_blueprint(iris_bp)
 
 # Initialize Phase 0 components (AST-based analysis)
 ast_parser = ASTParser()

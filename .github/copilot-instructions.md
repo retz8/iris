@@ -1,433 +1,472 @@
 # IRIS MVP Instructions
-**Project Pivot: January 10, 2026**
-
-### File Intent & Responsibility Map (Side Panel + Hover UX)
+**Project Reset: January 11, 2026**
 
 ---
 
-## 1. MVP Goal
+## 1. What is IRIS?
 
-This MVP aims to validate whether **showing high-level semantic context (WHY + WHAT)** alongside source code can significantly reduce a developer’s cognitive load when reading unfamiliar code.
+IRIS is a code comprehension tool that provides **semantic context** for unfamiliar source code.
 
-The MVP focuses on **understanding, not navigation or execution**.
+When developers open a file in a repository, they typically already understand the project's overall purpose (from README, documentation, etc.). However, they lack context about **the specific file** they're looking at.
 
----
+IRIS solves this by providing:
+- **WHY**: Why does this file exist? (File Intent)
+- **WHAT**: What are the major logical components? (Responsibility Blocks)
 
-## 2. Problem Statement
+This context is presented **before** the developer reads the code, similar to seeing a presentation's table of contents before diving into details.
 
-When developers open an unfamiliar source file (e.g. a 200–300 line backend file), they face several immediate questions:
-
-* Why does this file exist?
-* What are the main responsibilities of this file?
-* Which parts of the code matter most?
-* Where should I start reading?
-
-Today’s code editors and GitHub views present source code primarily as **raw text**, forcing developers to manually infer purpose and structure line by line.
-
- iris is suggesting a new visulization abstraction model of source code. Previously source code is just a raw text, indentation, syntax-based token colorization, and file name. now, I am devising a new abstration model to be a better way for human to understand code without cognitive load.
-
-This MVP tests whether **explicitly surfacing “file intent” and “responsibility grouping”** can help developers form a correct mental model *before* diving into code details.
-
----
-
-## 3. Scope of the MVP
-
-The MVP is intentionally minimal.
-
-It only addresses:
-
-* **WHY** → File Intent
-* **WHAT** → Responsibility Map
-
-It explicitly does **not** attempt to solve:
-
-* Execution flow
-* Variable tracking
-* AST-level understanding
-* Code summarization at line or statement level
-
----
-
-## 4. Core Concepts
-
-### 4.1 File Intent (WHY)
-
-**File Intent** answers the question:
-
-> “Why does this file exist?”
-
-It should:
-
-* Be readable in under 5 seconds
-* Consist of 1–4 short lines
-* Describe the file’s purpose at a conceptual level
-* Avoid implementation details
-
-The intent is shown **once per file** and represents the highest-level abstraction.
-
----
-
-### 4.2 Responsibility Map (WHAT)
-
-**Responsibilities** answer the question:
-
-> “What major roles does this file play?”
-
-A responsibility:
-
-* Represents a **conceptual role**, not a single function
-* May group multiple functions or code regions
-* Should be understandable without reading code
-
-Guidelines:
-
-* Typically 3–6 responsibilities per file
-* Each responsibility has a short label and description
-* Responsibilities are peers (no deep hierarchy in MVP)
-
----
-
-## 5. User Experience Principles
-
-### 5.1 Side-by-Side Context
-
-* The source code remains the primary focus.
-* IRIS content appears in a **side panel** as contextual guidance.
-* The panel should feel like a **reading aid**, not a replacement for code.
-
----
-
-### 5.2 Progressive Disclosure
-
-* File Intent is immediately visible.
-* Responsibilities are visible but can be expanded/collapsed.
-* No information overload on first glance.
-
----
-
-### 5.3 Bidirectional Awareness
-
-The side panel and the source code should feel connected:
-
-* Interacting with a responsibility highlights the related code lines.
-* Interacting with relevant code (e.g. hovering a function) reveals its responsibility.
-* This creates a shared mental map between abstraction and raw code.
-
----
-
-## 6. Required MVP Features
-
-### 6.1 File Intent Display
-
-* A dedicated section labeled **WHY**
-* Displays the file’s intent in natural language
-* Always visible when the file is open
-
----
-
-### 6.2 Responsibility Map Display
-
-* A dedicated section labeled **WHAT**
-* Lists the file’s main responsibilities
-* Each responsibility includes:
-
-  * A short title
-  * A brief description
-
----
-
-### 6.3 Responsibility-to-Code Highlighting
-
-* Hovering over a responsibility temporarily highlights its related code lines
-* Selecting (clicking) a responsibility locks the highlight
-* Highlighting should be subtle and non-disruptive
-
-```python
-
-def load_pagerank():
-^^^^^^^^^^^^^^^^^^^  ← subtle background highlight
-
-def load_inverted_index():
-^^^^^^^^^^^^^^^^^^^^^^^^
-```
-
----
-
-### 6.4 Code-to-Responsibility Feedback
-
-* Hovering over relevant code (e.g. a function definition) should indicate its responsibility
-* This reinforces the conceptual grouping without requiring panel interaction
-
-```python
-def hits():   ← hover
-────────────
-Responsibility: Search API
-
-```
----
-
-## 7. Success Criteria
-
-The MVP is considered successful if, after brief exposure:
-
-* A developer can explain **what the file does** without reading all the code
-* A developer can identify **which parts of the file are most important**
-* A developer feels more confident choosing where to start reading
-
-The goal is not “wow” but:
-
-> *“This makes the file easier to approach.”*
-
-## 7.1 Example 
-
-Given a source file without any context:
-```python
-"""REST API for index server."""
-
-import os
-import sys
-from pathlib import Path
-from typing import Dict, List, Set
-from flask import Blueprint, jsonify, request, current_app
-from . import math
-from . import utils
-
-# Global variables
-pagerank_dict: Dict[str, float] = {}
-word_info_dict: Dict[str, Dict[str, float]] = {}
-doc_info_dict: Dict[str, Dict[str, float]] = {}
-
-bp = Blueprint("api", __name__, url_prefix="/api/v1/")
-
-
-def load_pagerank() -> None:
-    """Load pagerank from file."""
-    global pagerank_dict
-    pagerank_path = Path(__file__).parent.parent / "pagerank.out"
-    print(f"Loading pagerank from {pagerank_path}", file=sys.stderr)
-    with open(pagerank_path, "r", encoding="utf-8") as f:
-        for line in f:
-            doc_id, score = line.strip().split(",")
-            pagerank_dict[doc_id] = float(score)
-    print(f"Loaded {len(pagerank_dict)} pagerank scores", file=sys.stderr)
-
-
-def load_inverted_index() -> None:
-    """Load inverted index from files."""
-    global word_info_dict, doc_info_dict
-
-    # Get the index path from app config
-    index_path = current_app.config["INDEX_PATH"]
-    print(f"Loading inverted index from {index_path}", file=sys.stderr)
-
-    if not os.path.exists(index_path):
-        print(f"Warning: Index path {index_path} does not exist", file=sys.stderr)
-        return
-
-    with open(index_path, "r", encoding="utf-8") as f:
-        for i, line in enumerate(f):
-            parts = line.strip().split()
-            if len(parts) < 4:  # Need at least word, idf, and one docid,tf,nf triple
-                print(
-                    f"Skipping line {i}: insufficient parts",
-                    file=sys.stderr,
-                )
-                continue
-
-            word = parts[0]
-            try:
-                idf = float(parts[1])
-            except ValueError as e:
-                print(
-                    f"Error processing idf {parts[1]} for word {word}: {e}",
-                    file=sys.stderr,
-                )
-                continue
-
-            if i < 5:
-                print(f"Processing {word} with idf {idf}", file=sys.stderr)
-
-            # Process triples of doc_id, tf, nf
-            for j in range(2, len(parts), 3):
-                if j + 2 >= len(parts):
-                    break
-
-                doc_id = parts[j]
-                try:
-                    tf = float(parts[j + 1])
-                    nf = float(parts[j + 2])
-                    weight = tf * idf / nf  # Calculate the final weight
-
-                    # Update word_info_dict
-                    if word not in word_info_dict:
-                        word_info_dict[word] = {}
-                    word_info_dict[word][doc_id] = weight
-
-                    # Update doc_info_dict
-                    if doc_id not in doc_info_dict:
-                        doc_info_dict[doc_id] = {}
-                    doc_info_dict[doc_id][word] = weight
-
-                except ValueError as e:
-                    print(
-                        f"Error processing doc_id {doc_id}, tf {parts[j + 1]}, nf {parts[j + 2]} for word {word}: {e}",
-                        file=sys.stderr,
-                    )
-                    continue
-
-    print(
-        f"Loaded {len(word_info_dict)} words and {len(doc_info_dict)} documents",
-        file=sys.stderr,
-    )
-    print(f"Sample word_info_dict: {list(word_info_dict.keys())[:5]}", file=sys.stderr)
-    print(f"Sample doc_info_dict: {list(doc_info_dict.keys())[:5]}", file=sys.stderr)
-
-    # Share the data with math module
-    math.word_info_dict = word_info_dict
-    math.doc_info_dict = doc_info_dict
-    math.pagerank_dict = pagerank_dict
-
-
-def load_index():
-    """Load all required data into memory."""
-    # Load data in the correct order
-    load_pagerank()
-    load_inverted_index()
-    utils.load_stopwords(str(Path(__file__).parent.parent / "stopwords.txt"))
-
-
-@bp.route("/hits/")
-def hits():
-    """Return hits for a query."""
-    # Get query parameters
-    query = request.args.get("q", "")
-    w = float(request.args.get("w", 0.5))
-
-    # Clean and split query terms
-    query_terms = math.clean(query)
-
-    # Find documents that contain all query terms
-    candidate_docs = set()
-    for i, term in enumerate(query_terms):
-        if term not in word_info_dict:
-            return jsonify({"hits": []})
-
-        # For first term, initialize candidate set
-        if i == 0:
-            candidate_docs = set(word_info_dict[term].keys())
-        else:
-            # Intersect with documents containing current term
-            candidate_docs &= set(word_info_dict[term].keys())
-
-        # If no documents contain all terms seen so far, return empty results
-        if not candidate_docs:
-            return jsonify({"hits": []})
-
-    # Calculate scores for documents containing all terms
-    scores = {}
-    for doc_id in candidate_docs:
-        score = math.calc_score(doc_id, query_terms, w)
-        if score > 0:
-            scores[doc_id] = score
-
-    # Sort by score and convert docids to integers
-    hits = [
-        {"docid": int(doc_id), "score": score}
-        for doc_id, score in sorted(scores.items(), key=lambda x: (-x[1], x[0]))
-    ]
-
-    return jsonify({"hits": hits})
-```
-
-MVP Data should look like (not exactly, but similar to):
-
-```python
-ResponsibilityMap = [
-  {
-    id: "data-loading",
-    label: "Data Loading",
-    description: "Load ranking and inverted index data into memory",
-    ranges: [
-      [18, 27],   // load_pagerank
-      [30, 94],   // load_inverted_index
-      [97, 103]   // load_index
-    ]
-  },
-  {
-    id: "data-sharing",
-    label: "Data Sharing",
-    description: "Expose loaded data to math module",
-    ranges: [
-      [86, 89]
-    ]
-  },
-  {
-    id: "search-api",
-    label: "Search API",
-    description: "Handle search requests and return ranked hits",
-    ranges: [
-      [106, 153]  // hits
-    ]
-  }
-]
-
-```
-
-### 7.2 DEVELOPMENT PLAN: Experimentation Steps
-
-**1st Experiement: Single LLM, Multi-Role Prompting**
-./1st-experiment-single-llm-multi-role.md
-
-**2nd Experiment: multi-agents collaboration**
-./2nd-experiment-multi-llm-multi-role.md
-
----
-
-## 8. Explicit Non-Goals
-
-The MVP does **not** aim to:
-
-* Explain how the code works internally
-* Replace reading the source code
-* Be perfectly accurate or complete
-* Handle all edge cases or languages
-
-This is a **learning and validation prototype**, not a production system.
-
----
-
-## 9. Design Philosophy Reminder
-
-> IRIS does not explain code.
+**Design Philosophy:**
+> IRIS does not explain code.  
 > IRIS prepares the developer to read code.
 
 ---
 
-## 8. Development Context
+## 2. MVP Goal
 
-- Remote development via VS Code tunnel
-- Limited network access
-- Simple architecture preferred
-- Minimal dependencies
-- KEEP THIS IN MIND: there are existing codes from previous versions of IRIS. Avoid unnecessary refactoring; focus on building the MVP features as specified. Don't over-engineer.
+Validate whether showing high-level semantic context (WHY + WHAT) can significantly reduce cognitive load when reading unfamiliar code.
+
+**Success Criteria:**
+- A developer can explain what a file does without reading all the code
+- A developer can identify which parts are most important
+- A developer feels more confident choosing where to start reading
+
+**Explicit Non-Goals:**
+- Execution flow analysis
+- Variable tracking
+- Line-by-line code summarization
+- Handling all edge cases or languages
 
 ---
 
-## Quick Reference
+## 3. File Intent
 
-**Backend Entry**: `backend/src/server.py`
-**Frontend Entry**: `extension/content.js`
+### Definition
 
+File Intent answers the question: **"Why does this file exist in the system?"**
 
+It should:
+- Describe the file's **conceptual role** at an architectural level
+- Be readable in under 5 seconds
+- Consist of 1-4 short lines
+- Focus on purpose, not implementation details
 
+### Examples
 
+#### Good File Intents:
 
-                ┌────────────┐
-raw source ───▶ │ AST Parser │──▶ structural view (truth)
-                └────────────┘
-                      │
-                      │
-                      ▼
-                ┌────────────┐
-                │ Text Lens  │──▶ narrative / comment view (evidence)
-                └────────────┘
+```
+File: UserAuthService.ts
+Intent: "User authentication and session lifecycle management"
+```
+
+```
+File: MenuList.tsx
+Intent: "Menu list data orchestration and view state management for pocha display"
+```
+
+```
+File: useDashboardOrders.ts
+Intent: "Real-time order state management and filtered view generation for pocha dashboard"
+```
+
+#### Bad File Intents (too implementation-focused):
+
+```
+❌ "Implements React hooks for fetching data"
+❌ "Contains helper functions for API calls"
+❌ "Uses SWR for caching"
+```
+
+---
+
+## 4. Responsibility Blocks
+
+### Definition
+
+A **Responsibility Block** represents a distinct conceptual role the file plays in the system.
+
+**CRITICAL:** A Responsibility Block is NOT just a group of functions.
+
+It is a **complete ecosystem** of code elements needed to fulfill that responsibility:
+- Functions (execution logic)
+- Constants (configuration values)
+- State/Variables (runtime data)
+- Types (data structures)
+- Imports (external dependencies)
+
+**Mental Model:**  
+> If you were to extract this responsibility into a separate file,  
+> what would you need to take with you?
+
+### Characteristics
+
+- **3-6 responsibilities per file** (avoid fragmentation)
+- **Can be scattered** across the file (not necessarily contiguous)
+- **Self-contained**: Each block should be understandable independently
+- **Peers, not hierarchical**: Responsibilities are at the same conceptual level
+
+### Example
+
+```typescript
+// Source: useDashboardOrders.ts
+
+// Responsibility: "Order Data Initialization"
+{
+  "id": "order-data-initialization",
+  "label": "Order Data Initialization",
+  "description": "Fetches order data from API and transforms it into Map structure for efficient lookup",
+  "elements": {
+    "functions": ["usePochaOrdersMap", "convertOrdersToMap"],
+    "state": ["ordersMap", "status"],
+    "imports": [
+      "getPochaOrders from @/apis/pocha/queries",
+      "useState, useEffect from react"
+    ],
+    "types": ["Map<number, OrderItem>", "Orders"],
+    "constants": []
+  },
+  "ranges": [[14, 21], [42, 59]]  // Scattered across lines
+}
+
+// Responsibility: "Filtered View Generation"
+{
+  "id": "filtered-view-generation",
+  "label": "Filtered View Generation",
+  "description": "Splits orders into immediate-prep and normal-prep views based on menu configuration",
+  "elements": {
+    "functions": ["filterOrdersByStatus"],
+    "state": ["immediatePrepOrders", "notImmediatePrepOrders"],
+    "imports": ["useMemo from react"],
+    "types": ["Orders"],
+    "constants": ["statuses array (lines 28-32)"]
+  },
+  "ranges": [[23, 40], [95, 103]]  // Also scattered
+}
+```
+
+### Why This Matters
+
+When refactoring or understanding dependencies:
+- **Wrong approach**: "This function does X, that function does Y"
+- **Right approach**: "This responsibility requires these 5 functions, these 2 state variables, these 3 imports"
+
+---
+
+## 5. Agent Architecture: AST + Tool-Based Approach
+
+### Core Idea
+
+Instead of feeding the entire source code to an LLM, we use a **two-stage approach**:
+
+1. **Preprocessing (free)**: Convert code to shallow AST with line references
+2. **Agent reasoning (paid)**: Agent uses shallow AST + selective source code access
+
+### Why AST?
+
+**Hypothesis:**  
+> If code has good comments, clear function names, and proper variable names,  
+> we can extract File Intent and Responsibility Blocks from structure alone (AST).
+
+**Reality:**  
+Code quality exists on a spectrum:
+
+```
+Clean Code ────────────────────── Dirty Code
+     ↓                                  ↓
+AST sufficient                   Need implementations
+(100 tokens)                     (2000 tokens)
+```
+
+### Shallow AST Processing
+
+**Key Concept:** We don't reconstruct or transform the AST. We make it **shallow**.
+
+**Process:**
+1. Parse code into full AST (using existing Python AST parser)
+2. Keep the **first-level body declarations** (imports, functions, classes, etc.)
+3. Replace **nested body content** with line references
+4. Add **comment information** to each node
+
+**Example Transformation:**
+
+```javascript
+// Original Full AST
+{
+  "type": "FunctionDeclaration",
+  "start": 550,
+  "end": 780,
+  "id": { "name": "calculateOrderTotal" },
+  "params": [...],
+  "body": {
+    "type": "BlockStatement",
+    "body": [
+      // Deeply nested structure with all implementation details
+      {...}, {...}, {...}
+    ]
+  }
+}
+
+// Shallow Processed AST
+{
+  "type": "FunctionDeclaration",
+  "start": 550,
+  "end": 780,
+  "id": { "name": "calculateOrderTotal" },
+  "params": [...],
+  "line_range": [15, 28],              // ← Body replaced with line reference
+  "leading_comment": "// Calculate total including tax and discounts",
+  "trailing_comment": null,
+  "inline_comment": null
+}
+```
+
+### Comment Extraction
+
+For each AST node, we extract three types of comments from the source code:
+
+1. **Leading comment**: Comment block immediately before the declaration
+2. **Trailing comment**: Comment after the declaration on the same line
+3. **Inline comment**: Comment inside but on first line of declaration
+
+**Example:**
+
+```typescript
+// This handles user authentication
+// Validates credentials against database
+function loginUser(username, password) {  // Entry point for login flow
+  // Implementation...
+}
+```
+
+```json
+{
+  "type": "FunctionDeclaration",
+  "id": { "name": "loginUser" },
+  "line_range": [3, 5],
+  "leading_comment": "// This handles user authentication\n// Validates credentials against database",
+  "trailing_comment": "// Entry point for login flow",
+  "inline_comment": null
+}
+```
+
+### The Tool: `refer_to_source_code`
+
+The agent receives:
+- **Input**: Shallow processed AST (structure + comments, no implementations)
+- **Tool**: `refer_to_source_code(start_line, end_line)`
+
+The agent decides:
+- "Function name `validateUser` + leading comment is clear" → No tool call needed
+- "Function name `process` with no comment" → Call tool to read implementation
+
+### Shallow AST Structure
+
+The processed AST maintains the original structure but with replacements:
+
+```json
+{
+  "type": "Program",
+  "body": [
+    {
+      "type": "ImportDeclaration",
+      "start": 0,
+      "end": 45,
+      "source": { "value": "@/apis/orders" },
+      "specifiers": [...],
+      "leading_comment": null
+    },
+    {
+      "type": "FunctionDeclaration",
+      "start": 100,
+      "end": 250,
+      "id": { "name": "fetchOrders" },
+      "params": [...],
+      "line_range": [10, 18],           // ← Instead of full body
+      "leading_comment": "// Fetches active orders from API",
+      "trailing_comment": null
+    },
+    {
+      "type": "VariableDeclaration",
+      "start": 300,
+      "end": 450,
+      "declarations": [
+        {
+          "id": { "name": "orderCache" },
+          "line_range": [25, 35],       // ← Instead of init value
+          "leading_comment": "// Cache for reducing API calls"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Key Points:**
+- Original AST structure is preserved
+- Easy to navigate (type, id, params, etc.)
+- Only the **nested body/implementation** is replaced with line_range
+- Comments provide semantic hints without reading code
+
+### Benefits
+
+**Token Efficiency:**
+- Clean code: Shallow AST only (~500 tokens) → 94% reduction
+- Dirty code: Shallow AST + selective reads (~1500 tokens) → 81% reduction
+
+**Adaptive Processing:**
+- Agent learns which patterns need implementation details
+- No wasted tokens on obvious code
+- Comments guide when to skip tool calls
+
+**Natural Scatter Detection:**
+- Agent can trace references across nodes
+- Groups scattered code into cohesive responsibilities
+- Line ranges make it easy to identify code location
+
+---
+
+## 6. Implementation Steps
+
+### Phase 1: AST Processing (Backend)
+
+1. **existing AST parser** (`backend/src/iris_agent/ast_parser.py`)
+   - Already implemented with Python AST parser module (`backend/src/parser`)
+
+2. **Build shallow AST processor** (`backend/src/iris_agent/ast_processor.py`)
+   - **Keep first-level body declarations** (don't remove anything)
+   - **Replace nested body content** with line_range references
+   - Traverse AST and identify nodes with nested bodies
+   - Calculate line numbers from start/end positions
+
+3. **Build comment extractor** (`backend/src/iris_agent/comment_extractor.py`)
+   - Parse source code for comments
+   - Associate comments with AST nodes:
+     - Leading: Comment block immediately before node
+     - Trailing: Comment on same line after node
+     - Inline: Comment inside node on first line
+   - Attach comment info to each processed AST node
+
+4. **Create source code storage** (`backend/src/iris_agent/source_store.py`)
+   - Store original source indexed by line numbers
+   - Provide fast line range retrieval for tool
+   - Cache by file hash
+
+### Phase 2: Agent System (Backend)
+
+4. **Define tool interface** (`backend/src/iris_agent/tools/source_reader.py`)
+   - Tool: `refer_to_source_code(start_line, end_line, reason)`
+   - Return: Raw source code for specified range
+   - Log: Track which parts agent needed to read
+
+5. **Build agent orchestrator** (`backend/src/iris_agent/agent.py`)
+   - Input: Processed AST + filename
+   - Output: File Intent + Responsibility Blocks
+   - Use LangChain or similar for tool calling
+   - Model: gpt-4o-mini (cost efficiency)
+
+6. **Design prompt template** (`backend/src/iris_agent/prompts/iris.py`)
+   - System prompt: Explain task, tool usage rules
+   - Input format: How to interpret processed AST
+   - Output format: Structured JSON schema
+   - Examples: Show good vs bad responsibility blocks
+
+### Phase 3: API Integration (Backend)
+
+7. **Create API endpoint** (`backend/src/iris_agent/routes.py`)
+   - `POST /api/iris/analyze`
+   - Request: `{ filename, source_code }`
+   - Response: `{ file_intent, responsibilities, metadata }`
+   - Error handling for parsing failures, LLM errors
+
+8. **Add caching layer** (`backend/src/iris_agent/cache.py`)
+   - Cache key: `file_hash + model_version`
+   - Store: Analysis results
+   - Invalidation: On file change
+
+### Phase 4: Frontend Integration (Extension)
+
+9. **Build UI components** (`extension/src/components/iris/`)
+   - FileIntent display (sticky header)
+   - ResponsibilityList (collapsible blocks)
+   - CodeHighlighter (range highlighting)
+
+10. **Implement bidirectional interaction** (`extension/content.js`)
+    - Hover responsibility → highlight code ranges
+    - Hover code → show related responsibility
+    - Click responsibility → scroll to first range
+
+### Phase 5: Testing & Validation
+
+11. **Test with real codebases**
+    - Clean code (well-commented)
+    - Mid-quality code (partial comments)
+    - Dirty code (no comments, unclear names)
+
+12. **Measure metrics**
+    - Token usage per file
+    - Tool call frequency
+    - Analysis accuracy (manual validation)
+    - Latency (end-to-end time)
+
+---
+
+## 7. Development Guidelines
+
+### Code Organization
+
+**Backend:**
+- **Isolated module**: All new code goes in `backend/src/iris_agent/`
+- **Existing code**: Everything else (`exp_single_llm/`, `exp_multi_agents/`) is experimental
+- **Do NOT refactor** existing experimental code
+- **Do NOT modify** existing endpoints unless necessary
+
+**Frontend:**
+- **Extension directory**: `extension/`
+- **Create new components**: Don't modify existing structure unnecessarily
+
+### Project Structure
+
+```
+backend/
+├── src/
+│   ├── iris_agent/          # ← NEW: All MVP code here
+│   │   ├── __init__.py
+│   │   ├── ast_processor.py
+│   │   ├── source_store.py
+│   │   ├── agent.py
+│   │   ├── routes.py
+│   │   ├── cache.py
+│   │   ├── tools/
+│   │   │   └── source_reader.py
+│   │   └── prompts/
+│   │       └── iris.py
+│   ├── exp_single_llm/      # Old experiments (ignore)
+│   └── exp_multi_agents/    # Old experiments (ignore)
+
+extension/
+├── src/
+│   ├── components/
+│   │   └── iris/            # ← NEW: IRIS UI components
+│   └── content.js           # Modify to integrate IRIS
+```
+
+### Development Constraints
+
+- **Remote development**: VS Code tunnel
+- **Limited network**: Keep dependencies minimal
+- **Simple architecture**: Avoid over-engineering
+- **Fast iteration**: Prioritize working prototype over perfect code
+
+### Key Principles
+
+1. **Measure everything**: Track token usage, tool calls, latency
+2. **Test with real code**: Not just clean examples
+3. **Document decisions**: Why did agent need to read implementation?
+4. **Iterate based on data**: Let metrics guide next steps
+
+---
+
+**Remember:**  
+> The goal is NOT perfect accuracy.  
+> The goal is to validate whether this approach reduces cognitive load.
+

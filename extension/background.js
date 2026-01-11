@@ -5,7 +5,8 @@
 importScripts("config.js");
 
 // const EXPERIMENT_ROUTE = "/exp-single-llm";
-const EXPERIMENT_ROUTE = "/exp-multi-agents";
+//const EXPERIMENT_ROUTE = "/exp-multi-agents";
+const EXPERIMENT_ROUTE = "/api/iris/analyze"
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (!request || !request.action) return;
