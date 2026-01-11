@@ -49,14 +49,10 @@ def analyze():
     data = request.get_json(silent=True) or {}
     filename = data.get("filename", "")
     language = data.get("language", "javascript")
+    metadata = data.get("metadata", {})
 
     # Handle both source_code and lines format
     source_code = data.get("source_code")
-    if not source_code:
-        lines = data.get("lines", [])
-        if lines:
-            source_code = "\n".join(line["text"] for line in lines)
-
     # Validation
     if not filename:
         return (

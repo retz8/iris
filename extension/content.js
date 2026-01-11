@@ -34,14 +34,15 @@
   /**
    * Send code to IRIS backend for analysis
    */
-  async function analyzeWithIRIS(filename, language, code) {
+  async function analyzeWithIRIS(filename, language, source_code, metadata) {
     return new Promise((resolve, reject) => {
       chrome.runtime.sendMessage(
         {
           action: "analyzeCodeWithIris",
           filename: filename,
           language: language,
-          code: code,
+          source_code: source_code,
+          metadata: metadata
         },
         (response) => {
           if (chrome.runtime.lastError) {
@@ -66,15 +67,20 @@
     if (isAnalyzing) return;
 
     // Extract code from page
-    const code = DOMHelpers.extractCode(CONFIG.selectors);
-    if (!code) {
+    const source_code = DOMHelpers.extractCode(CONFIG.selectors);
+    if (!source_code) {
       console.error("[IRIS] Could not extract code from page");
       return;
     }
 
-    // Get file metadata
     const filename = DOMHelpers.getFilename() || "unknown.txt";
     const language = DOMHelpers.detectLanguage();
+
+    const filepath = window.location.pathname;
+    const metadata = {
+      filepath: filepath,
+      url: window.location.href,
+    };
 
     console.log("[IRIS] Analyzing:", filename, "Language:", language);
 
@@ -86,7 +92,7 @@
     }
 
     try {
-      const result = await analyzeWithIRIS(filename, language, code);
+      const result = await analyzeWithIRIS(filename, language, source_code, metadata);
       console.log("[IRIS] Analysis complete:", result);
     } catch (error) {
       console.error("[IRIS] Analysis error:", error);

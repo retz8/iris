@@ -12,7 +12,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     try {
       let result;
       if (request.action === "analyzeCodeWithIris") {
-         result = await handleIrisAnalyze(request.filename, request.language, request.lines, request.metadata);
+         result = await handleIrisAnalyze(request.filename, request.language, request.source_code, request.metadata);
       } 
       else {
         throw new Error("Unknown action: " + request.action);
@@ -31,13 +31,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 
-async function handleIrisAnalyze(filename, language, lines, metadata) {
+async function handleIrisAnalyze(filename, language, source_code, metadata) {
   const apiUrl = `${CONFIG.BACKEND_URL}${IRIS_ANALYZE_ROUTE}`;
 
   const reqBody = {
     filename,
     language,
-    lines,
+    source_code,
     metadata
   }
 

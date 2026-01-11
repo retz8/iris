@@ -9,7 +9,6 @@ load_dotenv()
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from analyzer.noise_detector import detect_noise
 from parser.ast_parser import ASTParser
 from iris_agent.routes import iris_bp
 
