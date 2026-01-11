@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional, TypedDict
 
 
-class GraphState(TypedDict):
+class GraphState(TypedDict, total=False):
     """
     State object for the LangGraph multi-agent flow.
 
@@ -26,6 +26,7 @@ class GraphState(TypedDict):
         iteration_count: Number of feedback loop iterations completed
         is_complete: Whether the analysis has converged
         error: Optional error message if something fails
+        _last_llm_usage: Internal field for tracking token usage (optional)
     """
 
     # Input data
@@ -48,6 +49,9 @@ class GraphState(TypedDict):
 
     # Error handling
     error: Optional[str]
+
+    # Internal: token usage tracking (populated by agents if debug enabled)
+    _last_llm_usage: Optional[Dict[str, int]]
 
 
 def create_initial_state(raw_code: str, filename: str, language: str) -> GraphState:

@@ -417,3 +417,17 @@ This is a **learning and validation prototype**, not a production system.
 
 **Backend Entry**: `backend/src/server.py`
 **Frontend Entry**: `extension/content.js`
+
+
+
+
+
+                ┌────────────┐
+raw source ───▶ │ AST Parser │──▶ structural view (truth)
+                └────────────┘
+                      │
+                      │
+                      ▼
+                ┌────────────┐
+                │ Text Lens  │──▶ narrative / comment view (evidence)
+                └────────────┘

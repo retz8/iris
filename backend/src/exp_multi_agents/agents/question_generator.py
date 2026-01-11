@@ -39,10 +39,10 @@ def question_generator_agent(state: GraphState) -> GraphState:
         )
 
         # Prepare input
-        abstraction = state["mid_level_abstraction"]
+        abstraction = state.get("mid_level_abstraction")
         user_message = f"""
-Filename: {state['filename']}
-Language: {state['language']}
+Filename: {state.get('filename', '')}
+Language: {state.get('language', '')}
 
 Mid-Level Abstraction:
 {json.dumps(abstraction, indent=2)}
@@ -67,6 +67,13 @@ Return your response as JSON with this structure:
         ]
 
         response = llm.invoke(messages)
+
+        # Track token usage if available
+        if (
+            hasattr(response, "response_metadata")
+            and "token_usage" in response.response_metadata
+        ):
+            state["_last_llm_usage"] = response.response_metadata["token_usage"]
 
         # Parse response
         content = response.content

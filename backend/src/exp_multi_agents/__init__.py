@@ -14,7 +14,7 @@ from .models import (
     FileIntent,
     Responsibility,
 )
-from .graph import graph, run_analysis, create_graph
+from .graph import run_analysis, create_graph
 
 __all__ = [
     "GraphState",
@@ -26,7 +26,6 @@ __all__ = [
     "MultiAgentAnalysisResult",
     "FileIntent",
     "Responsibility",
-    "graph",
     "run_analysis",
     "create_graph",
 ]

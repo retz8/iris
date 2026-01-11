@@ -246,18 +246,27 @@ def exp_multi_agents():
 
         # Run multi-agent analysis
         # Note: This may take longer due to multiple LLM calls and feedback loop
-        final_state = run_analysis(
-            raw_code=content, filename=filename, language=language
+        final_state, metrics = run_analysis(
+            raw_code=content,
+            filename=filename,
+            language=language,
+            debug=True,  # Enable debug to get metrics
+            track_tokens=True,  # Track token usage
         )
 
-        # Convert state to result object
+        # Convert state to result object (final_state is already a dict-like TypedDict)
         result = MultiAgentAnalysisResult.from_graph_state(dict(final_state))
 
+        # Add metrics to result if available
+        result_dict = result.to_dict()
+        if metrics:
+            result_dict["metrics"] = metrics
+
         # Store result in cache
-        cache_manager.write_cache(cache_key, result.to_dict())
+        cache_manager.write_cache(cache_key, result_dict)
 
         # Return result
-        return jsonify(result.to_dict()), (200 if result.success else 400)
+        return jsonify(result_dict), (200 if result.success else 400)
 
     except Exception as e:
         import traceback
@@ -352,7 +361,7 @@ def analyze_structure():
 
         # 3. Detect sections for each function
         for func in functions:
-            func.sections = section_detector.detect_sections(func, language)
+            func.sections = section_detector.detect_sections(func, language)  # type: ignore
 
         # 4. Generate file summary
         total_lines = len(code.split("\n"))
@@ -373,7 +382,7 @@ def analyze_structure():
                     "functions": [
                         {
                             **func.to_dict(),
-                            "sections": [s.to_dict() for s in func.sections],
+                            "sections": [s.to_dict() for s in func.sections],  # type: ignore
                         }
                         for func in functions
                     ],

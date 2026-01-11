@@ -43,8 +43,8 @@ def explainer_agent(state: GraphState) -> GraphState:
         )
 
         # Prepare input
-        abstraction = state["mid_level_abstraction"]
-        questions = state["questions"]
+        abstraction = state.get("mid_level_abstraction")
+        questions = state.get("questions")
 
         # Include skeptic feedback if this is a revision iteration
         skeptic_context = ""
@@ -52,14 +52,14 @@ def explainer_agent(state: GraphState) -> GraphState:
             skeptic_context = f"""
 
 Previous Skeptic Feedback:
-{json.dumps(state['skeptic_feedback'], indent=2)}
+{json.dumps(state.get('skeptic_feedback'), indent=2)}
 
 Please address the skeptic's concerns in your revision.
 """
 
         user_message = f"""
-Filename: {state['filename']}
-Language: {state['language']}
+Filename: {state.get('filename', '')}
+Language: {state.get('language', '')}
 
 Mid-Level Abstraction:
 {json.dumps(abstraction, indent=2)}
@@ -91,6 +91,13 @@ Return your response as JSON with this structure:
         ]
 
         response = llm.invoke(messages)
+
+        # Track token usage if available
+        if (
+            hasattr(response, "response_metadata")
+            and "token_usage" in response.response_metadata
+        ):
+            state["_last_llm_usage"] = response.response_metadata["token_usage"]
 
         # Parse response
         content = response.content

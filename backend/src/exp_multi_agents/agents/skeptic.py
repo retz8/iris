@@ -44,14 +44,14 @@ def skeptic_agent(state: GraphState) -> GraphState:
         )
 
         # Prepare input
-        abstraction = state["mid_level_abstraction"]
-        file_intent = state["file_intent"]
-        responsibilities = state["responsibilities"]
+        abstraction = state.get("mid_level_abstraction")
+        file_intent = state.get("file_intent")
+        responsibilities = state.get("responsibilities")
         questions = state.get("questions", [])
 
         user_message = f"""
-Filename: {state['filename']}
-Language: {state['language']}
+Filename: {state.get('filename', '')}
+Language: {state.get('language', '')}
 
 Mid-Level Abstraction:
 {json.dumps(abstraction, indent=2)}
@@ -90,6 +90,13 @@ confidence_score: 0-1, where 1.0 means completely confident in the abstraction
         ]
 
         response = llm.invoke(messages)
+
+        # Track token usage if available
+        if (
+            hasattr(response, "response_metadata")
+            and "token_usage" in response.response_metadata
+        ):
+            state["_last_llm_usage"] = response.response_metadata["token_usage"]
 
         # Parse response
         content = response.content

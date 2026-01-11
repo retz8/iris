@@ -37,12 +37,12 @@ def compressor_agent(state: GraphState) -> GraphState:
 
         # Prepare input
         user_message = f"""
-Filename: {state['filename']}
-Language: {state['language']}
+Filename: {state.get('filename', '')}
+Language: {state.get('language', '')}
 
 Source Code:
-```{state['language']}
-{state['raw_code']}
+```{state.get('language', '')}
+{state.get('raw_code', '')}
 ```
 
 Analyze this code and provide a structured mid-level abstraction.
@@ -71,6 +71,13 @@ Return your response as JSON with this structure:
         ]
 
         response = llm.invoke(messages)
+
+        # Track token usage if available
+        if (
+            hasattr(response, "response_metadata")
+            and "token_usage" in response.response_metadata
+        ):
+            state["_last_llm_usage"] = response.response_metadata["token_usage"]
 
         # Parse response
         # Try to extract JSON from markdown code blocks if present

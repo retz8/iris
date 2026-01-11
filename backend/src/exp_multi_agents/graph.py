@@ -4,7 +4,8 @@ LangGraph Flow for Multi-Agent Feedback Loop
 This module defines the graph structure that orchestrates the agent flow.
 """
 
-from typing import Literal
+import time
+from typing import Literal, Optional, Dict, Any
 from langgraph.graph import StateGraph, END
 
 from .state import GraphState
@@ -14,6 +15,7 @@ from .agents import (
     explainer_agent,
     skeptic_agent,
 )
+from .debug import get_debugger, enable_debug, disable_debug
 
 
 def should_continue(state: GraphState) -> Literal["continue", "end"]:
@@ -45,7 +47,40 @@ def should_continue(state: GraphState) -> Literal["continue", "end"]:
     return "continue"
 
 
-def create_graph() -> StateGraph:
+def _wrap_agent_with_debug(agent_func, agent_name: str):
+    """Wrap an agent function with debug tracking."""
+
+    def wrapped(state: GraphState) -> GraphState:
+        debugger = get_debugger()
+        iteration = state.get("iteration_count", 0)
+
+        # Log start
+        debugger.log_node_start(agent_name, iteration)
+
+        # Execute agent
+        start_time = time.time()
+        result_state = agent_func(state)
+        duration_ms = (time.time() - start_time) * 1000
+
+        # Try to extract token usage from the state if available
+        # (Agents would need to populate this - see note below)
+        usage = result_state.get("_last_llm_usage")
+
+        # Log end
+        debugger.log_node_end(
+            agent_name, iteration, duration_ms, state=result_state, usage=usage
+        )
+
+        # Clean up temporary usage field
+        if "_last_llm_usage" in result_state:
+            del result_state["_last_llm_usage"]
+
+        return result_state
+
+    return wrapped
+
+
+def create_graph(debug: bool = False) -> StateGraph:
     """
     Create and configure the LangGraph for multi-agent analysis.
 
@@ -56,17 +91,40 @@ def create_graph() -> StateGraph:
     4. Skeptic: validate and challenge → feedback
     5. Conditional: if not complete, loop back to explainer for revision
 
+    Args:
+        debug: Enable debug mode with token tracking
+
     Returns:
         Compiled StateGraph ready for execution
     """
     # Create graph
     workflow = StateGraph(GraphState)
 
+    # Wrap agents with debug tracking if enabled
+    compressor = (
+        _wrap_agent_with_debug(compressor_agent, "compressor")
+        if debug
+        else compressor_agent
+    )
+    question_gen = (
+        _wrap_agent_with_debug(question_generator_agent, "question_generator")
+        if debug
+        else question_generator_agent
+    )
+    explainer = (
+        _wrap_agent_with_debug(explainer_agent, "explainer")
+        if debug
+        else explainer_agent
+    )
+    skeptic = (
+        _wrap_agent_with_debug(skeptic_agent, "skeptic") if debug else skeptic_agent
+    )
+
     # Add nodes (agents)
-    workflow.add_node("compressor", compressor_agent)
-    workflow.add_node("question_generator", question_generator_agent)
-    workflow.add_node("explainer", explainer_agent)
-    workflow.add_node("skeptic", skeptic_agent)
+    workflow.add_node("compressor", compressor)
+    workflow.add_node("question_generator", question_gen)
+    workflow.add_node("explainer", explainer)
+    workflow.add_node("skeptic", skeptic)
 
     # Set entry point
     workflow.set_entry_point("compressor")
@@ -93,11 +151,13 @@ def create_graph() -> StateGraph:
     return workflow.compile()  # type: ignore
 
 
-# Create the compiled graph instance
-graph = create_graph()
-
-
-def run_analysis(raw_code: str, filename: str, language: str) -> GraphState:
+def run_analysis(
+    raw_code: str,
+    filename: str,
+    language: str,
+    debug: bool = False,
+    track_tokens: bool = True,
+) -> tuple[GraphState, Optional[Dict[str, Any]]]:
     """
     Run the complete multi-agent analysis on source code.
 
@@ -105,11 +165,20 @@ def run_analysis(raw_code: str, filename: str, language: str) -> GraphState:
         raw_code: Source code to analyze
         filename: Name of the file
         language: Programming language
+        debug: Enable debug logging
+        track_tokens: Track token usage and costs
 
     Returns:
-        Final GraphState after all iterations
+        Tuple of (final GraphState, debug metrics dict)
     """
     from .state import create_initial_state
+
+    # Enable debug if requested
+    if debug:
+        enable_debug(track_tokens=track_tokens)
+
+    # Create graph with debug mode
+    graph = create_graph(debug=debug)
 
     # Create initial state
     initial_state = create_initial_state(
@@ -119,4 +188,13 @@ def run_analysis(raw_code: str, filename: str, language: str) -> GraphState:
     # Run the graph
     final_state = graph.invoke(initial_state)  # type: ignore
 
-    return final_state
+    # Print summary and get metrics
+    debugger = get_debugger()
+    metrics = None
+
+    if debug:
+        debugger.print_summary()
+        metrics = debugger.get_metrics_dict()
+        disable_debug()  # Clean up for next run
+
+    return final_state, metrics
