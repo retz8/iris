@@ -1,161 +1,314 @@
-import * as T from "three";
-import { PLYLoader as L1 } from "three/examples/jsm/loaders/PLYLoader.js";
-import { OBJExporter as L2 } from "three/examples/jsm/exporters/OBJExporter.js";
-import rtf from "./rotation_of_the_frame.js";
+import * as THREE from "three";
+import { PLYLoader } from "three/examples/jsm/loaders/PLYLoader.js";
+import { OBJExporter } from "three/examples/jsm/exporters/OBJExporter.js";
+import rotatingFrameTransformation from "./rotation_of_the_frame.js";
 
-import { createGUIWithAnth as g0 } from "./modules/guiManager.js";
-import { createManualWheelchair as g1 } from "./modules/manualWheelchair.js";
-import { createPoweredWheelchair as g2 } from "./modules/poweredWheelchair.js";
+import { createGUIWithAnth } from "./modules/guiManager.js";
+import { createManualWheelchair } from "./modules/manualWheelchair.js";
+import { createPoweredWheelchair } from "./modules/poweredWheelchair.js";
 
-import LM from "./modules/licenseManager.js";
-import { ASCIIStlWriter as W0, ASCIILMWriter as W1, ASCIIAnthroWriter as W2 } from "./modules/asciiWriters.js";
-import SM from "./modules/sceneManager.js";
+import LicenseManager from "./modules/licenseManager.js";
+import {
+  ASCIIStlWriter,
+  ASCIILMWriter,
+  ASCIIAnthroWriter,
+} from "./modules/asciiWriters.js";
+import SceneManager from "./modules/sceneManager.js";
 
-import { showLoadingSymbol as s0, hideLoadingSymbol as s1 } from "./utils/loader.js";
-import { dotProduct as u0 } from "./utils/matrixCalculation.js";
-import { getDateNow as u1 } from "./utils/date.js";
-import { CSVToArray as u2 } from "./utils/csvParser.js";
-import { createAxes as d0, removeAxesFromScene as d1 } from "./utils/3dDebugger.js";
-import { inToM as c0, mmToM as c1, mToIn as c2 } from "./utils/unitConverter.js";
-import { CSG2Geom as k0, updateGeometryWithCSGData as k1 } from "./utils/csgHelper.js";
+import { showLoadingSymbol, hideLoadingSymbol } from "./utils/loader.js";
+import { dotProduct } from "./utils/matrixCalculation.js";
+import { getDateNow } from "./utils/date.js";
+import { CSVToArray } from "./utils/csvParser.js";
+import {
+  createDebugMesh,
+  createBoundingBox,
+  createAxes,
+  removeAxesFromScene,
+} from "./utils/3dDebugger.js";
+import { inToM, mmToM, mToIn } from "./utils/unitConverter.js";
+import { CSG2Geom, updateGeometryWithCSGData } from "./utils/csgHelper.js";
 import { saveAs } from "./js/FileSaver.js";
-import { getMeshCenterLine as m0, calculateDistanceBetweenPoints as m1, getHumanModelWorldCoordinates as m2 } from "./utils/meshUtils.js";
+import {
+  getMeshCenterLine,
+  calculateDistanceBetweenPoints,
+  getHumanModelWorldCoordinates,
+} from "./utils/meshUtils.js";
 
-let a0, a1, a2, a3, a4 = [], a5 = false, a6, a7 = 0, a8 = 0;
-let b0, b1, b2, b3 = false, b4, b5 = "manual";
-let s, ctr;
-let f0 = false;
+var material;
+var PCAdata;
+var humanMesh;
+var humanGeometry;
+var geometryZero = [];
+var humanParameterChanged = false;
+var humanMaterial;
+var predAnthNum = 0;
+var predLandmarkNum = 0;
 
-const v0 = new T.Vector3(0, 0, 0);
-const v1 = new T.Vector3(-73 * Math.PI / 180, 0, 90 * Math.PI / 180);
-const v2 = new T.Vector3(-Math.PI / 2, 0, -Math.PI / 2);
+var wheelchairMesh;
+var wheelchairGeometry;
+var wheelchairMaterial;
+let wheelchairParameterChanged = false;
+var wheelchairParams;
+var wheelchairType = "manual";
 
-const sm = new SM();
-const lm = new LM();
+let scene, controls;
+var showAxes = false;
 
-const p = new (function () {
-  this.A = 1;
-  this.B = 1;
-  this.C = 1700;
-  this.D = 26;
-  this.E = 0.52;
-  this.F = 40;
-  this.G = false;
-  this.H = "obj";
-  this.I = "BioHuman";
-  this.J = "manual";
-  this.K = 100;
-  this.L = 18;
-  this.M = 18;
-  this.N = 20;
-  this.O = 21;
-  this.P = 3;
-  this.Q = 4;
-  this.R = 75;
-  this.S = 24;
-  this.T = 0;
-  this.U = 5;
-  this.V = 12;
-  this.W = 0;
-  this.X = 0;
+var centerPoint = new THREE.Vector3(0, 0, 0);
 
-  this.Y = function () {
-    if (!lm.checkLicense()) return;
-    if (this.H === "stl") {
-      const w = new W0();
-      if (a3) w.saveGeometryAsSTL(a3, this.I + "_model.stl");
-      if (b1) {
-        q0(ctr.target.x, ctr.target.y, ctr.target.z, b4, () => {});
-        w.saveGeometryAsSTL(b1, this.I + "_wheelchair.stl");
+var humanRotation = new THREE.Vector3(
+  -73 * (Math.PI / 180),
+  0,
+  90 * (Math.PI / 180)
+);
+var wheelchairRotation = new THREE.Vector3(-Math.PI / 2, 0, -Math.PI / 2);
+
+const sceneManager = new SceneManager();
+const licenseManager = new LicenseManager();
+
+var anth = new (function () {
+  this.STUDY = 1;
+  this.GENDER = 1;
+  this.STATURE = 1700;
+  this.BMI = 26;
+  this.SHS = 0.52;
+  this.AGE = 40;
+  this.LandmarkView = false;
+  this.FileType = "obj";
+  this.FileName = "BioHuman";
+  this.WHEELCHAIR_TYPE = "manual";
+  this.OPACITY = 100;
+
+  this.SEATWIDTH = 18;
+  this.SEATDEPTH = 18;
+  this.SEATPANHEIGHT = 20;
+  this.SEATBACKHEIGHT = 21;
+  this.CAMBER = 3;
+  this.LEGLEN = 4;
+  this.LEGRESTANG = 75;
+  this.WHEELDIAMETER = 24;
+
+  this.SEAT_ANGLE = 0;
+  this.RECLINE_ANGLE = 5;
+  this.LARGE_WHEEL_DIAMETER = 12;
+  this.LEG_REST_ANGLE = 0;
+  this.DRIVER_WHEEL_POS = 0;
+
+  this.ExportHumanGeometry = function () {
+    if (!licenseManager.checkLicense()) return;
+
+    if (this.FileType === "stl") {
+      const stlWriter = new ASCIIStlWriter();
+
+      if (humanGeometry) {
+        stlWriter.saveGeometryAsSTL(
+          humanGeometry,
+          this.FileName + "_model.stl"
+        );
       }
-    } else {
-      if (a3) {
-        const o = new T.Mesh(a3, new T.MeshBasicMaterial());
-        const e = new L2().parse(o);
-        saveAs(new Blob([e]), this.I + "_model.obj");
+
+      if (wheelchairGeometry) {
+        loadWheelchairModel(
+          controls.target.x,
+          controls.target.y,
+          controls.target.z,
+          wheelchairParams,
+          () => {}
+        );
+        stlWriter.saveGeometryAsSTL(
+          wheelchairGeometry,
+          this.FileName + "_wheelchair.stl"
+        );
       }
-      if (b1) {
-        q0(ctr.target.x, ctr.target.y, ctr.target.z, b4, () => {});
-        const o = new T.Mesh(b1, new T.MeshBasicMaterial());
-        const e = new L2().parse(o);
-        saveAs(new Blob([e]), this.I + "_wheelchair.obj");
+    } else if (this.FileType === "obj") {
+      if (humanGeometry) {
+        let humanObjectToExport = createExportableObject(humanGeometry);
+        var humanExporter = new OBJExporter();
+        var humanObjString = humanExporter.parse(humanObjectToExport);
+        var humanBlob = new Blob([humanObjString], { type: "text/plain" });
+        saveAs(humanBlob, this.FileName + "_model.obj");
+      }
+
+      if (wheelchairGeometry) {
+        loadWheelchairModel(
+          controls.target.x,
+          controls.target.y,
+          controls.target.z,
+          wheelchairParams,
+          () => {}
+        );
+        let wheelchairObjectToExport =
+          createExportableObject(wheelchairGeometry);
+        var wheelchairExporter = new OBJExporter();
+        var wheelchairObjString = wheelchairExporter.parse(
+          wheelchairObjectToExport
+        );
+        var wheelchairBlob = new Blob([wheelchairObjString], {
+          type: "text/plain",
+        });
+        saveAs(wheelchairBlob, this.FileName + "_wheelchair.obj");
       }
     }
+
+    function createExportableObject(geometry) {
+      if (
+        !geometry ||
+        !(geometry instanceof THREE.BufferGeometry)
+      ) {
+        console.error("Invalid or undefined geometry.");
+        return null;
+      }
+
+      let material = new THREE.MeshBasicMaterial();
+      return new THREE.Mesh(geometry, material);
+    }
+
+    var parametervalue =
+      "p" +
+      this.STUDY.toFixed() +
+      "_" +
+      this.GENDER.toFixed() +
+      "_" +
+      this.STATURE.toFixed() +
+      "_" +
+      this.BMI.toFixed(1) +
+      "_" +
+      this.SHS.toFixed(2) +
+      "_" +
+      this.AGE.toFixed();
+
+    gtag("event", "Model_Download", {
+      event_category: "Adult_Seated",
+      event_label: parametervalue,
+    });
   };
 
-  this.Z = function () {
-    if (!lm.checkLicense()) return;
-    new W1(p).saveLandmarksAsCSV(a1, this.I + "_" + u1() + "_lm.csv");
+  this.ExportHumanLandmarksCSV = function () {
+    if (!licenseManager.checkLicense()) return;
+
+    const landmarkWriter = new ASCIILMWriter(anth);
+    landmarkWriter.saveLandmarksAsCSV(
+      PCAdata,
+      this.FileName + "_" + getDateNow() + "_landmark.csv"
+    );
+
+    gtag("event", "Landmarks_Download", {
+      event_category: "Adult_Seated",
+    });
   };
 
-  this.$ = function () {
-    if (!lm.checkLicense()) return;
-    new W2(p).saveAnthDataAsCSV(a1, this.I + "_" + u1() + "_anth.csv");
+  this.ExportHumanDimensionsCSV = function () {
+    if (!licenseManager.checkLicense()) return;
+
+    const anthroWriter = new ASCIIAnthroWriter(anth);
+    anthroWriter.saveAnthDataAsCSV(
+      PCAdata,
+      this.FileName + "_" + getDateNow() + "_anthro.csv"
+    );
+
+    gtag("event", "Anthro_Download", {
+      event_category: "Adult_Seated",
+    });
+  };
+
+  this.FitWheelchairToHuman = function () {
+    showLoadingSymbol();
+
+    setTimeout(() => {
+      const optimalWheelchairParams = calculateOptimalWheelchairParams();
+      updateWheelchairParams(wheelchairType, optimalWheelchairParams);
+      refreshGUIWheelchairParams();
+
+      let wheelchairUpdated = false;
+      let humanUpdated = false;
+
+      const checkWheelchairUpdated = () => {
+        wheelchairUpdated = true;
+      };
+
+      const checkHumanUpdated = () => {
+        humanUpdated = true;
+        if (wheelchairUpdated && humanUpdated) {
+          setTimeout(() => {
+            hideLoadingSymbol();
+          }, 500);
+        }
+      };
+
+      updateWheelchairGeometry(wheelchairParams, () => {
+        checkWheelchairUpdated();
+      });
+
+      if (wheelchairUpdated) {
+        updateHumanGeometryFromWheelchair(
+          wheelchairParams,
+          wheelchairMesh,
+          () => {
+            checkHumanUpdated();
+          }
+        );
+      }
+    }, 100);
   };
 })();
 
-const gui = g0(p, () => (a5 = true), () => (b3 = true));
+var gui = createGUIWithAnth(
+  anth,
+  () => {
+    humanParameterChanged = true;
+  },
+  () => {
+    wheelchairParameterChanged = true;
+  }
+);
 
-function h0(m) {
-  const d = m1(m, 1359, 3264, true, false, false);
-  return c2(d) + 2;
+function calculateOptimalSeatWidth(humanMesh) {
+  const LEFT_THIGH_INDEX = 1359;
+  const RIGHT_THIGH_INDEX = 3264;
+
+  const thighWidth = calculateDistanceBetweenPoints(
+    humanMesh,
+    LEFT_THIGH_INDEX,
+    RIGHT_THIGH_INDEX,
+    true,
+    false,
+    false
+  );
+
+  const padding = 1;
+  return mToIn(thighWidth) + padding * 2;
 }
 
-function h1(m) {
-  const w = m2(m, 2225);
-  const s = c0(b4.seatPanHeight + b4.seatCushThick);
-  return c2(Math.abs(w.z - s));
+function calculateOptimalBackHeight(humanMesh) {
+  const SHOULDER_INDEX = 2225;
+  const shoulderWorld = getHumanModelWorldCoordinates(
+    humanMesh,
+    SHOULDER_INDEX
+  );
+  const wheelchairSeatHeight = inToM(
+    wheelchairParams.seatPanHeight + wheelchairParams.seatCushThick
+  );
+  const backHeight = Math.abs(shoulderWorld.z - wheelchairSeatHeight);
+  return mToIn(backHeight);
 }
 
-function h2() {
-  let r = { ...b4 };
-  r.seatWidth = h0(a2);
-  r.seatBackHeight = h1(a2);
-  return r;
+function calculateOptimalWheelchairParams() {
+  let optimalParams = { ...wheelchairParams };
+  optimalParams.seatWidth = calculateOptimalSeatWidth(humanMesh);
+  optimalParams.seatBackHeight = calculateOptimalBackHeight(humanMesh);
+  validateWheelchairParams(optimalParams);
+  return optimalParams;
 }
 
-function q0(x, y, z, p0, cb) {
-  b2 = new T.MeshPhongMaterial({ color: 0xaaffff });
-  const g = b5 === "powered" ? g2(p0) : g1(p0);
-  b1 = new T.Mesh(k0(g), b2);
-  b1.position.set(x, y, z);
-  b1.scale.set(0.001, 0.001, 0.001);
-  b1.rotation.set(v2.x, v2.y, v2.z);
-  s.add(b1);
-  cb && cb();
+function validateWheelchairParams(params) {
+  const RANGES = {
+    seatWidth: { min: 14, max: 30 },
+    seatBackHeight: { min: 16, max: 30 },
+  };
+
+  for (const [param, range] of Object.entries(RANGES)) {
+    if (params[param] < range.min || params[param] > range.max) {
+      throw new Error(`${param} out of valid range`);
+    }
+  }
 }
-
-function r0(file, x, y, z, cb) {
-  new L1().load(file, (g) => {
-    a3 = g;
-    a6 = new T.MeshPhongMaterial({ color: 0xffffff, transparent: true });
-    a2 = new T.Mesh(g, a6);
-    a2.rotation.set(v1.x, v1.y, v1.z);
-    a2.position.set(x, y, z);
-    a2.scale.set(0.001, 0.001, 0.001);
-    s.add(a2);
-    cb && cb();
-  });
-}
-
-function init(data) {
-  sm.setup();
-  s = sm.getScene();
-  ctr = sm.getControls();
-  a1 = data;
-  r0("model/mean_model_tri.ply", 0, 0, 0, () => {});
-  q0(0, 0, 0, b4, () => {});
-}
-
-function loop() {
-  requestAnimationFrame(loop);
-  sm.render();
-}
-
-$(document).ready(() => {
-  $.get("model/Anth2Data.csv", (d) => {
-    init(u2(d));
-    loop();
-  });
-});
-
