@@ -16,7 +16,7 @@ Before proceeding with optimizations, a dedicated debugging system will be imple
 
 * **Goal:** Provide a clear audit trail to measure the effectiveness of subsequent optimization steps.
 
-* **SPEC:** (link)[./debugger_implementation.md]
+* **SPEC:** `./debugger_implementation.md`
 
 
 ## Step 1. Shallow AST Pre-processing & Token Optimization
