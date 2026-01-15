@@ -30,7 +30,8 @@ CORS(
 )
 
 
-# Register IRIS blueprint
+# Register IRIS blueprint /api/iris
+# from `src/iris_agent.routes`
 app.register_blueprint(iris_bp)
 
 ast_parser = ASTParser()

@@ -1,6 +1,9 @@
-# IRIS MVP Instructions
-**Project Reset: January 11, 2026**
+# Copilot Instruction for Iris Project
 
+## 0. Rules for Copilot when assisting with the Iris project.
+1. Don't generate ".MD" files. Don't generate tests files. Until explicitly asked.
+2. Do not make use of any new libraries, platforms, or packages unless I explicitly tell you to.
+3. Fast iteration: Prioritize working prototype over perfect code
 ---
 
 ## 1. What is IRIS?
@@ -159,7 +162,7 @@ When refactoring or understanding dependencies:
 Instead of feeding the entire source code to an LLM, we use a **two-stage approach**:
 
 1. **Preprocessing (free)**: Convert code to shallow AST with line references
-2. **Agent reasoning (paid)**: Agent uses shallow AST + selective source code access
+2. **Agent reasoning (paid)**: Agent uses shallow AST + selective source code access tool
 
 ### Why AST?
 
@@ -258,47 +261,6 @@ The agent receives:
 The agent decides:
 - "Function name `validateUser` + leading comment is clear" → No tool call needed
 - "Function name `process` with no comment" → Call tool to read implementation
-
-### Shallow AST Structure
-
-The processed AST maintains the original structure but with replacements:
-
-```json
-{
-  "type": "Program",
-  "body": [
-    {
-      "type": "ImportDeclaration",
-      "start": 0,
-      "end": 45,
-      "source": { "value": "@/apis/orders" },
-      "specifiers": [...],
-      "leading_comment": null
-    },
-    {
-      "type": "FunctionDeclaration",
-      "start": 100,
-      "end": 250,
-      "id": { "name": "fetchOrders" },
-      "params": [...],
-      "line_range": [10, 18],           // ← Instead of full body
-      "leading_comment": "// Fetches active orders from API",
-      "trailing_comment": null
-    },
-    {
-      "type": "VariableDeclaration",
-      "start": 300,
-      "end": 450,
-      "declarations": [
-        {
-          "id": { "name": "orderCache" },
-          "line_range": [25, 35],       // ← Instead of init value
-          "leading_comment": "// Cache for reducing API calls"
-        }
-      ]
-    }
-  ]
-}
 ```
 
 **Key Points:**
@@ -307,129 +269,16 @@ The processed AST maintains the original structure but with replacements:
 - Only the **nested body/implementation** is replaced with line_range
 - Comments provide semantic hints without reading code
 
-### Benefits
-
-**Token Efficiency:**
-- Clean code: Shallow AST only (~500 tokens) → 94% reduction
-- Dirty code: Shallow AST + selective reads (~1500 tokens) → 81% reduction
-
-**Adaptive Processing:**
-- Agent learns which patterns need implementation details
-- No wasted tokens on obvious code
-- Comments guide when to skip tool calls
-
-**Natural Scatter Detection:**
-- Agent can trace references across nodes
-- Groups scattered code into cohesive responsibilities
-- Line ranges make it easy to identify code location
-
 ---
 
-## 6. Implementation Steps
-
-### Phase 1: AST Processing (Backend)
-
-1. **existing AST parser** (`backend/src/iris_agent/ast_parser.py`)
-   - Already implemented with Python AST parser module (`backend/src/parser`)
-
-2. **Build shallow AST processor** (`backend/src/iris_agent/ast_processor.py`)
-   - **Keep first-level body declarations** (don't remove anything)
-   - **Replace nested body content** with line_range references
-   - Traverse AST and identify nodes with nested bodies
-   - Calculate line numbers from start/end positions
-
-3. **Build comment extractor** (`backend/src/iris_agent/comment_extractor.py`)
-   - Parse source code for comments
-   - Associate comments with AST nodes:
-     - Leading: Comment block immediately before node
-     - Trailing: Comment on same line after node
-     - Inline: Comment inside node on first line
-   - Attach comment info to each processed AST node
-
-4. **Create source code storage** (`backend/src/iris_agent/source_store.py`)
-   - Store original source indexed by line numbers
-   - Provide fast line range retrieval for tool
-   - Cache by file hash
-
-### Phase 2: Agent System (Backend)
-
-4. **Define tool interface** (`backend/src/iris_agent/tools/source_reader.py`)
-   - Tool: `refer_to_source_code(start_line, end_line, reason)`
-   - Return: Raw source code for specified range
-   - Log: Track which parts agent needed to read
-
-5. **Build agent orchestrator** (`backend/src/iris_agent/agent.py`)
-   - Input: Processed AST + filename
-   - Output: File Intent + Responsibility Blocks
-   - Use LangChain or similar for tool calling
-   - Model: gpt-4o-mini (cost efficiency)
-
-6. **Design prompt template** (`backend/src/iris_agent/prompts/iris.py`)
-   - System prompt: Explain task, tool usage rules
-   - Input format: How to interpret processed AST
-   - Output format: Structured JSON schema
-   - Examples: Show good vs bad responsibility blocks
-
-### Phase 3: API Integration (Backend)
-
-7. **Create API endpoint** (`backend/src/iris_agent/routes.py`)
-   - `POST /api/iris/analyze`
-   - Request: `{ filename, source_code }`
-   - Response: `{ file_intent, responsibilities, metadata }`
-   - Error handling for parsing failures, LLM errors
-
-8. **Add caching layer** (`backend/src/iris_agent/cache.py`)
-   - Cache key: `file_hash + model_version`
-   - Store: Analysis results
-   - Invalidation: On file change
-
-### Phase 4: Frontend Integration (Extension)
-
-9. **Build UI components** (`extension/src/components/iris/`)
-   - FileIntent display (sticky header)
-   - ResponsibilityList (collapsible blocks)
-   - CodeHighlighter (range highlighting)
-
-10. **Implement bidirectional interaction** (`extension/content.js`)
-    - Hover responsibility → highlight code ranges
-    - Hover code → show related responsibility
-    - Click responsibility → scroll to first range
-
-### Phase 5: Testing & Validation
-
-11. **Test with real codebases**
-    - Clean code (well-commented)
-    - Mid-quality code (partial comments)
-    - Dirty code (no comments, unclear names)
-
-12. **Measure metrics**
-    - Token usage per file
-    - Tool call frequency
-    - Analysis accuracy (manual validation)
-    - Latency (end-to-end time)
-
----
-
-## 7. Development Guidelines
-
-### Code Organization
-
-**Backend:**
-- **Isolated module**: All new code goes in `backend/src/iris_agent/`
-- **Existing code**: Everything else (`exp_single_llm/`, `exp_multi_agents/`) is experimental
-- **Do NOT refactor** existing experimental code
-- **Do NOT modify** existing endpoints unless necessary
-
-**Frontend:**
-- **Extension directory**: `extension/`
-- **Create new components**: Don't modify existing structure unnecessarily
-
+## 6. Development Guidelines
 ### Project Structure
 
 ```
 backend/
 ├── src/
-│   ├── iris_agent/          # ← NEW: All MVP code here
+│   ├── iris_agent/
+|   |   ├── specs: documents decribing the plan for implementations  
 │   │   ├── __init__.py
 │   │   ├── ast_processor.py
 │   │   ├── source_store.py
@@ -438,10 +287,7 @@ backend/
 │   │   ├── cache.py
 │   │   ├── tools/
 │   │   │   └── source_reader.py
-│   │   └── prompts/
-│   │       └── iris.py
-│   ├── exp_single_llm/      # Old experiments (ignore)
-│   └── exp_multi_agents/    # Old experiments (ignore)
+│   │   └── prompts.py
 
 extension/
 ├── src/
@@ -449,21 +295,6 @@ extension/
 │   │   └── iris/            # ← NEW: IRIS UI components
 │   └── content.js           # Modify to integrate IRIS
 ```
-
-### Development Constraints
-
-- **Remote development**: VS Code tunnel
-- **Limited network**: Keep dependencies minimal
-- **Simple architecture**: Avoid over-engineering
-- **Fast iteration**: Prioritize working prototype over perfect code
-
-### Key Principles
-
-1. **Measure everything**: Track token usage, tool calls, latency
-2. **Test with real code**: Not just clean examples
-3. **Document decisions**: Why did agent need to read implementation?
-4. **Iterate based on data**: Let metrics guide next steps
-
 ---
 
 **Remember:**  

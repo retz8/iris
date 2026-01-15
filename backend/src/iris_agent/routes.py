@@ -49,7 +49,7 @@ def analyze():
     data = request.get_json(silent=True) or {}
     filename = data.get("filename", "")
     language = data.get("language", "javascript")
-    metadata = data.get("metadata", {})
+    metadata_from_data = data.get("metadata", {})
 
     # Handle both source_code and lines format
     source_code = data.get("source_code")
@@ -128,11 +128,13 @@ def analyze():
         # =====================================================================
         # STEP 4: Return result
         # =====================================================================
+        metadata = metadata_from_data + result.get("metadata", {})
+
         response = {
             "success": True,
             "file_intent": result.get("file_intent", ""),
             "responsibilities": result.get("responsibilities", []),
-            "metadata": result.get("metadata", {}),
+            "metadata": metadata,
         }
         return jsonify(response), 200
 

@@ -11,7 +11,7 @@ from typing import Any, Dict, List
 
 from openai import OpenAI
 
-from .prompts.iris import (
+from .prompts import (
     ANALYSIS_OUTPUT_SCHEMA,
     ANALYSIS_SYSTEM_PROMPT,
     IDENTIFICATION_SYSTEM_PROMPT,
