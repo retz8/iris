@@ -32,18 +32,29 @@ UNCLEAR (must read):
 - Single-letter names (e.g., "a", "b", "c", "d", "i", "j", "k")
 - No comments
 - Constants with unclear values (need to see actual value)
+- High extra_children_count (>5) with generic name
 
 SPECIAL CASES:
 - Loop variables (i, j, k) in simple for-loops: Usually clear, skip
 - Callback parameters in array methods (x, item, el): Check if context is clear
 - Configuration objects without comments: MUST read to see structure
 - Minified or obfuscated code: MUST read everything
+- Nodes with extra_children_count > 5: Indicates hidden complexity, more likely to need reading
+
+METADATA INTERPRETATION:
 
 CRITICAL: line_range null means NO IMPLEMENTATION
 - If an AST node has "line_range": null, it means the declaration is single-line with no nested implementation
 - Example: const MAX_RETRY = 5; (one line, no body to read)
 - These nodes NEVER need source code reading - skip them completely
 - Only consider nodes with "line_range": [start, end] where start != end
+
+extra_children_count field:
+- This field appears when the AST traversal hits depth limits and stops recursing
+- It indicates how many child nodes are hidden due to max_depth boundary
+- If a node has "extra_children_count": 3, it means 3 relevant children weren't shown in the AST
+- High count (>5) suggests the entity is complex and may warrant reading even if the name seems clear
+- Use this as a complexity signal: Name might be clear, but hidden children might reveal complex structure
 
 OUTPUT FORMAT:
 Return JSON array of ranges to read. Each entry must have:
@@ -81,6 +92,7 @@ Example output:
 
 Be aggressive in identifying unclear parts. When in doubt, mark it for reading.
 For dirty/minified code with many single-letter names, mark ALL elements.
+Consider extra_children_count as a complexity signal - high counts warrant deeper inspection.
 """
 
 
@@ -224,6 +236,65 @@ ANALYSIS_OUTPUT_SCHEMA: Dict[str, Any] = {
 }
 
 
+# =============================================================================
+# FAST-PATH: SINGLE-STAGE ANALYSIS - For small files with full source code
+# =============================================================================
+
+FAST_PATH_SYSTEM_PROMPT = """You are IRIS, a code comprehension assistant optimized for fast analysis.
+
+Your task is to extract:
+1. File Intent: Why does this file exist? (1-4 lines, architectural purpose)
+2. Responsibility Blocks: 3-6 peer responsibilities (complete ecosystems of functions/state/imports/types/constants)
+
+YOUR INPUTS:
+- Full source code: You have the complete file content, no tool calls needed
+- shallow_ast: AST structure for reference and line navigation
+
+FAST-PATH OPTIMIZATION:
+- You have access to the FULL source code
+- Analyze directly without asking for additional snippets
+- Use shallow_ast as a structural map while reading full source for semantic details
+- Respond quickly and directly with File Intent + Responsibility Blocks
+
+PHILOSOPHY:
+- IRIS prepares developers to read code, not explains code
+- Focus on WHY/WHAT, not HOW
+- No execution flow analysis
+- No variable tracking
+- No line-by-line summarization
+
+FILE INTENT RULES:
+- 1-4 short lines maximum
+- Architectural purpose, not implementation details
+- Answer: "Why does this file exist in the system?"
+- Examples:
+  ✓ "User authentication and session lifecycle management"
+  ✓ "Real-time order state management and filtered view generation"
+  ✓ "3D visualization of point cloud data with interactive controls"
+  ✗ "Implements React hooks for fetching data" (too implementation-focused)
+  ✗ "Contains helper functions" (too generic)
+
+RESPONSIBILITY BLOCKS - CRITICAL RULES:
+- NOT just function groups
+- Each is a COMPLETE ECOSYSTEM needed for that responsibility:
+  * Functions (execution logic)
+  * State/Variables (runtime data)
+  * Imports (external dependencies)
+  * Types (data structures)
+  * Constants (configuration)
+- Mental model: "What would I extract if splitting this into a separate file?"
+- 3-6 responsibilities per file (avoid over-fragmentation)
+- Peers, not hierarchical (all at same conceptual level)
+- Can be scattered across file (ranges need not be contiguous)
+
+OUTPUT REQUIREMENTS:
+- JSON only (no markdown, no code fences, no preamble)
+- Must match schema exactly
+- All line ranges are 1-based inclusive: [start, end]
+- Responsibility ranges should cover ALL relevant code (scattered is OK)
+"""
+
+
 def build_analysis_prompt(
     filename: str,
     language: str,
@@ -249,6 +320,55 @@ def build_analysis_prompt(
                 if formatted_snippets
                 else "No unclear parts identified - AST was sufficient"
             ),
+        },
+        "output_format": "JSON matching schema below (no markdown, no code fences)",
+        "output_schema": ANALYSIS_OUTPUT_SCHEMA,
+    }
+    return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
+def build_fast_path_prompt(
+    filename: str,
+    language: str,
+    shallow_ast: Dict[str, Any],
+    source_code: str,
+) -> str:
+    """Build fast-path prompt with full source code and AST.
+
+    Used when file is small enough to analyze in a single LLM pass.
+    """
+    payload = {
+        "task": "Generate File Intent + Responsibility Blocks (Fast-Path)",
+        "filename": filename,
+        "language": language,
+        "context": "File is small enough for single-pass analysis. You have access to the full source code.",
+        "inputs": {
+            "shallow_ast": shallow_ast,
+            "source_code": source_code,
+        },
+        "output_format": "JSON matching schema below (no markdown, no code fences)",
+        "output_schema": ANALYSIS_OUTPUT_SCHEMA,
+    }
+    return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
+def build_raw_source_prompt(
+    filename: str,
+    language: str,
+    source_code: str,
+) -> str:
+    """Build prompt using only raw source code (no AST).
+
+    Used when testing raw source vs shallow AST token usage.
+    This is for performance comparison purposes.
+    """
+    payload = {
+        "task": "Generate File Intent + Responsibility Blocks (Raw Source)",
+        "filename": filename,
+        "language": language,
+        "context": "Analyze the raw source code directly without AST preprocessing. This is for performance testing.",
+        "inputs": {
+            "source_code": source_code,
         },
         "output_format": "JSON matching schema below (no markdown, no code fences)",
         "output_schema": ANALYSIS_OUTPUT_SCHEMA,

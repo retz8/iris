@@ -1,7 +1,7 @@
 # Copilot Instruction for Iris Project
 
 ## 0. Rules for Copilot when assisting with the Iris project.
-1. Don't generate ".MD" files. Don't generate tests files. Until explicitly asked.
+1. DONT GENERATE ".MD" files. DONT GENERATE tests files. Until explicitly asked.
 2. Do not make use of any new libraries, platforms, or packages unless I explicitly tell you to.
 3. Fast iteration: Prioritize working prototype over perfect code
 ---

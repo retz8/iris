@@ -7,23 +7,34 @@ Stage 2: Analyze with AST + read source code
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List
+import time
+from typing import Any, Dict, List, TYPE_CHECKING
 
 from openai import OpenAI
 
 from .prompts import (
     ANALYSIS_OUTPUT_SCHEMA,
     ANALYSIS_SYSTEM_PROMPT,
+    FAST_PATH_SYSTEM_PROMPT,
     IDENTIFICATION_SYSTEM_PROMPT,
     build_analysis_prompt,
+    build_fast_path_prompt,
     build_identification_prompt,
+    build_raw_source_prompt,
 )
 from .source_store import SourceStore
 from .tools.source_reader import SourceReader
 
+if TYPE_CHECKING:
+    from .debugger import ShallowASTDebugger
+
 
 class IrisAgent:
     """Two-stage agent for File Intent + Responsibility Blocks extraction."""
+
+    # Fast-path thresholds for single-stage analysis
+    FAST_PATH_LINE_THRESHOLD = 200
+    FAST_PATH_TOKEN_THRESHOLD = 2000
 
     def __init__(self, model: str = "gpt-4o-mini", api_key: str | None = None):
         self.client = OpenAI(api_key=api_key)
@@ -36,22 +47,81 @@ class IrisAgent:
         shallow_ast: Dict[str, Any],
         source_store: SourceStore,
         file_hash: str,
+        debug_report: Dict[str, Any] | None = None,
+        source_code: str = "",
+        debugger: ShallowASTDebugger | None = None,
     ) -> Dict[str, Any]:
-        """Run two-stage analysis on a file.
+        """Run two-stage or fast-path analysis on a file.
 
-        Stage 1: Identify unclear parts
-        Stage 2: Generate File Intent + Responsibility Blocks
+        Chooses execution path based on file size:
+        - Fast-Path: Single-stage analysis for small files (< 200 lines / 2000 tokens)
+        - Two-Stage: Identify unclear parts → Read source → Generate results
+
+        Args:
+            filename: Name of the file being analyzed.
+            language: Programming language identifier.
+            shallow_ast: Shallow AST representation from processor.
+            source_store: Store containing source code snippets.
+            file_hash: Hash of the source file for caching.
+            debug_report: Optional debug report from ShallowASTDebugger.
+            source_code: Source code of the file (required for fast-path).
+            debugger: Optional ShallowASTDebugger instance for LLM tracking.
         """
 
         # =====================================================================
-        # STAGE 1: IDENTIFICATION
+        # ROUTING: Decide between Fast-Path and Two-Stage analysis
+        # =====================================================================
+        if self._should_use_fast_path(source_code):
+            print(f"[FAST-PATH] Analyzing {filename} in single-stage mode...")
+
+            # Track fast-path stage in debugger
+            if debugger:
+                debugger.start_llm_stage("fast_path_analysis")
+
+            result = self._run_fast_path_analysis(
+                filename, language, shallow_ast, source_code, debugger
+            )
+            result["metadata"]["execution_path"] = "fast-path"
+            result["metadata"]["tool_reads"] = []  # No tool reads in fast-path
+
+            # Add debug stats if available
+            if debug_report:
+                result["metadata"]["debug_stats"] = debug_report.get("summary", {})
+                self._add_quality_warnings(result, debug_report)
+
+            print(f"[FAST-PATH] Complete!")
+            print(f"  - File Intent: {result['file_intent'][:80]}...")
+            print(f"  - Responsibilities: {len(result['responsibilities'])}")
+            return result
+
+        # =====================================================================
+        # STAGE 1: IDENTIFICATION (Two-Stage Path)
         # =====================================================================
         print(f"[STAGE 1] Identifying unclear parts in {filename}...")
 
+        if debugger:
+            debugger.start_llm_stage("stage_1_identification")
+
+        stage1_start = time.time()
         identification_response = self._run_identification(
             filename, language, shallow_ast
         )
+        stage1_elapsed = time.time() - stage1_start
+
         ranges_to_read = self._parse_identification_response(identification_response)
+
+        # Record Stage 1 metrics if debugger is available
+        if debugger:
+            stage1_tokens = self._estimate_tokens_for_response(identification_response)
+            debugger.end_llm_stage(
+                "stage_1_identification",
+                input_tokens=self._estimate_tokens_for_prompt(
+                    filename, language, shallow_ast
+                ),
+                output_tokens=stage1_tokens,
+                llm_response=identification_response,
+                parsed_output={"ranges_to_read": ranges_to_read},
+            )
 
         print(f"[STAGE 1] Found {len(ranges_to_read)} unclear parts to read")
         for r in ranges_to_read:
@@ -77,12 +147,32 @@ class IrisAgent:
         # =====================================================================
         print(f"[STAGE 2] Generating File Intent + Responsibility Blocks...")
 
+        if debugger:
+            debugger.start_llm_stage("stage_2_analysis")
+
+        stage2_start = time.time()
         analysis_response = self._run_analysis(
             filename, language, shallow_ast, source_snippets
         )
+        stage2_elapsed = time.time() - stage2_start
+
         result = self._parse_analysis_response(analysis_response)
 
-        # Attach tool reads to metadata
+        # Record Stage 2 metrics if debugger is available
+        if debugger:
+            stage2_tokens = self._estimate_tokens_for_response(analysis_response)
+            debugger.end_llm_stage(
+                "stage_2_analysis",
+                input_tokens=self._estimate_tokens_for_analysis_prompt(
+                    filename, language, shallow_ast, source_snippets
+                ),
+                output_tokens=stage2_tokens,
+                llm_response=analysis_response,
+                parsed_output=result,
+            )
+
+        # Attach metadata
+        result["metadata"]["execution_path"] = "two-stage"
         result["metadata"]["tool_reads"] = [
             {
                 "start_line": r.start_line,
@@ -92,12 +182,118 @@ class IrisAgent:
             for r in source_reader.get_log()
         ]
 
+        # Add debug stats if available
+        if debug_report:
+            result["metadata"]["debug_stats"] = debug_report.get("summary", {})
+            self._add_quality_warnings(result, debug_report)
+
         print(f"[STAGE 2] Complete!")
         print(f"  - File Intent: {result['file_intent'][:80]}...")
         print(f"  - Responsibilities: {len(result['responsibilities'])}")
         print(f"  - Tool Reads: {len(result['metadata']['tool_reads'])}")
 
         return result
+
+    def _should_use_fast_path(self, source_code: str) -> bool:
+        """Determine if file is small enough for single-stage analysis.
+
+        Returns True if file is below both line and token thresholds.
+
+        Args:
+            source_code: The source code content to evaluate.
+
+        Returns:
+            True if fast-path should be used, False for two-stage analysis.
+        """
+        # Check line count
+        line_count = len(source_code.splitlines())
+        if line_count > self.FAST_PATH_LINE_THRESHOLD:
+            return False
+
+        # Estimate token count using a simple character-to-token ratio
+        # Rough estimate: 1 token ≈ 4 characters
+        estimated_tokens = len(source_code) // 4
+        if estimated_tokens > self.FAST_PATH_TOKEN_THRESHOLD:
+            return False
+
+        return True
+
+    def _run_fast_path_analysis(
+        self,
+        filename: str,
+        language: str,
+        shallow_ast: Dict[str, Any],
+        source_code: str,
+        debugger: ShallowASTDebugger | None = None,
+    ) -> Dict[str, Any]:
+        """Single-stage analysis for small files using full source code.
+
+        Args:
+            filename: Name of the file being analyzed.
+            language: Programming language identifier.
+            shallow_ast: Shallow AST representation.
+            source_code: Full source code content.
+            debugger: Optional debugger for tracking LLM metrics.
+
+        Returns:
+            Dict with file_intent, responsibilities, and metadata.
+        """
+        try:
+            # Use different prompt depending on whether we have AST or raw source only
+            if shallow_ast is None or not shallow_ast:
+                # Raw source mode - no AST
+                user_prompt = build_raw_source_prompt(filename, language, source_code)
+            else:
+                # Fast-path with AST
+                user_prompt = build_fast_path_prompt(
+                    filename, language, shallow_ast, source_code
+                )
+
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": FAST_PATH_SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.1,
+            )
+
+            content = response.choices[0].message.content
+            if content is None:
+                raise ValueError("LLM returned empty response in fast-path analysis")
+
+            result = self._parse_analysis_response(content)
+
+            # Track LLM metrics if debugger is available
+            if debugger:
+                input_tokens = (
+                    response.usage.prompt_tokens
+                    if response.usage
+                    else self._estimate_tokens_for_fast_path_prompt(
+                        filename, language, shallow_ast, source_code
+                    )
+                )
+                output_tokens = (
+                    response.usage.completion_tokens
+                    if response.usage
+                    else self._estimate_tokens_for_response(content)
+                )
+
+                debugger.end_llm_stage(
+                    "fast_path_analysis",
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    llm_response=content,
+                    parsed_output=result,
+                )
+
+            return result
+        except Exception as e:
+            # Fallback to two-stage analysis on error
+            print(f"[FAST-PATH] Error occurred: {e}")
+            print(f"[FALLBACK] Falling back to two-stage analysis...")
+            # Return minimal valid structure to trigger fallback in caller
+            raise
 
     def _run_identification(
         self, filename: str, language: str, shallow_ast: Dict[str, Any]
@@ -185,22 +381,83 @@ class IrisAgent:
                 "metadata": {"notes": f"Parsing error: {str(e)}"},
             }
 
+    def set_fast_path_line_threshold(self, threshold: int) -> None:
+        """Set the line count threshold for fast-path analysis."""
+        self.FAST_PATH_LINE_THRESHOLD = threshold
 
-# Example usage
-if __name__ == "__main__":
-    # Mock data for testing
-    shallow_ast = {
-        "type": "Program",
-        "body": [
-            {
-                "type": "FunctionDeclaration",
-                "id": {"name": "process"},
-                "line_range": [10, 25],
-                "leading_comment": None,
-            }
-        ],
-    }
+    def set_fast_path_token_threshold(self, threshold: int) -> None:
+        """Set the token count threshold for fast-path analysis."""
+        self.FAST_PATH_TOKEN_THRESHOLD = threshold
 
-    agent = IrisAgent()
+    def _add_quality_warnings(
+        self, result: Dict[str, Any], debug_report: Dict[str, Any]
+    ) -> None:
+        """Add quality warnings to metadata.notes if integrity score is below 100%.
+
+        Args:
+            result: The analysis result dictionary to update.
+            debug_report: The debug report from ShallowASTDebugger.
+        """
+        metadata = result.get("metadata", {})
+
+        # Initialize notes if not present
+        if "notes" not in metadata:
+            metadata["notes"] = ""
+
+        # Check integrity score
+        summary = debug_report.get("summary", {})
+        integrity_score = summary.get("integrity_score", 100)
+
+        if integrity_score < 100:
+            warning = (
+                f"Warning: AST integrity score is {integrity_score:.1f}%. "
+                f"Some structural elements may not have been fully verified. "
+                f"Node reduction: {summary.get('node_reduction_ratio', 0)}x, "
+                f"Compression: {summary.get('context_compression_ratio', 0)}x"
+            )
+
+            if metadata["notes"]:
+                metadata["notes"] += " | " + warning
+            else:
+                metadata["notes"] = warning
+
+    def _estimate_tokens_for_prompt(
+        self, filename: str, language: str, shallow_ast: Dict[str, Any]
+    ) -> int:
+        """Estimate token count for Stage 1 identification prompt."""
+        # Rough estimation: filename + language + shallow AST
+        ast_str = json.dumps(shallow_ast)
+        total_chars = len(filename) + len(language) + len(ast_str)
+        return max(100, total_chars // 4)  # ~1 token per 4 characters
+
+    def _estimate_tokens_for_analysis_prompt(
+        self,
+        filename: str,
+        language: str,
+        shallow_ast: Dict[str, Any],
+        source_snippets: Dict[str, str],
+    ) -> int:
+        """Estimate token count for Stage 2 analysis prompt."""
+        ast_str = json.dumps(shallow_ast)
+        snippets_str = json.dumps(source_snippets)
+        total_chars = len(filename) + len(language) + len(ast_str) + len(snippets_str)
+        return max(100, total_chars // 4)
+
+    def _estimate_tokens_for_response(self, response: str) -> int:
+        """Estimate token count for LLM response."""
+        return max(50, len(response) // 4)
+
+    def _estimate_tokens_for_fast_path_prompt(
+        self,
+        filename: str,
+        language: str,
+        shallow_ast: Dict[str, Any],
+        source_code: str,
+    ) -> int:
+        """Estimate token count for fast-path prompt."""
+        ast_str = json.dumps(shallow_ast)
+        total_chars = len(filename) + len(language) + len(ast_str) + len(source_code)
+        return max(100, total_chars // 4)
+
     # result = agent.analyze_file("example.ts", "typescript", shallow_ast, source_store, file_hash)
     # print(json.dumps(result, indent=2))

@@ -29,15 +29,29 @@ class CommentExtractor:
     def comments_for_range(
         self, start_line: int, end_line: int
     ) -> Dict[str, Optional[str]]:
-        """Return leading, trailing, and inline comments for a node range."""
+        """Return leading, trailing, and inline comments for a node range.
+
+        Returns None for empty or whitespace-only comments.
+        Deduplicates identical leading and trailing comments.
+        """
 
         leading = self._collect_leading_comment(start_line)
+        # Normalize: whitespace-only strings become None
+        leading = leading if leading and leading.strip() else None
+
         trailing = self.trailing_comments.get(start_line)
+        # Normalize: whitespace-only strings become None
+        trailing = trailing if trailing and trailing.strip() else None
+
+        # Deduplicate: if trailing matches leading, discard trailing
+        if leading and trailing and leading.strip() == trailing.strip():
+            trailing = None
+
         inline_comment: Optional[str] = None
 
         return {
-            "leading_comment": leading if leading else None,
-            "trailing_comment": trailing if trailing else None,
+            "leading_comment": leading,
+            "trailing_comment": trailing,
             "inline_comment": inline_comment,
         }
 

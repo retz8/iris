@@ -30,12 +30,16 @@ Lighten the context payload sent to the LLM to improve inference speed and reduc
 
 * **Effect:** Decreases input tokens, resulting in faster LLM processing and the ability to handle larger files within context limits.
 
+* **SPEC:** `./shallow_ast_optimization.md`
+
 ## Step 2. Fast-Path: Small File Optimization
 
 Streamline the analysis process for smaller files where a two-stage approach might be counterproductive due to network overhead.
 
 * **Description:** Skip Stage 1 (Identification) if the file's total tokens or line count is below a defined threshold. Instead, send the full source code directly to Stage 2.
 * **Effect:** Reduces LLM calls from two to one for small files
+
+* **SPEC:** `./fast_path_optimization.md`
 
 ## Step 3. Multi-layer Caching Strategy
 
@@ -48,4 +52,6 @@ Prevent redundant computations for unchanged files to provide near-instant respo
 
 
 * **Effect:** Enables millisecond-level responses for repeated requests on identical files.
+
+* **SPEC:** To be defined in a separate caching specification document.
 ---
