@@ -1,0 +1,171 @@
+{
+  "filename": "useUserBoard.ts",
+  "language": "typescript",
+  "metrics": {
+    "node_reduction_ratio": 7.71,
+    "context_compression_ratio": 0.65,
+    "comment_retention_score": 0.0,
+    "full_ast_node_count": 108,
+    "shallow_ast_node_count": 14,
+    "raw_source_bytes": 946,
+    "json_bytes": 1461,
+    "full_ast_estimated_tokens": 378,
+    "shallow_ast_estimated_tokens": 49,
+    "integrity_checks_passed": 13,
+    "integrity_checks_total": 14,
+    "integrity_score": 92.86
+  },
+  "shallow_ast": {
+    "type": "program",
+    "line_range": [
+      1,
+      37
+    ],
+    "children": [
+      {
+        "type": "import_statement",
+        "line_range": [
+          3,
+          3
+        ],
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "useUserComments",
+            "useUserPosts"
+          ],
+          "source": "@/apis/users/swrHooks"
+        },
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": [
+                3,
+                3
+              ],
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": [
+              3,
+              3
+            ],
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "import_statement",
+        "line_range": [
+          4,
+          4
+        ],
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "useState"
+          ],
+          "source": "react"
+        },
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": [
+                4,
+                4
+              ],
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": [
+              4,
+              4
+            ],
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "type_alias_declaration",
+        "line_range": [
+          11,
+          11
+        ],
+        "name": "ActiveViewOptions",
+        "fields": {
+          "name": [
+            {
+              "type": "type_identifier",
+              "line_range": [
+                11,
+                11
+              ]
+            }
+          ],
+          "value": [
+            {
+              "type": "union_type",
+              "line_range": [
+                11,
+                11
+              ],
+              "extra_children_count": 2
+            }
+          ]
+        }
+      },
+      {
+        "type": "lexical_declaration",
+        "line_range": [
+          13,
+          35
+        ],
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": [
+              13,
+              35
+            ],
+            "name": "useUserBoard",
+            "simple_value": null,
+            "value_type": "arrow_function",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "export_statement",
+        "line_range": [
+          37,
+          37
+        ],
+        "fields": {
+          "value": [
+            {
+              "type": "identifier",
+              "line_range": [
+                37,
+                37
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
