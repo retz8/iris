@@ -2,18 +2,18 @@
   "filename": "main.js",
   "language": "javascript",
   "metrics": {
-    "node_reduction_ratio": 8.62,
-    "context_compression_ratio": 0.74,
+    "node_reduction_ratio": 11.8,
+    "context_compression_ratio": 0.7,
     "comment_retention_score": 91.3,
     "full_ast_node_count": 3657,
-    "shallow_ast_node_count": 424,
+    "shallow_ast_node_count": 310,
     "raw_source_bytes": 34674,
-    "json_bytes": 46828,
+    "json_bytes": 49594,
     "full_ast_estimated_tokens": 12799,
-    "shallow_ast_estimated_tokens": 1484,
-    "integrity_checks_passed": 57,
-    "integrity_checks_total": 99,
-    "integrity_score": 57.58
+    "shallow_ast_estimated_tokens": 1085,
+    "integrity_checks_passed": 225,
+    "integrity_checks_total": 310,
+    "integrity_score": 72.58
   },
   "shallow_ast": {
     "type": "program",
@@ -24,12 +24,25 @@
     "children": [
       {
         "type": "import_statement",
-        "line_range": null,
+        "line_range": [
+          1,
+          1
+        ],
+        "import_details": {
+          "import_type": "namespace",
+          "namespace_import": "THREE",
+          "default_import": null,
+          "named_imports": null,
+          "source": "three"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                1,
+                1
+              ],
               "extra_children_count": 1
             }
           ]
@@ -37,19 +50,37 @@
         "children": [
           {
             "type": "import_clause",
-            "line_range": null,
+            "line_range": [
+              1,
+              1
+            ],
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "import_statement",
-        "line_range": null,
+        "line_range": [
+          2,
+          2
+        ],
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "PLYLoader"
+          ],
+          "source": "three/examples/jsm/loaders/PLYLoader.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                2,
+                2
+              ],
               "extra_children_count": 1
             }
           ]
@@ -57,19 +88,37 @@
         "children": [
           {
             "type": "import_clause",
-            "line_range": null,
+            "line_range": [
+              2,
+              2
+            ],
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "import_statement",
-        "line_range": null,
+        "line_range": [
+          3,
+          3
+        ],
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "OBJExporter"
+          ],
+          "source": "three/examples/jsm/exporters/OBJExporter.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                3,
+                3
+              ],
               "extra_children_count": 1
             }
           ]
@@ -77,19 +126,35 @@
         "children": [
           {
             "type": "import_clause",
-            "line_range": null,
+            "line_range": [
+              3,
+              3
+            ],
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "import_statement",
-        "line_range": null,
+        "line_range": [
+          4,
+          4
+        ],
+        "import_details": {
+          "import_type": "default",
+          "namespace_import": null,
+          "default_import": "rotatingFrameTransformation",
+          "named_imports": null,
+          "source": "./rotation_of_the_frame.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                4,
+                4
+              ],
               "extra_children_count": 1
             }
           ]
@@ -97,24 +162,38 @@
         "children": [
           {
             "type": "import_clause",
-            "line_range": null,
+            "line_range": [
+              4,
+              4
+            ],
             "extra_children_count": 1
           }
         ]
       },
       {
-        "type": "comment",
-        "line_range": null
-      },
-      {
         "type": "import_statement",
-        "line_range": null,
+        "line_range": [
+          7,
+          7
+        ],
         "leading_comment": "modeling modules",
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "createGUIWithAnth"
+          ],
+          "source": "./modules/guiManager.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                7,
+                7
+              ],
               "leading_comment": "modeling modules",
               "extra_children_count": 1
             }
@@ -123,7 +202,10 @@
         "children": [
           {
             "type": "import_clause",
-            "line_range": null,
+            "line_range": [
+              7,
+              7
+            ],
             "leading_comment": "modeling modules",
             "extra_children_count": 1
           }
@@ -131,12 +213,27 @@
       },
       {
         "type": "import_statement",
-        "line_range": null,
+        "line_range": [
+          8,
+          8
+        ],
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "createManualWheelchair"
+          ],
+          "source": "./modules/manualWheelchair.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                8,
+                8
+              ],
               "extra_children_count": 1
             }
           ]
@@ -144,19 +241,37 @@
         "children": [
           {
             "type": "import_clause",
-            "line_range": null,
+            "line_range": [
+              8,
+              8
+            ],
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "import_statement",
-        "line_range": null,
+        "line_range": [
+          9,
+          9
+        ],
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "createPoweredWheelchair"
+          ],
+          "source": "./modules/poweredWheelchair.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                9,
+                9
+              ],
               "extra_children_count": 1
             }
           ]
@@ -164,24 +279,36 @@
         "children": [
           {
             "type": "import_clause",
-            "line_range": null,
+            "line_range": [
+              9,
+              9
+            ],
             "extra_children_count": 1
           }
         ]
       },
       {
-        "type": "comment",
-        "line_range": null
-      },
-      {
         "type": "import_statement",
-        "line_range": null,
+        "line_range": [
+          12,
+          12
+        ],
         "leading_comment": "side modules",
+        "import_details": {
+          "import_type": "default",
+          "namespace_import": null,
+          "default_import": "LicenseManager",
+          "named_imports": null,
+          "source": "./modules/licenseManager.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                12,
+                12
+              ],
               "leading_comment": "side modules",
               "extra_children_count": 1
             }
@@ -190,7 +317,10 @@
         "children": [
           {
             "type": "import_clause",
-            "line_range": null,
+            "line_range": [
+              12,
+              12
+            ],
             "leading_comment": "side modules",
             "extra_children_count": 1
           }
@@ -202,11 +332,25 @@
           13,
           17
         ],
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "ASCIIStlWriter",
+            "ASCIILMWriter",
+            "ASCIIAnthroWriter"
+          ],
+          "source": "./modules/asciiWriters.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                17,
+                17
+              ],
               "extra_children_count": 1
             }
           ]
@@ -224,12 +368,25 @@
       },
       {
         "type": "import_statement",
-        "line_range": null,
+        "line_range": [
+          18,
+          18
+        ],
+        "import_details": {
+          "import_type": "default",
+          "namespace_import": null,
+          "default_import": "SceneManager",
+          "named_imports": null,
+          "source": "./modules/sceneManager.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                18,
+                18
+              ],
               "extra_children_count": 1
             }
           ]
@@ -237,24 +394,39 @@
         "children": [
           {
             "type": "import_clause",
-            "line_range": null,
+            "line_range": [
+              18,
+              18
+            ],
             "extra_children_count": 1
           }
         ]
       },
       {
-        "type": "comment",
-        "line_range": null
-      },
-      {
         "type": "import_statement",
-        "line_range": null,
+        "line_range": [
+          21,
+          21
+        ],
         "leading_comment": "utils",
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "showLoadingSymbol",
+            "hideLoadingSymbol"
+          ],
+          "source": "./utils/loader.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                21,
+                21
+              ],
               "leading_comment": "utils",
               "extra_children_count": 1
             }
@@ -263,7 +435,10 @@
         "children": [
           {
             "type": "import_clause",
-            "line_range": null,
+            "line_range": [
+              21,
+              21
+            ],
             "leading_comment": "utils",
             "extra_children_count": 1
           }
@@ -271,12 +446,27 @@
       },
       {
         "type": "import_statement",
-        "line_range": null,
+        "line_range": [
+          22,
+          22
+        ],
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "dotProduct"
+          ],
+          "source": "./utils/matrixCalculation.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                22,
+                22
+              ],
               "extra_children_count": 1
             }
           ]
@@ -284,19 +474,37 @@
         "children": [
           {
             "type": "import_clause",
-            "line_range": null,
+            "line_range": [
+              22,
+              22
+            ],
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "import_statement",
-        "line_range": null,
+        "line_range": [
+          23,
+          23
+        ],
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "getDateNow"
+          ],
+          "source": "./utils/date.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                23,
+                23
+              ],
               "extra_children_count": 1
             }
           ]
@@ -304,19 +512,37 @@
         "children": [
           {
             "type": "import_clause",
-            "line_range": null,
+            "line_range": [
+              23,
+              23
+            ],
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "import_statement",
-        "line_range": null,
+        "line_range": [
+          24,
+          24
+        ],
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "CSVToArray"
+          ],
+          "source": "./utils/csvParser.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                24,
+                24
+              ],
               "extra_children_count": 1
             }
           ]
@@ -324,7 +550,10 @@
         "children": [
           {
             "type": "import_clause",
-            "line_range": null,
+            "line_range": [
+              24,
+              24
+            ],
             "extra_children_count": 1
           }
         ]
@@ -335,11 +564,26 @@
           25,
           30
         ],
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "createDebugMesh",
+            "createBoundingBox",
+            "createAxes",
+            "removeAxesFromScene"
+          ],
+          "source": "./utils/3dDebugger.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                30,
+                30
+              ],
               "extra_children_count": 1
             }
           ]
@@ -357,12 +601,29 @@
       },
       {
         "type": "import_statement",
-        "line_range": null,
+        "line_range": [
+          31,
+          31
+        ],
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "inToM",
+            "mmToM",
+            "mToIn"
+          ],
+          "source": "./utils/unitConverter.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                31,
+                31
+              ],
               "extra_children_count": 1
             }
           ]
@@ -370,19 +631,38 @@
         "children": [
           {
             "type": "import_clause",
-            "line_range": null,
+            "line_range": [
+              31,
+              31
+            ],
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "import_statement",
-        "line_range": null,
+        "line_range": [
+          32,
+          32
+        ],
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "CSG2Geom",
+            "updateGeometryWithCSGData"
+          ],
+          "source": "./utils/csgHelper.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                32,
+                32
+              ],
               "extra_children_count": 1
             }
           ]
@@ -390,19 +670,37 @@
         "children": [
           {
             "type": "import_clause",
-            "line_range": null,
+            "line_range": [
+              32,
+              32
+            ],
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "import_statement",
-        "line_range": null,
+        "line_range": [
+          33,
+          33
+        ],
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "saveAs"
+          ],
+          "source": "./js/FileSaver.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                33,
+                33
+              ],
               "extra_children_count": 1
             }
           ]
@@ -410,7 +708,10 @@
         "children": [
           {
             "type": "import_clause",
-            "line_range": null,
+            "line_range": [
+              33,
+              33
+            ],
             "extra_children_count": 1
           }
         ]
@@ -421,11 +722,25 @@
           34,
           38
         ],
+        "import_details": {
+          "import_type": "named",
+          "namespace_import": null,
+          "default_import": null,
+          "named_imports": [
+            "getMeshCenterLine",
+            "calculateDistanceBetweenPoints",
+            "getHumanModelWorldCoordinates"
+          ],
+          "source": "./utils/meshUtils.js"
+        },
         "fields": {
           "source": [
             {
               "type": "string",
-              "line_range": null,
+              "line_range": [
+                38,
+                38
+              ],
               "extra_children_count": 1
             }
           ]
@@ -442,256 +757,384 @@
         ]
       },
       {
-        "type": "comment",
-        "line_range": null
-      },
-      {
-        "type": "comment",
-        "line_range": null
-      },
-      {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          43,
+          43
+        ],
         "leading_comment": "human body variables",
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              43,
+              43
+            ],
             "leading_comment": "human body variables",
             "name": "material",
+            "simple_value": null,
+            "value_type": "uninitialized",
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          44,
+          44
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              44,
+              44
+            ],
             "name": "PCAdata",
+            "simple_value": null,
+            "value_type": "uninitialized",
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          45,
+          45
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              45,
+              45
+            ],
             "name": "humanMesh",
+            "simple_value": null,
+            "value_type": "uninitialized",
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          46,
+          46
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              46,
+              46
+            ],
             "name": "humanGeometry",
+            "simple_value": null,
+            "value_type": "uninitialized",
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          47,
+          47
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              47,
+              47
+            ],
             "name": "geometryZero",
+            "simple_value": [],
+            "value_type": "array",
             "extra_children_count": 2
           }
         ]
       },
       {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          48,
+          48
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              48,
+              48
+            ],
             "name": "humanParameterChanged",
+            "simple_value": false,
+            "value_type": "boolean",
             "extra_children_count": 2
           }
         ]
       },
       {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          49,
+          49
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              49,
+              49
+            ],
             "name": "humanMaterial",
+            "simple_value": null,
+            "value_type": "uninitialized",
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          50,
+          50
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              50,
+              50
+            ],
             "name": "predAnthNum",
+            "simple_value": 0,
+            "value_type": "number",
             "extra_children_count": 2
           }
         ]
       },
       {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          51,
+          51
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              51,
+              51
+            ],
             "name": "predLandmarkNum",
+            "simple_value": 0,
+            "value_type": "number",
             "extra_children_count": 2
           }
         ]
       },
       {
-        "type": "comment",
-        "line_range": null
-      },
-      {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          54,
+          54
+        ],
         "leading_comment": "wheelchair variables",
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              54,
+              54
+            ],
             "leading_comment": "wheelchair variables",
             "name": "wheelchairMesh",
+            "simple_value": null,
+            "value_type": "uninitialized",
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          55,
+          55
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              55,
+              55
+            ],
             "name": "wheelchairGeometry",
+            "simple_value": null,
+            "value_type": "uninitialized",
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          56,
+          56
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              56,
+              56
+            ],
             "name": "wheelchairMaterial",
+            "simple_value": null,
+            "value_type": "uninitialized",
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "lexical_declaration",
-        "line_range": null,
+        "line_range": [
+          57,
+          57
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              57,
+              57
+            ],
             "name": "wheelchairParameterChanged",
+            "simple_value": false,
+            "value_type": "boolean",
             "extra_children_count": 2
           }
         ]
       },
       {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          58,
+          58
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              58,
+              58
+            ],
             "name": "wheelchairParams",
+            "simple_value": null,
+            "value_type": "uninitialized",
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          59,
+          59
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              59,
+              59
+            ],
             "name": "wheelchairType",
+            "simple_value": "manual",
+            "value_type": "string",
             "extra_children_count": 2
           }
         ]
       },
       {
-        "type": "comment",
-        "line_range": null
-      },
-      {
         "type": "lexical_declaration",
-        "line_range": null,
+        "line_range": [
+          62,
+          62
+        ],
         "leading_comment": "sceneManager variables",
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              62,
+              62
+            ],
             "leading_comment": "sceneManager variables",
             "name": "scene",
+            "simple_value": null,
+            "value_type": "uninitialized",
             "extra_children_count": 1
           },
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              62,
+              62
+            ],
             "leading_comment": "sceneManager variables",
             "name": "controls",
+            "simple_value": null,
+            "value_type": "uninitialized",
             "extra_children_count": 1
           }
         ]
       },
       {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          64,
+          64
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              64,
+              64
+            ],
             "name": "showAxes",
+            "simple_value": false,
+            "value_type": "boolean",
             "extra_children_count": 2
           }
         ]
       },
       {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          66,
+          66
+        ],
         "trailing_comment": "Center point of the human",
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              66,
+              66
+            ],
             "trailing_comment": "Center point of the human",
             "name": "centerPoint",
+            "simple_value": null,
+            "value_type": "new_expression",
             "extra_children_count": 2
           }
         ]
-      },
-      {
-        "type": "comment",
-        "line_range": null,
-        "trailing_comment": "Center point of the human"
       },
       {
         "type": "variable_declaration",
@@ -707,49 +1150,71 @@
               72
             ],
             "name": "humanRotation",
+            "simple_value": null,
+            "value_type": "new_expression",
             "extra_children_count": 2
           }
         ]
       },
       {
         "type": "variable_declaration",
-        "line_range": null,
+        "line_range": [
+          73,
+          73
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              73,
+              73
+            ],
             "name": "wheelchairRotation",
+            "simple_value": null,
+            "value_type": "new_expression",
             "extra_children_count": 2
           }
         ]
       },
       {
         "type": "lexical_declaration",
-        "line_range": null,
+        "line_range": [
+          75,
+          75
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              75,
+              75
+            ],
             "name": "sceneManager",
+            "simple_value": null,
+            "value_type": "new_expression",
             "extra_children_count": 2
           }
         ]
       },
       {
         "type": "lexical_declaration",
-        "line_range": null,
+        "line_range": [
+          76,
+          76
+        ],
         "children": [
           {
             "type": "variable_declarator",
-            "line_range": null,
+            "line_range": [
+              76,
+              76
+            ],
             "name": "licenseManager",
+            "simple_value": null,
+            "value_type": "new_expression",
             "extra_children_count": 2
           }
         ]
-      },
-      {
-        "type": "comment",
-        "line_range": null
       },
       {
         "type": "variable_declaration",
@@ -767,13 +1232,11 @@
             ],
             "leading_comment": "Track bars: define human & wheelchair parameters",
             "name": "anth",
+            "simple_value": null,
+            "value_type": "new_expression",
             "extra_children_count": 2
           }
         ]
-      },
-      {
-        "type": "comment",
-        "line_range": null
       },
       {
         "type": "variable_declaration",
@@ -791,21 +1254,11 @@
             ],
             "leading_comment": "create GUI for human & wheelchair parameters + export options",
             "name": "gui",
+            "simple_value": null,
+            "value_type": "call_expression",
             "extra_children_count": 2
           }
         ]
-      },
-      {
-        "type": "comment",
-        "line_range": null
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          307,
-          310
-        ],
-        "leading_comment": "<HELPER FUNCTIONS> ----------------------------------------------------------------------------"
       },
       {
         "type": "function_declaration",
@@ -819,15 +1272,29 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                311,
+                311
+              ],
               "leading_comment": "<HELPER FUNCTIONS> ----------------------------------------------------------------------------\n*\nCalculate optimal seat width based on thigh width\nUsing actual thigh indices from advisor"
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
+              "line_range": [
+                311,
+                311
+              ],
               "leading_comment": "<HELPER FUNCTIONS> ----------------------------------------------------------------------------\n*\nCalculate optimal seat width based on thigh width\nUsing actual thigh indices from advisor",
+              "parameters": [
+                {
+                  "name": "humanMesh",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 1,
               "extra_children_count": 1
             }
           ]
@@ -835,17 +1302,19 @@
         "children": [
           {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              312,
+              312
+            ],
             "extra_children_count": 1
           },
           {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              313,
+              313
+            ],
             "extra_children_count": 1
-          },
-          {
-            "type": "comment",
-            "line_range": null
           },
           {
             "type": "lexical_declaration",
@@ -857,37 +1326,31 @@
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              326,
+              326
+            ],
             "leading_comment": "Add padding for comfort (1 inch to both sides)",
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              329,
+              329
+            ],
             "leading_comment": "Convert to inches and add padding",
             "extra_children_count": 1
           },
           {
             "type": "return_statement",
-            "line_range": null,
+            "line_range": [
+              331,
+              331
+            ],
             "extra_children_count": 1
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          334,
-          337
         ]
       },
       {
@@ -902,15 +1365,29 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                338,
+                338
+              ],
               "leading_comment": "*\nCalculate optimal back height based on shoulder height\nUsing actual shoulder index from advisor"
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
+              "line_range": [
+                338,
+                338
+              ],
               "leading_comment": "*\nCalculate optimal back height based on shoulder height\nUsing actual shoulder index from advisor",
+              "parameters": [
+                {
+                  "name": "humanMesh",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 1,
               "extra_children_count": 1
             }
           ]
@@ -918,12 +1395,11 @@
         "children": [
           {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              339,
+              339
+            ],
             "extra_children_count": 1
-          },
-          {
-            "type": "comment",
-            "line_range": null
           },
           {
             "type": "lexical_declaration",
@@ -935,15 +1411,6 @@
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "Get wheelchair seat height from parameters"
-          },
-          {
             "type": "lexical_declaration",
             "line_range": [
               349,
@@ -953,52 +1420,40 @@
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "Calculate optimal back height as distance from seat to shoulder"
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              355,
+              355
+            ],
             "leading_comment": "Calculate optimal back height as distance from seat to shoulder\nAdd slight padding (1 inch) for comfort",
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              357,
+              357
+            ],
             "leading_comment": "[QUESTION] how much padding?",
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              360,
+              360
+            ],
             "leading_comment": "const optimalBackHeight = mToIn(backHeight) + padding;",
             "extra_children_count": 1
           },
           {
             "type": "return_statement",
-            "line_range": null,
+            "line_range": [
+              362,
+              362
+            ],
             "extra_children_count": 1
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          365,
-          367
         ]
       },
       {
@@ -1013,29 +1468,35 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                368,
+                368
+              ],
               "leading_comment": "*\nMain function to calculate optimal wheelchair parameters"
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
-              "leading_comment": "*\nMain function to calculate optimal wheelchair parameters"
+              "line_range": [
+                368,
+                368
+              ],
+              "leading_comment": "*\nMain function to calculate optimal wheelchair parameters",
+              "parameters": [],
+              "parameter_count": 0
             }
           ]
         },
         "children": [
           {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              369,
+              369
+            ],
             "trailing_comment": "Start with current params",
             "extra_children_count": 1
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "trailing_comment": "Start with current params"
           },
           {
             "type": "try_statement",
@@ -1047,16 +1508,12 @@
           },
           {
             "type": "return_statement",
-            "line_range": null,
+            "line_range": [
+              387,
+              387
+            ],
             "extra_children_count": 1
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          390,
-          392
         ]
       },
       {
@@ -1071,24 +1528,34 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                393,
+                393
+              ],
               "leading_comment": "*\nValidate wheelchair parameters are within reasonable ranges"
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
+              "line_range": [
+                393,
+                393
+              ],
               "leading_comment": "*\nValidate wheelchair parameters are within reasonable ranges",
+              "parameters": [
+                {
+                  "name": "params",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 1,
               "extra_children_count": 1
             }
           ]
         },
         "children": [
-          {
-            "type": "comment",
-            "line_range": null
-          },
           {
             "type": "lexical_declaration",
             "line_range": [
@@ -1099,10 +1566,6 @@
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "for_in_statement",
             "line_range": [
               402,
@@ -1111,13 +1574,6 @@
             "leading_comment": "Check each parameter",
             "extra_children_count": 2
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          411,
-          417
         ]
       },
       {
@@ -1132,29 +1588,39 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                418,
+                418
+              ],
               "leading_comment": "*\n@desc Update the global wheelchair parameters using the provided type and newParams.\nThis function merges newParams with the current (or manual) parameters\nand, if the type is \"powered\", updates additional powered-specific parameters.\n@param {string} type - The wheelchair type (\"manual\" or \"powered\").\n@param {Object} newParams - An object containing new parameter values to update."
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
+              "line_range": [
+                418,
+                418
+              ],
               "leading_comment": "*\n@desc Update the global wheelchair parameters using the provided type and newParams.\nThis function merges newParams with the current (or manual) parameters\nand, if the type is \"powered\", updates additional powered-specific parameters.\n@param {string} type - The wheelchair type (\"manual\" or \"powered\").\n@param {Object} newParams - An object containing new parameter values to update.",
+              "parameters": [
+                {
+                  "name": "type",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "newParams",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 2,
               "extra_children_count": 2
             }
           ]
         },
         "children": [
-          {
-            "type": "comment",
-            "line_range": null
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "manual: if wheelchairParams is already defined, copy the value,"
-          },
           {
             "type": "lexical_declaration",
             "line_range": [
@@ -1165,18 +1631,13 @@
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              437,
+              437
+            ],
             "leading_comment": "merge newParams with updatedParams",
             "extra_children_count": 1
-          },
-          {
-            "type": "comment",
-            "line_range": null
           },
           {
             "type": "if_statement",
@@ -1188,18 +1649,20 @@
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              449,
+              449
+            ],
             "leading_comment": "update global variables",
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              451,
+              451
+            ],
             "extra_children_count": 1
           }
         ]
@@ -1215,80 +1678,99 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null
+              "line_range": [
+                454,
+                454
+              ]
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null
+              "line_range": [
+                454,
+                454
+              ],
+              "parameters": [],
+              "parameter_count": 0
             }
           ]
         },
         "children": [
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              456,
+              456
+            ],
             "leading_comment": "update ANTH wheelchair params with wheelchairParams",
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              457,
+              457
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              458,
+              458
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              459,
+              459
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              460,
+              460
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              461,
+              461
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              462,
+              462
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              463,
+              463
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              465,
+              465
+            ],
             "extra_children_count": 1
           }
         ]
-      },
-      {
-        "type": "comment",
-        "line_range": null
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          469,
-          474
-        ],
-        "leading_comment": "Main Logics ----------------------------------------------------------------------------------"
       },
       {
         "type": "function_declaration",
@@ -1302,7 +1784,10 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                475,
+                475
+              ],
               "leading_comment": "Main Logics ----------------------------------------------------------------------------------\n*\nLoad the human model from 3D model file\n- create human mesh\n- set human initial position, scale, rotation\n- add human to the scene"
             }
           ],
@@ -1314,6 +1799,34 @@
                 481
               ],
               "leading_comment": "Main Logics ----------------------------------------------------------------------------------\n*\nLoad the human model from 3D model file\n- create human mesh\n- set human initial position, scale, rotation\n- add human to the scene",
+              "parameters": [
+                {
+                  "name": "humanModelFile",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "humanPosX",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "humanPosY",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "humanPosZ",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "callback",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 5,
               "extra_children_count": 5
             }
           ]
@@ -1321,17 +1834,11 @@
         "children": [
           {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              482,
+              482
+            ],
             "extra_children_count": 1
-          },
-          {
-            "type": "comment",
-            "line_range": null
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "Load the mean human body model which is used as the initial model"
           },
           {
             "type": "expression_statement",
@@ -1342,13 +1849,6 @@
             "leading_comment": "Load the mean human body model which is used as the initial model\nUser can modify model's parameters after loading",
             "extra_children_count": 1
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          564,
-          566
         ]
       },
       {
@@ -1367,15 +1867,10 @@
             ],
             "leading_comment": "*\nCalculate magic number Z offset for human model",
             "name": "getHumanModelZOffset",
+            "simple_value": null,
+            "value_type": "arrow_function",
             "extra_children_count": 2
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          579,
-          581
         ]
       },
       {
@@ -1390,7 +1885,10 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                582,
+                582
+              ],
               "leading_comment": "*\nUpdate human model based on human parameters"
             }
           ],
@@ -1402,28 +1900,50 @@
                 589
               ],
               "leading_comment": "*\nUpdate human model based on human parameters",
+              "parameters": [
+                {
+                  "name": "anth",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "geometry",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "geometryZero",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "PCAdata",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "predAnthNum",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "predLandmarkNum",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 6,
               "extra_children_count": 6
             }
           ]
         },
         "children": [
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "Process BufferGeometry"
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "Process BufferGeometry\n[NOTE] positions and geometry.attributes.position point to the same memory"
-          },
-          {
             "type": "variable_declaration",
-            "line_range": null,
+            "line_range": [
+              593,
+              593
+            ],
             "leading_comment": "Process BufferGeometry\n[NOTE] positions and geometry.attributes.position point to the same memory\nso we can directly modify the positions",
             "extra_children_count": 1
           },
@@ -1436,45 +1956,11 @@
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "Calculate"
-          },
-          {
-            "type": "comment",
-            "line_range": null
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "Anth: human parameters (input)"
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "Anth: human parameters (input)\nPCAdata: PCA regression matrix"
-          },
-          {
-            "type": "comment",
-            "line_range": null
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "[NOTE] PCAdata row order: (body dimension - landmark(x3: x,y,z) - PCA)"
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "[NOTE] PCAdata row order: (body dimension - landmark(x3: x,y,z) - PCA)\nby skipping body dimension and landmark * 3 (skipNum)"
-          },
-          {
             "type": "variable_declaration",
-            "line_range": null,
+            "line_range": [
+              615,
+              615
+            ],
             "leading_comment": "[NOTE] PCAdata row order: (body dimension - landmark(x3: x,y,z) - PCA)\nby skipping body dimension and landmark * 3 (skipNum)\nwe can get the difference between human model and human parameters",
             "extra_children_count": 1
           },
@@ -1487,52 +1973,40 @@
             "extra_children_count": 3
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "Calculate center point"
-          },
-          {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              633,
+              633
+            ],
             "leading_comment": "Calculate center point\n[?] this doesn't actually affect the model?",
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              636,
+              636
+            ],
             "leading_comment": "Inform Three.js that the positions have been updated",
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              637,
+              637
+            ],
             "extra_children_count": 1
-          },
-          {
-            "type": "comment",
-            "line_range": null
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              640,
+              640
+            ],
             "leading_comment": "Compute vertex normals for lighting",
             "extra_children_count": 1
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          643,
-          645
         ]
       },
       {
@@ -1547,7 +2021,10 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                646,
+                646
+              ],
               "leading_comment": "*\nCalculate the X,Y,Z position of the human model on the wheelchair"
             }
           ],
@@ -1559,33 +2036,67 @@
                 653
               ],
               "leading_comment": "*\nCalculate the X,Y,Z position of the human model on the wheelchair",
+              "parameters": [
+                {
+                  "name": "wheelchairParams",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "wheelchairMesh",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "wheelchairType",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "humanPosX",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "humanPosY",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "humanPosZ",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 6,
               "extra_children_count": 6
             }
           ]
         },
         "children": [
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              655,
+              655
+            ],
             "leading_comment": "Get the offset based on BMI and wheelchair type",
             "extra_children_count": 1
           },
           {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              657,
+              657
+            ],
             "extra_children_count": 3
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              660,
+              660
+            ],
             "leading_comment": "Get wheelchair center line for consistent positioning",
             "extra_children_count": 1
           },
@@ -1599,23 +2110,12 @@
           },
           {
             "type": "return_statement",
-            "line_range": null,
+            "line_range": [
+              686,
+              686
+            ],
             "extra_children_count": 1
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          689,
-          693
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          695,
-          697
         ]
       },
       {
@@ -1630,33 +2130,54 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                698,
+                698
+              ],
               "leading_comment": "*\nMeasure the gap between human's back and wheelchair's back"
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
+              "line_range": [
+                698,
+                698
+              ],
               "leading_comment": "*\nMeasure the gap between human's back and wheelchair's back",
+              "parameters": [
+                {
+                  "name": "humanMesh",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "wheelchairMesh",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 2,
               "extra_children_count": 2
             }
           ]
         },
         "children": [
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              700,
+              700
+            ],
             "leading_comment": "Calculate wheelchair backrest position",
             "extra_children_count": 1
           },
           {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              701,
+              701
+            ],
             "extra_children_count": 1
           },
           {
@@ -1668,37 +2189,31 @@
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              706,
+              706
+            ],
             "leading_comment": "Get human's back position in world coordinates",
             "extra_children_count": 1
           },
           {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              707,
+              707
+            ],
             "extra_children_count": 1
-          },
-          {
-            "type": "comment",
-            "line_range": null
           },
           {
             "type": "return_statement",
-            "line_range": null,
+            "line_range": [
+              710,
+              710
+            ],
             "leading_comment": "Return the gap between human's back and wheelchair's backrest",
             "extra_children_count": 1
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          713,
-          715
         ]
       },
       {
@@ -1713,38 +2228,55 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                716,
+                716
+              ],
               "leading_comment": "*\nMeasure the overlap between human's thigh and cushion"
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
+              "line_range": [
+                716,
+                716
+              ],
               "leading_comment": "*\nMeasure the overlap between human's thigh and cushion",
+              "parameters": [
+                {
+                  "name": "humanMesh",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "wheelchairMesh",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 2,
               "extra_children_count": 2
             }
           ]
         },
         "children": [
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              718,
+              718
+            ],
             "leading_comment": "[TODO] implement this",
             "extra_children_count": 1
           },
           {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              719,
+              719
+            ],
             "extra_children_count": 1
-          },
-          {
-            "type": "comment",
-            "line_range": null
           },
           {
             "type": "lexical_declaration",
@@ -1754,10 +2286,6 @@
             ],
             "leading_comment": "Get thigh position in local coordinates",
             "extra_children_count": 1
-          },
-          {
-            "type": "comment",
-            "line_range": null
           },
           {
             "type": "lexical_declaration",
@@ -1770,22 +2298,13 @@
           },
           {
             "type": "return_statement",
-            "line_range": null,
+            "line_range": [
+              733,
+              733
+            ],
             "trailing_comment": "Placeholder return until implementation",
             "extra_children_count": 1
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "trailing_comment": "Placeholder return until implementation"
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          736,
-          738
         ]
       },
       {
@@ -1800,38 +2319,62 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                739,
+                739
+              ],
               "leading_comment": "*\nMeasure the overlap between human's calf and cushion"
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
+              "line_range": [
+                739,
+                739
+              ],
               "leading_comment": "*\nMeasure the overlap between human's calf and cushion",
+              "parameters": [
+                {
+                  "name": "humanMesh",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "wheelchairMesh",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 2,
               "extra_children_count": 2
             }
           ]
         },
         "children": [
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              741,
+              741
+            ],
             "leading_comment": "Get key anatomical points in world coordinates",
             "extra_children_count": 1
           },
           {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              742,
+              742
+            ],
             "extra_children_count": 1
           },
           {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              743,
+              743
+            ],
             "extra_children_count": 1
           },
           {
@@ -1843,47 +2386,31 @@
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              750,
+              750
+            ],
             "leading_comment": "Calculate overlap between calf and cushion",
             "extra_children_count": 1
           },
           {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              751,
+              751
+            ],
             "extra_children_count": 1
-          },
-          {
-            "type": "comment",
-            "line_range": null
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "interestingly, overlap should consider the rest thickness"
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "interestingly, overlap should consider the rest thickness\nbecause the tail bone is not on the cushion starting point"
           },
           {
             "type": "return_statement",
-            "line_range": null,
+            "line_range": [
+              756,
+              756
+            ],
             "leading_comment": "interestingly, overlap should consider the rest thickness\nbecause the tail bone is not on the cushion starting point\nconst restThickness = 0.1;",
             "extra_children_count": 1
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          759,
-          764
         ]
       },
       {
@@ -1898,88 +2425,99 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                765,
+                765
+              ],
               "leading_comment": "*\nOptimize the human model's alignment on Wheelchair\n- human's back - wheelchair's back (backGap) < threshold\n- human's thigh should not overlap with the cushion\n- human's calf should not overlap with the cushion (if so, shift human's position forward)"
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
+              "line_range": [
+                765,
+                765
+              ],
               "leading_comment": "*\nOptimize the human model's alignment on Wheelchair\n- human's back - wheelchair's back (backGap) < threshold\n- human's thigh should not overlap with the cushion\n- human's calf should not overlap with the cushion (if so, shift human's position forward)",
+              "parameters": [
+                {
+                  "name": "humanMesh",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "wheelchairMesh",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 2,
               "extra_children_count": 2
             }
           ]
         },
         "children": [
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              767,
+              767
+            ],
             "leading_comment": "Define thresholds for proper seating",
             "trailing_comment": "Minimum allowed gap (prevent sitting too far back)",
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "Define thresholds for proper seating",
-            "trailing_comment": "Minimum allowed gap (prevent sitting too far back)"
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              768,
+              768
+            ],
             "trailing_comment": "Maximum allowed gap (prevent sitting too far forward)",
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null,
-            "trailing_comment": "Maximum allowed gap (prevent sitting too far forward)"
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              769,
+              769
+            ],
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              772,
+              772
+            ],
             "leading_comment": "Define adjustment steps",
             "trailing_comment": "1mm adjustment step",
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "Define adjustment steps",
-            "trailing_comment": "1mm adjustment step"
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              773,
+              773
+            ],
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              776,
+              776
+            ],
             "leading_comment": "Step 1: Align back with backrest",
             "extra_children_count": 1
           },
           {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              777,
+              777
+            ],
             "extra_children_count": 1
           },
           {
@@ -1999,23 +2537,21 @@
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              797,
+              797
+            ],
             "leading_comment": "Step 2: Adjust for calf overlap",
             "extra_children_count": 1
           },
           {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              798,
+              798
+            ],
             "extra_children_count": 1
-          },
-          {
-            "type": "comment",
-            "line_range": null
           },
           {
             "type": "if_statement",
@@ -2026,13 +2562,6 @@
             "leading_comment": "Only make small adjustments for calf overlap to maintain back alignment",
             "extra_children_count": 1
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          806,
-          808
         ]
       },
       {
@@ -2047,7 +2576,10 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                809,
+                809
+              ],
               "leading_comment": "*\nUpdate human model based on wheelchair's change"
             }
           ],
@@ -2059,15 +2591,29 @@
                 813
               ],
               "leading_comment": "*\nUpdate human model based on wheelchair's change",
+              "parameters": [
+                {
+                  "name": "wheelchairParams",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "wheelchairMesh",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "callback",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 3,
               "extra_children_count": 3
             }
           ]
         },
         "children": [
-          {
-            "type": "comment",
-            "line_range": null
-          },
           {
             "type": "lexical_declaration",
             "line_range": [
@@ -2087,56 +2633,30 @@
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              829,
+              829
+            ],
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "2. align human model to satisfy the following constraints:"
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "2. align human model to satisfy the following constraints:\n- human's back - wheelchair's back < threshold"
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "leading_comment": "2. align human model to satisfy the following constraints:\n- human's back - wheelchair's back < threshold\n- human's thigh should not overlap with the cushion"
-          },
-          {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              835,
+              835
+            ],
             "leading_comment": "2. align human model to satisfy the following constraints:\n- human's back - wheelchair's back < threshold\n- human's thigh should not overlap with the cushion\n- human's calf should not overlap with the cushion (if so, shift human's position forward)",
             "extra_children_count": 1
           },
           {
             "type": "if_statement",
-            "line_range": null,
+            "line_range": [
+              837,
+              837
+            ],
             "extra_children_count": 2
           }
         ]
-      },
-      {
-        "type": "comment",
-        "line_range": null
-      },
-      {
-        "type": "comment",
-        "line_range": null
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          842,
-          847
-        ],
-        "leading_comment": "<WHEELCHAIR MODEL> ------------------------------------------------------------------------------"
       },
       {
         "type": "function_declaration",
@@ -2150,15 +2670,49 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                848,
+                848
+              ],
               "leading_comment": "<WHEELCHAIR MODEL> ------------------------------------------------------------------------------\n*\nLoad the wheelchair model\n- create wheelchair mesh\n- set wheelchair initial position, scale, rotation\n- add wheelchair to the scene"
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
+              "line_range": [
+                848,
+                848
+              ],
               "leading_comment": "<WHEELCHAIR MODEL> ------------------------------------------------------------------------------\n*\nLoad the wheelchair model\n- create wheelchair mesh\n- set wheelchair initial position, scale, rotation\n- add wheelchair to the scene",
+              "parameters": [
+                {
+                  "name": "posX",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "posY",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "posZ",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "wheelchairParams",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "callback",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 5,
               "extra_children_count": 5
             }
           ]
@@ -2174,17 +2728,26 @@
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              856,
+              856
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              858,
+              858
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              859,
+              859
+            ],
             "extra_children_count": 1
           },
           {
@@ -2197,26 +2760,21 @@
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              866,
+              866
+            ],
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "if_statement",
-            "line_range": null,
+            "line_range": [
+              869,
+              869
+            ],
             "leading_comment": "Notify the callback function (init) that the wheelchair model has been loaded",
             "extra_children_count": 2
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          872,
-          877
         ]
       },
       {
@@ -2231,15 +2789,34 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                878,
+                878
+              ],
               "leading_comment": "*\nUpdate the wheelchair geometry\n- update wheelchair mesh\n- update wheelchair position, scale, rotation\n- add wheelchair to the scene"
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
+              "line_range": [
+                878,
+                878
+              ],
               "leading_comment": "*\nUpdate the wheelchair geometry\n- update wheelchair mesh\n- update wheelchair position, scale, rotation\n- add wheelchair to the scene",
+              "parameters": [
+                {
+                  "name": "wheelchairParams",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "callback",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 2,
               "extra_children_count": 2
             }
           ]
@@ -2247,27 +2824,35 @@
         "children": [
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              879,
+              879
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              880,
+              880
+            ],
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              883,
+              883
+            ],
             "leading_comment": "Update the position, scale, and rotation",
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              884,
+              884
+            ],
             "extra_children_count": 1
           },
           {
@@ -2280,26 +2865,21 @@
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              890,
+              890
+            ],
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "if_statement",
-            "line_range": null,
+            "line_range": [
+              893,
+              893
+            ],
             "leading_comment": "Notify the callback function (init) that the wheelchair model has been loaded",
             "extra_children_count": 2
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          896,
-          899
         ]
       },
       {
@@ -2314,15 +2894,39 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                900,
+                900
+              ],
               "leading_comment": "*\nCreate a new wheelchair Three.js mesh\n- type: \"manual\" or \"powered\""
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
+              "line_range": [
+                900,
+                900
+              ],
               "leading_comment": "*\nCreate a new wheelchair Three.js mesh\n- type: \"manual\" or \"powered\"",
+              "parameters": [
+                {
+                  "name": "params",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "material",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "type",
+                  "type": "identifier",
+                  "has_default": true
+                }
+              ],
+              "parameter_count": 3,
               "extra_children_count": 3
             }
           ]
@@ -2338,31 +2942,36 @@
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              906,
+              906
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              907,
+              907
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              908,
+              908
+            ],
             "extra_children_count": 1
           },
           {
             "type": "return_statement",
-            "line_range": null,
+            "line_range": [
+              910,
+              910
+            ],
             "extra_children_count": 1
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          913,
-          915
         ]
       },
       {
@@ -2377,15 +2986,34 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                916,
+                916
+              ],
               "leading_comment": "*\nUpdate the wheelchairMesh with the updated wheelchair mesh"
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
+              "line_range": [
+                916,
+                916
+              ],
               "leading_comment": "*\nUpdate the wheelchairMesh with the updated wheelchair mesh",
+              "parameters": [
+                {
+                  "name": "params",
+                  "type": "identifier",
+                  "has_default": false
+                },
+                {
+                  "name": "material",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 2,
               "extra_children_count": 2
             }
           ]
@@ -2393,14 +3021,12 @@
         "children": [
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              917,
+              917
+            ],
             "trailing_comment": "clear the previous mesh",
             "extra_children_count": 1
-          },
-          {
-            "type": "comment",
-            "line_range": null,
-            "trailing_comment": "clear the previous mesh"
           },
           {
             "type": "lexical_declaration",
@@ -2420,50 +3046,53 @@
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              928,
+              928
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              929,
+              929
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              932,
+              932
+            ],
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              934,
+              934
+            ],
             "leading_comment": "Update bounding box",
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              935,
+              935
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              936,
+              936
+            ],
             "extra_children_count": 1
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": null
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          940,
-          942
         ]
       },
       {
@@ -2478,15 +3107,29 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                943,
+                943
+              ],
               "leading_comment": "*\n@desc Set the wheelchair parameters"
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
+              "line_range": [
+                943,
+                943
+              ],
               "leading_comment": "*\n@desc Set the wheelchair parameters",
+              "parameters": [
+                {
+                  "name": "type",
+                  "type": "identifier",
+                  "has_default": true
+                }
+              ],
+              "parameter_count": 1,
               "extra_children_count": 1
             }
           ]
@@ -2510,21 +3153,20 @@
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              976,
+              976
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              977,
+              977
+            ],
             "extra_children_count": 1
           }
-        ]
-      },
-      {
-        "type": "comment",
-        "line_range": [
-          980,
-          982
         ]
       },
       {
@@ -2539,33 +3181,49 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                983,
+                983
+              ],
               "leading_comment": "*\n@desc Load the human and wheelchair models"
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
+              "line_range": [
+                983,
+                983
+              ],
               "leading_comment": "*\n@desc Load the human and wheelchair models",
+              "parameters": [
+                {
+                  "name": "humanModelFile",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 1,
               "extra_children_count": 1
             }
           ]
         },
         "children": [
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              985,
+              985
+            ],
             "leading_comment": "Load human and wheelchair models using three.js",
             "extra_children_count": 1
           },
           {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              986,
+              986
+            ],
             "extra_children_count": 1
           },
           {
@@ -2595,18 +3253,13 @@
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              1014,
+              1014
+            ],
             "extra_children_count": 1
           }
         ]
-      },
-      {
-        "type": "comment",
-        "line_range": null
-      },
-      {
-        "type": "comment",
-        "line_range": null
       },
       {
         "type": "function_declaration",
@@ -2620,81 +3273,95 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                1020,
+                1020
+              ],
               "leading_comment": "init function"
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
+              "line_range": [
+                1020,
+                1020
+              ],
               "leading_comment": "init function",
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": "identifier",
+                  "has_default": false
+                }
+              ],
+              "parameter_count": 1,
               "extra_children_count": 1
             }
           ]
         },
         "children": [
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              1022,
+              1022
+            ],
             "leading_comment": "1. Three.js sceneManager setup",
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              1023,
+              1023
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              1024,
+              1024
+            ],
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              1027,
+              1027
+            ],
             "leading_comment": "2. Set up necessary variables for Modeling",
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              1028,
+              1028
+            ],
             "trailing_comment": "wheelchairParams = { anth... }",
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null,
-            "trailing_comment": "wheelchairParams = { anth... }"
-          },
-          {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "lexical_declaration",
-            "line_range": null,
+            "line_range": [
+              1031,
+              1031
+            ],
             "leading_comment": "3. Load Models (human and wheelchair)",
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              1032,
+              1032
+            ],
             "extra_children_count": 1
           }
         ]
-      },
-      {
-        "type": "comment",
-        "line_range": null
       },
       {
         "type": "function_declaration",
@@ -2708,27 +3375,41 @@
           "name": [
             {
               "type": "identifier",
-              "line_range": null,
+              "line_range": [
+                1036,
+                1036
+              ],
               "leading_comment": "animate function"
             }
           ],
           "parameters": [
             {
               "type": "formal_parameters",
-              "line_range": null,
-              "leading_comment": "animate function"
+              "line_range": [
+                1036,
+                1036
+              ],
+              "leading_comment": "animate function",
+              "parameters": [],
+              "parameter_count": 0
             }
           ]
         },
         "children": [
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              1037,
+              1037
+            ],
             "extra_children_count": 1
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              1039,
+              1039
+            ],
             "extra_children_count": 1
           },
           {
@@ -2748,10 +3429,6 @@
             "extra_children_count": 1
           },
           {
-            "type": "comment",
-            "line_range": null
-          },
-          {
             "type": "if_statement",
             "line_range": [
               1134,
@@ -2762,14 +3439,13 @@
           },
           {
             "type": "expression_statement",
-            "line_range": null,
+            "line_range": [
+              1144,
+              1144
+            ],
             "extra_children_count": 1
           }
         ]
-      },
-      {
-        "type": "comment",
-        "line_range": null
       },
       {
         "type": "expression_statement",

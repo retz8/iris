@@ -15,6 +15,13 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type
 from tree_sitter import Node
 
 from parser.ast_parser import ASTParser
+from .ast_utils import (
+    extract_line_range,
+    extract_import_details,
+    detect_simple_value,
+    extract_simple_value,
+    extract_parameters,
+)
 from .comment_extractor import CommentExtractor
 
 if TYPE_CHECKING:
@@ -131,14 +138,10 @@ class ShallowASTProcessor:
         At depth >= max_depth, only includes type and line_range.
         Otherwise, recursively processes children.
 
-        Note: Single-line nodes (start_line == end_line) have line_range set to null,
-        as there is no meaningful implementation to read beyond what's in the AST.
+        Note: line_range is always set as a required field for all nodes,
+        ensuring 100% coverage and enabling consistent code navigation.
         """
-        start_line, end_line = self._line_range(node)
-
-        # Single-line declarations have no nested implementation
-        # Setting line_range to null signals "no need to read source"
-        line_range_value = None if start_line == end_line else [start_line, end_line]
+        line_range_value = self._line_range(node)
 
         representation: Dict[str, Any] = {
             "type": node.type,
@@ -147,7 +150,9 @@ class ShallowASTProcessor:
 
         # Attach comments (omit if None)
         if self.comment_extractor:
-            comments = self.comment_extractor.comments_for_range(start_line, end_line)
+            comments = self.comment_extractor.comments_for_range(
+                line_range_value[0], line_range_value[1]
+            )
             # Only add non-None comment values
             for key, value in comments.items():
                 if value is not None:
@@ -157,6 +162,35 @@ class ShallowASTProcessor:
         identifier = self._extract_identifier(node)
         if identifier:
             representation["name"] = identifier
+
+        # Extract import details if this is an import_statement
+        if node.type == "import_statement":
+            try:
+                import_details = extract_import_details(node, self._source_bytes)
+                representation["import_details"] = import_details
+            except Exception:
+                # If import details extraction fails, continue without them
+                pass
+
+        # Extract simple variable initializer values
+        if node.type == "variable_declarator":
+            try:
+                self._process_variable_declarator(node, representation)
+            except Exception:
+                # If variable declarator processing fails, continue without extras
+                pass
+
+        # Extract function parameter details
+        if node.type == "formal_parameters":
+            try:
+                param_details = extract_parameters(node, self._source_bytes)
+                representation["parameters"] = param_details["parameters"]
+                representation["parameter_count"] = param_details["parameter_count"]
+                if param_details.get("has_rest"):
+                    representation["has_rest"] = param_details["has_rest"]
+            except Exception:
+                # If parameter extraction fails, continue without them
+                pass
 
         # Stop recursion at max depth
         if depth >= self.max_depth:
@@ -173,6 +207,8 @@ class ShallowASTProcessor:
         for index, child in enumerate(node.children):
             if not child.is_named:
                 continue
+            if child.type == "comment":
+                continue
 
             field_name = node.field_name_for_child(index)
             child_repr = self._represent_child(child, depth, field_name)
@@ -182,6 +218,8 @@ class ShallowASTProcessor:
                 # Extract grandchildren instead of nesting this wrapper
                 for grandchild_idx, grandchild in enumerate(child.children):
                     if not grandchild.is_named:
+                        continue
+                    if grandchild.type == "comment":
                         continue
                     grandchild_field = child.field_name_for_child(grandchild_idx)
                     grandchild_repr = self._represent_child(
@@ -212,14 +250,13 @@ class ShallowASTProcessor:
 
         Ensures that signature information (parameters, return types) remains visible
         even when implementation bodies are collapsed.
-        """
-        start_line, end_line = self._line_range(child)
 
-        # Body-like nodes: replace with line_range only (or null if single-line)
+        All nodes include line_range as a required field.
+        """
+        line_range_value = self._line_range(child)
+
+        # Body-like nodes: replace with line_range only (minimal representation)
         if self._is_body_like(child, field_name):
-            line_range_value = (
-                None if start_line == end_line else [start_line, end_line]
-            )
             return {"type": child.type, "line_range": line_range_value}
 
         # Otherwise, recurse
@@ -234,8 +271,12 @@ class ShallowASTProcessor:
         return None
 
     def _line_range(self, node: Node) -> List[int]:
-        """Convert Tree-sitter's 0-based line numbers to 1-based."""
-        return [node.start_point[0] + 1, node.end_point[0] + 1]
+        """Extract 1-indexed line range from a Tree-sitter node.
+
+        Uses the centralized utility to ensure consistent line range extraction
+        across all AST nodes.
+        """
+        return extract_line_range(node)
 
     def _is_body_like(self, node: Node, field_name: Optional[str]) -> bool:
         """Check if a node should be collapsed to line_range only.
@@ -268,7 +309,11 @@ class ShallowASTProcessor:
         """
         count = 0
         for child in node.children:
-            if child.is_named and not self._is_body_like(child, None):
+            if not child.is_named:
+                continue
+            if child.type == "comment":
+                continue
+            if not self._is_body_like(child, None):
                 count += 1
         return count
 
@@ -288,3 +333,42 @@ class ShallowASTProcessor:
         return self._source_bytes[node.start_byte : node.end_byte].decode(
             "utf-8", errors="replace"
         )
+
+    def _process_variable_declarator(
+        self, node: Node, representation: Dict[str, Any]
+    ) -> None:
+        """Process a variable_declarator node to extract simple initializer values.
+
+        Updates the representation dict with:
+        - simple_value: The extracted Python primitive (or null if complex/missing)
+        - value_type: Category of the value (string, number, boolean, etc.)
+        - extra_children_count: Number of complex children (for fallback)
+
+        Args:
+            node: A variable_declarator node.
+            representation: The node representation dict to update.
+        """
+        # Find the initializer (the "value" field in variable declarators)
+        initializer = node.child_by_field_name("value")
+
+        if initializer is None:
+            # No initializer - variable is uninitialized
+            representation["simple_value"] = None
+            representation["value_type"] = "uninitialized"
+            representation["extra_children_count"] = self._count_relevant_children(node)
+            return
+
+        # Check if initializer is a simple value
+        detection = detect_simple_value(initializer)
+
+        if detection["is_simple"]:
+            # Extract the actual value
+            simple_value = extract_simple_value(initializer, self._source_bytes)
+            representation["simple_value"] = simple_value
+            representation["value_type"] = detection["value_type"]
+        else:
+            # Complex value - collapse it to line range
+            representation["simple_value"] = None
+            representation["value_type"] = detection["value_type"]
+            # Count children to signal complexity
+            representation["extra_children_count"] = self._count_relevant_children(node)
