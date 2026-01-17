@@ -101,6 +101,9 @@ class ShallowASTDebugger:
         """
         self._full_ast_node_count = full_tree_node_count
 
+        # Capture the shallow AST snapshot for reporting
+        self.capture_snapshot("shallow_ast", shallow_ast)
+
         # Count nodes in shallow AST
         shallow_node_count = self._count_shallow_nodes(shallow_ast)
 
@@ -1112,9 +1115,36 @@ class ShallowASTDebugger:
         return markdown_content
 
     def _format_shallow_ast_preview(self) -> str:
-        """Format a preview of the shallow AST structure."""
+        """Format the shallow AST for display in the markdown report.
+
+        Shows the actual shallow AST if captured in snapshots, otherwise
+        returns a template example. Truncates large ASTs to keep report manageable.
+        """
         snapshots = self.snapshots
-        # Create a simplified view of the shallow AST
+
+        # Try to get the actual shallow AST from snapshots
+        if "shallow_ast" in snapshots and snapshots["shallow_ast"]:
+            shallow_ast = snapshots["shallow_ast"]
+            try:
+                # Format as pretty JSON
+                shallow_ast_json = json.dumps(shallow_ast, indent=2, ensure_ascii=False)
+
+                # Truncate if too large (keep first 2000 chars to fit in report)
+                max_length = 2000
+                if len(shallow_ast_json) > max_length:
+                    truncated = shallow_ast_json[:max_length]
+                    # Find the last complete object/line to avoid breaking JSON
+                    last_newline = truncated.rfind("\n")
+                    if last_newline > 0:
+                        truncated = truncated[:last_newline]
+                    return truncated + "\n  ...(truncated for readability)"
+                else:
+                    return shallow_ast_json
+            except (json.JSONDecodeError, TypeError):
+                # If JSON serialization fails, fall back to template
+                pass
+
+        # Fallback: return template example
         preview_lines = [
             "{",
             '  "type": "module/program",',
@@ -1144,3 +1174,43 @@ class ShallowASTDebugger:
             "}",
         ]
         return "\n".join(preview_lines)
+
+    def generate_shallow_ast_json(self, output_path: Optional[str] = None) -> str:
+        """Generate a standalone JSON file with the complete shallow AST.
+
+        This creates a separate JSON file containing the full, untruncated shallow AST
+        for detailed analysis and debugging purposes.
+
+        Args:
+            output_path: Optional file path to write the JSON file.
+                        If None, only returns the JSON string.
+
+        Returns:
+            JSON string of the shallow AST with metadata.
+        """
+        shallow_ast = self.snapshots.get("shallow_ast", {})
+
+        if not shallow_ast:
+            # No shallow AST was captured, return empty
+            output = {
+                "filename": self.filename,
+                "language": self.language,
+                "error": "No shallow AST captured during analysis",
+                "shallow_ast": None,
+            }
+        else:
+            output = {
+                "filename": self.filename,
+                "language": self.language,
+                "metrics": self.metrics,
+                "shallow_ast": shallow_ast,
+            }
+
+        json_content = json.dumps(output, indent=2, ensure_ascii=False)
+
+        # Write to file if output_path provided
+        if output_path:
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write(json_content)
+
+        return json_content

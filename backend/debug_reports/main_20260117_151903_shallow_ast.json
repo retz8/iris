@@ -1,0 +1,2795 @@
+{
+  "filename": "main.js",
+  "language": "javascript",
+  "metrics": {
+    "node_reduction_ratio": 8.62,
+    "context_compression_ratio": 0.74,
+    "comment_retention_score": 91.3,
+    "full_ast_node_count": 3657,
+    "shallow_ast_node_count": 424,
+    "raw_source_bytes": 34674,
+    "json_bytes": 46828,
+    "full_ast_estimated_tokens": 12799,
+    "shallow_ast_estimated_tokens": 1484,
+    "integrity_checks_passed": 57,
+    "integrity_checks_total": 99,
+    "integrity_score": 57.58
+  },
+  "shallow_ast": {
+    "type": "program",
+    "line_range": [
+      1,
+      1154
+    ],
+    "children": [
+      {
+        "type": "import_statement",
+        "line_range": null,
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "import_statement",
+        "line_range": null,
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "import_statement",
+        "line_range": null,
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "import_statement",
+        "line_range": null,
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "import_statement",
+        "line_range": null,
+        "leading_comment": "modeling modules",
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "leading_comment": "modeling modules",
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": null,
+            "leading_comment": "modeling modules",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "import_statement",
+        "line_range": null,
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "import_statement",
+        "line_range": null,
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "import_statement",
+        "line_range": null,
+        "leading_comment": "side modules",
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "leading_comment": "side modules",
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": null,
+            "leading_comment": "side modules",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "import_statement",
+        "line_range": [
+          13,
+          17
+        ],
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": [
+              13,
+              17
+            ],
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "import_statement",
+        "line_range": null,
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "import_statement",
+        "line_range": null,
+        "leading_comment": "utils",
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "leading_comment": "utils",
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": null,
+            "leading_comment": "utils",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "import_statement",
+        "line_range": null,
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "import_statement",
+        "line_range": null,
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "import_statement",
+        "line_range": null,
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "import_statement",
+        "line_range": [
+          25,
+          30
+        ],
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": [
+              25,
+              30
+            ],
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "import_statement",
+        "line_range": null,
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "import_statement",
+        "line_range": null,
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "import_statement",
+        "line_range": null,
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "import_statement",
+        "line_range": [
+          34,
+          38
+        ],
+        "fields": {
+          "source": [
+            {
+              "type": "string",
+              "line_range": null,
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "import_clause",
+            "line_range": [
+              34,
+              38
+            ],
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "leading_comment": "human body variables",
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "leading_comment": "human body variables",
+            "name": "material",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "PCAdata",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "humanMesh",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "humanGeometry",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "geometryZero",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "humanParameterChanged",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "humanMaterial",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "predAnthNum",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "predLandmarkNum",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "leading_comment": "wheelchair variables",
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "leading_comment": "wheelchair variables",
+            "name": "wheelchairMesh",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "wheelchairGeometry",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "wheelchairMaterial",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "lexical_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "wheelchairParameterChanged",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "wheelchairParams",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "wheelchairType",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "lexical_declaration",
+        "line_range": null,
+        "leading_comment": "sceneManager variables",
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "leading_comment": "sceneManager variables",
+            "name": "scene",
+            "extra_children_count": 1
+          },
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "leading_comment": "sceneManager variables",
+            "name": "controls",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "showAxes",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "trailing_comment": "Center point of the human",
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "trailing_comment": "Center point of the human",
+            "name": "centerPoint",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": null,
+        "trailing_comment": "Center point of the human"
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": [
+          68,
+          72
+        ],
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": [
+              68,
+              72
+            ],
+            "name": "humanRotation",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "wheelchairRotation",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "lexical_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "sceneManager",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "lexical_declaration",
+        "line_range": null,
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": null,
+            "name": "licenseManager",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": [
+          79,
+          293
+        ],
+        "leading_comment": "Track bars: define human & wheelchair parameters",
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": [
+              79,
+              293
+            ],
+            "leading_comment": "Track bars: define human & wheelchair parameters",
+            "name": "anth",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "variable_declaration",
+        "line_range": [
+          296,
+          304
+        ],
+        "leading_comment": "create GUI for human & wheelchair parameters + export options",
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": [
+              296,
+              304
+            ],
+            "leading_comment": "create GUI for human & wheelchair parameters + export options",
+            "name": "gui",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          307,
+          310
+        ],
+        "leading_comment": "<HELPER FUNCTIONS> ----------------------------------------------------------------------------"
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          311,
+          332
+        ],
+        "leading_comment": "<HELPER FUNCTIONS> ----------------------------------------------------------------------------\n*\nCalculate optimal seat width based on thigh width\nUsing actual thigh indices from advisor",
+        "name": "calculateOptimalSeatWidth",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "<HELPER FUNCTIONS> ----------------------------------------------------------------------------\n*\nCalculate optimal seat width based on thigh width\nUsing actual thigh indices from advisor"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "<HELPER FUNCTIONS> ----------------------------------------------------------------------------\n*\nCalculate optimal seat width based on thigh width\nUsing actual thigh indices from advisor",
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": [
+              316,
+              323
+            ],
+            "leading_comment": "Get the raw distance in the scaled-down model space (meter)",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "Add padding for comfort (1 inch to both sides)",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "Convert to inches and add padding",
+            "extra_children_count": 1
+          },
+          {
+            "type": "return_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          334,
+          337
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          338,
+          363
+        ],
+        "leading_comment": "*\nCalculate optimal back height based on shoulder height\nUsing actual shoulder index from advisor",
+        "name": "calculateOptimalBackHeight",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "*\nCalculate optimal back height based on shoulder height\nUsing actual shoulder index from advisor"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "*\nCalculate optimal back height based on shoulder height\nUsing actual shoulder index from advisor",
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": [
+              342,
+              345
+            ],
+            "leading_comment": "Get shoulder height in world coordinates",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "Get wheelchair seat height from parameters"
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": [
+              349,
+              351
+            ],
+            "leading_comment": "Get wheelchair seat height from parameters\nThis includes both the seat pan height and cushion thickness",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "Calculate optimal back height as distance from seat to shoulder"
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "Calculate optimal back height as distance from seat to shoulder\nAdd slight padding (1 inch) for comfort",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "[QUESTION] how much padding?",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "const optimalBackHeight = mToIn(backHeight) + padding;",
+            "extra_children_count": 1
+          },
+          {
+            "type": "return_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          365,
+          367
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          368,
+          388
+        ],
+        "leading_comment": "*\nMain function to calculate optimal wheelchair parameters",
+        "name": "calculateOptimalWheelchairParams",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "*\nMain function to calculate optimal wheelchair parameters"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "*\nMain function to calculate optimal wheelchair parameters"
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "trailing_comment": "Start with current params",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "trailing_comment": "Start with current params"
+          },
+          {
+            "type": "try_statement",
+            "line_range": [
+              371,
+              385
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "return_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          390,
+          392
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          393,
+          409
+        ],
+        "leading_comment": "*\nValidate wheelchair parameters are within reasonable ranges",
+        "name": "validateWheelchairParams",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "*\nValidate wheelchair parameters are within reasonable ranges"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "*\nValidate wheelchair parameters are within reasonable ranges",
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": [
+              395,
+              399
+            ],
+            "leading_comment": "Define min/max ranges for each parameter",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "for_in_statement",
+            "line_range": [
+              402,
+              408
+            ],
+            "leading_comment": "Check each parameter",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          411,
+          417
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          418,
+          452
+        ],
+        "leading_comment": "*\n@desc Update the global wheelchair parameters using the provided type and newParams.\nThis function merges newParams with the current (or manual) parameters\nand, if the type is \"powered\", updates additional powered-specific parameters.\n@param {string} type - The wheelchair type (\"manual\" or \"powered\").\n@param {Object} newParams - An object containing new parameter values to update.",
+        "name": "updateWheelchairParams",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "*\n@desc Update the global wheelchair parameters using the provided type and newParams.\nThis function merges newParams with the current (or manual) parameters\nand, if the type is \"powered\", updates additional powered-specific parameters.\n@param {string} type - The wheelchair type (\"manual\" or \"powered\").\n@param {Object} newParams - An object containing new parameter values to update."
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "*\n@desc Update the global wheelchair parameters using the provided type and newParams.\nThis function merges newParams with the current (or manual) parameters\nand, if the type is \"powered\", updates additional powered-specific parameters.\n@param {string} type - The wheelchair type (\"manual\" or \"powered\").\n@param {Object} newParams - An object containing new parameter values to update.",
+              "extra_children_count": 2
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "manual: if wheelchairParams is already defined, copy the value,"
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": [
+              421,
+              434
+            ],
+            "leading_comment": "manual: if wheelchairParams is already defined, copy the value,\notherwise, set the manual values (except anth) first.",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "merge newParams with updatedParams",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "if_statement",
+            "line_range": [
+              440,
+              446
+            ],
+            "leading_comment": "if type is \"powered\", update additional parameters",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "leading_comment": "update global variables",
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          454,
+          466
+        ],
+        "name": "refreshGUIWheelchairParams",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "leading_comment": "update ANTH wheelchair params with wheelchairParams",
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          469,
+          474
+        ],
+        "leading_comment": "Main Logics ----------------------------------------------------------------------------------"
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          475,
+          562
+        ],
+        "leading_comment": "Main Logics ----------------------------------------------------------------------------------\n*\nLoad the human model from 3D model file\n- create human mesh\n- set human initial position, scale, rotation\n- add human to the scene",
+        "name": "loadHumanModel",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "Main Logics ----------------------------------------------------------------------------------\n*\nLoad the human model from 3D model file\n- create human mesh\n- set human initial position, scale, rotation\n- add human to the scene"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": [
+                475,
+                481
+              ],
+              "leading_comment": "Main Logics ----------------------------------------------------------------------------------\n*\nLoad the human model from 3D model file\n- create human mesh\n- set human initial position, scale, rotation\n- add human to the scene",
+              "extra_children_count": 5
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "Load the mean human body model which is used as the initial model"
+          },
+          {
+            "type": "expression_statement",
+            "line_range": [
+              485,
+              561
+            ],
+            "leading_comment": "Load the mean human body model which is used as the initial model\nUser can modify model's parameters after loading",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          564,
+          566
+        ]
+      },
+      {
+        "type": "lexical_declaration",
+        "line_range": [
+          567,
+          577
+        ],
+        "leading_comment": "*\nCalculate magic number Z offset for human model",
+        "children": [
+          {
+            "type": "variable_declarator",
+            "line_range": [
+              567,
+              577
+            ],
+            "leading_comment": "*\nCalculate magic number Z offset for human model",
+            "name": "getHumanModelZOffset",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          579,
+          581
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          582,
+          641
+        ],
+        "leading_comment": "*\nUpdate human model based on human parameters",
+        "name": "updateHumanGeometry",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "*\nUpdate human model based on human parameters"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": [
+                582,
+                589
+              ],
+              "leading_comment": "*\nUpdate human model based on human parameters",
+              "extra_children_count": 6
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "Process BufferGeometry"
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "Process BufferGeometry\n[NOTE] positions and geometry.attributes.position point to the same memory"
+          },
+          {
+            "type": "variable_declaration",
+            "line_range": null,
+            "leading_comment": "Process BufferGeometry\n[NOTE] positions and geometry.attributes.position point to the same memory\nso we can directly modify the positions",
+            "extra_children_count": 1
+          },
+          {
+            "type": "variable_declaration",
+            "line_range": [
+              595,
+              603
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "Calculate"
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "Anth: human parameters (input)"
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "Anth: human parameters (input)\nPCAdata: PCA regression matrix"
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "[NOTE] PCAdata row order: (body dimension - landmark(x3: x,y,z) - PCA)"
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "[NOTE] PCAdata row order: (body dimension - landmark(x3: x,y,z) - PCA)\nby skipping body dimension and landmark * 3 (skipNum)"
+          },
+          {
+            "type": "variable_declaration",
+            "line_range": null,
+            "leading_comment": "[NOTE] PCAdata row order: (body dimension - landmark(x3: x,y,z) - PCA)\nby skipping body dimension and landmark * 3 (skipNum)\nwe can get the difference between human model and human parameters",
+            "extra_children_count": 1
+          },
+          {
+            "type": "for_statement",
+            "line_range": [
+              617,
+              629
+            ],
+            "extra_children_count": 3
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "Calculate center point"
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "leading_comment": "Calculate center point\n[?] this doesn't actually affect the model?",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "leading_comment": "Inform Three.js that the positions have been updated",
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "leading_comment": "Compute vertex normals for lighting",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          643,
+          645
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          646,
+          687
+        ],
+        "leading_comment": "*\nCalculate the X,Y,Z position of the human model on the wheelchair",
+        "name": "calculateHumanPositionOnWheelchair",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "*\nCalculate the X,Y,Z position of the human model on the wheelchair"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": [
+                646,
+                653
+              ],
+              "leading_comment": "*\nCalculate the X,Y,Z position of the human model on the wheelchair",
+              "extra_children_count": 6
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "Get the offset based on BMI and wheelchair type",
+            "extra_children_count": 1
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "extra_children_count": 3
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "Get wheelchair center line for consistent positioning",
+            "extra_children_count": 1
+          },
+          {
+            "type": "if_statement",
+            "line_range": [
+              662,
+              684
+            ],
+            "extra_children_count": 2
+          },
+          {
+            "type": "return_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          689,
+          693
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          695,
+          697
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          698,
+          711
+        ],
+        "leading_comment": "*\nMeasure the gap between human's back and wheelchair's back",
+        "name": "measureBackGap",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "*\nMeasure the gap between human's back and wheelchair's back"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "*\nMeasure the gap between human's back and wheelchair's back",
+              "extra_children_count": 2
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "Calculate wheelchair backrest position",
+            "extra_children_count": 1
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": [
+              702,
+              703
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "Get human's back position in world coordinates",
+            "extra_children_count": 1
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "return_statement",
+            "line_range": null,
+            "leading_comment": "Return the gap between human's back and wheelchair's backrest",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          713,
+          715
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          716,
+          734
+        ],
+        "leading_comment": "*\nMeasure the overlap between human's thigh and cushion",
+        "name": "measureThighCushionOverlap",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "*\nMeasure the overlap between human's thigh and cushion"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "*\nMeasure the overlap between human's thigh and cushion",
+              "extra_children_count": 2
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "[TODO] implement this",
+            "extra_children_count": 1
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": [
+              722,
+              726
+            ],
+            "leading_comment": "Get thigh position in local coordinates",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": [
+              729,
+              731
+            ],
+            "leading_comment": "Convert to world coordinates",
+            "extra_children_count": 1
+          },
+          {
+            "type": "return_statement",
+            "line_range": null,
+            "trailing_comment": "Placeholder return until implementation",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "trailing_comment": "Placeholder return until implementation"
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          736,
+          738
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          739,
+          757
+        ],
+        "leading_comment": "*\nMeasure the overlap between human's calf and cushion",
+        "name": "measureCalfCushionOverlap",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "*\nMeasure the overlap between human's calf and cushion"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "*\nMeasure the overlap between human's calf and cushion",
+              "extra_children_count": 2
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "Get key anatomical points in world coordinates",
+            "extra_children_count": 1
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": [
+              744,
+              747
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "Calculate overlap between calf and cushion",
+            "extra_children_count": 1
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "interestingly, overlap should consider the rest thickness"
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "interestingly, overlap should consider the rest thickness\nbecause the tail bone is not on the cushion starting point"
+          },
+          {
+            "type": "return_statement",
+            "line_range": null,
+            "leading_comment": "interestingly, overlap should consider the rest thickness\nbecause the tail bone is not on the cushion starting point\nconst restThickness = 0.1;",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          759,
+          764
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          765,
+          804
+        ],
+        "leading_comment": "*\nOptimize the human model's alignment on Wheelchair\n- human's back - wheelchair's back (backGap) < threshold\n- human's thigh should not overlap with the cushion\n- human's calf should not overlap with the cushion (if so, shift human's position forward)",
+        "name": "optimizeHumanAlignment",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "*\nOptimize the human model's alignment on Wheelchair\n- human's back - wheelchair's back (backGap) < threshold\n- human's thigh should not overlap with the cushion\n- human's calf should not overlap with the cushion (if so, shift human's position forward)"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "*\nOptimize the human model's alignment on Wheelchair\n- human's back - wheelchair's back (backGap) < threshold\n- human's thigh should not overlap with the cushion\n- human's calf should not overlap with the cushion (if so, shift human's position forward)",
+              "extra_children_count": 2
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "Define thresholds for proper seating",
+            "trailing_comment": "Minimum allowed gap (prevent sitting too far back)",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "Define thresholds for proper seating",
+            "trailing_comment": "Minimum allowed gap (prevent sitting too far back)"
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "trailing_comment": "Maximum allowed gap (prevent sitting too far forward)",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "trailing_comment": "Maximum allowed gap (prevent sitting too far forward)"
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "Define adjustment steps",
+            "trailing_comment": "1mm adjustment step",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "Define adjustment steps",
+            "trailing_comment": "1mm adjustment step"
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "Step 1: Align back with backrest",
+            "extra_children_count": 1
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "while_statement",
+            "line_range": [
+              779,
+              790
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "if_statement",
+            "line_range": [
+              792,
+              794
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "Step 2: Adjust for calf overlap",
+            "extra_children_count": 1
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "if_statement",
+            "line_range": [
+              801,
+              803
+            ],
+            "leading_comment": "Only make small adjustments for calf overlap to maintain back alignment",
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          806,
+          808
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          809,
+          838
+        ],
+        "leading_comment": "*\nUpdate human model based on wheelchair's change",
+        "name": "updateHumanGeometryFromWheelchair",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "*\nUpdate human model based on wheelchair's change"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": [
+                809,
+                813
+              ],
+              "leading_comment": "*\nUpdate human model based on wheelchair's change",
+              "extra_children_count": 3
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": [
+              815,
+              822
+            ],
+            "leading_comment": "1. translate human model to align with the wheelchair",
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": [
+              824,
+              828
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "2. align human model to satisfy the following constraints:"
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "2. align human model to satisfy the following constraints:\n- human's back - wheelchair's back < threshold"
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "leading_comment": "2. align human model to satisfy the following constraints:\n- human's back - wheelchair's back < threshold\n- human's thigh should not overlap with the cushion"
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "leading_comment": "2. align human model to satisfy the following constraints:\n- human's back - wheelchair's back < threshold\n- human's thigh should not overlap with the cushion\n- human's calf should not overlap with the cushion (if so, shift human's position forward)",
+            "extra_children_count": 1
+          },
+          {
+            "type": "if_statement",
+            "line_range": null,
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          842,
+          847
+        ],
+        "leading_comment": "<WHEELCHAIR MODEL> ------------------------------------------------------------------------------"
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          848,
+          870
+        ],
+        "leading_comment": "<WHEELCHAIR MODEL> ------------------------------------------------------------------------------\n*\nLoad the wheelchair model\n- create wheelchair mesh\n- set wheelchair initial position, scale, rotation\n- add wheelchair to the scene",
+        "name": "loadWheelchairModel",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "<WHEELCHAIR MODEL> ------------------------------------------------------------------------------\n*\nLoad the wheelchair model\n- create wheelchair mesh\n- set wheelchair initial position, scale, rotation\n- add wheelchair to the scene"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "<WHEELCHAIR MODEL> ------------------------------------------------------------------------------\n*\nLoad the wheelchair model\n- create wheelchair mesh\n- set wheelchair initial position, scale, rotation\n- add wheelchair to the scene",
+              "extra_children_count": 5
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "expression_statement",
+            "line_range": [
+              849,
+              854
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": [
+              860,
+              864
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "if_statement",
+            "line_range": null,
+            "leading_comment": "Notify the callback function (init) that the wheelchair model has been loaded",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          872,
+          877
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          878,
+          894
+        ],
+        "leading_comment": "*\nUpdate the wheelchair geometry\n- update wheelchair mesh\n- update wheelchair position, scale, rotation\n- add wheelchair to the scene",
+        "name": "updateWheelchairGeometry",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "*\nUpdate the wheelchair geometry\n- update wheelchair mesh\n- update wheelchair position, scale, rotation\n- add wheelchair to the scene"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "*\nUpdate the wheelchair geometry\n- update wheelchair mesh\n- update wheelchair position, scale, rotation\n- add wheelchair to the scene",
+              "extra_children_count": 2
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "leading_comment": "Update the position, scale, and rotation",
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": [
+              885,
+              889
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "if_statement",
+            "line_range": null,
+            "leading_comment": "Notify the callback function (init) that the wheelchair model has been loaded",
+            "extra_children_count": 2
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          896,
+          899
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          900,
+          911
+        ],
+        "leading_comment": "*\nCreate a new wheelchair Three.js mesh\n- type: \"manual\" or \"powered\"",
+        "name": "createWheelchairMesh",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "*\nCreate a new wheelchair Three.js mesh\n- type: \"manual\" or \"powered\""
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "*\nCreate a new wheelchair Three.js mesh\n- type: \"manual\" or \"powered\"",
+              "extra_children_count": 3
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "lexical_declaration",
+            "line_range": [
+              901,
+              904
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "return_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          913,
+          915
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          916,
+          937
+        ],
+        "leading_comment": "*\nUpdate the wheelchairMesh with the updated wheelchair mesh",
+        "name": "updateWheelchairMesh",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "*\nUpdate the wheelchairMesh with the updated wheelchair mesh"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "*\nUpdate the wheelchairMesh with the updated wheelchair mesh",
+              "extra_children_count": 2
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "trailing_comment": "clear the previous mesh",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "trailing_comment": "clear the previous mesh"
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": [
+              919,
+              922
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": [
+              923,
+              926
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "leading_comment": "Update bounding box",
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          940,
+          942
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          943,
+          978
+        ],
+        "leading_comment": "*\n@desc Set the wheelchair parameters",
+        "name": "setWheelchairParams",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "*\n@desc Set the wheelchair parameters"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "*\n@desc Set the wheelchair parameters",
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "lexical_declaration",
+            "line_range": [
+              944,
+              965
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": [
+              967,
+              974
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": [
+          980,
+          982
+        ]
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          983,
+          1015
+        ],
+        "leading_comment": "*\n@desc Load the human and wheelchair models",
+        "name": "loadHumanAndWheelchairModels",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "*\n@desc Load the human and wheelchair models"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "*\n@desc Load the human and wheelchair models",
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "Load human and wheelchair models using three.js",
+            "extra_children_count": 1
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "function_declaration",
+            "line_range": [
+              988,
+              992
+            ],
+            "name": "checkAllModelsLoaded",
+            "extra_children_count": 2
+          },
+          {
+            "type": "expression_statement",
+            "line_range": [
+              994,
+              1003
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": [
+              1004,
+              1013
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          1020,
+          1033
+        ],
+        "leading_comment": "init function",
+        "name": "init",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "init function"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "init function",
+              "extra_children_count": 1
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "leading_comment": "1. Three.js sceneManager setup",
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "leading_comment": "2. Set up necessary variables for Modeling",
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "trailing_comment": "wheelchairParams = { anth... }",
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null,
+            "trailing_comment": "wheelchairParams = { anth... }"
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "lexical_declaration",
+            "line_range": null,
+            "leading_comment": "3. Load Models (human and wheelchair)",
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "function_declaration",
+        "line_range": [
+          1036,
+          1145
+        ],
+        "leading_comment": "animate function",
+        "name": "animate",
+        "fields": {
+          "name": [
+            {
+              "type": "identifier",
+              "line_range": null,
+              "leading_comment": "animate function"
+            }
+          ],
+          "parameters": [
+            {
+              "type": "formal_parameters",
+              "line_range": null,
+              "leading_comment": "animate function"
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          },
+          {
+            "type": "if_statement",
+            "line_range": [
+              1041,
+              1073
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "if_statement",
+            "line_range": [
+              1075,
+              1131
+            ],
+            "extra_children_count": 1
+          },
+          {
+            "type": "comment",
+            "line_range": null
+          },
+          {
+            "type": "if_statement",
+            "line_range": [
+              1134,
+              1142
+            ],
+            "leading_comment": "Axes",
+            "extra_children_count": 2
+          },
+          {
+            "type": "expression_statement",
+            "line_range": null,
+            "extra_children_count": 1
+          }
+        ]
+      },
+      {
+        "type": "comment",
+        "line_range": null
+      },
+      {
+        "type": "expression_statement",
+        "line_range": [
+          1148,
+          1154
+        ],
+        "leading_comment": "entry point of `main.js`",
+        "children": [
+          {
+            "type": "call_expression",
+            "line_range": [
+              1148,
+              1154
+            ],
+            "leading_comment": "entry point of `main.js`",
+            "extra_children_count": 2
+          }
+        ]
+      }
+    ]
+  }
+}

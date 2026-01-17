@@ -348,6 +348,12 @@ def analyze():
             debugger.generate_markdown_report(output_path=report_path)
             print(f"[DEBUG] Markdown report saved to: {report_path}")
 
+            # Generate and save shallow AST JSON file
+            ast_filename = f"{base_filename}{path_prefix}_{timestamp}_shallow_ast.json"
+            ast_path = os.path.join(debug_reports_dir, ast_filename)
+            debugger.generate_shallow_ast_json(output_path=ast_path)
+            print(f"[DEBUG] Shallow AST JSON saved to: {ast_path}")
+
         # =====================================================================
         # STEP 4: Return result
         # =====================================================================
