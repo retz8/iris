@@ -22,8 +22,9 @@ _ast_processor = ShallowASTProcessor()
 _iris_agent = None
 _agent_init_error = None
 _debug_mode = True  # Flag to enable/disable debug mode
-_force_fast_path = True  # Flag to force fast-path analysis (skip fallback)
-_use_raw_source = True  # Flag to use raw source code instead of shallow AST
+_force_fast_path = False  # Flag to force fast-path analysis (skip fallback)
+_use_raw_source = False  # Flag to use raw source code instead of shallow AST
+_use_tool_calling = True  # Flag to enable/disable tool-calling mode (default: True)
 
 try:
     _iris_agent = IrisAgent(model="gpt-4o-mini")
@@ -101,6 +102,30 @@ def get_use_raw_source() -> bool:
         True if using raw source, False if using shallow AST.
     """
     return _use_raw_source
+
+
+def set_use_tool_calling(enabled: bool) -> None:
+    """Enable or disable tool-calling mode.
+
+    When enabled, analysis uses single-stage tool-calling architecture.
+    When disabled, falls back to legacy two-stage analysis.
+
+    Args:
+        enabled: True to enable tool-calling, False to use two-stage.
+    """
+    global _use_tool_calling
+    _use_tool_calling = enabled
+    status = "enabled" if enabled else "disabled"
+    print(f"[DEBUG] Tool-calling mode {status}")
+
+
+def get_use_tool_calling() -> bool:
+    """Get the current tool-calling mode status.
+
+    Returns:
+        True if tool-calling mode is enabled, False if using two-stage.
+    """
+    return _use_tool_calling
 
 
 @iris_bp.route("/analyze", methods=["POST"])
@@ -236,6 +261,7 @@ def analyze():
                 debug_report=debug_report,
                 source_code=source_code,
                 debugger=debugger,
+                use_tool_calling=_use_tool_calling,
             )
 
             # Restore thresholds if they were forced
@@ -273,6 +299,7 @@ def analyze():
                     debug_report=debug_report,
                     source_code=source_code,
                     debugger=debugger,
+                    use_tool_calling=False,  # Force two-stage for fallback
                 )
                 # Add fallback note to metadata
                 result["metadata"][
@@ -367,6 +394,7 @@ def health():
                 "debug_mode": _debug_mode,
                 "force_fast_path": _force_fast_path,
                 "use_raw_source": _use_raw_source,
+                "use_tool_calling": _use_tool_calling,
             }
         ),
         200,
@@ -384,7 +412,8 @@ def debug_control():
     {
       "debug_mode": true/false,           // Enable debug reports and metrics
       "force_fast_path": true/false,      // Force fast-path analysis (no fallback)
-      "use_raw_source": true/false        // Use raw source instead of shallow AST
+      "use_raw_source": true/false,       // Use raw source instead of shallow AST
+      "use_tool_calling": true/false      // Use tool-calling mode (default: true)
     }
 
     Response:
@@ -392,7 +421,8 @@ def debug_control():
       "debug_mode": true/false,
       "force_fast_path": true/false,
       "use_raw_source": true/false,
-      "message": "..."
+      "use_tool_calling": true/false,
+      "status": {...}
     }
     """
     if request.method == "GET":
@@ -402,12 +432,16 @@ def debug_control():
                     "debug_mode": _debug_mode,
                     "force_fast_path": _force_fast_path,
                     "use_raw_source": _use_raw_source,
+                    "use_tool_calling": _use_tool_calling,
                     "status": {
                         "debug_mode": "enabled" if _debug_mode else "disabled",
                         "force_fast_path": (
                             "enabled" if _force_fast_path else "disabled"
                         ),
                         "use_raw_source": "enabled" if _use_raw_source else "disabled",
+                        "use_tool_calling": (
+                            "enabled" if _use_tool_calling else "disabled"
+                        ),
                     },
                 }
             ),
@@ -438,6 +472,13 @@ def debug_control():
             f"Use raw source {'enabled' if data['use_raw_source'] else 'disabled'}"
         )
 
+    # Update use_tool_calling if provided
+    if "use_tool_calling" in data:
+        set_use_tool_calling(data["use_tool_calling"])
+        messages.append(
+            f"Tool-calling mode {'enabled' if data['use_tool_calling'] else 'disabled'}"
+        )
+
     if not messages:
         messages.append("No flags changed")
 
@@ -447,6 +488,7 @@ def debug_control():
                 "debug_mode": _debug_mode,
                 "force_fast_path": _force_fast_path,
                 "use_raw_source": _use_raw_source,
+                "use_tool_calling": _use_tool_calling,
                 "message": "; ".join(messages),
             }
         ),

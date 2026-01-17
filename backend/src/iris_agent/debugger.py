@@ -72,6 +72,9 @@ class ShallowASTDebugger:
         self._current_stage: Optional[str] = None
         self._stage_start_time: Optional[float] = None
 
+        # Tool call tracking (for tool-calling architecture)
+        self.tool_calls: List[Dict[str, Any]] = []
+
     def capture_snapshot(self, stage_name: str, data: Any) -> None:
         """Capture a deep copy of data at a specific pipeline stage.
 
@@ -174,6 +177,33 @@ class ShallowASTDebugger:
                 "llm_response": llm_response,
                 "parsed_output": parsed_output,
                 "end_time": end_time,
+            }
+        )
+
+    def log_tool_call(
+        self,
+        tool_name: str,
+        args: Dict[str, Any],
+        result_length: int,
+        result_content: str = "",
+    ) -> None:
+        """Log a tool call for debugging.
+
+        Records details about tool invocations made during tool-calling analysis.
+
+        Args:
+            tool_name: Name of the tool that was called (e.g., "refer_to_source_code").
+            args: Arguments passed to the tool.
+            result_length: Length of the result returned by the tool.
+            result_content: Actual content returned by the tool (source code snippet, etc.).
+        """
+        self.tool_calls.append(
+            {
+                "tool_name": tool_name,
+                "args": args,
+                "result_length": result_length,
+                "result_content": result_content,
+                "timestamp": time.time(),
             }
         )
 
@@ -403,6 +433,8 @@ class ShallowASTDebugger:
             "snapshots": self.snapshots,
             "metrics": self.metrics,
             "llm_stages": self.llm_stages,
+            "tool_calls": self.tool_calls,
+            "tool_call_count": len(self.tool_calls),
             "summary": {
                 "integrity_score": integrity_score,
                 "has_quality_warning": has_quality_warning,
@@ -533,6 +565,11 @@ class ShallowASTDebugger:
             execution_badge = (
                 "![Fast-Path](https://img.shields.io/badge/Execution-Fast--Path-blue)"
             )
+        elif "tool_calling_analysis" in llm_stages:
+            execution_path = (
+                "🔧 Tool-Calling (Single-Stage with Dynamic Source Reading)"
+            )
+            execution_badge = "![Tool-Calling](https://img.shields.io/badge/Execution-Tool--Calling-orange)"
         elif "stage_1_identification" in llm_stages or "stage_2_analysis" in llm_stages:
             execution_path = "🔄 Two-Stage (Identification + Analysis)"
             execution_badge = (
@@ -748,6 +785,15 @@ class ShallowASTDebugger:
                         "",
                     ]
                 )
+            elif "tool_calling_analysis" in llm_stages:
+                md_lines.extend(
+                    [
+                        "### 🔧 Tool-Calling Execution",
+                        "",
+                        "Single-stage analysis with dynamic source reading: LLM analyzes shallow AST and calls `refer_to_source_code()` tool when needed.",
+                        "",
+                    ]
+                )
             else:
                 md_lines.extend(
                     [
@@ -803,6 +849,19 @@ class ShallowASTDebugger:
                         f"| Output Tokens | {output_tok:,} |",
                         f"| Total Tokens | {total_tok:,} |",
                         f"| Time | {elapsed:.2f}s |",
+                        "",
+                    ]
+                )
+
+                # Show token usage and speed
+                total_tokens = stage_data.get("total_tokens", 0)
+                tokens_per_second = total_tokens / elapsed if elapsed > 0 else 0
+                md_lines.extend(
+                    [
+                        "**Throughput:**",
+                        "",
+                        f"- Tokens/Second: {tokens_per_second:.1f} tok/s",
+                        f"- Input: {input_tok:,} tok | Output: {output_tok:,} tok | Total: {total_tok:,} tok",
                         "",
                     ]
                 )
@@ -892,6 +951,113 @@ class ShallowASTDebugger:
                     )
 
                 md_lines.append("")
+
+        # Add Tool Call Records (for tool-calling architecture)
+        tool_calls = report.get("tool_calls", [])
+        if tool_calls:
+            md_lines.extend(
+                [
+                    "---",
+                    "",
+                    "## Tool Call Records",
+                    "",
+                    f"**Total Tool Calls:** {len(tool_calls)}",
+                    "",
+                    "### Tool Call Summary",
+                    "",
+                    "| # | Tool | Line Range | Size | Duration | Timestamp |",
+                    "|---|------|-----------|------|----------|-----------|",
+                ]
+            )
+
+            # Calculate durations between tool calls
+            tool_call_durations = []
+            for i in range(len(tool_calls)):
+                if i < len(tool_calls) - 1:
+                    duration = tool_calls[i + 1].get("timestamp", 0) - tool_calls[
+                        i
+                    ].get("timestamp", 0)
+                else:
+                    duration = 0
+                tool_call_durations.append(duration)
+
+            import datetime as dt
+
+            for idx, tool_call in enumerate(tool_calls, 1):
+                tool_name = tool_call.get("tool_name", "unknown")
+                args = tool_call.get("args", {})
+                start_line = args.get("start_line", "?")
+                end_line = args.get("end_line", "?")
+                result_length = tool_call.get("result_length", 0)
+                timestamp = tool_call.get("timestamp", 0)
+                duration = (
+                    tool_call_durations[idx - 1]
+                    if idx - 1 < len(tool_call_durations)
+                    else 0
+                )
+
+                # Format timestamp as human-readable
+                timestamp_str = dt.datetime.fromtimestamp(timestamp).strftime(
+                    "%H:%M:%S"
+                )
+
+                md_lines.append(
+                    f"| {idx} | `{tool_name}` | {start_line}-{end_line} | {result_length:,}B | {duration:.2f}s | {timestamp_str} |"
+                )
+
+            md_lines.extend(
+                [
+                    "",
+                    "### Tool Call Details",
+                    "",
+                ]
+            )
+
+            for idx, tool_call in enumerate(tool_calls, 1):
+                tool_name = tool_call.get("tool_name", "unknown")
+                args = tool_call.get("args", {})
+                result_length = tool_call.get("result_length", 0)
+                result_content = tool_call.get("result_content", "")
+                timestamp = tool_call.get("timestamp", 0)
+
+                import datetime as dt
+
+                timestamp_str = dt.datetime.fromtimestamp(timestamp).strftime(
+                    "%H:%M:%S.%f"
+                )[
+                    :-3
+                ]  # Include milliseconds
+
+                md_lines.extend(
+                    [
+                        f"#### Call #{idx}: {tool_name}",
+                        "",
+                        f"**Timestamp:** {timestamp_str}  ",
+                        "**Arguments:**",
+                        "",
+                        "```json",
+                        json.dumps(args, indent=2),
+                        "```",
+                        "",
+                        f"**Result Size:** {result_length:,} bytes",
+                        "",
+                    ]
+                )
+
+                # Show the actual source code that was retrieved
+                if result_content:
+                    # Determine the language for syntax highlighting
+                    lang = report.get("language", "text")
+                    md_lines.extend(
+                        [
+                            "**Source Code Retrieved:**",
+                            "",
+                            f"```{lang}",
+                            result_content,
+                            "```",
+                            "",
+                        ]
+                    )
 
         md_lines.extend(
             [
