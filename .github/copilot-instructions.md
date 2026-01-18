@@ -2,13 +2,23 @@
 
 ## Project Overview
 
-IRIS is a code comprehension tool that provides semantic context for unfamiliar source code through:
-- **File Intent (WHY)**: Architectural role of each file
+IRIS enables progressive code understanding through layered abstraction models,
+starting with File Intent and Responsibility Blocks as the "table of contents" 
+for unfamiliar code, and evolving toward a new programming paradigm between 
+source code and natural language.
+
+- **File Intent (WHY)**: 
+The "title and abstract" of a code file - a concise statement that 
+establishes the reader's mental framework before diving into implementation.
+
+Just as a paper's abstract prepares you to understand its content,
+File Intent prepares you to comprehend the code.
+
 - **Responsibility Blocks (WHAT)**: Major logical components
 
 **Core Philosophy**: IRIS prepares developers to read code, not explains code.
 
-For detailed concepts, see `.github/copilot-instructions.md` (legacy doc).
+To understand IRIS in depth, refer to the [philosophy behind IRIS](docs/philosophy.md).
 
 ---
 
@@ -148,6 +158,6 @@ Each responsibility is a **complete ecosystem**:
 ## Context Links
 
 - [Full project documentation](.github/copilot-instructions.md)
-- [Backend architecture](./backend/specs/)
-- [Iris Agent architecture](./backend/specs/single_stage_tool_calling_spec.md)
+- [Backend architecture](backend/specs/)
+- [Iris Agent architecture](backend/specs/single_stage_tool_calling_spec.md)
 - [Development history](docs/history.md)

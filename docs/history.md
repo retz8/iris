@@ -25,3 +25,22 @@
 - tooling - refer_to_source_code: agent can selectively use tool to read source code in specific range by referring to raw source code in separate storage
 
 - Two-Stage Approach - instead of using single agent with tooling, 1. identify which parts of the shallow ast should call tool (unclear parts)   2. use tools on necessary parts and output
+
+
+# 1/17/26 ~ 1/18/26: Dual-Path Architecture & Hypothesis-Driven Verification
+- Dual-Path Architecture
+        - Tool-Calling Agent Path (Large/Complex Files)
+                - Hypothesis-Driven Verification structure
+                - Phase 1: Structural Hypothesis (Mental Mapping) - scan Shallow AST (metadata, imports, node density) without reading code, predict file intent based on 'territory'
+                - Phase 2: Strategic Verification - call refer_to_source_code() only to resolve uncertainties in 'Black Box' nodes, trust metadata and skip clear sections to minimize 'slop' and noise
+                - Phase 3: Synthesis - once hypothesis is solidified, generate final abstraction map
+        - Fast-Path Path (Small Files)
+                - when file is small enough to be analyzed in single pass, skip multi-stage verification to
+                - Single-Stage Mapping - agent receives both Full Source and Shallow AST simultaneously 
+
+                - Direct Extraction - apply same IRIS success criteria (Scatter Rule, Ecosystem Principle) to generate high-quality JSON map immediately                
+
+# TODO
+- code clean up
+- local storage multi-layered cache
+- basic ui integration

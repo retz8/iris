@@ -8,7 +8,7 @@ __pycache__/
 .env
 
 # .github
-# .github/agents
-# .github/instructions
-# .github/prompts
-# .github/skills
+.github/agents
+.github/instructions
+.github/prompts
+.github/skills
