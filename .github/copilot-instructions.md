@@ -1,303 +1,153 @@
-# Copilot Instruction for Iris Project
+# Copilot Instructions for IRIS Project
 
-## 0. Rules for Copilot when assisting with the Iris project.
-1. DONT GENERATE ".MD" files. DONT GENERATE tests files. Until explicitly asked.
-2. Do not make use of any new libraries, platforms, or packages unless I explicitly tell you to.
-3. Fast iteration: Prioritize working prototype over perfect code
----
+## Project Overview
 
-## 1. What is IRIS?
+IRIS is a code comprehension tool that provides semantic context for unfamiliar source code through:
+- **File Intent (WHY)**: Architectural role of each file
+- **Responsibility Blocks (WHAT)**: Major logical components
 
-IRIS is a code comprehension tool that provides **semantic context** for unfamiliar source code.
+**Core Philosophy**: IRIS prepares developers to read code, not explains code.
 
-When developers open a file in a repository, they typically already understand the project's overall purpose (from README, documentation, etc.). However, they lack context about **the specific file** they're looking at.
-
-IRIS solves this by providing:
-- **WHY**: Why does this file exist? (File Intent)
-- **WHAT**: What are the major logical components? (Responsibility Blocks)
-
-This context is presented **before** the developer reads the code, similar to seeing a presentation's table of contents before diving into details.
-
-**Design Philosophy:**
-> IRIS does not explain code.  
-> IRIS prepares the developer to read code.
+For detailed concepts, see `.github/copilot-instructions.md` (legacy doc).
 
 ---
 
-## 2. MVP Goal
+## General Rules
 
-Validate whether showing high-level semantic context (WHY + WHAT) can significantly reduce cognitive load when reading unfamiliar code.
-
-**Success Criteria:**
-- A developer can explain what a file does without reading all the code
-- A developer can identify which parts are most important
-- A developer feels more confident choosing where to start reading
-
-**Explicit Non-Goals:**
-- Execution flow analysis
-- Variable tracking
-- Line-by-line code summarization
-- Handling all edge cases or languages
+### All Code Changes
+- [ ] Fast iteration over perfect code - prioritize working prototypes
+- [ ] Do NOT generate `.md` or test files unless explicitly requested
+- [ ] Do not use new libraries/platforms unless explicitly told
+- [ ] If working on `backend`, Always activate virtual environment: `cd backend && source venv/bin/activate`
 
 ---
 
-## 3. File Intent
+## File-Specific Instructions
 
-### Definition
+### Extension Files (`extension/**/*.js`)
+**Apply when working on Chrome extension code**
 
-File Intent answers the question: **"Why does this file exist in the system?"**
+- [ ] Use ES6+ syntax consistently
+- [ ] Prefer `const` over `let`, avoid `var`
+- [ ] Document DOM selectors with comments explaining GitHub's structure
+- [ ] Include JSDoc comments for exported functions
+- [ ] Use meaningful variable names (avoid single letters except loop counters)
 
-It should:
-- Describe the file's **conceptual role** at an architectural level
-- Be readable in under 5 seconds
-- Consist of 1-4 short lines
-- Focus on purpose, not implementation details
+### Backend Tests (`backend/tests/**/*.py`)
+**Apply when writing or modifying tests**
 
-### Examples
-
-#### Good File Intents:
-
-```
-File: UserAuthService.ts
-Intent: "User authentication and session lifecycle management"
-```
-
-```
-File: MenuList.tsx
-Intent: "Menu list data orchestration and view state management for pocha display"
-```
-
-```
-File: useDashboardOrders.ts
-Intent: "Real-time order state management and filtered view generation for pocha dashboard"
-```
-
-#### Bad File Intents (too implementation-focused):
-
-```
-❌ "Implements React hooks for fetching data"
-❌ "Contains helper functions for API calls"
-❌ "Uses SWR for caching"
-```
+- [ ] Follow Arrange-Act-Assert pattern
+- [ ] Use descriptive test function names: `test_should_<expected>_when_<condition>`
+- [ ] Include docstrings explaining test purpose
+- [ ] Test edge cases explicitly (empty input, null, invalid types)
+- [ ] Use pytest fixtures for shared setup
 
 ---
 
-## 4. Responsibility Blocks
+## Architecture-Specific Rules
 
-### Definition
+### AST Processing (`backend/src/iris_agent/ast_*.py`)
+**Apply when working on AST-related files**
 
-A **Responsibility Block** represents a distinct conceptual role the file plays in the system.
+- [ ] Every node MUST have `line_range` field (no exceptions)
+- [ ] Use `extract_line_range()` utility for position extraction
+- [ ] Comment nodes from Tree-sitter must be filtered out (use Comment Extractor only)
+- [ ] Preserve AST structure - don't flatten unnecessarily
+- [ ] Add `extra_children_count` when collapsing complex nodes
 
-**CRITICAL:** A Responsibility Block is NOT just a group of functions.
+### Agent & Prompts (`backend/src/iris_agent/agent.py`, `prompts.py`)
+**Apply when working on LLM integration**
 
-It is a **complete ecosystem** of code elements needed to fulfill that responsibility:
+- [ ] Always include token count tracking
+- [ ] Log all LLM API calls with timing
+- [ ] Handle tool-calling responses properly (check for `tool_calls` attribute)
+- [ ] Parse JSON responses with error handling (strip markdown fences)
+- [ ] Use structured prompts with clear sections and examples
+
+### Chrome Extension Content Scripts
+**Apply when modifying extension UI or interactions**
+
+- [ ] Test on actual GitHub pages before committing
+- [ ] Handle GitHub's dynamic page loading (Turbo navigation)
+- [ ] Use MutationObserver for DOM changes
+- [ ] Clean up event listeners properly
+- [ ] Never assume DOM structure - always check existence
+
+---
+
+## Domain-Specific Concepts
+
+### File Intent
+**Format**: `[System Role] + [Domain] + [Primary Responsibility]`
+
+**Good Examples**:
+- "Batch job orchestrator: coordinates task scheduling, execution, and retry logic"
+- "Core parsing engine: transforms raw input into structured domain objects"
+
+**Bad Examples**:
+- "Contains helper functions" (too vague)
+- "Implements React hooks" (implementation detail)
+
+### Responsibility Blocks
+Each responsibility is a **complete ecosystem**:
 - Functions (execution logic)
-- Constants (configuration values)
-- State/Variables (runtime data)
+- State (runtime data)
+- Imports (dependencies)
 - Types (data structures)
-- Imports (external dependencies)
+- Constants (configuration)
 
-**Mental Model:**  
-> If you were to extract this responsibility into a separate file,  
-> what would you need to take with you?
-
-### Characteristics
-
-- **3-6 responsibilities per file** (avoid fragmentation)
-- **Can be scattered** across the file (not necessarily contiguous)
-- **Self-contained**: Each block should be understandable independently
-- **Peers, not hierarchical**: Responsibilities are at the same conceptual level
-
-### Example
-
-```typescript
-// Source: useDashboardOrders.ts
-
-// Responsibility: "Order Data Initialization"
-{
-  "id": "order-data-initialization",
-  "label": "Order Data Initialization",
-  "description": "Fetches order data from API and transforms it into Map structure for efficient lookup",
-  "elements": {
-    "functions": ["usePochaOrdersMap", "convertOrdersToMap"],
-    "state": ["ordersMap", "status"],
-    "imports": [
-      "getPochaOrders from @/apis/pocha/queries",
-      "useState, useEffect from react"
-    ],
-    "types": ["Map<number, OrderItem>", "Orders"],
-    "constants": []
-  },
-  "ranges": [[14, 21], [42, 59]]  // Scattered across lines
-}
-
-// Responsibility: "Filtered View Generation"
-{
-  "id": "filtered-view-generation",
-  "label": "Filtered View Generation",
-  "description": "Splits orders into immediate-prep and normal-prep views based on menu configuration",
-  "elements": {
-    "functions": ["filterOrdersByStatus"],
-    "state": ["immediatePrepOrders", "notImmediatePrepOrders"],
-    "imports": ["useMemo from react"],
-    "types": ["Orders"],
-    "constants": ["statuses array (lines 28-32)"]
-  },
-  "ranges": [[23, 40], [95, 103]]  // Also scattered
-}
-```
-
-### Why This Matters
-
-When refactoring or understanding dependencies:
-- **Wrong approach**: "This function does X, that function does Y"
-- **Right approach**: "This responsibility requires these 5 functions, these 2 state variables, these 3 imports"
+**Test**: "If I moved this responsibility to its own file, what would I need to take?"
 
 ---
 
-## 5. Agent Architecture: AST + Tool-Based Approach
+## Special Instructions
 
-### Core Idea
+### When Asked to "Resume" or "Continue"
+- [ ] Check conversation history for incomplete todo list
+- [ ] Continue from last incomplete step without asking for confirmation
+- [ ] Inform user which step you're resuming from
+- [ ] Do NOT return control until entire todo list is complete
 
-Instead of feeding the entire source code to an LLM, we use a **two-stage approach**:
+### When Debugging
+- [ ] Use `get_errors` tool to identify issues
+- [ ] Make small, testable changes
+- [ ] Add temporary print statements to inspect state
+- [ ] Determine root cause before fixing symptoms
+- [ ] Remove debug code before committing
 
-1. **Preprocessing (free)**: Convert code to shallow AST with line references
-2. **Agent reasoning (paid)**: Agent uses shallow AST + selective source code access tool
-
-### Why AST?
-
-**Hypothesis:**  
-> If code has good comments, clear function names, and proper variable names,  
-> we can extract File Intent and Responsibility Blocks from structure alone (AST).
-
-**Reality:**  
-Code quality exists on a spectrum:
-
-```
-Clean Code ────────────────────── Dirty Code
-     ↓                                  ↓
-AST sufficient                   Need implementations
-(100 tokens)                     (2000 tokens)
-```
-
-### Shallow AST Processing
-
-**Key Concept:** We don't reconstruct or transform the AST. We make it **shallow**.
-
-**Process:**
-1. Parse code into full AST (using existing Python AST parser)
-2. Keep the **first-level body declarations** (imports, functions, classes, etc.)
-3. Replace **nested body content** with line references
-4. Add **comment information** to each node
-
-**Example Transformation:**
-
-```javascript
-// Original Full AST
-{
-  "type": "FunctionDeclaration",
-  "start": 550,
-  "end": 780,
-  "id": { "name": "calculateOrderTotal" },
-  "params": [...],
-  "body": {
-    "type": "BlockStatement",
-    "body": [
-      // Deeply nested structure with all implementation details
-      {...}, {...}, {...}
-    ]
-  }
-}
-
-// Shallow Processed AST
-{
-  "type": "FunctionDeclaration",
-  "start": 550,
-  "end": 780,
-  "id": { "name": "calculateOrderTotal" },
-  "params": [...],
-  "line_range": [15, 28],              // ← Body replaced with line reference
-  "leading_comment": "// Calculate total including tax and discounts",
-  "trailing_comment": null,
-  "inline_comment": null
-}
-```
-
-### Comment Extraction
-
-For each AST node, we extract three types of comments from the source code:
-
-1. **Leading comment**: Comment block immediately before the declaration
-2. **Trailing comment**: Comment after the declaration on the same line
-3. **Inline comment**: Comment inside but on first line of declaration
-
-**Example:**
-
-```typescript
-// This handles user authentication
-// Validates credentials against database
-function loginUser(username, password) {  // Entry point for login flow
-  // Implementation...
-}
-```
-
-```json
-{
-  "type": "FunctionDeclaration",
-  "id": { "name": "loginUser" },
-  "line_range": [3, 5],
-  "leading_comment": "// This handles user authentication\n// Validates credentials against database",
-  "trailing_comment": "// Entry point for login flow",
-  "inline_comment": null
-}
-```
-
-### The Tool: `refer_to_source_code`
-
-The agent receives:
-- **Input**: Shallow processed AST (structure + comments, no implementations)
-- **Tool**: `refer_to_source_code(start_line, end_line)`
-
-The agent decides:
-- "Function name `validateUser` + leading comment is clear" → No tool call needed
-- "Function name `process` with no comment" → Call tool to read implementation
-```
-
-**Key Points:**
-- Original AST structure is preserved
-- Easy to navigate (type, id, params, etc.)
-- Only the **nested body/implementation** is replaced with line_range
-- Comments provide semantic hints without reading code
+### When Creating Implementation Plans
+- [ ] Use templates from `.github/prompts/create-implementation-plan.prompt.md`
+- [ ] Include measurable completion criteria for each phase
+- [ ] Use standardized prefixes (REQ-, TASK-, CON-, etc.)
+- [ ] Save in `/plan/` directory with proper naming
 
 ---
 
-## 6. Development Guidelines
-### Project Structure
+## Priority Instructions
 
-```
-backend/
-├── src/
-│   ├── iris_agent/
-|   |   ├── specs: documents decribing the plan for implementations  
-│   │   ├── __init__.py
-│   │   ├── ast_processor.py
-│   │   ├── source_store.py
-│   │   ├── agent.py
-│   │   ├── routes.py
-│   │   ├── cache.py
-│   │   ├── tools/
-│   │   │   └── source_reader.py
-│   │   └── prompts.py
+**These rules override others if conflict arises:**
 
-extension/
-├── src/
-│   ├── components/
-│   │   └── iris/            # ← NEW: IRIS UI components
-│   └── content.js           # Modify to integrate IRIS
-```
+1. **DO NOT** generate tests or documentation unless explicitly requested
+2. **ALWAYS** activate virtual environment for Python work
+3. **NEVER** use new libraries without explicit permission
+4. **ALWAYS** prioritize working prototype over perfect code
+5. **MUST** follow language-specific style guides (PEP 8 for Python)
+
 ---
 
-**Remember:**  
-> The goal is NOT perfect accuracy.  
-> The goal is to validate whether this approach reduces cognitive load.
+## Quick Reference
 
+- **Project Root**: `/backend` for Python, `/extension` for Chrome extension
+- **Tests**: `backend/tests/` (use pytest)
+- **Virtual Env**: `backend/venv/` (activate with `source venv/bin/activate`)
+- **Main Docs**: `.github/copilot-instructions.md` (comprehensive guide)
+- **Implementation Plans**: `/plan/` directory
+
+---
+
+## Context Links
+
+- [Full project documentation](.github/copilot-instructions.md)
+- [Backend architecture](./backend/specs/)
+- [Iris Agent architecture](./backend/specs/single_stage_tool_calling_spec.md)
+- [Development history](docs/history.md)
