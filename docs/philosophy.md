@@ -120,7 +120,7 @@ Source Code | File Intent + Responsibility Blocks
 **File Intent:**
 - The "short-form title" of a code file (implementation hidden, purpose distilled)
 - Answers: "WHY does this file exist in the system?"
-- Format: **noun phrase** only — `[System Role] + [Domain] + [Primary Responsibility]`
+- Format: **noun phrase** only — `[System Role] + [Domain] + [Primary Responsibility]` (not strict, but mostly)
 - Establishes a quick mental frame before any implementation details
 
 **File Intent Examples (5):**
