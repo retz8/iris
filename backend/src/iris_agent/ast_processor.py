@@ -10,6 +10,7 @@ Requires: parser.ast_parser.ASTParser and comment_extractor.CommentExtractor
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type
 
 from tree_sitter import Node
@@ -26,6 +27,9 @@ from .comment_extractor import CommentExtractor
 
 if TYPE_CHECKING:
     from .debugger import ShallowASTDebugger
+
+
+logger = logging.getLogger(__name__)
 
 
 class ShallowASTProcessor:
@@ -65,7 +69,8 @@ class ShallowASTProcessor:
 
         Args:
             parser: ASTParser instance (creates default if None)
-            max_depth: Maximum depth to traverse before collapsing to line_range
+            max_depth: Baseline depth to traverse before collapsing to line_range.
+                Container nodes may extend traversal up to a capped depth.
             body_field_names: Set of field names to treat as body-like
             body_node_types: Set of node types to treat as body-like
             comment_extractor_cls: CommentExtractor class to use
@@ -91,6 +96,37 @@ class ShallowASTProcessor:
         self._source_bytes: bytes = b""
         self.comment_extractor_cls = comment_extractor_cls
         self.comment_extractor: Optional[CommentExtractor] = None
+        self.max_container_depth = 5
+        self.container_decl_threshold = 3
+        self.container_body_child_threshold = 12
+        self.container_node_types = {
+            "function_declaration",
+            "function_definition",
+            "function",
+            "function_expression",
+            "arrow_function",
+            "method_definition",
+            "method_declaration",
+            "constructor_declaration",
+            "class_declaration",
+            "class_definition",
+            "class_specifier",
+            "interface_declaration",
+        }
+        self.nested_declaration_types = {
+            "function_declaration",
+            "function_definition",
+            "function",
+            "function_expression",
+            "arrow_function",
+            "method_definition",
+            "method_declaration",
+            "constructor_declaration",
+            "class_declaration",
+            "class_definition",
+            "class_specifier",
+            "interface_declaration",
+        }
 
     def process(
         self, code: str, language: str, debugger: Optional[ShallowASTDebugger] = None
@@ -132,7 +168,9 @@ class ShallowASTProcessor:
 
         return shallow_ast
 
-    def _build_node(self, node: Node, depth: int) -> Dict[str, Any]:
+    def _build_node(
+        self, node: Node, depth: int, allow_extended_depth: bool = False
+    ) -> Dict[str, Any]:
         """Build a dictionary representation of a Tree-sitter node.
 
         At depth >= max_depth, only includes type and line_range.
@@ -192,8 +230,14 @@ class ShallowASTProcessor:
                 # If parameter extraction fails, continue without them
                 pass
 
-        # Stop recursion at max depth
-        if depth >= self.max_depth:
+        is_container = self._should_extend_depth(node, depth)
+        extended_active = allow_extended_depth or is_container
+        max_depth_limit = (
+            self.max_container_depth if extended_active else self.max_depth
+        )
+
+        # Stop recursion at the effective max depth unless extension applies
+        if depth >= max_depth_limit:
             # Signal complexity if there are hidden children
             child_count = self._count_relevant_children(node)
             if child_count > 0:
@@ -211,7 +255,12 @@ class ShallowASTProcessor:
                 continue
 
             field_name = node.field_name_for_child(index)
-            child_repr = self._represent_child(child, depth, field_name)
+            child_repr = self._represent_child(
+                child,
+                depth,
+                field_name,
+                allow_extended_depth=extended_active,
+            )
 
             # Flatten intermediate wrapper nodes
             if self._should_flatten(child):
@@ -223,7 +272,10 @@ class ShallowASTProcessor:
                         continue
                     grandchild_field = child.field_name_for_child(grandchild_idx)
                     grandchild_repr = self._represent_child(
-                        grandchild, depth, grandchild_field
+                        grandchild,
+                        depth,
+                        grandchild_field,
+                        allow_extended_depth=extended_active,
                     )
                     if grandchild_field:
                         fields.setdefault(grandchild_field, []).append(grandchild_repr)
@@ -244,7 +296,11 @@ class ShallowASTProcessor:
         return representation
 
     def _represent_child(
-        self, child: Node, parent_depth: int, field_name: Optional[str]
+        self,
+        child: Node,
+        parent_depth: int,
+        field_name: Optional[str],
+        allow_extended_depth: bool,
     ) -> Dict[str, Any]:
         """Represent a child node - shallow if body-like, else recursive.
 
@@ -256,11 +312,94 @@ class ShallowASTProcessor:
         line_range_value = self._line_range(child)
 
         # Body-like nodes: replace with line_range only (minimal representation)
-        if self._is_body_like(child, field_name):
+        if self._is_body_like(child, field_name) and not allow_extended_depth:
             return {"type": child.type, "line_range": line_range_value}
 
         # Otherwise, recurse
-        return self._build_node(child, parent_depth + 1)
+        return self._build_node(
+            child, parent_depth + 1, allow_extended_depth=allow_extended_depth
+        )
+
+    def _count_nested_declarations(
+        self, node: Node, limit: Optional[int] = None
+    ) -> int:
+        """Count nested declaration nodes within a container candidate.
+
+        This walks descendant nodes (excluding the root) and counts
+        function/method/class declarations. A limit can be provided for
+        early exit to reduce traversal cost.
+        """
+        # Track nested declarations to detect containers quickly.
+        count = 0
+        stack = list(node.children)
+
+        while stack:
+            current = stack.pop()
+            if not current.is_named or current.type == "comment":
+                continue
+
+            if current.type in self.nested_declaration_types:
+                count += 1
+                if limit is not None and count >= limit:
+                    return count
+
+            stack.extend(current.children)
+
+        return count
+
+    def _should_extend_depth(self, node: Node, current_depth: int) -> bool:
+        """Determine whether to extend traversal depth for a container node.
+
+        Uses conservative heuristics to avoid over-scanning flat files while
+        surfacing nested declaration structure in container-style files.
+        """
+        # Avoid extending beyond the hard cap.
+        if current_depth >= self.max_container_depth:
+            return False
+
+        if node.type not in self.container_node_types:
+            return False
+
+        nested_decls = self._count_nested_declarations(
+            node, limit=self.container_decl_threshold
+        )
+        body_named_children = 0
+
+        for index, child in enumerate(node.children):
+            if not child.is_named or child.type == "comment":
+                continue
+
+            field_name = node.field_name_for_child(index)
+            if not self._is_body_like(child, field_name):
+                continue
+
+            for grandchild in child.children:
+                if not grandchild.is_named or grandchild.type == "comment":
+                    continue
+                body_named_children += 1
+                if body_named_children >= self.container_body_child_threshold:
+                    break
+
+            if body_named_children >= self.container_body_child_threshold:
+                break
+
+        should_extend = (
+            nested_decls >= self.container_decl_threshold
+            or body_named_children >= self.container_body_child_threshold
+        )
+
+        logger.debug(
+            "Container depth decision: type=%s name=%s depth=%s "
+            "nested_decls=%s body_children=%s extend=%s",
+            node.type,
+            self._extract_identifier(node),
+            current_depth,
+            nested_decls,
+            body_named_children,
+            should_extend,
+        )
+
+        return should_extend
 
     def _extract_identifier(self, node: Node) -> Optional[str]:
         """Extract name/identifier from common field names."""

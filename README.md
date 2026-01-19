@@ -57,6 +57,26 @@ Instead of listing functions, we extract **Logical Ecosystems**.
 ### Shallow AST
  A custom tree-sitter based reduction engine that identifies "High-Density Nodes" and metadata while stripping implementation noise.
 
+#### Nested Container Support
+For container-style files (classes with many methods, nested function modules),
+IRIS selectively extends shallow traversal so nested declarations appear as
+structured `children` instead of being collapsed into a single block.
+
+Example (condensed):
+```json
+{
+  "type": "function_declaration",
+  "name": "createManualWheelchair",
+  "line_range": [31, 919],
+  "children": [
+    { "type": "function_declaration", "name": "createSeatCushion", "line_range": [34, 55] },
+    { "type": "function_declaration", "name": "createBackrest", "line_range": [57, 120] }
+  ]
+}
+```
+This lets IRIS extract multiple responsibility blocks from internal subsystems
+without reading full source for the entire container.
+
 ### 📂 IRIS Analysis Schema (v1.0)
 
 The schema is divided into four primary segments: **Verification Metadata**, **Systemic Intent**, **Capability Blocks**, and **Technical Metadata**.

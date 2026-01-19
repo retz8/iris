@@ -65,6 +65,13 @@ To understand IRIS in depth, refer to the [philosophy behind IRIS](docs/philosop
 - [ ] Preserve AST structure - don't flatten unnecessarily
 - [ ] Add `extra_children_count` when collapsing complex nodes
 
+### Container File Handling (Nested Subsystems)
+**Apply when describing or refining AST behavior**
+
+- [ ] Treat nested `children` under container nodes as potential subsystems
+- [ ] Prefer shallow, structured metadata over raw source reading
+- [ ] Keep adaptive depth conservative (avoid over-scanning flat files)
+
 ### Agent & Prompts (`backend/src/iris_agent/agent.py`, `prompts.py`)
 **Apply when working on LLM integration**
 

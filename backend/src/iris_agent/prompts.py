@@ -37,10 +37,234 @@ Your goal is to build a **Progressive Abstraction Layer**. You create a high-fid
 **CRITICAL: DO NOT call any tools in this phase.**
 Scan the provided Shallow AST metadata (`leading_comment`, `import_details`, `extra_children_count`, `node_type`, `line_range`) to build an initial mental model.
 
-1. **System Role & Domain**: Analyze `import_details` to identify the tech stack. Use `leading_comment` to see how the author labeled the file's territory.
-2. **Anchor Point Detection**: Identify "High-Density Nodes". A node with a high `extra_children_count` or a semantic name is an Anchor Point where the core logic likely resides.
-3. **Data & Control Flow Prediction**: Based on the imports and top-level definitions, predict how data enters, transforms, and exits.
-4. **Formulate Initial Hypothesis**: Internalize a clear guess: *"This file likely manages X by orchestrating Y, acting as a bridge between Z and the user."*
+---
+
+### **IMPORTANT: Container File Detection**
+
+**What is a Container File?**
+A file where most logic is **nested inside** a single parent function, class,
+or IIFE.
+
+**How to Identify:**
+If you see a node (function/class) with many `children` that are
+function/method declarations, this is a Container File.
+
+**Example Container AST Pattern:**
+```json
+{
+    "type": "function_declaration",
+    "name": "buildComplexEntity",
+    "line_range": [1, 500],
+    "children": [
+        {
+            "type": "function_declaration",
+            "name": "initializeComponentA",
+            "line_range": [10, 50]
+        },
+        {
+            "type": "function_declaration",
+            "name": "processComponentA",
+            "line_range": [52, 80]
+        },
+        {
+            "type": "function_declaration",
+            "name": "initializeComponentB",
+            "line_range": [82, 120]
+        },
+        {
+            "type": "function_declaration",
+            "name": "processComponentB",
+            "line_range": [122, 180]
+        },
+        {
+            "type": "function_declaration",
+            "name": "validateInputs",
+            "line_range": [182, 210]
+        },
+        {
+            "type": "function_declaration",
+            "name": "assembleComponents",
+            "line_range": [212, 280]
+        }
+    ]
+}
+```
+
+**How to Analyze Container Files:**
+
+1. **DO NOT treat the parent as atomic**
+     - ✗ WRONG: Single block "Complex Entity Builder" containing all nested
+         functions
+     - ✓ RIGHT: Analyze nested children and group by logical purpose
+
+2. **Identify patterns in nested function names**
+
+     **Pattern Detection:**
+     - **Prefix clustering**: `initialize*`, `process*`, `validate*`,
+         `assemble*`
+     - **Domain clustering**: Functions operating on same entity
+         (ComponentA, ComponentB)
+     - **Stage clustering**: Functions representing sequential phases
+         (init → process → validate → assemble)
+
+     **Example Grouping Logic:**
+     ```
+     "initializeComponentA" + "processComponentA" → Component A Lifecycle
+     "initializeComponentB" + "processComponentB" → Component B Lifecycle
+     "validateInputs" → Input Validation
+     "assembleComponents" → Assembly Orchestration
+     ```
+
+3. **Separate orchestration from subsystems**
+     - The parent function's **main body** (after nested function definitions)
+         is often orchestration
+     - This is a distinct responsibility: "Orchestrator" or "Coordinator"
+
+**Generic Analysis Process:**
+
+Given ANY container with nested functions:
+
+**Step 1: Scan function names for patterns**
+- Common prefixes? (create*, init*, validate*, process*, render*, handle*)
+- Common suffixes? (*Handler, *Manager, *Builder, *Processor)
+- Shared domain terms? (User*, Order*, Payment*, Component*)
+
+**Step 2: Group by logical purpose**
+- Functions that work together toward a single goal → One block
+- Functions that operate on the same entity → One block
+- Functions at different abstraction levels → Separate blocks
+
+**Step 3: Identify orchestration**
+- The parent function's main logic (variable setup, function calls, return)
+    → Separate block
+- Label: "[Domain] Orchestrator/Coordinator/Pipeline"
+
+**Example Output (Generic Pattern):**
+
+**Responsibility Blocks:**
+1. **Component A Lifecycle**
+     - Functions: initializeComponentA, processComponentA
+     - Purpose: Complete lifecycle management for Component A entity
+
+2. **Component B Lifecycle**
+     - Functions: initializeComponentB, processComponentB
+     - Purpose: Complete lifecycle management for Component B entity
+
+3. **Input Validation Layer**
+     - Functions: validateInputs
+     - Purpose: Pre-processing validation and sanitization
+
+4. **Assembly Orchestration**
+     - Functions: assembleComponents, buildComplexEntity (main body only)
+     - Purpose: Coordinates subsystems into final output
+
+**What NOT to Do:**
+
+✗ Single block "Helper Functions" containing all nested functions
+✗ One block per function (over-fragmentation)
+✗ Generic labels without domain context ("Utilities", "Functions", "Logic")
+✗ Ignoring name patterns (grouping unrelated functions)
+
+---
+
+### **Multi-Domain Container Examples**
+
+To ensure this pattern transfers across domains, here are examples from
+different code types:
+
+#### **Example 1: React Component Container**
+```json
+{
+    "type": "function_declaration",
+    "name": "UserDashboard",
+    "children": [
+        {"name": "handleLogin", "line_range": [10, 25]},
+        {"name": "handleLogout", "line_range": [27, 35]},
+        {"name": "fetchUserData", "line_range": [37, 60]},
+        {"name": "validateSession", "line_range": [62, 80]},
+        {"name": "renderProfile", "line_range": [82, 120]},
+        {"name": "renderSettings", "line_range": [122, 180]}
+    ]
+}
+```
+
+**Expected Grouping:**
+- **Authentication Handlers** (handleLogin, handleLogout, validateSession)
+- **Data Management** (fetchUserData)
+- **UI Rendering** (renderProfile, renderSettings)
+
+#### **Example 2: Data Pipeline Container**
+```json
+{
+    "type": "function_declaration",
+    "name": "processDataPipeline",
+    "children": [
+        {"name": "extractFromSource", "line_range": [5, 30]},
+        {"name": "validateSchema", "line_range": [32, 50]},
+        {"name": "transformRecords", "line_range": [52, 100]},
+        {"name": "enrichWithMetadata", "line_range": [102, 140]},
+        {"name": "loadToDestination", "line_range": [142, 180]}
+    ]
+}
+```
+
+**Expected Grouping:**
+- **Extraction Layer** (extractFromSource)
+- **Validation Layer** (validateSchema)
+- **Transformation Engine** (transformRecords, enrichWithMetadata)
+- **Loading Layer** (loadToDestination)
+
+#### **Example 3: Class with Methods Container**
+```json
+{
+    "type": "class_declaration",
+    "name": "OrderProcessor",
+    "children": [
+        {"type": "method_definition", "name": "validateOrder",
+         "line_range": [10, 40]},
+        {"type": "method_definition", "name": "calculateTax",
+         "line_range": [42, 60]},
+        {"type": "method_definition", "name": "calculateShipping",
+         "line_range": [62, 80]},
+        {"type": "method_definition", "name": "applyDiscounts",
+         "line_range": [82, 120]},
+        {"type": "method_definition", "name": "chargePayment",
+         "line_range": [122, 180]},
+        {"type": "method_definition", "name": "sendConfirmation",
+         "line_range": [182, 200]}
+    ]
+}
+```
+
+**Expected Grouping:**
+- **Order Validation** (validateOrder)
+- **Price Calculation** (calculateTax, calculateShipping, applyDiscounts)
+- **Payment Processing** (chargePayment)
+- **Notification System** (sendConfirmation)
+
+---
+
+### **Key Takeaway**
+
+The pattern is **always the same** regardless of domain:
+1. Scan nested function names for patterns (prefixes, domains, stages)
+2. Group by logical purpose (not alphabetically or by line order)
+3. Separate orchestration from subsystems
+4. Use domain-specific labels (not generic "Helpers")
+
+---
+
+1. **System Role & Domain**: Analyze `import_details` to identify the tech
+stack. Use `leading_comment` to see how the author labeled the file's
+territory.
+2. **Anchor Point Detection**: Identify "High-Density Nodes". A node with a
+high `extra_children_count` or a semantic name is an Anchor Point where the
+core logic likely resides.
+3. **Data & Control Flow Prediction**: Based on the imports and top-level
+definitions, predict how data enters, transforms, and exits.
+4. **Formulate Initial Hypothesis**: Internalize a clear guess:
+*"This file likely manages X by orchestrating Y, acting as a bridge between Z
+and the user."*
 
 ---
 
@@ -158,7 +382,8 @@ def build_tool_calling_prompt(
 ) -> str:
     """Build prompt for tool-calling single-stage analysis.
 
-    Includes analysis strategy to guide top-down comprehension.
+    Includes analysis strategy to guide top-down comprehension, including
+    nested container structure support when present in the Shallow AST.
     """
     payload = {
         "task": "Analyze this file and extract File Intent + Responsibility Blocks",
