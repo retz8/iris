@@ -19,9 +19,12 @@ from .prompts import (
     FAST_PATH_SYSTEM_PROMPT,
     IDENTIFICATION_SYSTEM_PROMPT,
     build_analysis_prompt,
+    build_signature_graph_analysis_prompt,
     build_tool_calling_prompt,
+    build_signature_graph_prompt,
     build_fast_path_prompt,
     build_identification_prompt,
+    build_signature_graph_identification_prompt,
     build_raw_source_prompt,
 )
 from .source_store import SourceStore
@@ -53,6 +56,7 @@ class IrisAgent:
         source_store: SourceStore,
         file_hash: str,
         debugger: Optional["ShallowASTDebugger"] = None,
+        signature_graph: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Single-stage analysis with OpenAI tool-calling.
 
@@ -64,8 +68,13 @@ class IrisAgent:
         """
         source_reader = SourceReader(source_store, file_hash)
 
-        # Build initial user prompt
-        user_prompt = build_tool_calling_prompt(filename, language, shallow_ast)
+        prompt_structure = signature_graph if signature_graph else shallow_ast
+        if signature_graph:
+            user_prompt = build_signature_graph_prompt(
+                filename, language, signature_graph
+            )
+        else:
+            user_prompt = build_tool_calling_prompt(filename, language, shallow_ast)
 
         messages: List[Dict[str, Any]] = [
             {"role": "system", "content": TOOL_CALLING_SYSTEM_PROMPT},
@@ -101,7 +110,7 @@ class IrisAgent:
                 # Fallback: estimate tokens if usage not provided by API
                 if tool_call_count == 0:
                     total_input_tokens += self._estimate_tokens_for_prompt(
-                        filename, language, shallow_ast
+                        filename, language, prompt_structure
                     )
                 # Estimate output tokens from response content
                 content = assistant_message.content or ""
@@ -240,6 +249,7 @@ class IrisAgent:
         shallow_ast: Dict[str, Any],
         source_store: SourceStore,
         file_hash: str,
+        signature_graph: Dict[str, Any] | None = None,
         debug_report: Dict[str, Any] | None = None,
         source_code: str = "",
         debugger: ShallowASTDebugger | None = None,
@@ -256,6 +266,7 @@ class IrisAgent:
             filename: Name of the file being analyzed.
             language: Programming language identifier.
             shallow_ast: Shallow AST representation from processor.
+            signature_graph: Optional signature graph representation.
             source_store: Store containing source code snippets.
             file_hash: Hash of the source file for caching.
             debug_report: Optional debug report from ShallowASTDebugger.
@@ -263,6 +274,7 @@ class IrisAgent:
             debugger: Optional ShallowASTDebugger instance for LLM tracking.
             use_tool_calling: Enable tool-calling mode (default: True). If False, use legacy two-stage.
         """
+        prompt_structure = signature_graph if signature_graph else shallow_ast
 
         # =====================================================================
         # ROUTING: Decide between Fast-Path, Tool-Calling, and Two-Stage analysis
@@ -275,7 +287,12 @@ class IrisAgent:
                 debugger.start_llm_stage("fast_path_analysis")
 
             result = self._run_fast_path_analysis(
-                filename, language, shallow_ast, source_code, debugger
+                filename,
+                language,
+                shallow_ast,
+                source_code,
+                debugger,
+                signature_graph=signature_graph,
             )
             result["metadata"]["execution_path"] = "fast-path"
             result["metadata"]["tool_reads"] = []  # No tool reads in fast-path
@@ -303,7 +320,13 @@ class IrisAgent:
 
             try:
                 result = self._run_tool_calling_analysis(
-                    filename, language, shallow_ast, source_store, file_hash, debugger
+                    filename,
+                    language,
+                    shallow_ast,
+                    source_store,
+                    file_hash,
+                    debugger,
+                    signature_graph=signature_graph,
                 )
 
                 # Add debug stats if available
@@ -330,7 +353,7 @@ class IrisAgent:
 
         stage1_start = time.time()
         identification_response = self._run_identification(
-            filename, language, shallow_ast
+            filename, language, shallow_ast, signature_graph=signature_graph
         )
         stage1_elapsed = time.time() - stage1_start
 
@@ -342,7 +365,7 @@ class IrisAgent:
             debugger.end_llm_stage(
                 "stage_1_identification",
                 input_tokens=self._estimate_tokens_for_prompt(
-                    filename, language, shallow_ast
+                    filename, language, prompt_structure
                 ),
                 output_tokens=stage1_tokens,
                 llm_response=identification_response,
@@ -378,7 +401,11 @@ class IrisAgent:
 
         stage2_start = time.time()
         analysis_response = self._run_analysis(
-            filename, language, shallow_ast, source_snippets
+            filename,
+            language,
+            shallow_ast,
+            source_snippets,
+            signature_graph=signature_graph,
         )
         stage2_elapsed = time.time() - stage2_start
 
@@ -390,7 +417,10 @@ class IrisAgent:
             debugger.end_llm_stage(
                 "stage_2_analysis",
                 input_tokens=self._estimate_tokens_for_analysis_prompt(
-                    filename, language, shallow_ast, source_snippets
+                    filename,
+                    language,
+                    prompt_structure,
+                    source_snippets,
                 ),
                 output_tokens=stage2_tokens,
                 llm_response=analysis_response,
@@ -451,6 +481,7 @@ class IrisAgent:
         shallow_ast: Dict[str, Any],
         source_code: str,
         debugger: ShallowASTDebugger | None = None,
+        signature_graph: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
         """Single-stage analysis for small files using full source code.
 
@@ -460,13 +491,14 @@ class IrisAgent:
             shallow_ast: Shallow AST representation.
             source_code: Full source code content.
             debugger: Optional debugger for tracking LLM metrics.
+            signature_graph: Optional signature graph representation.
 
         Returns:
             Dict with file_intent, responsibilities, and metadata.
         """
         try:
             # Use different prompt depending on whether we have AST or raw source only
-            if shallow_ast is None or not shallow_ast:
+            if not shallow_ast and not signature_graph:
                 # Raw source mode - no AST
                 user_prompt = build_raw_source_prompt(filename, language, source_code)
             else:
@@ -496,7 +528,7 @@ class IrisAgent:
                     response.usage.prompt_tokens
                     if response.usage
                     else self._estimate_tokens_for_fast_path_prompt(
-                        filename, language, shallow_ast, source_code
+                        filename, language, signature_graph or shallow_ast, source_code
                     )
                 )
                 output_tokens = (
@@ -522,10 +554,19 @@ class IrisAgent:
             raise
 
     def _run_identification(
-        self, filename: str, language: str, shallow_ast: Dict[str, Any]
+        self,
+        filename: str,
+        language: str,
+        shallow_ast: Dict[str, Any],
+        signature_graph: Dict[str, Any] | None = None,
     ) -> str:
         """Stage 1: Run identification to find unclear parts."""
-        user_prompt = build_identification_prompt(filename, language, shallow_ast)
+        if signature_graph:
+            user_prompt = build_signature_graph_identification_prompt(
+                filename, language, signature_graph
+            )
+        else:
+            user_prompt = build_identification_prompt(filename, language, shallow_ast)
 
         response = self.client.chat.completions.create(
             model=self.model,
@@ -565,11 +606,17 @@ class IrisAgent:
         language: str,
         shallow_ast: Dict[str, Any],
         source_snippets: Dict[str, str],
+        signature_graph: Dict[str, Any] | None = None,
     ) -> str:
         """Stage 2: Run analysis with AST + read source code."""
-        user_prompt = build_analysis_prompt(
-            filename, language, shallow_ast, source_snippets
-        )
+        if signature_graph:
+            user_prompt = build_signature_graph_analysis_prompt(
+                filename, language, signature_graph, source_snippets
+            )
+        else:
+            user_prompt = build_analysis_prompt(
+                filename, language, shallow_ast, source_snippets
+            )
 
         response = self.client.chat.completions.create(
             model=self.model,
@@ -648,23 +695,23 @@ class IrisAgent:
                 metadata["notes"] = warning
 
     def _estimate_tokens_for_prompt(
-        self, filename: str, language: str, shallow_ast: Dict[str, Any]
+        self, filename: str, language: str, structure: Dict[str, Any]
     ) -> int:
         """Estimate token count for Stage 1 identification prompt."""
         # Rough estimation: filename + language + shallow AST
-        ast_str = json.dumps(shallow_ast)
-        total_chars = len(filename) + len(language) + len(ast_str)
+        structure_str = json.dumps(structure)
+        total_chars = len(filename) + len(language) + len(structure_str)
         return max(100, total_chars // 4)  # ~1 token per 4 characters
 
     def _estimate_tokens_for_analysis_prompt(
         self,
         filename: str,
         language: str,
-        shallow_ast: Dict[str, Any],
+        structure: Dict[str, Any],
         source_snippets: Dict[str, str],
     ) -> int:
         """Estimate token count for Stage 2 analysis prompt."""
-        ast_str = json.dumps(shallow_ast)
+        ast_str = json.dumps(structure)
         snippets_str = json.dumps(source_snippets)
         total_chars = len(filename) + len(language) + len(ast_str) + len(snippets_str)
         return max(100, total_chars // 4)
@@ -677,11 +724,11 @@ class IrisAgent:
         self,
         filename: str,
         language: str,
-        shallow_ast: Dict[str, Any],
+        structure: Dict[str, Any],
         source_code: str,
     ) -> int:
         """Estimate token count for fast-path prompt."""
-        ast_str = json.dumps(shallow_ast)
+        ast_str = json.dumps(structure)
         total_chars = len(filename) + len(language) + len(ast_str) + len(source_code)
         return max(100, total_chars // 4)
 

@@ -35,7 +35,9 @@ Your goal is to build a **Progressive Abstraction Layer**. You create a high-fid
 ## PHASE 1: STRUCTURAL HYPOTHESIS (Mental Mapping)
 
 **CRITICAL: DO NOT call any tools in this phase.**
-Scan the provided Shallow AST metadata (`leading_comment`, `import_details`, `extra_children_count`, `node_type`, `line_range`) to build an initial mental model.
+Scan the provided Shallow AST or Signature Graph metadata
+(`leading_comment`, `import_details`, `extra_children_count`, `node_type`,
+`line_range`) to build an initial mental model.
 
 ---
 
@@ -398,6 +400,29 @@ def build_tool_calling_prompt(
     return json.dumps(payload, ensure_ascii=False, indent=2)
 
 
+def build_signature_graph_prompt(
+    filename: str,
+    language: str,
+    signature_graph: Dict[str, Any],
+) -> str:
+    """Build prompt for tool-calling analysis using a signature graph.
+
+    The signature graph is a flat entity list with hierarchy metadata
+    (`parent_id`, `children_ids`, `depth`) and line ranges for each entity.
+    """
+    payload = {
+        "task": "Analyze this file and extract File Intent + Responsibility Blocks",
+        "filename": filename,
+        "language": language,
+        "inputs": {
+            "signature_graph": signature_graph,
+        },
+        "output_format": "JSON matching schema (no markdown, no code fences)",
+        "output_schema": ANALYSIS_OUTPUT_SCHEMA,
+    }
+    return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
 # =============================================================================
 # STAGE 1: IDENTIFICATION - Find unclear parts that need source code reading
 # =============================================================================
@@ -545,6 +570,43 @@ def build_identification_prompt(
     return json.dumps(payload, ensure_ascii=False, indent=2)
 
 
+def build_signature_graph_identification_prompt(
+    filename: str, language: str, signature_graph: Dict[str, Any]
+) -> str:
+    """Build Stage 1 prompt to identify unclear parts using a signature graph."""
+    payload = {
+        "task": "Identify which parts of this signature graph need reading",
+        "filename": filename,
+        "language": language,
+        "signature_graph": signature_graph,
+        "instructions": [
+            "1. FIRST: Identify hub entities (containers, factories, modules)",
+            "2. SECOND: Identify entry points (init, main, setup, exports)",
+            "3. THIRD: Scan entities with generic names or missing comments",
+            "4. Skip entities with line_range: null (single-line, nothing to read)",
+            "5. Return prioritized list of ranges_to_read",
+        ],
+        "priority_guide": {
+            "high": "Hub entities, entry points, container scopes",
+            "medium": "Generic-named functions, uncommented code >15 lines",
+            "low": "Unclear utilities, ambiguous helpers",
+        },
+        "output_format": {
+            "ranges_to_read": [
+                {
+                    "start_line": "int (1-based)",
+                    "end_line": "int (1-based inclusive)",
+                    "reason": "string (why this needs reading)",
+                    "element_type": "string (function/class/variable/import/etc)",
+                    "element_name": "string",
+                    "priority": "high/medium/low",
+                }
+            ]
+        },
+    }
+    return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
 # =============================================================================
 # STAGE 2: ANALYSIS - Generate File Intent + Responsibility Blocks
 # =============================================================================
@@ -559,7 +621,8 @@ Your task is to extract:
 YOUR INPUTS
 =============================================================================
 
-- **shallow_ast**: Structure showing declarations, their names, and line ranges
+- **shallow_ast/signature_graph**: Structure showing declarations, their names,
+  hierarchy metadata, and line ranges
 - **source_snippets**: Actual code for parts identified as needing clarification
 
 =============================================================================
@@ -704,6 +767,46 @@ def build_analysis_prompt(
     return json.dumps(payload, ensure_ascii=False, indent=2)
 
 
+def build_signature_graph_analysis_prompt(
+    filename: str,
+    language: str,
+    signature_graph: Dict[str, Any],
+    source_snippets: Dict[str, str],
+) -> str:
+    """Build Stage 2 prompt with signature graph + read source code."""
+    formatted_snippets = {}
+    for key, snippet in source_snippets.items():
+        formatted_snippets[f"Lines {key}"] = snippet
+
+    payload = {
+        "task": "Generate File Intent + Responsibility Blocks",
+        "filename": filename,
+        "language": language,
+        "context": (
+            "You have signature graph structure and source code for critical"
+            " sections. Synthesize into architectural understanding."
+        ),
+        "synthesis_steps": [
+            "1. Review hub entities first - they define core intent",
+            "2. Understand hierarchy context from parent/child relationships",
+            "3. Derive file intent from the architectural role",
+            "4. Group related elements into responsibility ecosystems",
+            "5. Verify each responsibility could be its own file",
+        ],
+        "inputs": {
+            "signature_graph": signature_graph,
+            "source_snippets": (
+                formatted_snippets
+                if formatted_snippets
+                else "No unclear parts identified - graph was sufficient"
+            ),
+        },
+        "output_format": "JSON matching schema (no markdown, no code fences)",
+        "output_schema": ANALYSIS_OUTPUT_SCHEMA,
+    }
+    return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
 # =============================================================================
 # FAST-PATH: SINGLE-STAGE ANALYSIS - For small files with full source code
 # =============================================================================
@@ -717,7 +820,8 @@ Your goal is to build a **Progressive Abstraction Layer**. You create a high-fid
 =============================================================================
 FAST-PATH MODE: DIRECT ANALYSIS
 =============================================================================
-You have the FULL source code and Shallow AST. No tool calls are needed. 
+You have the FULL source code and Shallow AST or Signature Graph. No tool
+calls are needed. 
 Analyze the entire context immediately to identify the systemic identity of the file.
 
 ---

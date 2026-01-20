@@ -430,6 +430,11 @@ class ShallowASTDebugger:
         integrity_score = self.metrics.get("integrity_score", 0)
         has_quality_warning = integrity_score < 100
 
+        signature_graph = self.snapshots.get("signature_graph", {})
+        entity_count = 0
+        if isinstance(signature_graph, dict):
+            entity_count = len(signature_graph.get("entities", []))
+
         return {
             "filename": self.filename,
             "language": self.language,
@@ -448,6 +453,8 @@ class ShallowASTDebugger:
                 "comment_retention_score": self.metrics.get(
                     "comment_retention_score", 0
                 ),
+                "signature_graph_entity_count": entity_count,
+                "signature_graph_available": entity_count > 0,
             },
         }
 
@@ -493,6 +500,12 @@ class ShallowASTDebugger:
             f"({metrics.get('raw_source_bytes', 0)} → {metrics.get('json_bytes', 0)} bytes)"
         )
         print(f"  Comment Retention Score:     {comment_retention:.1f}%")
+
+        signature_graph = report.get("snapshots", {}).get("signature_graph", {})
+        if isinstance(signature_graph, dict) and signature_graph.get("entities"):
+            entity_count = len(signature_graph.get("entities", []))
+            print(f"\n{BOLD}Signature Graph Snapshot:{END}")
+            print(f"  Entities Captured:           {entity_count}")
 
         # Integrity Section
         print(f"\n{BOLD}Integrity Verification:{END}")
@@ -646,6 +659,22 @@ class ShallowASTDebugger:
             md_lines.extend(
                 [
                     "*Source code not available in snapshots*",
+                    "",
+                ]
+            )
+
+        signature_graph = snapshots.get("signature_graph", {})
+        if isinstance(signature_graph, dict) and signature_graph.get("entities"):
+            entity_count = len(signature_graph.get("entities", []))
+            md_lines.extend(
+                [
+                    "### Signature Graph Snapshot",
+                    "",
+                    f"**Entities:** {entity_count}",
+                    "",
+                    "```json",
+                    self._format_signature_graph_preview(),
+                    "```",
                     "",
                 ]
             )
@@ -1175,6 +1204,47 @@ class ShallowASTDebugger:
         ]
         return "\n".join(preview_lines)
 
+    def _format_signature_graph_preview(self) -> str:
+        """Format the signature graph for display in the markdown report.
+
+        Shows the actual signature graph if captured in snapshots, otherwise
+        returns a template example. Truncates large graphs to keep report
+        manageable.
+        """
+        signature_graph = self.snapshots.get("signature_graph", {})
+        if isinstance(signature_graph, dict) and signature_graph:
+            try:
+                graph_json = json.dumps(signature_graph, indent=2, ensure_ascii=False)
+                max_length = 2000
+                if len(graph_json) > max_length:
+                    truncated = graph_json[:max_length]
+                    last_newline = truncated.rfind("\n")
+                    if last_newline > 0:
+                        truncated = truncated[:last_newline]
+                    return truncated + "\n  ...(truncated for readability)"
+                return graph_json
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        preview_lines = [
+            "{",
+            '  "entities": [',
+            "    {",
+            '      "id": "entity_0",',
+            '      "name": "exampleFunction",',
+            '      "type": "function",',
+            '      "signature": "function exampleFunction(arg)",',
+            '      "line_range": [10, 25],',
+            '      "depth": 0,',
+            '      "parent_id": null,',
+            '      "children_ids": ["entity_1"],',
+            '      "calls": ["entity_2"]',
+            "    }",
+            "  ]",
+            "}",
+        ]
+        return "\n".join(preview_lines)
+
     def generate_shallow_ast_json(self, output_path: Optional[str] = None) -> str:
         """Generate a standalone JSON file with the complete shallow AST.
 
@@ -1209,6 +1279,40 @@ class ShallowASTDebugger:
         json_content = json.dumps(output, indent=2, ensure_ascii=False)
 
         # Write to file if output_path provided
+        if output_path:
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write(json_content)
+
+        return json_content
+
+    def generate_signature_graph_json(self, output_path: Optional[str] = None) -> str:
+        """Generate a standalone JSON file with the signature graph.
+
+        Args:
+            output_path: Optional file path to write the JSON file.
+                        If None, only returns the JSON string.
+
+        Returns:
+            JSON string of the signature graph with metadata.
+        """
+        signature_graph = self.snapshots.get("signature_graph", {})
+
+        if not signature_graph:
+            output = {
+                "filename": self.filename,
+                "language": self.language,
+                "error": "No signature graph captured during analysis",
+                "signature_graph": None,
+            }
+        else:
+            output = {
+                "filename": self.filename,
+                "language": self.language,
+                "signature_graph": signature_graph,
+            }
+
+        json_content = json.dumps(output, indent=2, ensure_ascii=False)
+
         if output_path:
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(json_content)

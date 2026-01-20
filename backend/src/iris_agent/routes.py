@@ -12,6 +12,7 @@ from flask import Blueprint, jsonify, request
 from .agent import IrisAgent
 from .ast_processor import ShallowASTProcessor
 from .debugger import ShallowASTDebugger
+from .signature_graph import SignatureGraphExtractor
 from .source_store import SourceStore
 
 iris_bp = Blueprint("iris", __name__, url_prefix="/api/iris")
@@ -25,6 +26,9 @@ _debug_mode = True  # Flag to enable/disable debug mode
 _force_fast_path = False  # Flag to force fast-path analysis (skip fallback)
 _use_raw_source = False  # Flag to use raw source code instead of shallow AST
 _use_tool_calling = True  # Flag to enable/disable tool-calling mode (default: True)
+_use_signature_graph = (
+    os.environ.get("USE_SIGNATURE_GRAPH", "false").lower() == "true"
+)  # Flag to enable/disable signature graph
 
 try:
     _iris_agent = IrisAgent(model="gpt-4o-mini")
@@ -128,6 +132,30 @@ def get_use_tool_calling() -> bool:
     return _use_tool_calling
 
 
+def set_use_signature_graph(enabled: bool) -> None:
+    """Enable or disable signature graph mode.
+
+    When enabled, analysis uses signature graph extraction instead of
+    shallow AST generation.
+
+    Args:
+        enabled: True to use signature graph, False to use shallow AST.
+    """
+    global _use_signature_graph
+    _use_signature_graph = enabled
+    status = "enabled" if enabled else "disabled"
+    print(f"[DEBUG] Signature graph mode {status}")
+
+
+def get_use_signature_graph() -> bool:
+    """Get the current signature graph mode status.
+
+    Returns:
+        True if signature graph mode is enabled, False otherwise.
+    """
+    return _use_signature_graph
+
+
 @iris_bp.route("/analyze", methods=["POST"])
 def analyze():
     """Analyze a source file to extract File Intent + Responsibility Blocks.
@@ -201,14 +229,41 @@ def analyze():
         _source_store.store(source_code, file_hash, filename)
 
         # =====================================================================
-        # STEP 2: Generate shallow AST (unless using raw source mode)
+        # STEP 2: Generate analysis structure (unless using raw source mode)
         # =====================================================================
         shallow_ast = None
+        signature_graph = None
         if _use_raw_source:
             print(f"[DEBUG] Using raw source code instead of shallow AST")
             # Skip AST processing, but still capture source in debugger
             if debugger:
                 debugger.capture_snapshot("raw_source", source_code)
+        elif _use_signature_graph:
+            try:
+                extractor = SignatureGraphExtractor(language)
+                signature_graph = extractor.extract(source_code)
+                if debugger:
+                    debugger.capture_snapshot("signature_graph", signature_graph)
+            except ValueError as ve:
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "error": f"Invalid input: {ve}",
+                        }
+                    ),
+                    400,
+                )
+            except Exception as sg_error:
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "error": f"Signature graph failed: {sg_error}",
+                        }
+                    ),
+                    500,
+                )
         else:
             try:
                 shallow_ast = _ast_processor.process(source_code, language, debugger)
@@ -258,6 +313,7 @@ def analyze():
                 shallow_ast=shallow_ast or {},
                 source_store=_source_store,
                 file_hash=file_hash,
+                signature_graph=signature_graph,
                 debug_report=debug_report,
                 source_code=source_code,
                 debugger=debugger,
@@ -296,6 +352,7 @@ def analyze():
                     shallow_ast=shallow_ast or {},
                     source_store=_source_store,
                     file_hash=file_hash,
+                    signature_graph=signature_graph,
                     debug_report=debug_report,
                     source_code=source_code,
                     debugger=debugger,
@@ -338,6 +395,8 @@ def analyze():
                 prefixes.append("fast_path")
             if _use_raw_source:
                 prefixes.append("raw_source")
+            if _use_signature_graph:
+                prefixes.append("signature_graph")
 
             path_prefix = "_" + "_".join(prefixes) if prefixes else ""
 
@@ -348,17 +407,33 @@ def analyze():
             debugger.generate_markdown_report(output_path=report_path)
             print(f"[DEBUG] Markdown report saved to: {report_path}")
 
-            # Generate and save shallow AST JSON file
-            ast_filename = f"{base_filename}{path_prefix}_{timestamp}_shallow_ast.json"
-            ast_path = os.path.join(debug_reports_dir, ast_filename)
-            debugger.generate_shallow_ast_json(output_path=ast_path)
-            print(f"[DEBUG] Shallow AST JSON saved to: {ast_path}")
+            if _use_signature_graph:
+                graph_filename = (
+                    f"{base_filename}{path_prefix}_{timestamp}_signature_graph.json"
+                )
+                graph_path = os.path.join(debug_reports_dir, graph_filename)
+                debugger.generate_signature_graph_json(output_path=graph_path)
+                print(f"[DEBUG] Signature Graph JSON saved to: {graph_path}")
+            else:
+                # Generate and save shallow AST JSON file
+                ast_filename = (
+                    f"{base_filename}{path_prefix}_{timestamp}_shallow_ast.json"
+                )
+                ast_path = os.path.join(debug_reports_dir, ast_filename)
+                debugger.generate_shallow_ast_json(output_path=ast_path)
+                print(f"[DEBUG] Shallow AST JSON saved to: {ast_path}")
 
         # =====================================================================
         # STEP 4: Return result
         # =====================================================================
         metadata = metadata_from_data.copy()
         metadata.update(result.get("metadata", {}))
+        if _use_raw_source:
+            metadata["analysis_input"] = "raw_source"
+        elif _use_signature_graph:
+            metadata["analysis_input"] = "signature_graph"
+        else:
+            metadata["analysis_input"] = "shallow_ast"
 
         response = {
             "success": True,
@@ -401,6 +476,7 @@ def health():
                 "force_fast_path": _force_fast_path,
                 "use_raw_source": _use_raw_source,
                 "use_tool_calling": _use_tool_calling,
+                "use_signature_graph": _use_signature_graph,
             }
         ),
         200,
@@ -419,7 +495,8 @@ def debug_control():
       "debug_mode": true/false,           // Enable debug reports and metrics
       "force_fast_path": true/false,      // Force fast-path analysis (no fallback)
       "use_raw_source": true/false,       // Use raw source instead of shallow AST
-      "use_tool_calling": true/false      // Use tool-calling mode (default: true)
+            "use_tool_calling": true/false,     // Use tool-calling mode (default: true)
+            "use_signature_graph": true/false   // Use signature graph instead of AST
     }
 
     Response:
@@ -447,6 +524,9 @@ def debug_control():
                         "use_raw_source": "enabled" if _use_raw_source else "disabled",
                         "use_tool_calling": (
                             "enabled" if _use_tool_calling else "disabled"
+                        ),
+                        "use_signature_graph": (
+                            "enabled" if _use_signature_graph else "disabled"
                         ),
                     },
                 }
@@ -485,6 +565,14 @@ def debug_control():
             f"Tool-calling mode {'enabled' if data['use_tool_calling'] else 'disabled'}"
         )
 
+    # Update use_signature_graph if provided
+    if "use_signature_graph" in data:
+        set_use_signature_graph(data["use_signature_graph"])
+        messages.append(
+            "Signature graph mode "
+            f"{'enabled' if data['use_signature_graph'] else 'disabled'}"
+        )
+
     if not messages:
         messages.append("No flags changed")
 
@@ -495,6 +583,7 @@ def debug_control():
                 "force_fast_path": _force_fast_path,
                 "use_raw_source": _use_raw_source,
                 "use_tool_calling": _use_tool_calling,
+                "use_signature_graph": _use_signature_graph,
                 "message": "; ".join(messages),
             }
         ),
