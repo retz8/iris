@@ -105,6 +105,17 @@ class SignatureGraphExtractor:
 
         return {"entities": entities}
 
+    def convert_to_dict(self, graph: SignatureGraph) -> Dict[str, object]:
+        """Convert SignatureGraph to a serializable dictionary.
+
+        Args:
+            graph: SignatureGraph instance.
+
+        Returns:
+            Dictionary representation of the signature graph.
+        """
+        return {"entities": [dict(entity) for entity in graph["entities"]]}
+
     def _count_total_nodes(self, root_node: Node) -> int:
         """Count named nodes in the AST for metrics.
 

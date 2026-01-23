@@ -87,7 +87,6 @@ class ShallowASTDebugger:
         # Store source code for later verification
         if stage_name == "raw_source" and isinstance(data, str):
             self._source_code = data
-            self._source_code = data
 
     def compute_metrics(
         self, full_tree_node_count: int, shallow_ast: Dict[str, Any], source_code: str
