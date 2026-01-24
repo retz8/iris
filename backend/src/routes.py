@@ -1,18 +1,17 @@
-"""Flask routes for IRIS analysis API (Phase 3)."""
+"""Flask routes for IRIS analysis API"""
 
 from __future__ import annotations
 
 import hashlib
 import os
 from datetime import datetime
-from unittest import result
 
 from flask import Blueprint, jsonify, request
 
-from .agent import IrisAgent, IrisError
-from .debugger import ShallowASTDebugger
-from .signature_graph import SignatureGraphExtractor
-from .source_store import SourceStore
+from config import SUPPORTED_LANGUAGES
+from agent import IrisAgent, IrisError
+from debugger import AgentFlowDebugger
+from source_store import SourceStore
 
 iris_bp = Blueprint("iris", __name__, url_prefix="/api/iris")
 
@@ -21,7 +20,6 @@ _source_store = SourceStore()
 _iris_agent = None
 _agent_init_error = None
 _debug_mode = True  # Flag to enable/disable debug mode
-_force_fast_path = False  # Flag to force fast-path analysis (skip fallback)
 
 try:
     _iris_agent = IrisAgent(model="gpt-4o-mini")
@@ -52,8 +50,8 @@ def analyze():
     }
     """
     data = request.get_json(silent=True) or {}
-    filename = data.get("filename", "")
-    language = data.get("language", "javascript")
+    filename = data.get("filename")
+    language = data.get("language")
     metadata_from_data = data.get("metadata", {})
 
     # Handle both source_code and lines format
@@ -62,6 +60,16 @@ def analyze():
     if not filename:
         return (
             jsonify({"success": False, "error": "Missing required field: filename"}),
+            400,
+        )
+    if not language:
+        return (
+            jsonify({"success": False, "error": "Missing required field: language"}),
+            400,
+        )
+    if language not in SUPPORTED_LANGUAGES:
+        return (
+            jsonify({"success": False, "error": f"Unsupported language: {language}"}),
             400,
         )
     if not source_code:
@@ -74,7 +82,6 @@ def analyze():
             ),
             400,
         )
-
     if _iris_agent is None:
         return (
             jsonify(
@@ -92,7 +99,7 @@ def analyze():
         # =====================================================================
         debugger = None
         if _debug_mode:
-            debugger = ShallowASTDebugger(filename, language)
+            debugger = AgentFlowDebugger(filename, language)
             print(f"[DEBUG] Debug mode enabled for {filename}")
 
         # =====================================================================
@@ -101,22 +108,16 @@ def analyze():
         file_hash = _compute_file_hash(source_code)
         _source_store.store(source_code, file_hash, filename)
 
+        if debugger:
+            debugger.set_source_code_file_hash(file_hash)
+            print(
+                f"[DEBUG] Source code successfully stored - location: server's memory"
+            )
         # =====================================================================
-        # STEP 2: Generate analysis structure - Signature Graph
+        # STEP 2: Run analysis
         # =====================================================================
-
-        # =====================================================================
-        # STEP 3: Run analysis (with fallback support)
-        # =====================================================================
-        # NOTE: Get debug report AFTER analysis to include LLM tracking
-        # (initialized but not called yet)
-        debug_report = None
-
-        # Try fast-path first, fallback to two-stage if it fails (unless forced)
-        original_line_threshold = None
-        original_token_threshold = None
-        
         result = None
+
         try:
             result = _iris_agent.analyze(
                 filename=filename,
@@ -124,25 +125,19 @@ def analyze():
                 source_store=_source_store,
                 file_hash=file_hash,
                 source_code=source_code,
-                debug_report=debug_report,
                 debugger=debugger,
             )
 
-            # if result is IrisError
             if isinstance(result, IrisError):
-
-                return jsonify(
-                    {
-                        "success": False,
-                        "error": f"IRIS analysis failed: {result.message}",
-                    },
-                ), result.status_code
-
-            # Restore thresholds if they were forced
-            if _force_fast_path and original_line_threshold is not None:
-                _iris_agent.set_fast_path_line_threshold(original_line_threshold)
-            if _force_fast_path and original_token_threshold is not None:
-                _iris_agent.set_fast_path_token_threshold(original_token_threshold)
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "error": f"IRIS analysis failed: {result.message}",
+                        },
+                    ),
+                    result.status_code,
+                )
 
         except Exception as iris_error:
             return jsonify(
@@ -150,17 +145,16 @@ def analyze():
                     "success": False,
                     "error": f"IRIS analysis failed: {iris_error}",
                 },
-            500
+                500,
             )
 
         # =====================================================================
-        # STEP 3.5: Get debug report AFTER analysis (includes LLM metrics)
+        # STEP 3: Get debug report AFTER analysis (includes LLM metrics)
         # =====================================================================
-        debug_report = debugger.get_report() if debugger else None
 
         # Print debug report and save markdown if in debug mode
         if debugger and _debug_mode:
-            debugger.print_report()
+            # debugger.print_report()
 
             # Save markdown report
             debug_reports_dir = os.path.join(
@@ -192,11 +186,10 @@ def analyze():
 
             graph_filename = (
                 f"{base_filename}{path_prefix}_{timestamp}_signature_graph.json"
-                )
+            )
             graph_path = os.path.join(debug_reports_dir, graph_filename)
             debugger.generate_signature_graph_json(output_path=graph_path)
             print(f"[DEBUG] Signature Graph JSON saved to: {graph_path}")
-
 
         # =====================================================================
         # STEP 4: Return result
@@ -238,7 +231,6 @@ def health():
                 "agent_ready": _iris_agent is not None,
                 "agent_error": _agent_init_error,
                 "debug_mode": _debug_mode,
-                "force_fast_path": _force_fast_path,
             }
         ),
         200,
@@ -267,31 +259,6 @@ def get_debug_mode() -> bool:
         True if debug mode is enabled, False otherwise.
     """
     return _debug_mode
-
-
-def set_force_fast_path(enabled: bool) -> None:
-    """Enable or disable forced fast-path mode.
-
-    When enabled, analysis will always use fast-path (single-stage)
-    and skip fallback to two-stage analysis on error.
-
-    Args:
-        enabled: True to force fast-path, False to allow fallback.
-    """
-    global _force_fast_path
-    _force_fast_path = enabled
-    status = "enabled" if enabled else "disabled"
-    print(f"[DEBUG] Force fast-path mode {status}")
-
-
-def get_force_fast_path() -> bool:
-    """Get the current force fast-path mode status.
-
-    Returns:
-        True if force fast-path is enabled, False otherwise.
-    """
-    return _force_fast_path
-
 
 
 def _compute_file_hash(source_code: str) -> str:

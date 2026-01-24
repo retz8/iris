@@ -1,6 +1,11 @@
-"""Shallow AST Debugger for IRIS analysis pipeline.
+"""Agent Flow Debugger for IRIS analysis pipeline.
 
-Monitors and validates the transformation of raw source code into a Shallow AST.
+Monitors and captures diagnostic data throughout the analysis stages:
+- Source Code Ingestion
+- Full AST Generation
+- Signature Graph Extraction
+- Analysis Result Compilation
+
 Provides diagnostic snapshots and verification reports.
 Also tracks LLM processing metrics (tokens, timing, responses).
 """
@@ -13,11 +18,14 @@ from __future__ import annotations
 import copy
 import json
 import time
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional
+
+RAW_SOURCE_MAX_PREVIEW = 150
+SIGNATURE_GRAPH_PREVIEW_MAX_LEN = 1000
 
 
-class ShallowASTDebugger:
-    """Diagnostic utility for monitoring Shallow AST transformation.
+class AgentFlowDebugger:
+    """Diagnostic utility for monitoring Agent Flow from source code ingestion to final analysis.
 
     Captures data at various pipeline stages and provides metrics
     for validating the quality of the AST compression.
@@ -37,6 +45,7 @@ class ShallowASTDebugger:
         self.metrics: Dict[str, Any] = {}
         self._full_ast_node_count: int = 0
         self._source_code: str = ""
+        self._source_code_file_hash: str = ""
 
         # LLM tracking
         self.llm_stages: Dict[str, Dict[str, Any]] = {}
@@ -200,7 +209,7 @@ class ShallowASTDebugger:
             entity_count = len(signature_graph.get("entities", []))
             print(f"\n{BOLD}Signature Graph Snapshot:{END}")
             print(f"  Entities Captured:           {entity_count}")
- 
+
         # Quality Assessment
         summary = report.get("summary", {})
         has_warning = summary.get("has_quality_warning", False)
@@ -227,30 +236,16 @@ class ShallowASTDebugger:
             Formatted markdown string.
         """
         report = self.get_report()
-        metrics = report.get("metrics", {})
-        summary = report.get("summary", {})
         snapshots = report.get("snapshots", {})
 
         # Determine execution path from LLM stages
         llm_stages = report.get("llm_stages", {})
         if "fast_path_analysis" in llm_stages:
-            execution_path = "🚀 Fast-Path (Single-Stage)"
-            execution_badge = (
-                "![Fast-Path](https://img.shields.io/badge/Execution-Fast--Path-blue)"
-            )
+            execution_path = "🚀 Fast-Path"
         elif "tool_calling_analysis" in llm_stages:
-            execution_path = (
-                "🔧 Tool-Calling (Single-Stage with Dynamic Source Reading)"
-            )
-            execution_badge = "![Tool-Calling](https://img.shields.io/badge/Execution-Tool--Calling-orange)"
+            execution_path = "🔧 Tool-Calling with Signature Graph"
         else:
             execution_path = "❓ Unknown"
-            execution_badge = (
-                "![Unknown](https://img.shields.io/badge/Execution-Unknown-gray)"
-            )
-
-        # Check if AST was processed (metrics will be non-zero)
-        ast_processed = metrics.get("full_ast_node_count", 0) > 0
 
         md_lines = [
             "# IRIS Debug Report",
@@ -261,25 +256,14 @@ class ShallowASTDebugger:
             "",
         ]
 
-        # Only show transformation pipeline if AST was processed
-        if ast_processed:
-            md_lines.extend(
-                [
-                    "---",
-                    "",
-                    "## Transformation Pipeline Visualization",
-                    "",
-                ]
-            )
-        else:
-            md_lines.extend(
-                [
-                    "---",
-                    "",
-                    "## Source Code Overview",
-                    "",
-                ]
-            )
+        md_lines.extend(
+            [
+                "---",
+                "",
+                "## Source Code Overview",
+                "",
+            ]
+        )
 
         md_lines.extend(
             [
@@ -288,10 +272,14 @@ class ShallowASTDebugger:
             ]
         )
 
-        # Add source code snapshot
+        # Display source code preview
         raw_source = snapshots.get("raw_source", "") or self._source_code
         if raw_source:
-            source_preview = raw_source[:300] if len(raw_source) > 300 else raw_source
+            source_preview = (
+                raw_source[:RAW_SOURCE_MAX_PREVIEW]
+                if len(raw_source) > RAW_SOURCE_MAX_PREVIEW
+                else raw_source
+            )
             lines_count = len(raw_source.splitlines())
             source_bytes = len(raw_source.encode("utf-8"))
             md_lines.extend(
@@ -301,7 +289,11 @@ class ShallowASTDebugger:
                     "",
                     "```" + report["language"],
                     source_preview
-                    + ("...(truncated)" if len(raw_source) > 300 else ""),
+                    + (
+                        "...(truncated)"
+                        if len(raw_source) > RAW_SOURCE_MAX_PREVIEW
+                        else ""
+                    ),
                     "```",
                     "",
                 ]
@@ -314,6 +306,7 @@ class ShallowASTDebugger:
                 ]
             )
 
+        # Display Signature Graph snapshot if available
         signature_graph = snapshots.get("signature_graph", {})
         if isinstance(signature_graph, dict) and signature_graph.get("entities"):
             entity_count = len(signature_graph.get("entities", []))
@@ -440,75 +433,6 @@ class ShallowASTDebugger:
                             "",
                         ]
                     )
-        elif llm_stages:
-            md_lines.extend(
-                [
-                    "---",
-                    "",
-                    "## LLM Processing Pipeline",
-                    "",
-                ]
-            )
-
-            for stage_name, stage_data in llm_stages.items():
-                md_lines.extend(
-                    [
-                        f"### Stage: {stage_name.upper()}",
-                        "",
-                        "**Metrics:**",
-                        "",
-                        "| Metric | Value |",
-                        "|--------|-------|",
-                        f"| Input Tokens | {stage_data.get('input_tokens', 0):,} |",
-                        f"| Output Tokens | {stage_data.get('output_tokens', 0):,} |",
-                        f"| Total Tokens | {stage_data.get('total_tokens', 0):,} |",
-                        f"| Elapsed Time | {stage_data.get('elapsed_time_seconds', 0):.2f}s |",
-                        "",
-                    ]
-                )
-
-                # Add LLM response preview
-                llm_response = stage_data.get("llm_response", "")
-                if llm_response:
-                    # don't cut off LLM response
-                    # fully display all of the responses
-                    response_preview = llm_response
-
-                    # if response_preview doesn't start with ```json, add it
-                    if not response_preview.lstrip().startswith("```json"):
-                        response_preview = "```json\n" + response_preview + "\n```"
-                    md_lines.extend(
-                        [
-                            "**LLM Response (Preview):**",
-                            "",
-                            response_preview
-                            + ("...(truncated)" if len(llm_response) > 300 else ""),
-                            "```",
-                            "```",
-                            "",
-                        ]
-                    )
-
-                # Add parsed output if available
-                parsed_output = stage_data.get("parsed_output")
-                if parsed_output:
-                    md_lines.extend(
-                        [
-                            "**Parsed Output:**",
-                            "",
-                            "```json",
-                            json.dumps(parsed_output, indent=2)[:500]
-                            + (
-                                "..."
-                                if len(json.dumps(parsed_output, indent=2)) > 500
-                                else ""
-                            ),
-                            "```",
-                            "",
-                        ]
-                    )
-
-                md_lines.append("")
 
         # Add Tool Call Records (for tool-calling architecture)
         tool_calls = report.get("tool_calls", [])
@@ -645,9 +569,8 @@ class ShallowASTDebugger:
         if isinstance(signature_graph, dict) and signature_graph:
             try:
                 graph_json = json.dumps(signature_graph, indent=2, ensure_ascii=False)
-                max_length = 2000
-                if len(graph_json) > max_length:
-                    truncated = graph_json[:max_length]
+                if len(graph_json) > SIGNATURE_GRAPH_PREVIEW_MAX_LEN:
+                    truncated = graph_json[:SIGNATURE_GRAPH_PREVIEW_MAX_LEN]
                     last_newline = truncated.rfind("\n")
                     if last_newline > 0:
                         truncated = truncated[:last_newline]
@@ -674,7 +597,7 @@ class ShallowASTDebugger:
             "}",
         ]
         return "\n".join(preview_lines)
-    
+
     def generate_signature_graph_json(self, output_path: Optional[str] = None) -> str:
         """Generate a standalone JSON file with the signature graph.
 
@@ -708,3 +631,11 @@ class ShallowASTDebugger:
                 f.write(json_content)
 
         return json_content
+
+    def set_source_code_file_hash(self, file_hash: str) -> None:
+        """Set the file hash of the source code being analyzed.
+
+        Args:
+            file_hash: Hash string representing the source code.
+        """
+        self._source_code_file_hash = file_hash

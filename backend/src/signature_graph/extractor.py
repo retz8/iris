@@ -10,9 +10,9 @@ from typing import Dict, List, Optional
 from tree_sitter import Node
 
 from parser.ast_parser import ASTParser
-from ..ast_utils import extract_line_range
-from .config import CONTAINER_NODE_TYPES, DECLARATION_TYPES, FUNCTION_NODE_TYPES
-from .types import SignatureEntity, SignatureGraph
+from utils.ast_utils import extract_line_range
+from signature_graph.config import CONTAINER_NODE_TYPES, DECLARATION_TYPES, FUNCTION_NODE_TYPES
+from signature_graph.types import SignatureEntity, SignatureGraph
 
 
 class SignatureGraphExtractor:

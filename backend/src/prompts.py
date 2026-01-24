@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict
 
-from .signature_graph import SignatureGraph
+from signature_graph import SignatureGraph
 
 # =============================================================================
 # TOOL-CALLING: SINGLE-STAGE ANALYSIS WITH SOURCE CODE ACCESS

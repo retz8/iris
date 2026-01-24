@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from ..source_store import SourceStore
+from source_store import SourceStore
 
 
 @dataclass
@@ -28,7 +28,9 @@ class SourceReader:
         self.file_hash = file_hash
         self.read_log: List[SourceRead] = []
 
-    def refer_to_source_code(self, start_line: int, end_line: int, reason: Optional[str] = None) -> str:
+    def refer_to_source_code(
+        self, start_line: int, end_line: int, reason: Optional[str] = None
+    ) -> str:
         """Return the raw source code for the inclusive line range and log the access."""
         snippet = self.store.get_range(self.file_hash, start_line, end_line)
         self.read_log.append(SourceRead(start_line, end_line, reason, snippet))

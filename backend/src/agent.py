@@ -7,27 +7,27 @@ strategy: signature graph / fast path
 from __future__ import annotations
 
 import json
-from pyexpat.errors import messages
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, cast
-from datetime import timedelta
 
 from openai import OpenAI
 from openai.types.responses import ResponseInputParam
 from openai.types.responses.response_input_param import FunctionCallOutput
 
-from .signature_graph import SignatureGraphExtractor, SignatureGraph
-from .prompts import (
+from signature_graph import SignatureGraphExtractor, SignatureGraph
+
+from prompts import (
     TOOL_CALLING_SYSTEM_PROMPT,
     FAST_PATH_SYSTEM_PROMPT,
     build_signature_graph_prompt,
     build_fast_path_prompt,
 )
-from .source_store import SourceStore
-from .tools.source_reader import SourceReader
-from .tools.tool_definitions import IRIS_TOOLS
+from source_store import SourceStore
+from tools.source_reader import SourceReader
+from tools.tool_definitions import IRIS_TOOLS
 
 if TYPE_CHECKING:
-    from .debugger import ShallowASTDebugger
+    from .debugger.debugger import AgentFlowDebugger
+
 
 class IrisError(Exception):
     """Custom exception for IRIS agent errors."""
@@ -37,9 +37,10 @@ class IrisError(Exception):
         super().__init__(message)
         self.message = message
         self.status_code = status_code
-    
+
     def get_status_code(self) -> int:
         return self.status_code
+
 
 class IrisAgent:
     """Two-stage agent for File Intent + Responsibility Blocks extraction."""
@@ -61,9 +62,7 @@ class IrisAgent:
         source_store: SourceStore,
         source_code: str,
         file_hash: str,
-        debugger: ShallowASTDebugger | None = None,
-        debug_report: Dict[str, Any] | None = None,
-        force_fast_path: bool = False,
+        debugger: AgentFlowDebugger | None = None,
     ) -> Dict[str, Any] | IrisError:
         """Run analysis on a file with selectable execution path.
 
@@ -77,19 +76,14 @@ class IrisAgent:
             source_store: Store containing source code snippets.
             source_code: Source code of the file
             file_hash: Hash of the source file for caching.
-            debugger: Optional ShallowASTDebugger instance for LLM tracking.
-            debug_report: Optional debug report from ShallowASTDebugger.
-            force_fast_path: If True, forces fast-path analysis.
+            debugger: Optional AgentFlowDebugger instance for LLM tracking.
         """
-        
+
         # =====================================================================
         # Fast Path: Single LLM call with full source code
         # =====================================================================
-        
-        # NOTE: force_fast_path will be removed later
-        if force_fast_path or self._should_use_fast_path(source_code):
-            if force_fast_path and debugger:
-                print("[DEBUG] FORCE FAST-PATH enabled")
+
+        if self._should_use_fast_path(source_code):
             print(f"[FAST-PATH] Analyzing {filename} with raw source code...")
 
             # Track fast-path stage in debugger
@@ -106,11 +100,6 @@ class IrisAgent:
             result["metadata"]["execution_path"] = "fast-path"
             result["metadata"]["tool_reads"] = []  # No tool reads in fast-path
 
-            # Add debug stats if available
-            if debug_report:
-                result["metadata"]["debug_stats"] = debug_report.get("summary", {})
-                self._add_quality_warnings(result, debug_report)
-
             print(f"[FAST-PATH] Complete!")
             print(f"  - File Intent: {result['file_intent'][:80]}...")
             print(f"  - Responsibilities: {len(result['responsibilities'])}")
@@ -120,29 +109,31 @@ class IrisAgent:
         # Tool-Calling with On-Demand Source Reading based on Signature Graph
         # =====================================================================
         else:
-        
             if debugger:
                 debugger.start_llm_stage("tool_calling_analysis")
-        
+                debugger.capture_snapshot("raw_source", source_code)
+
             print(
                 f"[TOOL-CALLING] Analyzing {filename} with signature graph & tool calling..."
             )
 
             # Step 1: extract signature graph
-            signature_graph = None 
+            signature_graph = None
             try:
                 extractor = SignatureGraphExtractor(language)
                 signature_graph = extractor.extract(source_code)
                 if debugger:
                     debugger.capture_snapshot("signature_graph", signature_graph)
             except ValueError as ve:
-                return IrisError(f"Invalid Input on Signature Graph Extraction: {ve}", 400)
+                return IrisError(
+                    f"Invalid Input on Signature Graph Extraction: {ve}", 400
+                )
             except Exception as sg_error:
                 return IrisError(f"Signature Graph Extraction failed: {sg_error}", 500)
-           
+
             if signature_graph is None:
-                return IrisError("Empty Signature Graph returned", 500) 
-            
+                return IrisError("Empty Signature Graph returned", 500)
+
             # Step 2: run tool-calling analysis
             try:
                 result = self._run_tool_calling_analysis(
@@ -151,13 +142,8 @@ class IrisAgent:
                     source_store,
                     file_hash,
                     signature_graph,
-                    debugger
+                    debugger,
                 )
-
-                # Add debug stats if available
-                if debug_report:
-                    result["metadata"]["debug_stats"] = debug_report.get("summary", {})
-                    self._add_quality_warnings(result, debug_report)
 
                 print(f"[TOOL-CALLING] Complete!")
                 print(f"  - File Intent: {result['file_intent'][:80]}...")
@@ -175,11 +161,11 @@ class IrisAgent:
         source_store: SourceStore,
         file_hash: str,
         signature_graph: SignatureGraph,
-        debugger: Optional["ShallowASTDebugger"] = None,
+        debugger: Optional["AgentFlowDebugger"] = None,
     ) -> Dict[str, Any]:
         """Single-stage analysis with OpenAI tool-calling (Responses API).
 
-        The LLM analyzes the shallow AST and calls refer_to_source_code()
+        The LLM analyzes the signature graph and calls refer_to_source_code()
         when it needs to see actual implementation details.
         """
 
@@ -189,9 +175,7 @@ class IrisAgent:
             raise RuntimeError("Signature graph is required for tool-calling analysis")
 
         # Build initial prompt
-        user_prompt = build_signature_graph_prompt(
-            filename, language, signature_graph
-        )
+        user_prompt = build_signature_graph_prompt(filename, language, signature_graph)
 
         # Conversation state (text + tool results only)
         messages: ResponseInputParam = [
@@ -205,7 +189,6 @@ class IrisAgent:
         all_responses: List[str] = []
 
         while tool_call_count < self.MAX_TOOL_CALLS:
-            print(f"[TOOL-CALLING] LLM call #{tool_call_count + 1}...")
             # ---- OpenAI Responses API call ----
             response = self.client.responses.create(
                 model=self.model,
@@ -216,7 +199,6 @@ class IrisAgent:
                 temperature=0.1,
                 # instructions="Respond with source_code_snippet retrieved with tool" if tool_call_count > 0 else None,
             )
-            print("[TOOL-CALLING] LLM response received.")
 
             # ---- Token usage ----
             if response.usage:
@@ -224,18 +206,18 @@ class IrisAgent:
                     total_input_tokens += response.usage.input_tokens
                 total_output_tokens += response.usage.output_tokens
 
+            # appned response output to messages to make sure next cycle
+            # with tool output has full context
+            messages += response.output  # type: ignore
+
             # ---- Parse response output ----
             tool_calls = []
 
             for item in response.output:
-                if item.type == 'function_call':
+                if item.type == "function_call":
                     tool_calls.append(item)
 
-            llm_response_text = response.output_text or ""
-
-            messages += response.output # type: ignore
-
-            if tool_calls: 
+            if tool_calls:
                 for tool_call_item in tool_calls:
                     tool_call_count += 1
 
@@ -253,7 +235,9 @@ class IrisAgent:
 
                     # Execute tool
                     if start_line < 1 or end_line < start_line:
-                        snippet = f"Error: Invalid line range [{start_line}, {end_line}]"
+                        snippet = (
+                            f"Error: Invalid line range [{start_line}, {end_line}]"
+                        )
                     else:
                         snippet = source_reader.refer_to_source_code(
                             start_line,
@@ -274,21 +258,22 @@ class IrisAgent:
                     tool_output: FunctionCallOutput = {
                         "type": "function_call_output",
                         "call_id": tool_call_item.call_id or "",
-                        "output": json.dumps({
-                            "source_code_snippet": snippet,
-                            "start_line": start_line,
-                            "end_line": end_line
-                        })
+                        "output": json.dumps(
+                            {
+                                "source_code_snippet": snippet,
+                                "start_line": start_line,
+                                "end_line": end_line,
+                            }
+                        ),
                     }
 
                     messages.append(tool_output)
 
+                continue
 
-                continue 
-            # ---- No tool calls → final answer ----
+            llm_response_text = response.output_text or ""
             if not llm_response_text:
                 raise ValueError("LLM returned empty response in tool-calling analysis")
-
             result = self._parse_analysis_response(llm_response_text)
 
             if "file_intent" not in result or "responsibilities" not in result:
@@ -297,13 +282,9 @@ class IrisAgent:
                 )
 
             # ---- Attach metadata ----
-            result.setdefault("metadata", {})
+            if "metadata" not in result:
+                result["metadata"] = {}
 
-            # printout result keys
-            print(f"[TOOL-CALLING] result keys: {list(result.keys())}")
-
-            print(f"[TOOL-CALLING] initial hypothesis: {result.get('initial_hypothesis', '')}")
-            print(f"[TOOL-CALLING] verfication processes: {result.get('verification_processes', [])}")
             result["metadata"]["tool_reads"] = [
                 {
                     "start_line": r.start_line,
@@ -319,13 +300,21 @@ class IrisAgent:
             # NOTE: not full time elapsed in iris, only llm call
             llm_call_started = response.created_at
             llm_call_ended = response.completed_at
-            result["metadata"]["time_taken_seconds"] = (
-                self._convert_milliseconds_to_seconds(llm_call_ended - llm_call_started)
-            ) if llm_call_started and llm_call_ended else None
+            result["metadata"]["llm_taken_seconds"] = (
+                (
+                    self._convert_milliseconds_to_seconds(
+                        llm_call_ended - llm_call_started
+                    )
+                )
+                if llm_call_started and llm_call_ended
+                else None
+            )
 
             # ---- Debugger finalization ----
             if debugger:
-                full_response = "\n".join(all_responses) if all_responses else llm_response_text
+                full_response = (
+                    "\n".join(all_responses) if all_responses else llm_response_text
+                )
                 debugger.end_llm_stage(
                     "tool_calling_analysis",
                     input_tokens=total_input_tokens,
@@ -336,11 +325,7 @@ class IrisAgent:
 
             return result
 
-        raise RuntimeError(
-            f"Exceeded maximum tool calls ({self.MAX_TOOL_CALLS})"
-        )
-
-
+        raise RuntimeError(f"Exceeded maximum tool calls ({self.MAX_TOOL_CALLS})")
 
     def _should_use_fast_path(self, source_code: str) -> bool:
         """Determine if file is small enough for single-stage analysis.
@@ -371,7 +356,7 @@ class IrisAgent:
         filename: str,
         language: str,
         source_code: str,
-        debugger: ShallowASTDebugger | None = None,
+        debugger: AgentFlowDebugger | None = None,
     ) -> Dict[str, Any]:
         """Single-stage analysis for small files using full source code.
 
@@ -387,7 +372,6 @@ class IrisAgent:
         """
         try:
             user_prompt = build_fast_path_prompt(filename, language, source_code)
-            
 
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -480,7 +464,7 @@ class IrisAgent:
 
         Args:
             result: The analysis result dictionary to update.
-            debug_report: The debug report from ShallowASTDebugger.
+            debug_report: The debug report from AgentFlowDebugger.
         """
         metadata = result.get("metadata", {})
 
