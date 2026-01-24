@@ -1,0 +1,382 @@
+{
+  "filename": "email.py",
+  "language": "python",
+  "signature_graph": {
+    "entities": [
+      {
+        "id": "entity_0",
+        "name": "from typing import List, Dict, Set, Optional",
+        "type": "import",
+        "signature": "from typing import List, Dict, Set, Optional",
+        "line_range": [
+          6,
+          6
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_1",
+        "name": "from dataclasses import dataclass",
+        "type": "import",
+        "signature": "from dataclasses import dataclass",
+        "line_range": [
+          7,
+          7
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_2",
+        "name": "from datetime import datetime, timedelta",
+        "type": "import",
+        "signature": "from datetime import datetime, timedelta",
+        "line_range": [
+          8,
+          8
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_3",
+        "name": "from enum import Enum",
+        "type": "import",
+        "signature": "from enum import Enum",
+        "line_range": [
+          9,
+          9
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_4",
+        "name": "CampaignStatus",
+        "type": "class",
+        "signature": "class CampaignStatus(Enum)",
+        "line_range": [
+          12,
+          19
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_5",
+        "name": "SubscriberStatus",
+        "type": "class",
+        "signature": "class SubscriberStatus(Enum)",
+        "line_range": [
+          22,
+          27
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_6",
+        "name": "Subscriber",
+        "type": "class",
+        "signature": "@dataclass\nclass Subscriber",
+        "line_range": [
+          30,
+          39
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [
+          "entity_7"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_7",
+        "name": "Subscriber",
+        "type": "class",
+        "signature": "class Subscriber",
+        "line_range": [
+          31,
+          39
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_6",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_8",
+        "name": "Campaign",
+        "type": "class",
+        "signature": "@dataclass\nclass Campaign",
+        "line_range": [
+          42,
+          54
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [
+          "entity_9"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_9",
+        "name": "Campaign",
+        "type": "class",
+        "signature": "class Campaign",
+        "line_range": [
+          43,
+          54
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_8",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_10",
+        "name": "EmailCampaignManager",
+        "type": "class",
+        "signature": "class EmailCampaignManager",
+        "line_range": [
+          57,
+          268
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [
+          "entity_11",
+          "entity_12",
+          "entity_13",
+          "entity_14",
+          "entity_15",
+          "entity_16",
+          "entity_17",
+          "entity_18"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_11",
+        "name": "__init__",
+        "type": "function",
+        "signature": "def __init__(self)",
+        "line_range": [
+          65,
+          69
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"Initialize the email campaign manager with empty lists.\"\"\""
+      },
+      {
+        "id": "entity_12",
+        "name": "add_subscriber_to_list",
+        "type": "function",
+        "signature": "def add_subscriber_to_list(\n        self,\n        email: str,\n        first_name: str,\n        last_name: str,\n        tags: Optional[Set[str]] = None,\n    ) -> bool",
+        "line_range": [
+          71,
+          103
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"\n        Register a new subscriber to the email list.\n\n        Args:\n            email: Subscriber's email address (used as unique identifier)\n            first_name: Subscriber's first name\n            last_name: Subscriber's last name\n            tags: Optional set of segment tags for targeting\n\n        Returns:\n            True if subscriber added, False if email already exists\n        \"\"\""
+      },
+      {
+        "id": "entity_13",
+        "name": "update_subscriber_tags",
+        "type": "function",
+        "signature": "def update_subscriber_tags(\n        self,\n        email: str,\n        tags_to_add: Optional[Set[str]] = None,\n        tags_to_remove: Optional[Set[str]] = None,\n    ) -> bool",
+        "line_range": [
+          105,
+          133
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"\n        Modify the segment tags associated with a subscriber.\n\n        Args:\n            email: Subscriber's email address\n            tags_to_add: Tags to append to subscriber's profile\n            tags_to_remove: Tags to remove from subscriber's profile\n\n        Returns:\n            True if update successful, False if subscriber not found\n        \"\"\""
+      },
+      {
+        "id": "entity_14",
+        "name": "unsubscribe_email_address",
+        "type": "function",
+        "signature": "def unsubscribe_email_address(self, email: str) -> bool",
+        "line_range": [
+          135,
+          149
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"\n        Mark a subscriber as unsubscribed (GDPR compliant opt-out).\n\n        Args:\n            email: Email address to unsubscribe\n\n        Returns:\n            True if unsubscribe successful, False if not found\n        \"\"\""
+      },
+      {
+        "id": "entity_15",
+        "name": "filter_subscribers_by_tags",
+        "type": "function",
+        "signature": "def filter_subscribers_by_tags(self, required_tags: Set[str]) -> List[Subscriber]",
+        "line_range": [
+          151,
+          172
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"\n        Find all active subscribers matching specific segment tags.\n\n        Args:\n            required_tags: Tags that subscribers must have\n\n        Returns:\n            List of subscribers who match ALL required tags\n        \"\"\""
+      },
+      {
+        "id": "entity_16",
+        "name": "create_email_campaign",
+        "type": "function",
+        "signature": "def create_email_campaign(\n        self,\n        subject_line: str,\n        html_content: str,\n        target_tags: Set[str],\n        scheduled_time: Optional[datetime] = None,\n    ) -> Campaign",
+        "line_range": [
+          174,
+          212
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Determine initial status based on scheduling",
+        "docstring": "\"\"\"\n        Set up a new email campaign with targeting and scheduling.\n\n        Args:\n            subject_line: Email subject line text\n            html_content: HTML body of the email\n            target_tags: Segment tags to target\n            scheduled_time: When to send (None = immediate)\n\n        Returns:\n            Created campaign object with unique identifier\n        \"\"\""
+      },
+      {
+        "id": "entity_17",
+        "name": "calculate_campaign_delivery_list",
+        "type": "function",
+        "signature": "def calculate_campaign_delivery_list(self, campaign_id: str) -> List[str]",
+        "line_range": [
+          214,
+          238
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Extract email addresses",
+        "docstring": "\"\"\"\n        Determine which subscribers should receive a campaign.\n\n        Filters subscribers based on campaign targeting tags and\n        subscription status to build the final recipient list.\n\n        Args:\n            campaign_id: Identifier of the campaign to calculate for\n\n        Returns:\n            List of email addresses to receive the campaign\n        \"\"\""
+      },
+      {
+        "id": "entity_18",
+        "name": "execute_campaign_delivery",
+        "type": "function",
+        "signature": "def execute_campaign_delivery(self, campaign_id: str) -> Dict[str, any]",
+        "line_range": [
+          240,
+          268
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Mark as completed",
+        "docstring": "\"\"\"\n        Send a campaign to all targeted recipients and track metrics.\n\n        Args:\n            campaign_id: Campaign to send\n\n        Returns:\n            Dictionary containing delivery statistics and status\n        \"\"\""
+      }
+    ]
+  }
+}

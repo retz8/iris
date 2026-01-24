@@ -1,0 +1,267 @@
+{
+  "filename": "cryptic.py",
+  "language": "python",
+  "signature_graph": {
+    "entities": [
+      {
+        "id": "entity_0",
+        "name": "from typing import List, Dict, Any, Tuple",
+        "type": "import",
+        "signature": "from typing import List, Dict, Any, Tuple",
+        "line_range": [
+          5,
+          5
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_1",
+        "name": "from dataclasses import dataclass",
+        "type": "import",
+        "signature": "from dataclasses import dataclass",
+        "line_range": [
+          6,
+          6
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_2",
+        "name": "Item",
+        "type": "class",
+        "signature": "@dataclass\nclass Item",
+        "line_range": [
+          9,
+          15
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [
+          "entity_3"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_3",
+        "name": "Item",
+        "type": "class",
+        "signature": "class Item",
+        "line_range": [
+          10,
+          15
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_2",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_4",
+        "name": "Processor",
+        "type": "class",
+        "signature": "class Processor",
+        "line_range": [
+          18,
+          170
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [
+          "entity_5",
+          "entity_6",
+          "entity_8",
+          "entity_9",
+          "entity_10",
+          "entity_11",
+          "entity_12"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_5",
+        "name": "__init__",
+        "type": "function",
+        "signature": "def __init__(self)",
+        "line_range": [
+          23,
+          25
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_6",
+        "name": "process",
+        "type": "function",
+        "signature": "def process(self, items)",
+        "line_range": [
+          27,
+          50
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [
+          "entity_7"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# based on their 'requires' metadata field to ensure correct processing order",
+        "docstring": "\"\"\"Process items.\"\"\""
+      },
+      {
+        "id": "entity_7",
+        "name": "visit",
+        "type": "function",
+        "signature": "def visit(item)",
+        "line_range": [
+          34,
+          45
+        ],
+        "depth": 2,
+        "scope": "function",
+        "parent_id": "entity_6",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_8",
+        "name": "transform",
+        "type": "function",
+        "signature": "def transform(self, data, mode)",
+        "line_range": [
+          52,
+          74
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# mode='log' -> logarithmic transformation",
+        "docstring": "\"\"\"Transform data.\"\"\""
+      },
+      {
+        "id": "entity_9",
+        "name": "aggregate",
+        "type": "function",
+        "signature": "def aggregate(self, groups)",
+        "line_range": [
+          76,
+          94
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Returns dict with 'count', 'sum', 'avg', 'min', 'max' for each group",
+        "docstring": "\"\"\"Aggregate groups.\"\"\""
+      },
+      {
+        "id": "entity_10",
+        "name": "filter",
+        "type": "function",
+        "signature": "def filter(self, items, criteria)",
+        "line_range": [
+          96,
+          125
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Supports: gt, lt, eq, in, contains, regex",
+        "docstring": "\"\"\"Filter items.\"\"\""
+      },
+      {
+        "id": "entity_11",
+        "name": "merge",
+        "type": "function",
+        "signature": "def merge(self, left, right, key)",
+        "line_range": [
+          127,
+          148
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Similar to SQL JOIN operation",
+        "docstring": "\"\"\"Merge collections.\"\"\""
+      },
+      {
+        "id": "entity_12",
+        "name": "validate",
+        "type": "function",
+        "signature": "def validate(self, item)",
+        "line_range": [
+          150,
+          170
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Returns tuple (is_valid, error_messages)",
+        "docstring": "\"\"\"Validate item.\"\"\""
+      }
+    ]
+  }
+}

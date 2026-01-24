@@ -1,0 +1,389 @@
+{
+  "filename": "criptic_util.js",
+  "language": "javascript",
+  "signature_graph": {
+    "entities": [
+      {
+        "id": "entity_0",
+        "name": "Utils",
+        "type": "class",
+        "signature": "class Utils",
+        "line_range": [
+          5,
+          168
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [
+          "entity_1",
+          "entity_2",
+          "entity_3",
+          "entity_4",
+          "entity_5",
+          "entity_6",
+          "entity_7",
+          "entity_8",
+          "entity_9",
+          "entity_10",
+          "entity_11",
+          "entity_12",
+          "entity_13",
+          "entity_14",
+          "entity_15"
+        ],
+        "calls": [],
+        "leading_comment": "/**\n * Utility functions\n */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_1",
+        "name": "constructor",
+        "type": "method",
+        "signature": "constructor()",
+        "line_range": [
+          6,
+          9
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_2",
+        "name": "process",
+        "type": "method",
+        "signature": "process(data)",
+        "line_range": [
+          16,
+          20
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [
+          "this._finalize"
+        ],
+        "leading_comment": "/**\n   * Process data\n   * @param {*} data \n   * @returns {*}\n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_3",
+        "name": "_prepare",
+        "type": "method",
+        "signature": "_prepare(input)",
+        "line_range": [
+          27,
+          32
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [
+          "input.split.map",
+          "input.split"
+        ],
+        "leading_comment": "/**\n   * Prepare input\n   * @private\n   * @param {*} input \n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_4",
+        "name": "_apply",
+        "type": "method",
+        "signature": "_apply(temp)",
+        "line_range": [
+          39,
+          45
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [
+          "temp.map.join",
+          "temp.map"
+        ],
+        "leading_comment": "/**\n   * Apply transformation\n   * @private\n   * @param {*} temp \n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_5",
+        "name": "_finalize",
+        "type": "method",
+        "signature": "_finalize(result)",
+        "line_range": [
+          52,
+          54
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "/**\n   * Finalize output\n   * @private\n   * @param {*} result \n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_6",
+        "name": "handle",
+        "type": "method",
+        "signature": "handle(a, b)",
+        "line_range": [
+          61,
+          71
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [
+          "this.cache.set",
+          "this.cache.get",
+          "this.cache.has"
+        ],
+        "leading_comment": "/**\n   * Handle operation\n   * @param {*} a \n   * @param {*} b \n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_7",
+        "name": "_generateKey",
+        "type": "method",
+        "signature": "_generateKey(x, y)",
+        "line_range": [
+          79,
+          81
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "/**\n   * Generate key\n   * @private\n   * @param {*} x \n   * @param {*} y \n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_8",
+        "name": "_compute",
+        "type": "method",
+        "signature": "_compute(x, y)",
+        "line_range": [
+          89,
+          97
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "/**\n   * Compute value\n   * @private\n   * @param {*} x \n   * @param {*} y \n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_9",
+        "name": "exec",
+        "type": "method",
+        "signature": "exec(input)",
+        "line_range": [
+          103,
+          107
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [
+          "this._validate"
+        ],
+        "leading_comment": "/**\n   * Execute operation\n   * @param {*} input \n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_10",
+        "name": "_transform",
+        "type": "method",
+        "signature": "_transform(data)",
+        "line_range": [
+          114,
+          119
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [
+          "data.filter",
+          "Array.isArray"
+        ],
+        "leading_comment": "/**\n   * Transform data\n   * @private\n   * @param {*} data \n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_11",
+        "name": "_validate",
+        "type": "method",
+        "signature": "_validate(result)",
+        "line_range": [
+          126,
+          128
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "/**\n   * Validate result\n   * @private\n   * @param {*} result \n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_12",
+        "name": "run",
+        "type": "method",
+        "signature": "run(items)",
+        "line_range": [
+          134,
+          136
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [
+          "items.map"
+        ],
+        "leading_comment": "/**\n   * Run batch\n   * @param {*} items \n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_13",
+        "name": "_processItem",
+        "type": "method",
+        "signature": "_processItem(item)",
+        "line_range": [
+          143,
+          146
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [
+          "this._adjust"
+        ],
+        "leading_comment": "/**\n   * Process single item\n   * @private\n   * @param {*} item \n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_14",
+        "name": "_normalize",
+        "type": "method",
+        "signature": "_normalize(val)",
+        "line_range": [
+          153,
+          158
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "/**\n   * Normalize value\n   * @private\n   * @param {*} val \n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_15",
+        "name": "_adjust",
+        "type": "method",
+        "signature": "_adjust(val)",
+        "line_range": [
+          165,
+          167
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "/**\n   * Adjust value\n   * @private\n   * @param {*} val \n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_16",
+        "name": "{ Utils }",
+        "type": "export",
+        "signature": "export { Utils };",
+        "line_range": [
+          170,
+          170
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [
+          "entity_17"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_17",
+        "name": "{ Utils }",
+        "type": "export",
+        "signature": "{ Utils }",
+        "line_range": [
+          170,
+          170
+        ],
+        "depth": 1,
+        "scope": "block",
+        "parent_id": "entity_16",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      }
+    ]
+  }
+}

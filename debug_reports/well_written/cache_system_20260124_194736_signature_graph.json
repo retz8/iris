@@ -1,0 +1,392 @@
+{
+  "filename": "cache_system.js",
+  "language": "javascript",
+  "signature_graph": {
+    "entities": [
+      {
+        "id": "entity_0",
+        "name": "CacheEntry",
+        "type": "class",
+        "signature": "class CacheEntry",
+        "line_range": [
+          14,
+          46
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [
+          "entity_1",
+          "entity_2",
+          "entity_3"
+        ],
+        "calls": [],
+        "leading_comment": "/**\n * Event-Driven Cache System\n * \n * LRU cache with TTL support, event notifications, and automatic cleanup.\n * Emits events for cache operations (set, get, evict, expire).\n */\n// Cache event types",
+        "inline_comment": null,
+        "trailing_comment": "/**\n   * Create a cache entry with value and metadata\n   * @param {*} value - Value to cache\n   * @param {number} ttl - Time-to-live in milliseconds\n   */",
+        "docstring": null
+      },
+      {
+        "id": "entity_1",
+        "name": "constructor",
+        "type": "method",
+        "signature": "constructor(value, ttl)",
+        "line_range": [
+          20,
+          26
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [
+          "Date.now"
+        ],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_2",
+        "name": "isExpired",
+        "type": "method",
+        "signature": "isExpired()",
+        "line_range": [
+          32,
+          37
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [
+          "Date.now"
+        ],
+        "leading_comment": "/**\n   * Check if entry has expired based on TTL\n   * @returns {boolean} - True if entry is expired\n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_3",
+        "name": "recordAccess",
+        "type": "method",
+        "signature": "recordAccess()",
+        "line_range": [
+          42,
+          45
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_0",
+        "children_ids": [],
+        "calls": [
+          "Date.now"
+        ],
+        "leading_comment": "/**\n   * Update access metadata when entry is retrieved\n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_4",
+        "name": "EventDrivenCache",
+        "type": "class",
+        "signature": "class EventDrivenCache",
+        "line_range": [
+          48,
+          205
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [
+          "entity_5",
+          "entity_6",
+          "entity_7",
+          "entity_8",
+          "entity_9",
+          "entity_10",
+          "entity_11",
+          "entity_12",
+          "entity_13",
+          "entity_14"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "/**\n   * Initialize cache with size limit and default TTL\n   * @param {number} maxSize - Maximum number of entries\n   * @param {number} defaultTTL - Default time-to-live in milliseconds\n   */",
+        "docstring": null
+      },
+      {
+        "id": "entity_5",
+        "name": "constructor",
+        "type": "method",
+        "signature": "constructor(maxSize = 100, defaultTTL = null)",
+        "line_range": [
+          54,
+          62
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [
+          "this._startAutomaticCleanup"
+        ],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_6",
+        "name": "set",
+        "type": "method",
+        "signature": "set(key, value, ttl = null)",
+        "line_range": [
+          70,
+          81
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [
+          "this._emitEvent",
+          "this.cache.set",
+          "this._evictLeastRecentlyUsed",
+          "this.cache.has"
+        ],
+        "leading_comment": "/**\n   * Store a value in cache with optional TTL override\n   * @param {string} key - Cache key\n   * @param {*} value - Value to store\n   * @param {number} ttl - Optional TTL override\n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_7",
+        "name": "get",
+        "type": "method",
+        "signature": "get(key)",
+        "line_range": [
+          88,
+          105
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [
+          "this._emitEvent",
+          "entry.recordAccess",
+          "this._emitEvent",
+          "this.cache.delete",
+          "entry.isExpired"
+        ],
+        "leading_comment": "/**\n   * Retrieve a value from cache\n   * @param {string} key - Cache key\n   * @returns {*} - Cached value or undefined if not found/expired\n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_8",
+        "name": "_evictLeastRecentlyUsed",
+        "type": "method",
+        "signature": "_evictLeastRecentlyUsed()",
+        "line_range": [
+          111,
+          127
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [
+          "this._emitEvent",
+          "this.cache.delete",
+          "this.cache.entries"
+        ],
+        "leading_comment": "/**\n   * Remove least recently used entry to make space\n   * @private\n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_9",
+        "name": "_startAutomaticCleanup",
+        "type": "method",
+        "signature": "_startAutomaticCleanup()",
+        "line_range": [
+          133,
+          137
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [
+          "setInterval"
+        ],
+        "leading_comment": "/**\n   * Start background task to remove expired entries\n   * @private\n   */",
+        "inline_comment": null,
+        "trailing_comment": "// Run every minute",
+        "docstring": null
+      },
+      {
+        "id": "entity_10",
+        "name": "_removeExpiredEntries",
+        "type": "method",
+        "signature": "_removeExpiredEntries()",
+        "line_range": [
+          143,
+          156
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [
+          "this._emitEvent",
+          "this.cache.delete",
+          "expiredKeys.push",
+          "entry.isExpired",
+          "this.cache.entries"
+        ],
+        "leading_comment": "/**\n   * Scan cache and remove all expired entries\n   * @private\n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_11",
+        "name": "addEventListener",
+        "type": "method",
+        "signature": "addEventListener(eventType, callback)",
+        "line_range": [
+          163,
+          168
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [
+          "this.eventListeners.get.push",
+          "this.eventListeners.get",
+          "this.eventListeners.set",
+          "this.eventListeners.has"
+        ],
+        "leading_comment": "/**\n   * Register event listener for cache operations\n   * @param {string} eventType - Event type to listen for\n   * @param {Function} callback - Handler function\n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_12",
+        "name": "_emitEvent",
+        "type": "method",
+        "signature": "_emitEvent(eventType, eventData)",
+        "line_range": [
+          176,
+          181
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [
+          "listeners.forEach"
+        ],
+        "leading_comment": "/**\n   * Trigger event and notify all registered listeners\n   * @private\n   * @param {string} eventType - Type of event\n   * @param {Object} eventData - Event payload\n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_13",
+        "name": "getStats",
+        "type": "method",
+        "signature": "getStats()",
+        "line_range": [
+          187,
+          193
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [
+          "(this.cache.size / this.maxSize * 100).toFixed"
+        ],
+        "leading_comment": "/**\n   * Get cache statistics and metadata\n   * @returns {Object} - Cache status information\n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_14",
+        "name": "destroy",
+        "type": "method",
+        "signature": "destroy()",
+        "line_range": [
+          198,
+          204
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [
+          "this.eventListeners.clear",
+          "this.cache.clear",
+          "clearInterval"
+        ],
+        "leading_comment": "/**\n   * Clear all entries and stop cleanup task\n   */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_15",
+        "name": "{ EventDrivenCache, CACHE_EVENT_SET, CACHE_EVENT_GET, CACHE_EVENT_EVICT, CACHE_EVENT_EXPIRE }",
+        "type": "export",
+        "signature": "export { EventDrivenCache, CACHE_EVENT_SET, CACHE_EVENT_GET, CACHE_EVENT_EVICT, CACHE_EVENT_EXPIRE };",
+        "line_range": [
+          208,
+          208
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [
+          "entity_16"
+        ],
+        "calls": [],
+        "leading_comment": "// Export cache system components",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_16",
+        "name": "{ EventDrivenCache, CACHE_EVENT_SET, CACHE_EVENT_GET, CACHE_EVENT_EVICT, CACHE_EVENT_EXPIRE }",
+        "type": "export",
+        "signature": "{ EventDrivenCache, CACHE_EVENT_SET, CACHE_EVENT_GET, CACHE_EVENT_EVICT, CACHE_EVENT_EXPIRE }",
+        "line_range": [
+          208,
+          208
+        ],
+        "depth": 1,
+        "scope": "block",
+        "parent_id": "entity_15",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      }
+    ]
+  }
+}

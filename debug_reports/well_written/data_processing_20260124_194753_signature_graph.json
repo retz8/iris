@@ -1,0 +1,264 @@
+{
+  "filename": "data_processing.py",
+  "language": "python",
+  "signature_graph": {
+    "entities": [
+      {
+        "id": "entity_0",
+        "name": "from typing import List, Dict, Optional",
+        "type": "import",
+        "signature": "from typing import List, Dict, Optional",
+        "line_range": [
+          6,
+          6
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_1",
+        "name": "from datetime import datetime, timedelta",
+        "type": "import",
+        "signature": "from datetime import datetime, timedelta",
+        "line_range": [
+          7,
+          7
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_2",
+        "name": "from dataclasses import dataclass",
+        "type": "import",
+        "signature": "from dataclasses import dataclass",
+        "line_range": [
+          8,
+          8
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_3",
+        "name": "statistics",
+        "type": "import",
+        "signature": "import statistics",
+        "line_range": [
+          9,
+          9
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_4",
+        "name": "Transaction",
+        "type": "class",
+        "signature": "@dataclass\nclass Transaction",
+        "line_range": [
+          12,
+          19
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [
+          "entity_5"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_5",
+        "name": "Transaction",
+        "type": "class",
+        "signature": "class Transaction",
+        "line_range": [
+          13,
+          19
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_4",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_6",
+        "name": "CustomerSegmentAnalyzer",
+        "type": "class",
+        "signature": "class CustomerSegmentAnalyzer",
+        "line_range": [
+          22,
+          195
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [
+          "entity_7",
+          "entity_8",
+          "entity_9",
+          "entity_10",
+          "entity_11",
+          "entity_12"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_7",
+        "name": "__init__",
+        "type": "function",
+        "signature": "def __init__(self, lookback_days: int = 90)",
+        "line_range": [
+          31,
+          43
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_6",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"\n        Initialize the customer segment analyzer.\n        \n        Args:\n            lookback_days: Number of days to analyze for recency calculations\n        \"\"\""
+      },
+      {
+        "id": "entity_8",
+        "name": "calculate_customer_lifetime_value",
+        "type": "function",
+        "signature": "def calculate_customer_lifetime_value(\n        self,\n        transactions: List[Transaction],\n        customer_id: str\n    ) -> float",
+        "line_range": [
+          45,
+          68
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_6",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"\n        Calculate the total lifetime value for a specific customer.\n        \n        Sums all transaction amounts for the given customer to determine\n        their total contribution to revenue.\n        \n        Args:\n            transactions: List of all transactions to analyze\n            customer_id: Unique identifier for the target customer\n            \n        Returns:\n            Total amount spent by the customer across all transactions\n        \"\"\""
+      },
+      {
+        "id": "entity_9",
+        "name": "calculate_purchase_frequency",
+        "type": "function",
+        "signature": "def calculate_purchase_frequency(\n        self,\n        transactions: List[Transaction],\n        customer_id: str\n    ) -> int",
+        "line_range": [
+          70,
+          88
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_6",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"\n        Count the number of purchases made by a customer.\n        \n        Args:\n            transactions: List of all transactions to analyze\n            customer_id: Unique identifier for the target customer\n            \n        Returns:\n            Total number of transactions for this customer\n        \"\"\""
+      },
+      {
+        "id": "entity_10",
+        "name": "calculate_days_since_last_purchase",
+        "type": "function",
+        "signature": "def calculate_days_since_last_purchase(\n        self,\n        transactions: List[Transaction],\n        customer_id: str,\n        reference_date: Optional[datetime] = None\n    ) -> int",
+        "line_range": [
+          90,
+          124
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_6",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"\n        Calculate recency metric: days since customer's last purchase.\n        \n        Args:\n            transactions: List of all transactions to analyze\n            customer_id: Unique identifier for the target customer\n            reference_date: Date to calculate from (defaults to now)\n            \n        Returns:\n            Number of days since the most recent transaction\n        \"\"\""
+      },
+      {
+        "id": "entity_11",
+        "name": "classify_customer_segment",
+        "type": "function",
+        "signature": "def classify_customer_segment(\n        self,\n        lifetime_value: float,\n        purchase_frequency: int,\n        days_since_last_purchase: int\n    ) -> str",
+        "line_range": [
+          126,
+          157
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_6",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"\n        Assign a customer to a behavioral segment based on RFM metrics.\n        \n        Uses Recency, Frequency, and Monetary value to determine which\n        segment best describes the customer's relationship with the business.\n        \n        Args:\n            lifetime_value: Total amount spent by customer\n            purchase_frequency: Number of purchases made\n            days_since_last_purchase: Days since most recent transaction\n            \n        Returns:\n            Segment label: 'champion', 'loyal', 'at_risk', or 'lost'\n        \"\"\""
+      },
+      {
+        "id": "entity_12",
+        "name": "generate_segment_report",
+        "type": "function",
+        "signature": "def generate_segment_report(\n        self,\n        transactions: List[Transaction]\n    ) -> Dict[str, List[str]]",
+        "line_range": [
+          159,
+          195
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_6",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Classify each customer",
+        "docstring": "\"\"\"\n        Generate a complete segmentation report for all customers.\n        \n        Processes the entire transaction dataset and groups customers\n        into segments for marketing campaign targeting.\n        \n        Args:\n            transactions: Complete list of transactions to analyze\n            \n        Returns:\n            Dictionary mapping segment names to lists of customer IDs\n        \"\"\""
+      }
+    ]
+  }
+}

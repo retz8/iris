@@ -1,0 +1,227 @@
+{
+  "filename": "calculator.py",
+  "language": "python",
+  "signature_graph": {
+    "entities": [
+      {
+        "id": "entity_0",
+        "name": "from typing import List, Tuple, Optional",
+        "type": "import",
+        "signature": "from typing import List, Tuple, Optional",
+        "line_range": [
+          5,
+          5
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_1",
+        "name": "math",
+        "type": "import",
+        "signature": "import math",
+        "line_range": [
+          6,
+          6
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_2",
+        "name": "Calculator",
+        "type": "class",
+        "signature": "class Calculator",
+        "line_range": [
+          9,
+          182
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [
+          "entity_3",
+          "entity_4",
+          "entity_5",
+          "entity_6",
+          "entity_7",
+          "entity_9",
+          "entity_10"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_3",
+        "name": "__init__",
+        "type": "function",
+        "signature": "def __init__(self)",
+        "line_range": [
+          12,
+          14
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_2",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_4",
+        "name": "compute",
+        "type": "function",
+        "signature": "def compute(self, a, b, op)",
+        "line_range": [
+          16,
+          41
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_2",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# 'geometric' (geometric mean), 'distance' (euclidean if a,b are tuples)",
+        "docstring": "\"\"\"Compute values.\"\"\""
+      },
+      {
+        "id": "entity_5",
+        "name": "adjust",
+        "type": "function",
+        "signature": "def adjust(self, values, factor)",
+        "line_range": [
+          43,
+          56
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_2",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# factor is the smoothing coefficient (alpha)",
+        "docstring": "\"\"\"Adjust values.\"\"\""
+      },
+      {
+        "id": "entity_6",
+        "name": "solve",
+        "type": "function",
+        "signature": "def solve(self, coeffs)",
+        "line_range": [
+          58,
+          84
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_2",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Returns tuple of (root1, root2) or (real, None) or (None, None)",
+        "docstring": "\"\"\"Solve equation.\"\"\""
+      },
+      {
+        "id": "entity_7",
+        "name": "optimize",
+        "type": "function",
+        "signature": "def optimize(self, data, target)",
+        "line_range": [
+          86,
+          120
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_2",
+        "children_ids": [
+          "entity_8"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Uses dynamic programming approach (subset sum variant)",
+        "docstring": "\"\"\"Optimize data.\"\"\""
+      },
+      {
+        "id": "entity_8",
+        "name": "helper",
+        "type": "function",
+        "signature": "def helper(idx, current_sum)",
+        "line_range": [
+          94,
+          105
+        ],
+        "depth": 2,
+        "scope": "function",
+        "parent_id": "entity_7",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_9",
+        "name": "interpolate",
+        "type": "function",
+        "signature": "def interpolate(self, points, x)",
+        "line_range": [
+          122,
+          146
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_2",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "# Reconstruct the solution",
+        "inline_comment": null,
+        "trailing_comment": "# Returns interpolated y value for given x",
+        "docstring": "\"\"\"Interpolate value.\"\"\""
+      },
+      {
+        "id": "entity_10",
+        "name": "analyze",
+        "type": "function",
+        "signature": "def analyze(self, series)",
+        "line_range": [
+          148,
+          182
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_2",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Calculate volatility",
+        "docstring": "\"\"\"Analyze series.\"\"\""
+      }
+    ]
+  }
+}

@@ -1,0 +1,225 @@
+{
+  "filename": "machine.py",
+  "language": "python",
+  "signature_graph": {
+    "entities": [
+      {
+        "id": "entity_0",
+        "name": "from typing import Dict, List, Any, Callable, Optional",
+        "type": "import",
+        "signature": "from typing import Dict, List, Any, Callable, Optional",
+        "line_range": [
+          5,
+          5
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_1",
+        "name": "from enum import Enum",
+        "type": "import",
+        "signature": "from enum import Enum",
+        "line_range": [
+          6,
+          6
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_2",
+        "name": "State",
+        "type": "class",
+        "signature": "class State(Enum)",
+        "line_range": [
+          9,
+          15
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_3",
+        "name": "Manager",
+        "type": "class",
+        "signature": "class Manager",
+        "line_range": [
+          18,
+          189
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [
+          "entity_4",
+          "entity_5",
+          "entity_6",
+          "entity_7",
+          "entity_8",
+          "entity_9",
+          "entity_10"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_4",
+        "name": "__init__",
+        "type": "function",
+        "signature": "def __init__(self)",
+        "line_range": [
+          21,
+          24
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_3",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_5",
+        "name": "transition",
+        "type": "function",
+        "signature": "def transition(self, event)",
+        "line_range": [
+          26,
+          54
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_3",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# DONE -> READY (on 'reset' event)",
+        "docstring": "\"\"\"Handle transition.\"\"\""
+      },
+      {
+        "id": "entity_6",
+        "name": "register",
+        "type": "function",
+        "signature": "def register(self, event, handler)",
+        "line_range": [
+          56,
+          60
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_3",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# handler is called with (old_state, new_state) when transition occurs",
+        "docstring": "\"\"\"Register handler.\"\"\""
+      },
+      {
+        "id": "entity_7",
+        "name": "check",
+        "type": "function",
+        "signature": "def check(self, condition)",
+        "line_range": [
+          62,
+          90
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_3",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Returns True if current state meets all conditions",
+        "docstring": "\"\"\"Check condition.\"\"\""
+      },
+      {
+        "id": "entity_8",
+        "name": "update",
+        "type": "function",
+        "signature": "def update(self, key, value)",
+        "line_range": [
+          92,
+          114
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_3",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Notify observers if value changed",
+        "docstring": "\"\"\"Update data.\"\"\""
+      },
+      {
+        "id": "entity_9",
+        "name": "query",
+        "type": "function",
+        "signature": "def query(self, pattern)",
+        "line_range": [
+          116,
+          151
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_3",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Returns list of matching values",
+        "docstring": "\"\"\"Query data.\"\"\""
+      },
+      {
+        "id": "entity_10",
+        "name": "execute",
+        "type": "function",
+        "signature": "def execute(self, commands)",
+        "line_range": [
+          153,
+          189
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_3",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Save checkpoint for rollback",
+        "docstring": "\"\"\"Execute commands.\"\"\""
+      }
+    ]
+  }
+}
