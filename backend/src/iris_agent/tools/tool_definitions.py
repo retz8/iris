@@ -5,15 +5,19 @@ from openai.types.responses import ToolParam
 REFER_TO_SOURCE_CODE_TOOL: ToolParam = {
     "type": "function",
     "name": "refer_to_source_code",
-    "description": (
-        "Read the actual source code for a specific line range. "
-        "Use this when the signature graph doesn't provide enough information "
-        "to understand an entity's purpose or implementation. "
-        "Call ONLY for: (1) generic names (process, handle, data, temp), "
-        "(2) missing comments on complex entities, "
-        "(3) unclear signatures. "
-        "DO NOT call for: descriptive names, entities with clear comments, or simple leaf entities."
-    ),
+    "description":
+        """
+        Use this tool ONLY when you cannot determine an entity's purpose from its name, docstring, or comments alone.
+        
+        DO NOT use for:
+        - Self-explanatory names
+        - Entities with clear docstrings/leading comments  
+
+        ONLY use when:
+        - Name is ambiguous (process, handle, exec, run, etc)
+        - No docstring AND no leading comment AND unclear signature
+        - Cannot infer purpose from context
+        """,
     "parameters": {
         "type": "object",
         "properties": {

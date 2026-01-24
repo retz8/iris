@@ -214,7 +214,7 @@ class IrisAgent:
                 tool_choice="auto",
                 parallel_tool_calls=True,
                 temperature=0.1,
-                instructions="Respond with source_code_snippet retrieved with tool" if tool_call_count > 0 else None,
+                # instructions="Respond with source_code_snippet retrieved with tool" if tool_call_count > 0 else None,
             )
             print("[TOOL-CALLING] LLM response received.")
 
@@ -234,7 +234,6 @@ class IrisAgent:
             llm_response_text = response.output_text or ""
 
             messages += response.output # type: ignore
-
 
             if tool_calls: 
                 for tool_call_item in tool_calls:
@@ -286,7 +285,6 @@ class IrisAgent:
 
 
                 continue 
-
             # ---- No tool calls → final answer ----
             if not llm_response_text:
                 raise ValueError("LLM returned empty response in tool-calling analysis")
@@ -300,6 +298,9 @@ class IrisAgent:
 
             # ---- Attach metadata ----
             result.setdefault("metadata", {})
+
+            print(f"[TOOL-CALLING] initial hypothesis: {result.get('initial_hypothesis', '')}")
+            print(f"[TOOL-CALLING] verfication processes: {result.get('verification_processes', [])}")
             result["metadata"]["tool_reads"] = [
                 {
                     "start_line": r.start_line,

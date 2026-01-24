@@ -639,41 +639,6 @@ class ShallowASTDebugger:
             [
                 "---",
                 "",
-                "## Integrity Verification",
-                "",
-                f"**Integrity Score:** `{metrics.get('integrity_score', 0):.1f}%`",
-                "",
-                f"**Checks:** {metrics.get('integrity_checks_passed', 0)}/{metrics.get('integrity_checks_total', 0)} passed",
-                "",
-            ]
-        )
-
-        # Add quality assessment
-        has_warning = summary.get("has_quality_warning", False)
-
-        if has_warning:
-            md_lines.extend(
-                [
-                    "### ⚠️ Quality Warning",
-                    "",
-                    "Integrity score is below 100%. Some structural elements may not have been fully verified.",
-                    "",
-                ]
-            )
-        else:
-            md_lines.extend(
-                [
-                    "### ✅ All Checks Passed",
-                    "",
-                    "AST transformation quality is within acceptable ranges.",
-                    "",
-                ]
-            )
-
-        md_lines.extend(
-            [
-                "---",
-                "",
                 "*Report generated for IRIS AST transformation analysis*",
             ]
         )
