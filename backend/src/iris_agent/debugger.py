@@ -218,32 +218,7 @@ class ShallowASTDebugger:
             entity_count = len(signature_graph.get("entities", []))
             print(f"\n{BOLD}Signature Graph Snapshot:{END}")
             print(f"  Entities Captured:           {entity_count}")
-
-        # Integrity Section
-        print(f"\n{BOLD}Integrity Verification:{END}")
-        integrity_score = metrics.get("integrity_score", 0)
-        integrity_passed = metrics.get("integrity_checks_passed", 0)
-        integrity_total = metrics.get("integrity_checks_total", 0)
-
-        # Color integrity score based on value
-        if integrity_score >= 100:
-            score_color = GREEN
-            score_status = "✓ PERFECT"
-        elif integrity_score >= 80:
-            score_color = GREEN
-            score_status = "✓ GOOD"
-        elif integrity_score >= 60:
-            score_color = YELLOW
-            score_status = "⚠ FAIR"
-        else:
-            score_color = RED
-            score_status = "✗ POOR"
-
-        print(
-            f"  Integrity Score:             {score_color}{integrity_score:.1f}%{END} {score_status}"
-        )
-        print(f"  Checks Passed:               {integrity_passed}/{integrity_total}")
-
+ 
         # Quality Assessment
         summary = report.get("summary", {})
         has_warning = summary.get("has_quality_warning", False)

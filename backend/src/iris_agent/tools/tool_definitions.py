@@ -7,9 +7,12 @@ REFER_TO_SOURCE_CODE_TOOL: ToolParam = {
     "name": "refer_to_source_code",
     "description": (
         "Read the actual source code for a specific line range. "
-        "Use this when the shallow AST doesn't provide enough information "
-        "to understand a function, variable, or code block. "
-        "Common reasons to call: generic names, missing comments, complex logic."
+        "Use this when the signature graph doesn't provide enough information "
+        "to understand an entity's purpose or implementation. "
+        "Call ONLY for: (1) generic names (process, handle, data, temp), "
+        "(2) missing comments on complex entities, "
+        "(3) unclear signatures. "
+        "DO NOT call for: descriptive names, entities with clear comments, or simple leaf entities."
     ),
     "parameters": {
         "type": "object",

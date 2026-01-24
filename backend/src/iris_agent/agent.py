@@ -7,6 +7,7 @@ strategy: signature graph / fast path
 from __future__ import annotations
 
 import json
+from pyexpat.errors import messages
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, cast
 from datetime import timedelta
 
@@ -204,6 +205,7 @@ class IrisAgent:
         all_responses: List[str] = []
 
         while tool_call_count < self.MAX_TOOL_CALLS:
+            print(f"[TOOL-CALLING] LLM call #{tool_call_count + 1}...")
             # ---- OpenAI Responses API call ----
             response = self.client.responses.create(
                 model=self.model,
@@ -212,8 +214,9 @@ class IrisAgent:
                 tool_choice="auto",
                 parallel_tool_calls=True,
                 temperature=0.1,
+                instructions="Respond with source_code_snippet retrieved with tool" if tool_call_count > 0 else None,
             )
-
+            print("[TOOL-CALLING] LLM response received.")
 
             # ---- Token usage ----
             if response.usage:
@@ -227,27 +230,22 @@ class IrisAgent:
             for item in response.output:
                 if item.type == 'function_call':
                     tool_calls.append(item)
-                    print("[DEBUG TOOL-CALLING] Tool call requested:", item.name, item.arguments)
-
-
-            #response.created_at
-            #reponse.completed_at
-            #response.max_tool_calls = MAX_TOOL_CALLS
 
             llm_response_text = response.output_text or ""
-            print("[DEBUG TOOL-CALLING] response", response)
 
-            # ---- If the model requested tools ----
-            for item in response.output:
-                if item.type == 'function_call':
+            messages += response.output # type: ignore
+
+
+            if tool_calls: 
+                for tool_call_item in tool_calls:
                     tool_call_count += 1
 
-                    if item.name != "refer_to_source_code":
+                    if tool_call_item.name != "refer_to_source_code":
                         continue
 
                     # Parse tool arguments
                     try:
-                        args = json.loads(item.arguments or "{}")
+                        args = json.loads(tool_call_item.arguments or "{}")
                         start_line = int(args.get("start_line", 0))
                         end_line = int(args.get("end_line", 0))
                     except (json.JSONDecodeError, TypeError, ValueError):
@@ -256,9 +254,7 @@ class IrisAgent:
 
                     # Execute tool
                     if start_line < 1 or end_line < start_line:
-                        snippet = (
-                            f"Error: Invalid line range [{start_line}, {end_line}]"
-                        )
+                        snippet = f"Error: Invalid line range [{start_line}, {end_line}]"
                     else:
                         snippet = source_reader.refer_to_source_code(
                             start_line,
@@ -276,18 +272,20 @@ class IrisAgent:
                         )
 
                     # Append tool result to conversation
+                    tool_output: FunctionCallOutput = {
+                        "type": "function_call_output",
+                        "call_id": tool_call_item.call_id or "",
+                        "output": json.dumps({
+                            "source_code_snippet": snippet,
+                            "start_line": start_line,
+                            "end_line": end_line
+                        })
+                    }
 
-                    tool_output: FunctionCallOutput =  {
-                            "type": "function_call_output",
-                            "call_id": item.id or "",
-                            "output": json.dumps({
-                                "source_code_snippet": snippet, "start_line": start_line, "end_line": end_line
-                            })
-                        }
                     messages.append(tool_output)
-                
-                # Continue loop: model will consume tool output next
-                continue
+
+
+                continue 
 
             # ---- No tool calls → final answer ----
             if not llm_response_text:
