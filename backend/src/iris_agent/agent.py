@@ -7,10 +7,12 @@ strategy: signature graph / fast path
 from __future__ import annotations
 
 import json
-import time
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, cast
+from datetime import timedelta
 
 from openai import OpenAI
+from openai.types.responses import ResponseInputParam
+from openai.types.responses.response_input_param import FunctionCallOutput
 
 from .signature_graph import SignatureGraphExtractor, SignatureGraph
 from .prompts import (
@@ -22,7 +24,6 @@ from .prompts import (
 from .source_store import SourceStore
 from .tools.source_reader import SourceReader
 from .tools.tool_definitions import IRIS_TOOLS
-from backend.src.iris_agent import signature_graph
 
 if TYPE_CHECKING:
     from .debugger import ShallowASTDebugger
@@ -59,9 +60,9 @@ class IrisAgent:
         source_store: SourceStore,
         source_code: str,
         file_hash: str,
-        force_fast_path: bool = False,
-        debug_report: Dict[str, Any] | None = None,
         debugger: ShallowASTDebugger | None = None,
+        debug_report: Dict[str, Any] | None = None,
+        force_fast_path: bool = False,
     ) -> Dict[str, Any] | IrisError:
         """Run analysis on a file with selectable execution path.
 
@@ -72,12 +73,11 @@ class IrisAgent:
         Args:
             filename: Name of the file being analyzed.
             language: Programming language identifier.
-            signature_graph: Optional signature graph representation.
             source_store: Store containing source code snippets.
+            source_code: Source code of the file
             file_hash: Hash of the source file for caching.
-            debug_report: Optional debug report from ShallowASTDebugger.
-            source_code: Source code of the file (required for fast-path).
             debugger: Optional ShallowASTDebugger instance for LLM tracking.
+            debug_report: Optional debug report from ShallowASTDebugger.
             force_fast_path: If True, forces fast-path analysis.
         """
         
@@ -85,6 +85,7 @@ class IrisAgent:
         # Fast Path: Single LLM call with full source code
         # =====================================================================
         
+        # NOTE: force_fast_path will be removed later
         if force_fast_path or self._should_use_fast_path(source_code):
             if force_fast_path and debugger:
                 print("[DEBUG] FORCE FAST-PATH enabled")
@@ -166,7 +167,6 @@ class IrisAgent:
                 print(f"[TOOL-CALLING] Error occurred: {e}")
                 return IrisError(f"Tool-Calling Analysis failed: {e}", 500)
 
-
     def _run_tool_calling_analysis(
         self,
         filename: str,
@@ -176,27 +176,25 @@ class IrisAgent:
         signature_graph: SignatureGraph,
         debugger: Optional["ShallowASTDebugger"] = None,
     ) -> Dict[str, Any]:
-        """Single-stage analysis with OpenAI tool-calling.
+        """Single-stage analysis with OpenAI tool-calling (Responses API).
 
         The LLM analyzes the shallow AST and calls refer_to_source_code()
         when it needs to see actual implementation details.
-
-        Follows OpenAI function calling specification:
-        https://platform.openai.com/docs/guides/function-calling
         """
+
         source_reader = SourceReader(source_store, file_hash)
 
-        # if signature graph is missing, something went wrong
         if signature_graph is None:
-            raise RuntimeError(f"Signature graph is required for tool-calling analysis")
+            raise RuntimeError("Signature graph is required for tool-calling analysis")
 
-        # build user prompt with signature graph
+        # Build initial prompt
         user_prompt = build_signature_graph_prompt(
-                filename, language, signature_graph
-            )
+            filename, language, signature_graph
+        )
 
-        messages: List[Dict[str, Any]] = [
-            {"role": "system", "content": TOOL_CALLING_SYSTEM_PROMPT},
+        # Conversation state (text + tool results only)
+        messages: ResponseInputParam = [
+            {"role": "developer", "content": TOOL_CALLING_SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ]
 
@@ -206,147 +204,126 @@ class IrisAgent:
         all_responses: List[str] = []
 
         while tool_call_count < self.MAX_TOOL_CALLS:
-            # Call OpenAI API with tools
+            # ---- OpenAI Responses API call ----
             response = self.client.responses.create(
                 model=self.model,
-                input=cast(Any, messages),
-                tools=cast(Any, IRIS_TOOLS),
+                input=messages,
+                tools=IRIS_TOOLS,
                 tool_choice="auto",
+                parallel_tool_calls=True,
                 temperature=0.1,
             )
 
-            assistant_message = response.output[0].to_json()
 
-            # Track token usage from response
+            # ---- Token usage ----
             if response.usage:
-                # For the first call, take prompt tokens
-                # For subsequent calls, only count completion tokens (prompt is the full message history)
                 if tool_call_count == 0:
                     total_input_tokens += response.usage.input_tokens
                 total_output_tokens += response.usage.output_tokens
-            else:
-                # Fallback: estimate tokens if usage not provided by API
-                if tool_call_count == 0:
-                    total_input_tokens += self._estimate_tokens_for_prompt(
-                        filename, language, 
-                        {"entitiues": [dict(e) for e in signature_graph["entities"]]}
-                    )
-                # Estimate output tokens from response content
-                content = assistant_message or ""
-                tool_calls = getattr(assistant_message, "tool_calls", None)
 
-                print("[DEBUG - MUST DELETE] assistant_message:", assistant_message)
-                total_response = content
-                if tool_calls:
-                    for tc in tool_calls:
-                        total_response += tc.function.arguments
-                total_output_tokens += self._estimate_tokens_for_response(
-                    total_response
-                )
+            # ---- Parse response output ----
+            tool_calls = []
 
-            # Store response for debugging
-            if assistant_message:
-                all_responses.append(assistant_message)
+            for item in response.output:
+                if item.type == 'function_call':
+                    tool_calls.append(item)
+                    print("[DEBUG TOOL-CALLING] Tool call requested:", item.name, item.arguments)
 
-            # Check if LLM wants to call tools
-            tool_calls = getattr(assistant_message, "tool_calls", None)
 
-            if tool_calls:
-                # Step 1: Append the assistant's response (with tool calls) to message history
-                # This is critical for the API to understand the conversation context
-                messages.append(
-                    {
-                        "role": "assistant",
-                        "content": assistant_message or "",
-                        "tool_calls": [
-                            {
-                                "id": tc.id,
-                                "type": "function",
-                                "function": {
-                                    "name": tc.function.name,
-                                    "arguments": tc.function.arguments,
-                                },
-                            }
-                            for tc in tool_calls
-                        ],
-                    }
-                )
+            #response.created_at
+            #reponse.completed_at
+            #response.max_tool_calls = MAX_TOOL_CALLS
 
-                # Step 2: Process each tool call and collect results
-                for tc in tool_calls:
+            llm_response_text = response.output_text or ""
+            print("[DEBUG TOOL-CALLING] response", response)
+
+            # ---- If the model requested tools ----
+            for item in response.output:
+                if item.type == 'function_call':
                     tool_call_count += 1
 
-                    # Only handle refer_to_source_code function
-                    if tc.function.name == "refer_to_source_code":
-                        try:
-                            args = json.loads(tc.function.arguments)
-                            start_line = int(args.get("start_line", 0))
-                            end_line = int(args.get("end_line", 0))
-                        except (json.JSONDecodeError, TypeError, ValueError):
-                            snippet = "Error: Invalid tool arguments"
-                            args = {}
-                            start_line = 0
-                            end_line = 0
+                    if item.name != "refer_to_source_code":
+                        continue
 
-                        # Execute the tool
-                        if start_line < 1 or end_line < start_line:
-                            snippet = (
-                                f"Error: Invalid line range [{start_line}, {end_line}]"
-                            )
-                        else:
-                            snippet = source_reader.refer_to_source_code(
-                                start_line, end_line, reason="LLM requested"
-                            )
+                    # Parse tool arguments
+                    try:
+                        args = json.loads(item.arguments or "{}")
+                        start_line = int(args.get("start_line", 0))
+                        end_line = int(args.get("end_line", 0))
+                    except (json.JSONDecodeError, TypeError, ValueError):
+                        start_line = 0
+                        end_line = 0
 
-                        # Log tool call if debugger available
-                        if debugger and hasattr(debugger, "log_tool_call"):
-                            debugger.log_tool_call(
-                                tool_name="refer_to_source_code",
-                                args={"start_line": start_line, "end_line": end_line},
-                                result_length=len(snippet),
-                                result_content=snippet,
-                            )
-
-                        # Step 3: Append tool result to message history
-                        # This tells the LLM what the tool returned
-                        messages.append(
-                            {
-                                "role": "tool",
-                                "tool_call_id": tc.id,
-                                "content": snippet,
-                            }
+                    # Execute tool
+                    if start_line < 1 or end_line < start_line:
+                        snippet = (
+                            f"Error: Invalid line range [{start_line}, {end_line}]"
+                        )
+                    else:
+                        snippet = source_reader.refer_to_source_code(
+                            start_line,
+                            end_line,
+                            reason="LLM requested",
                         )
 
-                # Step 4: Continue loop - LLM will process tool results and respond again
+                    # Debug logging
+                    if debugger and hasattr(debugger, "log_tool_call"):
+                        debugger.log_tool_call(
+                            tool_name="refer_to_source_code",
+                            args={"start_line": start_line, "end_line": end_line},
+                            result_length=len(snippet),
+                            result_content=snippet,
+                        )
+
+                    # Append tool result to conversation
+
+                    tool_output: FunctionCallOutput =  {
+                            "type": "function_call_output",
+                            "call_id": item.id or "",
+                            "output": json.dumps({
+                                "source_code_snippet": snippet, "start_line": start_line, "end_line": end_line
+                            })
+                        }
+                    messages.append(tool_output)
+                
+                # Continue loop: model will consume tool output next
                 continue
 
-            # No tool calls - LLM has returned final answer
-            if assistant_message is None:
+            # ---- No tool calls → final answer ----
+            if not llm_response_text:
                 raise ValueError("LLM returned empty response in tool-calling analysis")
 
-            # Parse the JSON response
-            content = assistant_message
-            result = self._parse_analysis_response(content)
+            result = self._parse_analysis_response(llm_response_text)
 
-            # Validate result has required fields
             if "file_intent" not in result or "responsibilities" not in result:
                 raise ValueError(
                     f"LLM response missing required fields. Got keys: {list(result.keys())}"
                 )
 
-            # Attach metadata about tool usage
+            # ---- Attach metadata ----
             result.setdefault("metadata", {})
             result["metadata"]["tool_reads"] = [
-                {"start_line": r.start_line, "end_line": r.end_line, "reason": r.reason}
+                {
+                    "start_line": r.start_line,
+                    "end_line": r.end_line,
+                    "reason": r.reason,
+                }
                 for r in source_reader.get_log()
             ]
             result["metadata"]["execution_path"] = "tool-calling"
             result["metadata"]["tool_call_count"] = tool_call_count
 
-            # Record LLM metrics if debugger is available
+            # time taken in llm call
+            # NOTE: not full time elapsed in iris, only llm call
+            llm_call_started = response.created_at
+            llm_call_ended = response.completed_at
+            result["metadata"]["time_taken_seconds"] = (
+                self._convert_milliseconds_to_seconds(llm_call_ended - llm_call_started)
+            ) if llm_call_started and llm_call_ended else None
+
+            # ---- Debugger finalization ----
             if debugger:
-                # Combine all responses for logging
-                full_response = "\n".join(all_responses) if all_responses else content
+                full_response = "\n".join(all_responses) if all_responses else llm_response_text
                 debugger.end_llm_stage(
                     "tool_calling_analysis",
                     input_tokens=total_input_tokens,
@@ -357,8 +334,11 @@ class IrisAgent:
 
             return result
 
-        # Safety: max tool calls exceeded
-        raise RuntimeError(f"Exceeded maximum tool calls ({self.MAX_TOOL_CALLS})")\
+        raise RuntimeError(
+            f"Exceeded maximum tool calls ({self.MAX_TOOL_CALLS})"
+        )
+
+
 
     def _should_use_fast_path(self, source_code: str) -> bool:
         """Determine if file is small enough for single-stage analysis.
@@ -559,5 +539,7 @@ class IrisAgent:
         total_chars = len(filename) + len(language) + len(source_code)
         return max(100, total_chars // 4)
 
-    # result = agent.analyze_file("example.ts", "typescript", shallow_ast, source_store, file_hash)
-    # print(json.dumps(result, indent=2))
+    def _convert_milliseconds_to_seconds(self, milliseconds):
+        """Converts milliseconds to seconds."""
+        seconds = milliseconds / 1000
+        return seconds

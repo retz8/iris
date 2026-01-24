@@ -29,54 +29,6 @@ except Exception as exc:  # pragma: no cover - initialization fallback
     _agent_init_error = str(exc)
 
 
-def set_debug_mode(enabled: bool) -> None:
-    """Enable or disable debug mode.
-
-    When enabled, the debugger captures metrics, performs integrity checks,
-    and prints detailed diagnostic reports after analysis.
-
-    Args:
-        enabled: True to enable debug mode, False to disable.
-    """
-    global _debug_mode
-    _debug_mode = enabled
-    status = "enabled" if enabled else "disabled"
-    print(f"[DEBUG] Debug mode {status}")
-
-
-def get_debug_mode() -> bool:
-    """Get the current debug mode status.
-
-    Returns:
-        True if debug mode is enabled, False otherwise.
-    """
-    return _debug_mode
-
-
-def set_force_fast_path(enabled: bool) -> None:
-    """Enable or disable forced fast-path mode.
-
-    When enabled, analysis will always use fast-path (single-stage)
-    and skip fallback to two-stage analysis on error.
-
-    Args:
-        enabled: True to force fast-path, False to allow fallback.
-    """
-    global _force_fast_path
-    _force_fast_path = enabled
-    status = "enabled" if enabled else "disabled"
-    print(f"[DEBUG] Force fast-path mode {status}")
-
-
-def get_force_fast_path() -> bool:
-    """Get the current force fast-path mode status.
-
-    Returns:
-        True if force fast-path is enabled, False otherwise.
-    """
-    return _force_fast_path
-
-
 @iris_bp.route("/analyze", methods=["POST"])
 def analyze():
     """Analyze a source file to extract File Intent + Responsibility Blocks.
@@ -178,7 +130,13 @@ def analyze():
 
             # if result is IrisError
             if isinstance(result, IrisError):
-                raise Exception(result.message, result.status_code)
+
+                return jsonify(
+                    {
+                        "success": False,
+                        "error": f"IRIS analysis failed: {result.message}",
+                    },
+                ), result.status_code
 
             # Restore thresholds if they were forced
             if _force_fast_path and original_line_threshold is not None:
@@ -270,11 +228,6 @@ def analyze():
         )
 
 
-def _compute_file_hash(source_code: str) -> str:
-    """Compute SHA-256 hash of source code for caching."""
-    return hashlib.sha256(source_code.encode("utf-8")).hexdigest()
-
-
 @iris_bp.route("/health", methods=["GET"])
 def health():
     """Health check endpoint."""
@@ -291,3 +244,56 @@ def health():
         200,
     )
 
+
+def set_debug_mode(enabled: bool) -> None:
+    """Enable or disable debug mode.
+
+    When enabled, the debugger captures metrics, performs integrity checks,
+    and prints detailed diagnostic reports after analysis.
+
+    Args:
+        enabled: True to enable debug mode, False to disable.
+    """
+    global _debug_mode
+    _debug_mode = enabled
+    status = "enabled" if enabled else "disabled"
+    print(f"[DEBUG] Debug mode {status}")
+
+
+def get_debug_mode() -> bool:
+    """Get the current debug mode status.
+
+    Returns:
+        True if debug mode is enabled, False otherwise.
+    """
+    return _debug_mode
+
+
+def set_force_fast_path(enabled: bool) -> None:
+    """Enable or disable forced fast-path mode.
+
+    When enabled, analysis will always use fast-path (single-stage)
+    and skip fallback to two-stage analysis on error.
+
+    Args:
+        enabled: True to force fast-path, False to allow fallback.
+    """
+    global _force_fast_path
+    _force_fast_path = enabled
+    status = "enabled" if enabled else "disabled"
+    print(f"[DEBUG] Force fast-path mode {status}")
+
+
+def get_force_fast_path() -> bool:
+    """Get the current force fast-path mode status.
+
+    Returns:
+        True if force fast-path is enabled, False otherwise.
+    """
+    return _force_fast_path
+
+
+
+def _compute_file_hash(source_code: str) -> str:
+    """Compute SHA-256 hash of source code for caching."""
+    return hashlib.sha256(source_code.encode("utf-8")).hexdigest()
