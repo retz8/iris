@@ -299,6 +299,9 @@ class IrisAgent:
             # ---- Attach metadata ----
             result.setdefault("metadata", {})
 
+            # printout result keys
+            print(f"[TOOL-CALLING] result keys: {list(result.keys())}")
+
             print(f"[TOOL-CALLING] initial hypothesis: {result.get('initial_hypothesis', '')}")
             print(f"[TOOL-CALLING] verfication processes: {result.get('verification_processes', [])}")
             result["metadata"]["tool_reads"] = [

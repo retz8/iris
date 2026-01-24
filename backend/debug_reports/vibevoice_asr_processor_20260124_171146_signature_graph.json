@@ -1,0 +1,562 @@
+{
+  "filename": "vibevoice_asr_processor.py",
+  "language": "python",
+  "signature_graph": {
+    "entities": [
+      {
+        "id": "entity_0",
+        "name": "os",
+        "type": "import",
+        "signature": "import os",
+        "line_range": [
+          5,
+          5
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_1",
+        "name": "json",
+        "type": "import",
+        "signature": "import json",
+        "line_range": [
+          6,
+          6
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_2",
+        "name": "math",
+        "type": "import",
+        "signature": "import math",
+        "line_range": [
+          7,
+          7
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_3",
+        "name": "warnings",
+        "type": "import",
+        "signature": "import warnings",
+        "line_range": [
+          8,
+          8
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_4",
+        "name": "from typing import List, Optional, Union, Dict, Any, Tuple",
+        "type": "import",
+        "signature": "from typing import List, Optional, Union, Dict, Any, Tuple",
+        "line_range": [
+          9,
+          9
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_5",
+        "name": "numpy as np",
+        "type": "import",
+        "signature": "import numpy as np",
+        "line_range": [
+          11,
+          11
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_6",
+        "name": "torch",
+        "type": "import",
+        "signature": "import torch",
+        "line_range": [
+          12,
+          12
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_7",
+        "name": "from transformers.tokenization_utils_base import BatchEncoding",
+        "type": "import",
+        "signature": "from transformers.tokenization_utils_base import BatchEncoding",
+        "line_range": [
+          14,
+          14
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_8",
+        "name": "from transformers.utils import TensorType, logging",
+        "type": "import",
+        "signature": "from transformers.utils import TensorType, logging",
+        "line_range": [
+          15,
+          15
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_9",
+        "name": "from .vibevoice_tokenizer_processor import VibeVoiceTokenizerProcessor, AudioNormalizer",
+        "type": "import",
+        "signature": "from .vibevoice_tokenizer_processor import VibeVoiceTokenizerProcessor, AudioNormalizer",
+        "line_range": [
+          16,
+          16
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_10",
+        "name": "VibeVoiceASRProcessor",
+        "type": "class",
+        "signature": "class VibeVoiceASRProcessor",
+        "line_range": [
+          30,
+          570
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [
+          "entity_11",
+          "entity_12",
+          "entity_13",
+          "entity_18",
+          "entity_20",
+          "entity_21",
+          "entity_22",
+          "entity_23",
+          "entity_24",
+          "entity_25",
+          "entity_26"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_11",
+        "name": "__init__",
+        "type": "function",
+        "signature": "def __init__(\n        self,\n        tokenizer=None,\n        audio_processor=None,\n        speech_tok_compress_ratio=320,\n        target_sample_rate=24000,\n        normalize_audio=True,\n        **kwargs\n    )",
+        "line_range": [
+          45,
+          69
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Cache special token IDs",
+        "docstring": null
+      },
+      {
+        "id": "entity_12",
+        "name": "_cache_special_tokens",
+        "type": "function",
+        "signature": "def _cache_special_tokens(self)",
+        "line_range": [
+          71,
+          94
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Add safety checks for special tokens",
+        "docstring": "\"\"\"Cache special token IDs for efficiency.\"\"\""
+      },
+      {
+        "id": "entity_13",
+        "name": "from_pretrained",
+        "type": "function",
+        "signature": "@classmethod\ndef from_pretrained(cls, pretrained_model_name_or_path, **kwargs)",
+        "line_range": [
+          96,
+          163
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [
+          "entity_14"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"\n        Load processor from a pretrained model path.\n        \n        Args:\n            pretrained_model_name_or_path: Path to the pretrained model\n            **kwargs: Additional keyword arguments\n            \n        Returns:\n            VibeVoiceASRProcessor: The loaded processor\n        \"\"\""
+      },
+      {
+        "id": "entity_14",
+        "name": "from_pretrained",
+        "type": "function",
+        "signature": "def from_pretrained(cls, pretrained_model_name_or_path, **kwargs)",
+        "line_range": [
+          97,
+          163
+        ],
+        "depth": 2,
+        "scope": "function",
+        "parent_id": "entity_13",
+        "children_ids": [
+          "entity_15",
+          "entity_16",
+          "entity_17"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"\n        Load processor from a pretrained model path.\n        \n        Args:\n            pretrained_model_name_or_path: Path to the pretrained model\n            **kwargs: Additional keyword arguments\n            \n        Returns:\n            VibeVoiceASRProcessor: The loaded processor\n        \"\"\""
+      },
+      {
+        "id": "entity_15",
+        "name": "json",
+        "type": "import",
+        "signature": "import json",
+        "line_range": [
+          108,
+          108
+        ],
+        "depth": 3,
+        "scope": "function",
+        "parent_id": "entity_14",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_16",
+        "name": "from transformers.utils import cached_file",
+        "type": "import",
+        "signature": "from transformers.utils import cached_file",
+        "line_range": [
+          109,
+          109
+        ],
+        "depth": 3,
+        "scope": "function",
+        "parent_id": "entity_14",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_17",
+        "name": "from vibevoice.modular.modular_vibevoice_text_tokenizer import VibeVoiceASRTextTokenizerFast",
+        "type": "import",
+        "signature": "from vibevoice.modular.modular_vibevoice_text_tokenizer import VibeVoiceASRTextTokenizerFast",
+        "line_range": [
+          110,
+          110
+        ],
+        "depth": 3,
+        "scope": "function",
+        "parent_id": "entity_14",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_18",
+        "name": "save_pretrained",
+        "type": "function",
+        "signature": "def save_pretrained(self, save_directory: Union[str, os.PathLike], **kwargs)",
+        "line_range": [
+          165,
+          191
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [
+          "entity_19"
+        ],
+        "calls": [],
+        "leading_comment": "# Try to load configuration\n# Extract parameters\n# Load tokenizer\n# Load audio processor",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"\n        Save processor configuration to a directory.\n        \n        Args:\n            save_directory: Directory to save the configuration\n            **kwargs: Additional keyword arguments\n        \"\"\""
+      },
+      {
+        "id": "entity_19",
+        "name": "json",
+        "type": "import",
+        "signature": "import json",
+        "line_range": [
+          173,
+          173
+        ],
+        "depth": 2,
+        "scope": "function",
+        "parent_id": "entity_18",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_20",
+        "name": "__call__",
+        "type": "function",
+        "signature": "def __call__(\n        self,\n        audio: Optional[Union[str, np.ndarray, torch.Tensor, List[Union[str, np.ndarray, torch.Tensor]]]] = None,\n        sampling_rate: Optional[int] = None,\n        return_tensors: Optional[Union[str, TensorType]] = None,\n        padding: bool = True,\n        max_length: Optional[int] = None,\n        truncation: bool = False,\n        add_generation_prompt: bool = True,\n        use_streaming: bool = True,\n        context_info: Optional[str] = None,\n        **kwargs\n    ) -> BatchEncoding",
+        "line_range": [
+          193,
+          265
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "# Save processor configuration",
+        "inline_comment": null,
+        "trailing_comment": "# Combine into batch",
+        "docstring": "\"\"\"\n        Process audio input for ASR model.\n        \n        Args:\n            audio: Audio input(s). Can be:\n                - str: Path to audio file\n                - np.ndarray: Audio array\n                - torch.Tensor: Audio tensor\n                - List of the above for batch processing\n            sampling_rate: Sampling rate of input audio\n            return_tensors: Output format ('pt' for PyTorch, 'np' for NumPy)\n            padding: Whether to pad batch inputs\n            max_length: Maximum sequence length\n            truncation: Whether to truncate long sequences\n            add_generation_prompt: Whether to add generation prompt for inference\n            use_streaming: Whether to use streaming mode (True by default, auto False if <60s)\n            context_info: Optional context information (e.g., hotwords, metadata) to help transcription\n            \n        Returns:\n            BatchEncoding with:\n                - input_ids: Token IDs for the model\n                - attention_mask: Attention mask\n                - acoustic_input_mask: Mask indicating speech token positions\n                - speech_tensors: Processed speech features\n                - speech_masks: Valid speech masks\n                - vae_tok_seqlens: Length of each speech segment in tokens\n        \"\"\""
+      },
+      {
+        "id": "entity_21",
+        "name": "_process_single_audio",
+        "type": "function",
+        "signature": "def _process_single_audio(\n        self,\n        audio: Union[str, np.ndarray, torch.Tensor],\n        sampling_rate: Optional[int] = None,\n        add_generation_prompt: bool = True,\n        use_streaming: bool = True,\n        context_info: Optional[str] = None,\n    ) -> Dict[str, Any]",
+        "line_range": [
+          267,
+          386
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Create acoustic input mask",
+        "docstring": "\"\"\"\n        Process a single audio input.\n        \n        Args:\n            audio: Single audio input\n            sampling_rate: Audio sampling rate\n            add_generation_prompt: Whether to add generation prompt\n            context_info: Optional context information (e.g., hotwords, metadata) to help transcription\n            \n        Returns:\n            Dictionary with processed tokens and audio features\n        \"\"\""
+      },
+      {
+        "id": "entity_22",
+        "name": "_batch_encode",
+        "type": "function",
+        "signature": "def _batch_encode(\n        self,\n        encodings: List[Dict[str, Any]],\n        padding: bool = True,\n        max_length: Optional[int] = None,\n        truncation: bool = False,\n        return_tensors: Optional[str] = None,\n    ) -> BatchEncoding",
+        "line_range": [
+          388,
+          474
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# Create batch encoding",
+        "docstring": "\"\"\"\n        Combine multiple encodings into a batch.\n        \n        Args:\n            encodings: List of encoded samples\n            padding: Whether to pad sequences\n            max_length: Maximum sequence length\n            truncation: Whether to truncate\n            return_tensors: Output format\n            \n        Returns:\n            BatchEncoding with batched data\n        \"\"\""
+      },
+      {
+        "id": "entity_23",
+        "name": "batch_decode",
+        "type": "function",
+        "signature": "def batch_decode(self, *args, **kwargs)",
+        "line_range": [
+          476,
+          481
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"\n        Decode batch of token IDs to text.\n        Forwards to tokenizer's batch_decode method.\n        \"\"\""
+      },
+      {
+        "id": "entity_24",
+        "name": "decode",
+        "type": "function",
+        "signature": "def decode(self, *args, **kwargs)",
+        "line_range": [
+          483,
+          488
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"\n        Decode token IDs to text.\n        Forwards to tokenizer's decode method.\n        \"\"\""
+      },
+      {
+        "id": "entity_25",
+        "name": "post_process_transcription",
+        "type": "function",
+        "signature": "def post_process_transcription(self, text: str) -> List[Dict[str, Any]]",
+        "line_range": [
+          490,
+          565
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"\n        Post-process the generated transcription text to extract structured data.\n        \n        Args:\n            text: Generated text from the model\n            \n        Returns:\n            List of dictionaries with transcription segments\n        \"\"\""
+      },
+      {
+        "id": "entity_26",
+        "name": "model_input_names",
+        "type": "function",
+        "signature": "@property\ndef model_input_names(self)",
+        "line_range": [
+          567,
+          570
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_10",
+        "children_ids": [
+          "entity_27"
+        ],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"Return the list of inputs accepted by the model.\"\"\""
+      },
+      {
+        "id": "entity_27",
+        "name": "model_input_names",
+        "type": "function",
+        "signature": "def model_input_names(self)",
+        "line_range": [
+          568,
+          570
+        ],
+        "depth": 2,
+        "scope": "function",
+        "parent_id": "entity_26",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": "\"\"\"Return the list of inputs accepted by the model.\"\"\""
+      }
+    ]
+  }
+}

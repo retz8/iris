@@ -195,24 +195,6 @@ class ShallowASTDebugger:
         print(f"  Filename: {report['filename']}")
         print(f"  Language: {report['language']}")
 
-        # Metrics Section
-        print(f"\n{BOLD}Compression Metrics:{END}")
-        metrics = report.get("metrics", {})
-
-        node_reduction = metrics.get("node_reduction_ratio", 0)
-        compression = metrics.get("context_compression_ratio", 0)
-        comment_retention = metrics.get("comment_retention_score", 0)
-
-        print(
-            f"  Node Reduction Ratio:        {node_reduction:.2f}x "
-            f"({metrics.get('full_ast_node_count', 0)} → {metrics.get('shallow_ast_node_count', 0)} nodes)"
-        )
-        print(
-            f"  Context Compression Ratio:   {compression:.2f}x "
-            f"({metrics.get('raw_source_bytes', 0)} → {metrics.get('json_bytes', 0)} bytes)"
-        )
-        print(f"  Comment Retention Score:     {comment_retention:.1f}%")
-
         signature_graph = report.get("snapshots", {}).get("signature_graph", {})
         if isinstance(signature_graph, dict) and signature_graph.get("entities"):
             entity_count = len(signature_graph.get("entities", []))

@@ -12,11 +12,12 @@ REFER_TO_SOURCE_CODE_TOOL: ToolParam = {
         DO NOT use for:
         - Self-explanatory names
         - Entities with clear docstrings/leading comments  
+        - Can infer purpose but merely need confirmation from implementation details
 
-        ONLY use when:
-        - Name is ambiguous (process, handle, exec, run, etc)
-        - No docstring AND no leading comment AND unclear signature
-        - Cannot infer purpose from context
+        ONLY use when following ALL conditions are met:
+        1. Name is ambiguous (process, handle, exec, run, etc)
+        2. No docstring AND no leading comment AND unclear signature
+        3. Cannot infer purpose from content
         """,
     "parameters": {
         "type": "object",
