@@ -5,20 +5,7 @@ from openai.types.responses import ToolParam
 REFER_TO_SOURCE_CODE_TOOL: ToolParam = {
     "type": "function",
     "name": "refer_to_source_code",
-    "description":
-        """
-        Use this tool ONLY when you cannot determine an entity's purpose from its name, docstring, or comments alone.
-        
-        DO NOT use for:
-        - Self-explanatory names
-        - Entities with clear docstrings/leading comments  
-        - Can infer purpose but merely need confirmation from implementation details
-
-        ONLY use when following ALL conditions are met:
-        1. Name is ambiguous (process, handle, exec, run, etc)
-        2. No docstring AND no leading comment AND unclear signature
-        3. Cannot infer purpose from content
-        """,
+    "description": "Retrieve source code for a specific line range. Use according to tooling rules in system prompt.",
     "parameters": {
         "type": "object",
         "properties": {

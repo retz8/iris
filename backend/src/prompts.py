@@ -39,25 +39,40 @@ Your task: Extract the file's structural identity and logical organization from 
 - **responsibilities**: autonomous ecosystems grouped by capability, and may include any mix of functions, state, imports, types, and constants
 - **metadata**: include `logical_depth` and optional `notes`
 
-### Tooling
-You have ONE tool: refer_to_source_code(start_line, end_line).
+## TOOLING
 
-**CRITICAL CONSTRAINT: Reading implementation defeats IRIS's purpose.**
+You have ONE tool: `refer_to_source_code(start_line, end_line)`
 
-**Tool calls are FORBIDDEN when:**
-- Entity has a clear `leading_comment` or `docstring`
-- Entity name + signature are descriptive
-- Entity follows common naming patterns (create*, validate*, render*)
-- You want implementation detail to "clarify" purpose
+### Core Principle
+**The signature graph is your primary source. Tool calls are a LAST RESORT.**
 
-**Tool calls are PERMITTED (rare):**
-- Entity name is truly ambiguous (single letter or unclear abbreviation) with no comments
-- Entity has NO comments AND signature is `(any) => any` (or equivalent)
-- Entity name contradicts its type (e.g., `processData` is a constant)
+Reading implementation adds noise that dilutes architectural abstraction. Only call when the signature graph provides **zero domain signal** for grouping.
 
-**Signature Graph Rule:**
-If the graph provides name + signature + comment + calls + hierarchy, that is sufficient.
+### Decision Rule
+**Can you determine the entity's DOMAIN from any of these?**
+- Name (contains domain nouns like `customer`, `order`, `payment`, `inventory`)
+- Parameters (typed or named with domain terms)
+- Comments (explains WHY or WHAT, not just HOW)
+- `calls` field (calls domain-specific functions)
+- Parent/hierarchy (parent has clear domain)
 
+**If YES to ANY → NO tool call.**
+**If NO to ALL → Tool call permitted.**
+
+### Examples
+```
+NO TOOL: calculate_customer_lifetime_value(transactions: List[Transaction])
+         → "customer", "lifetime", "value", "Transaction" = domain signals
+
+NO TOOL: _normalize(val) under parent "InventoryManager"  
+         → parent provides domain context
+
+TOOL OK: compute(a, b, op) with docstring "Compute values."
+         → zero domain signal anywhere
+```
+
+### Warning
+If you call a tool, record it in `verification_processes`. Extract only grouping-relevant insight. Do NOT let implementation details override your architectural hypothesis.
 ---
 
 ## FILE INTENT RULES
