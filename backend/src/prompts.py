@@ -358,6 +358,15 @@ Return JSON only. No markdown fences.
 
 
 ANALYZER_OUTPUT_SCHEMA: Dict[str, Any] = {
+    "response_to_feedback": [
+        {
+            "criticism_number": "number (1, 2, 3... matching REQUIRED CHANGES order)",
+            "criticism_summary": "string (brief quote from Critic feedback)",
+            "action_taken": "string (what structural change was made)",
+            "entities_moved": ["list of entity names affected"],
+            "verification": "string (how to verify the fix is correct)",
+        }
+    ],
     "file_intent": "string (1-4 lines: system role + domain + contract)",
     "responsibility_blocks": [
         {
@@ -675,12 +684,308 @@ Record reasoning in `metadata.notes`: `artifact=<noun>, change_driver=<phrase>` 
 
 ---
 
-## CRITIC FEEDBACK LOOP
+## ENTITY PRESERVATION RULES (MANDATORY)
 
-The Critic will evaluate your hypothesis. If confidence is low:
-- You'll receive specific feedback (e.g., "Block X mixes two artifacts")
-- You'll receive tool call results (source code excerpts)
-- Revise hypothesis based on feedback + evidence
+When restructuring blocks (split, merge, move), you MUST preserve all entities from signature_graph.
+
+### Partition Rule (Splitting Blocks)
+
+When splitting a block into multiple blocks:
+- Parent block: { entities: [E1, E2, E3, E4] }
+- Child blocks MUST contain ALL parent entities
+- Valid: Child1=[E1, E2], Child2=[E3, E4]
+- FORBIDDEN: Child1=[E1, E2], Child2=[E3] (E4 orphaned)
+
+### Union Rule (Merging Blocks)
+
+When merging multiple blocks into one:
+- Parent blocks: A={ entities: [E1, E2] }, B={ entities: [E3, E4] }
+- Merged block MUST contain ALL parent entities
+- Valid: Merged=[E1, E2, E3, E4]
+- FORBIDDEN: Merged=[E1, E2, E3] (E4 lost)
+
+### Coverage Invariant
+
+**CRITICAL**: Total entities across all blocks MUST equal signature_graph entity count at ALL times.
+- If signature_graph has 42 entities, responsibility_blocks must account for all 42
+- No entity may appear twice (violation: scatter)
+- No entity may be missing (violation: coverage failure)
+
+### Worked Example: Splitting Block
+
+**Before Split:**
+```json
+{
+  "title": "Model Loading and Initialization",
+  "entities": ["loadHumanAndWheelchairModels", "checkAllModelsLoaded", "init", "loadHumanModel", "loadWheelchairModel"]
+}
+```
+
+**After Split (CORRECT):**
+```json
+[
+  {
+    "title": "Model Loading",
+    "entities": ["loadHumanAndWheelchairModels", "loadHumanModel", "loadWheelchairModel", "checkAllModelsLoaded"]
+  },
+  {
+    "title": "Scene Management and Rendering",
+    "entities": ["init"]
+  }
+]
+```
+
+**After Split (FORBIDDEN):**
+```json
+[
+  {
+    "title": "Model Loading",
+    "entities": ["loadHumanModel", "loadWheelchairModel"]
+  },
+  {
+    "title": "Scene Management and Rendering",
+    "entities": ["init"]
+  }
+]
+// VIOLATION: "loadHumanAndWheelchairModels" and "checkAllModelsLoaded" are orphaned
+```
+
+### Verification Checklist (Before Finalizing Hypothesis)
+
+Before outputting your hypothesis, verify:
+- [ ] All entities from signature_graph appear in responsibility_blocks
+- [ ] No entity appears in multiple blocks
+- [ ] Entity count matches: len(all_block_entities) == len(signature_graph_entities)
+- [ ] If splitting, parent entities = sum of child entities
+- [ ] If merging, child entities = sum of parent entities
+
+---
+
+## COVERAGE VALIDATION (MANDATORY)
+
+Before outputting your hypothesis, you MUST validate entity coverage.
+
+### Validation Procedure
+
+**Step 1: Count Entities**
+- Extract all entities from your responsibility_blocks
+- Count total: N_blocks
+- Count signature_graph entities: N_signature
+
+**Step 2: Compare Counts**
+- If N_blocks != N_signature → COVERAGE FAILURE
+- If N_blocks == N_signature → Proceed to Step 3
+
+**Step 3: Check for Missing Entities**
+- For each entity in signature_graph:
+  - Is it in responsibility_blocks?
+  - If not → Add to missing_entities list
+
+**Step 4: Check for Duplicate Entities**
+- For each entity in responsibility_blocks:
+  - Does it appear in multiple blocks?
+  - If yes → Add to duplicate_entities list
+
+**Step 5: Validation Result**
+- If missing_entities is empty AND duplicate_entities is empty → PASS
+- Otherwise → FAIL
+
+### Failure Protocol
+
+If validation FAILS:
+1. DO NOT output the hypothesis
+2. Identify which block restructuring caused the issue
+3. Revise block entities to restore coverage
+4. Re-run validation until PASS
+
+### Example Validation Output (Internal - Not in JSON)
+
+```
+COVERAGE VALIDATION:
+Signature graph entities: 42
+Responsibility block entities: 42
+Missing: []
+Duplicates: []
+Status: PASS ✓
+```
+
+### Example Validation Failure
+
+```
+COVERAGE VALIDATION:
+Signature graph entities: 42
+Responsibility block entities: 37
+Missing: [calculateOptimalSeatWidth, calculateOptimalBackHeight, measureBackGap, measureThighCushionOverlap, measureCalfCushionOverlap]
+Duplicates: []
+Status: FAIL ✗
+
+ACTION: Revising block 'Wheelchair Parameter Management' to include missing entities...
+```
+
+### Integration with Revision Workflow
+
+When revising hypothesis (iteration > 0):
+1. Parse REQUIRED CHANGES
+2. Apply block restructuring (split/merge/move)
+3. **Run COVERAGE VALIDATION** ← NEW STEP
+4. If validation fails, fix and re-validate
+5. Fill response_to_feedback
+6. Output hypothesis
+
+---
+
+## REVISION WORKFLOW
+
+### Initial Hypothesis (iteration = 0)
+Generate your first hypothesis from the signature graph alone.
+
+**Output:** Include empty `response_to_feedback` array:
+```json
+{
+  "response_to_feedback": [],
+  "file_intent": "...",
+  "responsibility_blocks": [...]
+}
+```
+
+### Revision (with Critic feedback, iteration > 0)
+
+When receiving feedback from the Critic:
+
+#### Step 1: Parse REQUIRED CHANGES
+Read each numbered item in the Critic's feedback carefully.
+
+#### Step 2: Respond to Each Criticism
+Fill the `response_to_feedback` array with one entry per REQUIRED CHANGE:
+- State exactly what you changed
+- List entities moved/renamed
+- Explain how the change satisfies the criticism
+
+#### Step 3: Apply Structural Fixes
+Make actual changes to your responsibility blocks:
+- Split over-collapsed blocks (create new block) - **Apply ENTITY PRESERVATION RULES**
+- Merge scattered entities (remove a block) - **Apply ENTITY PRESERVATION RULES**
+- Move entities between blocks - **Apply ENTITY PRESERVATION RULES**
+- Rewrite file intent (if required)
+- Reorder blocks (if required)
+
+#### Step 4: Run Coverage Validation
+After applying changes, **run COVERAGE VALIDATION before responding**:
+- Count all entities in your responsibility_blocks
+- Compare to signature_graph entity count
+- Identify missing or duplicate entities
+- If validation fails, revise blocks to fix coverage before proceeding
+
+#### Step 5: Verify Alignment
+Check that your `response_to_feedback` entries match the actual changes in your `responsibility_blocks`.
+
+### CRITICAL RULES
+
+**Response Completeness:**
+- If feedback has N REQUIRED CHANGES → response_to_feedback MUST have N entries
+- If you cannot address a criticism, state: `"action_taken": "Unable to address: [reason]"`
+- Empty or generic responses will be rejected by the Critic
+
+**Structural Change Mandate:**
+- If confidence < 0.7, you MUST make at least ONE structural change:
+  1. Split an over-collapsed block (create new block)
+  2. Merge scattered entities (remove a block)  
+  3. Move entities between blocks (restructure)
+  4. Rewrite file intent (if major issue)
+  5. Reorder blocks (if orchestration not first)
+
+**FORBIDDEN:** Only adding reasoning notes without block changes.
+
+### Example Response Format
+
+```json
+{
+  "response_to_feedback": [
+    {
+      "criticism_number": 1,
+      "criticism_summary": "Block 'User Interface Refresh' mixes orchestration with UI updates",
+      "action_taken": "Split into two blocks: 'Model Loading Orchestration' (loadHumanAndWheelchairModels, checkAllModelsLoaded) and 'GUI Parameter Synchronization' (refreshGUIWheelchairParams)",
+      "entities_moved": ["loadHumanAndWheelchairModels", "checkAllModelsLoaded"],
+      "verification": "New block 'Model Loading Orchestration' contains only model loading functions; 'GUI Parameter Synchronization' contains only GUI update function"
+    },
+    {
+      "criticism_number": 2,
+      "criticism_summary": "File intent uses banned verb 'Manages'",
+      "action_taken": "Rewrote file intent to: 'Wheelchair-human integration orchestrator coordinating model loading, parameter calculation, and ergonomic alignment'",
+      "entities_moved": [],
+      "verification": "File intent now uses 'orchestrator' (system role) with contract focus"
+    }
+  ],
+  "file_intent": "Wheelchair-human integration orchestrator coordinating model loading, parameter calculation, and ergonomic alignment.",
+  "responsibility_blocks": [
+    {
+      "title": "Model Loading Orchestration",
+      "description": "Coordinates asynchronous loading of human and wheelchair 3D models, tracking completion state.",
+      "entities": ["loadHumanAndWheelchairModels", "checkAllModelsLoaded"]
+    },
+    {
+      "title": "GUI Parameter Synchronization",
+      "description": "Updates wheelchair parameter display when model geometry changes.",
+      "entities": ["refreshGUIWheelchairParams"]
+    }
+  ]
+}
+```
+
+---
+
+## REVISION MANDATE
+
+When revising hypothesis (iteration > 0 and confidence < 0.7):
+
+### Required Actions
+
+You MUST perform at least ONE of these structural changes:
+
+**1. Split Over-Collapsed Block**
+- Create NEW block with subset of entities
+- Update BOTH block descriptions
+- Example: "User Interface Refresh" → "Model Loading Orchestration" + "GUI Parameter Sync"
+
+**2. Merge Scattered Entities**  
+- REMOVE one block by merging into another
+- Update target block description
+- Example: Merge "Update Human Geometry" into "Human Model Management"
+
+**3. Move Entities Between Blocks**
+- Relocate at least 2 entities
+- Update BOTH blocks' entity lists and descriptions
+- Example: Move orchestration functions to existing orchestration block
+
+**4. Rewrite File Intent**
+- If file intent is a REQUIRED CHANGE
+- Must change system role or contract framing
+- Example: "Manages..." → "Orchestrator coordinating..."
+
+**5. Reorder Blocks**
+- If ordering is a REQUIRED CHANGE
+- Must change block positions (not just renumber)
+- Example: Move orchestration block from position 5 to position 1
+
+### Forbidden: Cosmetic-Only Changes
+
+❌ **INVALID revision:**
+- Only add `reasoning` field
+- Only change wording in descriptions without entity movement
+- Only rename blocks without restructuring
+
+✓ **VALID revision** must include at least ONE of actions 1-5 above.
+
+### Verification
+
+Before finalizing:
+1. Check: Did I create, remove, or significantly restructure a block?
+2. Check: Can I point to specific entity movements in response_to_feedback?
+3. Check: Would a developer see structural differences comparing old vs new blocks?
+
+If all answers are NO → revision is invalid.
+
+---
 
 **Trust the signature graph first.** Implementation details can mislead.
 
@@ -709,7 +1014,7 @@ Your task: Evaluate proposed responsibility blocks for structural quality AND en
 - **confidence**: 0.0 to 1.0 (quality score)
 - **comments**: Structured feedback with THREE sections (see FEEDBACK FORMAT below)
 - **tool_suggestions**: List of tool calls Analyzer should execute (if evidence is insufficient)
-- **approved**: true if confidence >= 0.85, false otherwise
+- **approved**: true if confidence >= 0.7, false otherwise
 
 ## EVALUATION PRINCIPLES
 
@@ -759,15 +1064,176 @@ If entity has zero domain signal → suggest `refer_to_source_code` tool call.
 
 ## CONFIDENCE SCORING
 
-- **0.9-1.0**: Full coverage, clear separation, accurate labels
-- **0.8-0.89**: Full coverage, minor issues (label wording, small misplacement)
-- **0.7-0.79**: Full coverage, one or two blocks need restructuring
-- **0.5-0.69**: Full coverage but significant structural issues
-- **0.0-0.49**: Missing entities OR multiple blocks incorrect
+### Issue Classification
 
-**HARD RULE:** If ANY entities are missing from hypothesis, confidence ≤ 0.5
+**Major Issues** (heavily penalized):
+- Over-collapsed blocks (multiple artifacts/change-drivers mixed)
+- Orchestration not separated from domain logic
+- Under-grouped scattered entities
+- Missing entities (coverage incomplete)
+- Multiple domain nouns in one block label
 
-**Approval threshold: 0.85**
+**Minor Issues** (lightly penalized):
+- File intent uses banned verb
+- Block ordering suboptimal
+- Label wording could be more specific
+- Description clarity improvements
+
+### Scoring Formula
+
+**Step 1: Check Coverage**
+- If `coverage_complete = false`: max confidence = 0.4
+
+**Step 2: Count Issues and Calculate**
+```
+Base score = 1.0
+- Major issue: -0.15 each
+- Minor issue: -0.05 each
+
+Final confidence = max(0.1, Base score)
+```
+
+**Step 3: Apply Thresholds**
+- 3+ major issues: cap at 0.5
+- 2 major issues: cap at 0.65
+- 1 major issue: cap at 0.80
+
+### Confidence Ranges
+
+| Range | Interpretation | Typical Issues |
+|-------|---------------|----------------|
+| 0.90-1.0 | Exceptional | None or cosmetic |
+| 0.85-0.89 | Approved | 1-2 minor issues |
+| 0.75-0.84 | Near approval | 3-4 minor issues |
+| 0.65-0.74 | Needs work | 1 major + minor issues |
+| 0.50-0.64 | Significant issues | 2 major issues |
+| 0.30-0.49 | Major rework | 3+ major issues |
+| 0.10-0.29 | Fundamental problems | Missing entities + structural chaos |
+
+**HARD RULE:** If ANY entities are missing from hypothesis, coverage_complete = false, confidence ≤ 0.4
+
+**Approval threshold: 0.7**
+
+### Progress Regression Penalty
+
+When evaluating iteration > 0:
+
+**Check for Regression:**
+- Compare current `major_issues_count` with previous iteration's count
+- If current >= previous → No improvement or regression detected
+
+**Apply Penalty:**
+- If major_issues_count regression detected: confidence -= 0.10 (additional penalty)
+- Rationale: System should improve or maintain quality, not regress
+
+**Example:**
+- Iteration 1: major_issues_count = 2, confidence = 0.70
+- Iteration 2: major_issues_count = 2 (no improvement)
+  - Base calculation: 1.0 - 0.15×2 = 0.70
+  - Regression penalty: 0.70 - 0.10 = 0.60
+  - Final confidence: 0.60
+
+**Note:** This penalty only applies if major issue count doesn't decrease. Minor fluctuations in confidence due to different issue types are expected.
+
+### Output Requirements
+
+You MUST include these fields in your response:
+```json
+{
+  "coverage_complete": true,
+  "major_issues_count": 1,
+  "minor_issues_count": 2,
+  "confidence": 0.70,
+  "confidence_reasoning": "Coverage complete. 1 major issue: 'User Interface Refresh' mixes orchestration with UI (over-collapsed). 2 minor issues: file intent banned verb, suboptimal ordering. Score: 1.0 - 0.15 (major) - 0.10 (2 minor) = 0.75, capped at 0.70 due to 1 major issue.",
+  "comments": "...",
+  "tool_suggestions": [],
+  "approved": false
+}
+```
+
+## RESPONSE VERIFICATION (MANDATORY FOR ITERATIONS > 0)
+
+When evaluating a revised hypothesis (iteration > 0), you MUST verify response_to_feedback accuracy.
+
+### Verification Checklist
+
+For each entry in response_to_feedback:
+
+**Check 1: Entities Moved Verification**
+- [ ] `entities_moved` list is non-empty (unless action is "no entity movement")
+- [ ] ALL entities in `entities_moved` appear in responsibility_blocks
+- [ ] Entities appear in blocks mentioned in `action_taken`
+
+**Check 2: Action Taken Verification**
+- [ ] `action_taken` describes a structural change (split/merge/move/rewrite/reorder)
+- [ ] Block structure changed matches claimed action
+- [ ] If "split block X", verify X no longer exists OR X has fewer entities
+- [ ] If "created new block Y", verify Y exists in responsibility_blocks
+
+**Check 3: Verification Statement Accuracy**
+- [ ] `verification` statement can be confirmed by inspecting blocks
+- [ ] Claims like "all entities preserved" are true
+- [ ] Claims like "block now contains only X" are accurate
+
+### Verification Failure Protocol
+
+If ANY check fails:
+1. Set `response_verification_passed = false`
+2. Reduce confidence by 0.15 (response accuracy penalty)
+3. Add to REQUIRED CHANGES:
+   ```
+   Response verification failed: [specific mismatch]
+   Example: "Claimed to move [E1, E2] to block 'Target' but E1 not found in Target's entity list"
+   ```
+
+### Verification Success
+
+If ALL checks pass:
+- Set `response_verification_passed = true`
+- Proceed with normal confidence calculation
+
+### Worked Example: Verification Process
+
+**Analyzer's response_to_feedback entry:**
+```json
+{
+  "criticism_number": 1,
+  "criticism_summary": "Block 'Model Loading and Initialization' violates single-responsibility",
+  "action_taken": "Split into two blocks: 'Model Loading' and 'Scene Management'",
+  "entities_moved": ["loadHumanAndWheelchairModels", "loadHumanModel", "loadWheelchairModel", "checkAllModelsLoaded"],
+  "verification": "New block 'Model Loading' contains only model loading functions"
+}
+```
+
+**Critic verification steps:**
+1. Check: Does block 'Model Loading' exist? → YES ✓
+2. Check: Does 'Model Loading' contain loadHumanAndWheelchairModels? → YES ✓
+3. Check: Does 'Model Loading' contain loadHumanModel? → YES ✓
+4. Check: Does 'Model Loading' contain loadWheelchairModel? → YES ✓
+5. Check: Does 'Model Loading' contain checkAllModelsLoaded? → YES ✓
+6. Check: Does original block 'Model Loading and Initialization' still exist with same entities? → NO ✓
+
+**Result:** response_verification_passed = true
+
+### Worked Example: Verification Failure
+
+**Analyzer's response_to_feedback entry:**
+```json
+{
+  "criticism_number": 1,
+  "action_taken": "Split into 'Model Loading' and 'Scene Management'",
+  "entities_moved": ["loadHumanAndWheelchairModels", "loadHumanModel", "loadWheelchairModel", "checkAllModelsLoaded"],
+  "verification": "All entities preserved in child blocks"
+}
+```
+
+**Critic verification steps:**
+1. Check: Does 'Model Loading' contain checkAllModelsLoaded? → NO ✗
+
+**Result:** 
+- response_verification_passed = false
+- Confidence penalty: -0.15
+- Add REQUIRED CHANGE: "Response verification failed: Claimed to move 'checkAllModelsLoaded' but entity not found in 'Model Loading' block"
 
 ## FEEDBACK FORMAT (MANDATORY STRUCTURE)
 
@@ -817,24 +1283,168 @@ KEEP UNCHANGED:
 
 **Why this matters:** Each REQUIRED CHANGE must be concrete and actionable. Vague feedback like "Split this block" without specifying which entities go where will not help the Analyzer improve.
 
+## CONCRETE FIX SPECIFICATION
+
+Every issue in REQUIRED CHANGES must include:
+1. **Current state**: What entities/structure exist now
+2. **Violation**: What principle/rule is broken
+3. **Target state**: Exact entities and block names after fix
+
+### Fix Templates
+
+**For Block Splits:**
+```
+Block '[CurrentName]' violates [principle].
+
+CURRENT ENTITIES: [list all]
+
+REQUIRED SPLIT:
+Block '[NewName1]': [entity1, entity2, ...]
+Block '[NewName2]': [entity3, entity4, ...]
+
+RATIONALE: [why this grouping is correct]
+```
+
+**For Block Merges:**
+```
+Blocks '[Block1]' and '[Block2]' belong together (scatter violation).
+
+REQUIRED MERGE:
+Block '[MergedName]': [all entities from both blocks]
+
+RATIONALE: [shared domain/change-driver]
+```
+
+**For File Intent:**
+```
+File intent uses banned verb '[verb]'.
+
+CURRENT: "[current file intent]"
+SUGGESTED: "[rewritten file intent with system role + domain + contract]"
+```
+
+**For Ordering:**
+```
+Block '[BlockName]' is orchestration but not listed first.
+
+REQUIRED ORDER:
+1. [BlockName] (orchestration)
+2. [CoreBlock1]
+3. [CoreBlock2]
+...
+```
+
+**For Missing/Misplaced Entities:**
+```
+Entities [entity1, entity2] are missing from hypothesis but present in signature_graph.
+
+REQUIRED ACTION:
+Add to block '[TargetBlockName]': [entity1, entity2]
+
+RATIONALE: [why they belong in that block]
+```
+
+### Anti-Pattern: Vague Feedback (FORBIDDEN)
+
+❌ **INVALID** - Too vague:
+- "Block X has issues. Split it."
+- "File intent needs improvement."
+- "Some entities are in wrong blocks."
+- "Split this block into separate responsibilities."
+
+✓ **VALID** - Concrete and actionable:
+- Must specify: WHAT entities + WHERE they go + WHY
+- Must provide exact block names (new or existing)
+- Must list all affected entities explicitly
+- Must explain the structural rationale
+
+### Confidence Penalty for Vague Feedback
+
+If you provide feedback that:
+- Suggests "split this block" without specifying target blocks and entity lists
+- States "move entities" without naming which entities go where
+- Recommends "improve file intent" without suggesting rewritten text
+- Lists problems without concrete fix instructions
+
+Then reduce your confidence score by 0.15 per vague item (self-penalty for unclear guidance).
+
+**Example of scoring adjustment:**
+- Base score: 0.75 (one structural issue)
+- Found vague feedback in own comments: -0.15
+- Final confidence: 0.60
+
+This ensures you provide actionable feedback that the Analyzer can execute directly.
+
+## REVISION VALIDATION (iteration > 0)
+
+When evaluating a revised hypothesis, verify the Analyzer actually addressed your previous feedback:
+
+### Check Response Accountability
+
+1. **Count Check**: Does `response_to_feedback` have N entries for N REQUIRED CHANGES from the previous iteration?
+2. **Specificity Check**: Does each response include specific entity names moved?
+3. **Alignment Check**: Do the actual `responsibility_blocks` reflect the claimed changes?
+
+### Detect Cosmetic-Only Changes
+
+Compare current hypothesis to previous iteration:
+- **Block count changed?** (+1 for split, -1 for merge)
+- **Entity distributions changed?** (compare entity lists)
+- **File intent rewritten?** (not just word substitution)
+- **Blocks reordered?** (position changes, especially orchestration)
+
+### Apply Penalties
+
+**No Structural Changes:**
+If previous confidence was < 0.7 AND no structural changes detected:
+- Set confidence = previous_confidence - 0.10 (penalty)
+- Add to REQUIRED CHANGES: "No structural changes detected in revision. Must split, merge, or move entities per previous feedback."
+
+**Response Quality Issues:**
+- Generic/boilerplate responses without entity specifics: -0.05 confidence
+- Claimed entity movements don't match actual block changes: -0.05 confidence
+- Missing response entries (fewer than required changes): -0.10 confidence
+
+**Example:**
+```
+Previous iteration:
+- Confidence: 0.65
+- Required 2 changes: (1) split block X, (2) fix file intent
+
+Current iteration:
+- response_to_feedback has 2 entries ✓
+- Block count unchanged (5 → 5) ✗
+- File intent changed ✓
+- Entity lists identical ✗
+
+Assessment: Only cosmetic change (file intent rewrite). Block split not executed.
+New confidence: 0.65 - 0.10 (no structural) = 0.55
+```
+
 ## WORKFLOW
 
-1. **Coverage audit**: Compare signature_graph entities vs hypothesis entities. List any gaps.
-2. **Structural scan**: Check each block for over-collapsing, under-grouping
-3. **Intent check**: Verify file_intent is contract-focused
-4. **Evidence check**: Identify entities needing tool calls
-5. **Write feedback**: Use REQUIRED CHANGES / KEEP UNCHANGED format
+1. **Revision check** (if iteration > 0): Validate response_to_feedback alignment with actual changes
+2. **Coverage audit**: Compare signature_graph entities vs hypothesis entities. List any gaps.
+3. **Structural scan**: Check each block for over-collapsing, under-grouping
+4. **Intent check**: Verify file_intent is contract-focused
+5. **Evidence check**: Identify entities needing tool calls
+6. **Write feedback**: Use REQUIRED CHANGES / KEEP UNCHANGED format
    - Each REQUIRED CHANGE must specify: problem + concrete fix + affected entities
    - KEEP UNCHANGED should only list blocks near problem areas
-6. **Score**: If missing entities → max 0.5. Otherwise score structural quality.
+7. **Score**: If missing entities → max 0.5. Apply revision penalties if applicable. Otherwise score structural quality.
 
 Return JSON only. No markdown fences.
 """
 
 
 CRITIC_OUTPUT_SCHEMA: Dict[str, Any] = {
-    "confidence": "number (0.0 to 1.0)",
-    "comments": "string (specific, actionable feedback)",
+    "coverage_complete": "boolean (all entities from signature_graph accounted for)",
+    "major_issues_count": "number (count of major structural issues)",
+    "minor_issues_count": "number (count of minor issues)",
+    "confidence": "number (0.0 to 1.0, calculated using scoring formula)",
+    "confidence_reasoning": "string (explain score calculation: coverage + issues + formula + caps)",
+    "response_verification_passed": "boolean or null (true if iteration > 0 and response_to_feedback verified, false if verification failed, null if iteration 0)",
+    "comments": "string (specific, actionable feedback in REQUIRED CHANGES / KEEP UNCHANGED format)",
     "tool_suggestions": [
         {
             "tool_name": "string (e.g., 'refer_to_source_code')",
@@ -842,7 +1452,7 @@ CRITIC_OUTPUT_SCHEMA: Dict[str, Any] = {
             "rationale": "string (why this tool call is needed)",
         }
     ],
-    "approved": "boolean (true if confidence >= 0.85)",
+    "approved": "boolean (true if confidence >= 0.7)",
 }
 
 

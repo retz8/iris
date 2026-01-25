@@ -35,7 +35,7 @@ class Orchestrator:
     """
 
     # Default configuration
-    DEFAULT_CONFIDENCE_THRESHOLD = 0.85
+    DEFAULT_CONFIDENCE_THRESHOLD = 0.7
     DEFAULT_MAX_ITERATIONS = 3
 
     def __init__(
@@ -90,6 +90,12 @@ class Orchestrator:
         # Track metadata for debugging
         iteration_history: List[Dict[str, Any]] = []
         total_tool_calls = 0
+
+        # TASK-FIX2-017: Track confidence history for progress detection
+        confidence_history: List[float] = []
+        stall_counter = 0
+        MAX_STALL_ITERATIONS = 2
+        MIN_PROGRESS_THRESHOLD = 0.10
 
         print(f"[ORCHESTRATOR] Starting Analyzer-Critic loop for {filename}")
         print(f"  - Confidence threshold: {self.confidence_threshold}")
@@ -158,7 +164,7 @@ class Orchestrator:
                 self.debugger.log_agent_iteration(
                     iteration=current_iteration,
                     agent="critic",
-                    feedback=feedback.comments,
+                    feedback=feedback.comments,  # type: ignore
                     confidence=feedback.confidence,
                     approved=feedback.approved,
                     tool_suggestions=[
@@ -184,6 +190,63 @@ class Orchestrator:
                     ),
                 }
             )
+
+            # TASK-FIX2-017: Track confidence for progress detection
+            current_confidence = feedback.confidence
+            confidence_history.append(current_confidence)
+
+            # TASK-FIX2-018: Calculate confidence delta between iterations
+            confidence_delta = None
+            if len(confidence_history) >= 2:
+                confidence_delta = abs(confidence_history[-1] - confidence_history[-2])
+
+                # TASK-FIX2-019: Stall detection
+                if confidence_delta < MIN_PROGRESS_THRESHOLD:
+                    stall_counter += 1
+                    print(
+                        f"  - Progress stall detected ({stall_counter}/{MAX_STALL_ITERATIONS}): delta={confidence_delta:.3f}"
+                    )
+                else:
+                    stall_counter = 0  # Reset if progress detected
+
+                # TASK-FIX2-020: Early termination on stall
+                if stall_counter >= MAX_STALL_ITERATIONS:
+                    print(
+                        f"\n[ORCHESTRATOR] Early termination: Confidence stalled for {MAX_STALL_ITERATIONS} iterations"
+                    )
+                    print(
+                        f"  - Confidence deltas below threshold ({MIN_PROGRESS_THRESHOLD})"
+                    )
+                    print(f"  - Final confidence: {current_confidence:.2f}")
+
+                    result = AnalysisResult(
+                        file_intent=hypothesis.file_intent,
+                        responsibility_blocks=hypothesis.responsibility_blocks,
+                        metadata={
+                            "execution_path": "two-agent",
+                            "iterations": current_iteration + 1,
+                            "final_confidence": current_confidence,
+                            "approved": False,
+                            "exit_reason": "insufficient_progress",
+                            "stall_reason": f"Confidence stalled for {MAX_STALL_ITERATIONS} iterations (delta < {MIN_PROGRESS_THRESHOLD})",
+                            "tool_call_count": total_tool_calls,
+                            "iteration_history": iteration_history,
+                            "confidence_threshold": self.confidence_threshold,
+                            "max_iterations": self.max_iterations,
+                            "confidence_history": confidence_history,
+                            "stall_counter": stall_counter,
+                        },
+                    )
+
+                    # Log final metadata to debugger for progress metrics
+                    if self.debugger:
+                        self.debugger.log_agent_iteration(
+                            iteration=current_iteration,
+                            agent="orchestrator",
+                            metadata=result.metadata,
+                        )
+
+                    return result
 
             # =====================================================================
             # Exit Condition 1: Confidence threshold met (approved)
@@ -291,6 +354,8 @@ class Orchestrator:
                 "iteration_history": iteration_history,
                 "confidence_threshold": self.confidence_threshold,
                 "max_iterations": self.max_iterations,
+                "confidence_history": confidence_history,
+                "stall_counter": stall_counter,
             },
         )
 
@@ -298,5 +363,13 @@ class Orchestrator:
         print(f"  - Total iterations: {current_iteration + 1}")
         print(f"  - Total tool calls: {total_tool_calls}")
         print(f"  - Final responsibility blocks: {len(result.responsibility_blocks)}")
+
+        # Log final metadata to debugger for progress metrics
+        if self.debugger:
+            self.debugger.log_agent_iteration(
+                iteration=current_iteration,
+                agent="orchestrator",
+                metadata=result.metadata,
+            )
 
         return result

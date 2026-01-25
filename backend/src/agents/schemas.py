@@ -63,12 +63,20 @@ class Feedback:
         comments: Specific, actionable feedback on the hypothesis
         tool_suggestions: Optional list of tools Analyzer should call for clarification
         approved: Whether the hypothesis meets quality threshold
+        coverage_complete: Whether all entities are accounted for
+        major_issues_count: Count of major structural issues
+        minor_issues_count: Count of minor issues
+        confidence_reasoning: Explanation of confidence calculation
     """
 
     confidence: float  # 0.0 to 1.0
     comments: str
     tool_suggestions: List[ToolSuggestion] = field(default_factory=list)
     approved: bool = False
+    coverage_complete: bool = True
+    major_issues_count: int = 0
+    minor_issues_count: int = 0
+    confidence_reasoning: str = ""
 
     def __post_init__(self) -> None:
         """Validate confidence is in valid range."""

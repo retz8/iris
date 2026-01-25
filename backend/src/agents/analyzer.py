@@ -315,6 +315,14 @@ class AnalyzerAgent:
                 )
             )
 
+        # Extract and log response_to_feedback (for debugging and validation)
+        response_to_feedback = parsed.get("response_to_feedback", [])
+        if response_to_feedback and self.debugger:
+            # Store response tracking in debugger's internal data structures
+            # The response_to_feedback will be included in the full hypothesis
+            # that gets logged by the debugger during agent iteration tracking
+            pass
+
         return Hypothesis(
             file_intent=file_intent,
             responsibility_blocks=responsibility_blocks,

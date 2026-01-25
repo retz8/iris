@@ -158,6 +158,7 @@ class AgentFlowDebugger:
         confidence: Optional[float] = None,
         approved: Optional[bool] = None,
         tool_suggestions: Optional[List[Dict[str, Any]]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Log an iteration of the Analyzer-Critic loop.
 
@@ -172,6 +173,7 @@ class AgentFlowDebugger:
             confidence: Confidence score from Critic (0.0 to 1.0)
             approved: Whether the Critic approved the hypothesis
             tool_suggestions: Tool calls suggested by Critic
+            metadata: Additional metadata (e.g., exit_reason, stall_counter)
         """
         self._current_iteration = iteration
 
@@ -208,6 +210,9 @@ class AgentFlowDebugger:
         if tool_suggestions is not None:
             iteration_data["tool_suggestions"] = tool_suggestions
 
+        if metadata is not None:
+            iteration_data["metadata"] = metadata
+
         self.agent_iterations.append(iteration_data)
 
     def get_two_agent_summary(self) -> Dict[str, Any]:
@@ -215,7 +220,7 @@ class AgentFlowDebugger:
 
         Returns:
             Dictionary with iteration count, total tool calls, final confidence,
-            and per-iteration summaries.
+            and per-iteration summaries including progress metrics.
         """
         if not self.agent_iterations:
             return {"enabled": False}
@@ -243,6 +248,34 @@ class AgentFlowDebugger:
                 tool_calls_by_iteration.get(iteration, 0) + 1
             )
 
+        # TASK-FIX2-022: Extract confidence history and progress metrics
+        confidence_history: List[float] = []
+        for iteration_data in self.agent_iterations:
+            if iteration_data.get("agent") == "critic":
+                conf = iteration_data.get("confidence")
+                if conf is not None:
+                    confidence_history.append(conf)
+
+        # Detect stall and early termination from metadata
+        stall_detected = False
+        early_termination = False
+        exit_reason = None
+
+        # Check if we can extract this from the last analyzer's metadata
+        # (This would be passed from orchestrator if available)
+        for iteration_data in reversed(self.agent_iterations):
+            metadata = iteration_data.get("metadata", {})
+            if metadata:
+                exit_reason = metadata.get("exit_reason")
+                stall_counter = metadata.get("stall_counter", 0)
+                if exit_reason == "insufficient_progress":
+                    early_termination = True
+                    stall_detected = True
+                elif stall_counter > 0:
+                    stall_detected = True
+                if exit_reason:
+                    break
+
         return {
             "enabled": True,
             "total_iterations": analyzer_count,
@@ -255,6 +288,10 @@ class AgentFlowDebugger:
             "total_tool_calls": len(self.tool_calls),
             "tool_calls_by_iteration": tool_calls_by_iteration,
             "iterations": self.agent_iterations,
+            "confidence_history": confidence_history,
+            "stall_detected": stall_detected,
+            "early_termination": early_termination,
+            "exit_reason": exit_reason,
         }
 
     def get_report(self) -> Dict[str, Any]:
@@ -393,6 +430,59 @@ class AgentFlowDebugger:
                     "",
                 ]
             )
+
+            # TASK-FIX2-022: Add Progress Metrics section
+            confidence_history = two_agent_summary.get("confidence_history", [])
+            if len(confidence_history) >= 2:
+                # Calculate confidence deltas
+                deltas = []
+                for i in range(1, len(confidence_history)):
+                    delta = confidence_history[i] - confidence_history[i - 1]
+                    deltas.append(delta)
+
+                avg_delta = sum(abs(d) for d in deltas) / len(deltas) if deltas else 0
+                stall_detected = two_agent_summary.get("stall_detected", False)
+                early_termination = two_agent_summary.get("early_termination", False)
+
+                md_lines.extend(
+                    [
+                        "### Progress Metrics",
+                        "",
+                        "| Metric | Value |",
+                        "|--------|-------|",
+                    ]
+                )
+
+                # Add confidence delta for each iteration transition
+                for i, delta in enumerate(deltas):
+                    sign = "+" if delta >= 0 else ""
+                    md_lines.append(
+                        f"| Confidence Delta (Iter {i}→{i+1}) | {sign}{delta:.2f} |"
+                    )
+
+                md_lines.extend(
+                    [
+                        f"| Average Delta | {avg_delta:.3f} |",
+                        f"| Stall Detected | {'Yes ⚠️' if stall_detected else 'No'} |",
+                        f"| Early Termination | {'Yes' if early_termination else 'No'} |",
+                        "",
+                    ]
+                )
+
+            # Show exit reason if available
+            exit_reason = two_agent_summary.get("exit_reason")
+            if exit_reason:
+                exit_emoji = (
+                    "✅"
+                    if exit_reason == "approved"
+                    else "⏹️" if exit_reason == "insufficient_progress" else "🔄"
+                )
+                md_lines.extend(
+                    [
+                        f"**Exit Reason:** {exit_emoji} `{exit_reason}`",
+                        "",
+                    ]
+                )
 
         md_lines.extend(
             [

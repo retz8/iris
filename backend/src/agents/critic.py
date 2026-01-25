@@ -30,7 +30,7 @@ class CriticAgent:
     """
 
     # Approval threshold for confidence score
-    CONFIDENCE_THRESHOLD = 0.85
+    CONFIDENCE_THRESHOLD = 0.7
 
     def __init__(
         self,
@@ -154,6 +154,12 @@ class CriticAgent:
         # Extract comments
         comments = parsed.get("comments", "")
 
+        # Extract new graduated scoring fields
+        coverage_complete = bool(parsed.get("coverage_complete", True))
+        major_issues_count = int(parsed.get("major_issues_count", 0))
+        minor_issues_count = int(parsed.get("minor_issues_count", 0))
+        confidence_reasoning = parsed.get("confidence_reasoning", "")
+
         # Extract tool suggestions
         raw_suggestions = parsed.get("tool_suggestions", [])
         tool_suggestions: List[ToolSuggestion] = []
@@ -176,4 +182,8 @@ class CriticAgent:
             comments=comments,
             tool_suggestions=tool_suggestions,
             approved=approved,
+            coverage_complete=coverage_complete,
+            major_issues_count=major_issues_count,
+            minor_issues_count=minor_issues_count,
+            confidence_reasoning=confidence_reasoning,
         )
