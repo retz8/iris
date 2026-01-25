@@ -30,7 +30,7 @@ class CriticAgent:
     """
 
     # Approval threshold for confidence score
-    CONFIDENCE_THRESHOLD = 0.7
+    CONFIDENCE_THRESHOLD = 0.85
 
     def __init__(
         self,

@@ -1,13 +1,13 @@
 {
-  "filename": "machine.py",
+  "filename": "calculator.py",
   "language": "python",
   "signature_graph": {
     "entities": [
       {
         "id": "entity_0",
-        "name": "from typing import Dict, List, Any, Callable, Optional",
+        "name": "from typing import List, Tuple, Optional",
         "type": "import",
-        "signature": "from typing import Dict, List, Any, Callable, Optional",
+        "signature": "from typing import List, Tuple, Optional",
         "line_range": [
           5,
           5
@@ -24,9 +24,9 @@
       },
       {
         "id": "entity_1",
-        "name": "from enum import Enum",
+        "name": "math",
         "type": "import",
-        "signature": "from enum import Enum",
+        "signature": "import math",
         "line_range": [
           6,
           6
@@ -43,41 +43,22 @@
       },
       {
         "id": "entity_2",
-        "name": "State",
+        "name": "Calculator",
         "type": "class",
-        "signature": "class State(Enum)",
+        "signature": "class Calculator",
         "line_range": [
           9,
-          15
-        ],
-        "depth": 0,
-        "scope": "module",
-        "parent_id": null,
-        "children_ids": [],
-        "calls": [],
-        "leading_comment": null,
-        "inline_comment": null,
-        "trailing_comment": null,
-        "docstring": null
-      },
-      {
-        "id": "entity_3",
-        "name": "Manager",
-        "type": "class",
-        "signature": "class Manager",
-        "line_range": [
-          18,
-          189
+          182
         ],
         "depth": 0,
         "scope": "module",
         "parent_id": null,
         "children_ids": [
+          "entity_3",
           "entity_4",
           "entity_5",
           "entity_6",
           "entity_7",
-          "entity_8",
           "entity_9",
           "entity_10"
         ],
@@ -88,17 +69,17 @@
         "docstring": null
       },
       {
-        "id": "entity_4",
+        "id": "entity_3",
         "name": "__init__",
         "type": "function",
         "signature": "def __init__(self)",
         "line_range": [
-          21,
-          24
+          12,
+          14
         ],
         "depth": 1,
         "scope": "class",
-        "parent_id": "entity_3",
+        "parent_id": "entity_2",
         "children_ids": [],
         "calls": [],
         "leading_comment": null,
@@ -107,118 +88,139 @@
         "docstring": null
       },
       {
-        "id": "entity_5",
-        "name": "transition",
+        "id": "entity_4",
+        "name": "compute",
         "type": "function",
-        "signature": "def transition(self, event)",
+        "signature": "def compute(self, a, b, op)",
         "line_range": [
-          26,
-          54
+          16,
+          41
         ],
         "depth": 1,
         "scope": "class",
-        "parent_id": "entity_3",
+        "parent_id": "entity_2",
         "children_ids": [],
         "calls": [],
         "leading_comment": null,
         "inline_comment": null,
-        "trailing_comment": "# DONE -> READY (on 'reset' event)",
-        "docstring": "\"\"\"Handle transition.\"\"\""
+        "trailing_comment": "# 'geometric' (geometric mean), 'distance' (euclidean if a,b are tuples)",
+        "docstring": "\"\"\"Compute values.\"\"\""
+      },
+      {
+        "id": "entity_5",
+        "name": "adjust",
+        "type": "function",
+        "signature": "def adjust(self, values, factor)",
+        "line_range": [
+          43,
+          56
+        ],
+        "depth": 1,
+        "scope": "class",
+        "parent_id": "entity_2",
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "# factor is the smoothing coefficient (alpha)",
+        "docstring": "\"\"\"Adjust values.\"\"\""
       },
       {
         "id": "entity_6",
-        "name": "register",
+        "name": "solve",
         "type": "function",
-        "signature": "def register(self, event, handler)",
+        "signature": "def solve(self, coeffs)",
         "line_range": [
-          56,
-          60
+          58,
+          84
         ],
         "depth": 1,
         "scope": "class",
-        "parent_id": "entity_3",
+        "parent_id": "entity_2",
         "children_ids": [],
         "calls": [],
         "leading_comment": null,
         "inline_comment": null,
-        "trailing_comment": "# handler is called with (old_state, new_state) when transition occurs",
-        "docstring": "\"\"\"Register handler.\"\"\""
+        "trailing_comment": "# Returns tuple of (root1, root2) or (real, None) or (None, None)",
+        "docstring": "\"\"\"Solve equation.\"\"\""
       },
       {
         "id": "entity_7",
-        "name": "check",
+        "name": "optimize",
         "type": "function",
-        "signature": "def check(self, condition)",
+        "signature": "def optimize(self, data, target)",
         "line_range": [
-          62,
-          90
+          86,
+          120
         ],
         "depth": 1,
         "scope": "class",
-        "parent_id": "entity_3",
-        "children_ids": [],
+        "parent_id": "entity_2",
+        "children_ids": [
+          "entity_8"
+        ],
         "calls": [],
         "leading_comment": null,
         "inline_comment": null,
-        "trailing_comment": "# Returns True if current state meets all conditions",
-        "docstring": "\"\"\"Check condition.\"\"\""
+        "trailing_comment": "# Uses dynamic programming approach (subset sum variant)",
+        "docstring": "\"\"\"Optimize data.\"\"\""
       },
       {
         "id": "entity_8",
-        "name": "update",
+        "name": "helper",
         "type": "function",
-        "signature": "def update(self, key, value)",
+        "signature": "def helper(idx, current_sum)",
         "line_range": [
-          92,
-          114
+          94,
+          105
         ],
-        "depth": 1,
-        "scope": "class",
-        "parent_id": "entity_3",
+        "depth": 2,
+        "scope": "function",
+        "parent_id": "entity_7",
         "children_ids": [],
         "calls": [],
         "leading_comment": null,
         "inline_comment": null,
-        "trailing_comment": "# Notify observers if value changed",
-        "docstring": "\"\"\"Update data.\"\"\""
+        "trailing_comment": null,
+        "docstring": null
       },
       {
         "id": "entity_9",
-        "name": "query",
+        "name": "interpolate",
         "type": "function",
-        "signature": "def query(self, pattern)",
+        "signature": "def interpolate(self, points, x)",
         "line_range": [
-          116,
-          151
+          122,
+          146
         ],
         "depth": 1,
         "scope": "class",
-        "parent_id": "entity_3",
+        "parent_id": "entity_2",
         "children_ids": [],
         "calls": [],
-        "leading_comment": null,
+        "leading_comment": "# Reconstruct the solution",
         "inline_comment": null,
-        "trailing_comment": "# Returns list of matching values",
-        "docstring": "\"\"\"Query data.\"\"\""
+        "trailing_comment": "# Returns interpolated y value for given x",
+        "docstring": "\"\"\"Interpolate value.\"\"\""
       },
       {
         "id": "entity_10",
-        "name": "execute",
+        "name": "analyze",
         "type": "function",
-        "signature": "def execute(self, commands)",
+        "signature": "def analyze(self, series)",
         "line_range": [
-          153,
-          189
+          148,
+          182
         ],
         "depth": 1,
         "scope": "class",
-        "parent_id": "entity_3",
+        "parent_id": "entity_2",
         "children_ids": [],
         "calls": [],
         "leading_comment": null,
         "inline_comment": null,
-        "trailing_comment": "# Save checkpoint for rollback",
-        "docstring": "\"\"\"Execute commands.\"\"\""
+        "trailing_comment": "# Calculate volatility",
+        "docstring": "\"\"\"Analyze series.\"\"\""
       }
     ]
   }

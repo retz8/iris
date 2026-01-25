@@ -4,8 +4,8 @@
 
 Validate IRIS's tool-calling behavior and response results (file intent & responsibility blocks)
 
-- **Well-Written Code (0-1 tool calls):** Clear function names, comprehensive JSDoc, descriptive parameters → IRIS should extract File Intent and Responsibility Blocks from signature graph alone
-- **Poorly-Written Code (5-15 tool calls):** Ambiguous names, minimal comments, hidden complexity → IRIS should call `refer_to_source_code()` to understand unclear entities
+- **Well-Written Code (0-1 tool calls):** Clear function names, comprehensive JSDoc, descriptive parameters 
+- **Poorly-Written Code (5-15 tool calls):** Ambiguous names, minimal comments, hidden complexity 
 
 ## Directory Structure
 ```
@@ -28,7 +28,7 @@ backend/
 
 **Note:** Debug report filenames include timestamps (e.g., `sample1_20250125_143022_debug.md`)
 
-## Testing Result
+
 
 ### Observation: Over-Collapsing of Responsibility Blocks
 

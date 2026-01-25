@@ -35,7 +35,7 @@ class Orchestrator:
     """
 
     # Default configuration
-    DEFAULT_CONFIDENCE_THRESHOLD = 0.7
+    DEFAULT_CONFIDENCE_THRESHOLD = 0.85
     DEFAULT_MAX_ITERATIONS = 3
 
     def __init__(
@@ -210,43 +210,43 @@ class Orchestrator:
                     stall_counter = 0  # Reset if progress detected
 
                 # TASK-FIX2-020: Early termination on stall
-                if stall_counter >= MAX_STALL_ITERATIONS:
-                    print(
-                        f"\n[ORCHESTRATOR] Early termination: Confidence stalled for {MAX_STALL_ITERATIONS} iterations"
-                    )
-                    print(
-                        f"  - Confidence deltas below threshold ({MIN_PROGRESS_THRESHOLD})"
-                    )
-                    print(f"  - Final confidence: {current_confidence:.2f}")
+                # if stall_counter >= MAX_STALL_ITERATIONS:
+                #     print(
+                #         f"\n[ORCHESTRATOR] Early termination: Confidence stalled for {MAX_STALL_ITERATIONS} iterations"
+                #     )
+                #     print(
+                #         f"  - Confidence deltas below threshold ({MIN_PROGRESS_THRESHOLD})"
+                #     )
+                #     print(f"  - Final confidence: {current_confidence:.2f}")
 
-                    result = AnalysisResult(
-                        file_intent=hypothesis.file_intent,
-                        responsibility_blocks=hypothesis.responsibility_blocks,
-                        metadata={
-                            "execution_path": "two-agent",
-                            "iterations": current_iteration + 1,
-                            "final_confidence": current_confidence,
-                            "approved": False,
-                            "exit_reason": "insufficient_progress",
-                            "stall_reason": f"Confidence stalled for {MAX_STALL_ITERATIONS} iterations (delta < {MIN_PROGRESS_THRESHOLD})",
-                            "tool_call_count": total_tool_calls,
-                            "iteration_history": iteration_history,
-                            "confidence_threshold": self.confidence_threshold,
-                            "max_iterations": self.max_iterations,
-                            "confidence_history": confidence_history,
-                            "stall_counter": stall_counter,
-                        },
-                    )
+                #     result = AnalysisResult(
+                #         file_intent=hypothesis.file_intent,
+                #         responsibility_blocks=hypothesis.responsibility_blocks,
+                #         metadata={
+                #             "execution_path": "two-agent",
+                #             "iterations": current_iteration + 1,
+                #             "final_confidence": current_confidence,
+                #             "approved": False,
+                #             "exit_reason": "insufficient_progress",
+                #             "stall_reason": f"Confidence stalled for {MAX_STALL_ITERATIONS} iterations (delta < {MIN_PROGRESS_THRESHOLD})",
+                #             "tool_call_count": total_tool_calls,
+                #             "iteration_history": iteration_history,
+                #             "confidence_threshold": self.confidence_threshold,
+                #             "max_iterations": self.max_iterations,
+                #             "confidence_history": confidence_history,
+                #             "stall_counter": stall_counter,
+                #         },
+                #     )
 
-                    # Log final metadata to debugger for progress metrics
-                    if self.debugger:
-                        self.debugger.log_agent_iteration(
-                            iteration=current_iteration,
-                            agent="orchestrator",
-                            metadata=result.metadata,
-                        )
+                #     # Log final metadata to debugger for progress metrics
+                #     if self.debugger:
+                #         self.debugger.log_agent_iteration(
+                #             iteration=current_iteration,
+                #             agent="orchestrator",
+                #             metadata=result.metadata,
+                #         )
 
-                    return result
+                #     return result
 
             # =====================================================================
             # Exit Condition 1: Confidence threshold met (approved)
@@ -258,13 +258,70 @@ class Orchestrator:
                 break
 
             # =====================================================================
-            # Exit Condition 2: Max iterations reached
+            # Exit Condition 2: Max iterations reached (run final Analyzer pass)
             # =====================================================================
             if current_iteration >= self.max_iterations - 1:
                 print(
                     f"\n[ORCHESTRATOR] Max iterations ({self.max_iterations}) reached"
                 )
                 print(f"  - Final confidence: {feedback.confidence:.2f}")
+
+                # Final Analyzer revision (no further Critic evaluation)
+                tool_results: List[Dict[str, Any]] = []
+
+                if feedback.tool_suggestions:
+                    print(
+                        f"\n[ITERATION {current_iteration}] Executing {len(feedback.tool_suggestions)} tool calls..."
+                    )
+
+                    tool_results = self.analyzer.execute_tool_calls(
+                        tool_suggestions=feedback.tool_suggestions,
+                        source_store=source_store,
+                        file_hash=file_hash,
+                    )
+
+                    total_tool_calls += len(feedback.tool_suggestions)
+
+                    for result in tool_results:
+                        if "error" not in result:
+                            params = result.get("parameters", {})
+                            print(
+                                f"    - Lines {params.get('start_line')}-{params.get('end_line')}: {result.get('rationale', '')[:50]}"
+                            )
+
+                print(
+                    f"\n[ITERATION {current_iteration}] Analyzer revising hypothesis..."
+                )
+
+                hypothesis = self.analyzer.revise_hypothesis(
+                    current_hypothesis=hypothesis,
+                    feedback=feedback,
+                    tool_results=tool_results if tool_results else None,
+                )
+
+                print(
+                    f"  - Updated responsibility blocks: {len(hypothesis.responsibility_blocks)}"
+                )
+
+                # Log revised hypothesis to debugger
+                if self.debugger:
+                    self.debugger.log_agent_iteration(
+                        iteration=current_iteration + 1,
+                        agent="analyzer",
+                        hypothesis={
+                            "file_intent": hypothesis.file_intent,
+                            "responsibility_blocks": [
+                                {
+                                    "title": block.title,
+                                    "description": block.description,
+                                    "entities": block.entities,
+                                }
+                                for block in hypothesis.responsibility_blocks
+                            ],
+                        },
+                    )
+
+                current_iteration += 1
                 break
 
             # =====================================================================

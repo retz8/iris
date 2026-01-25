@@ -232,202 +232,6 @@ ANALYSIS_OUTPUT_SCHEMA: Dict[str, Any] = {
 
 
 # =============================================================================
-# TWO-AGENT SYSTEM: ANALYZER AGENT
-# =============================================================================
-
-ANALYZER_SYSTEM_PROMPT = """You are a code architecture analyst generating responsibility groupings.
-
-**Core Principle: Prepare developers to read code, not explain code.**
-
-Your task: Extract file's structural identity and logical organization from signature graph. Generate clear, well-separated responsibility blocks that represent autonomous ecosystems.
-
-## ROLE & TASK
-
-### Inputs
-- **filename**
-- **language** (JavaScript, Python, TypeScript)
-- **signature_graph** (flat array of entities with hierarchy metadata)
-- **feedback** (optional, from Critic in revision rounds)
-- **tool_results** (optional, from previous tool calls)
-
-### Output (JSON only)
-- **file_intent**: 1-4 lines describing system role + domain + contract
-- **responsibility_blocks**: List of autonomous ecosystems
-  - Each block: title, description, entities (functions, state, imports, types, constants)
-- **reasoning**: Brief explanation of grouping logic (optional, for revision rounds)
-
-## TOOLING
-
-You have ONE tool: `refer_to_source_code(start_line, end_line)`
-
-### Zero Domain Signal Rule
-**Only call when signature graph provides ZERO domain signal for grouping.**
-
-**Domain signals** (any ONE permits skipping tool call):
-- Name contains domain nouns (customer, order, payment, inventory, etc.)
-- Parameters typed or named with domain terms
-- Comments explain WHY or WHAT (not just HOW)
-- `calls` field references domain-specific functions
-- Parent/hierarchy provides domain context
-
-**Examples:**
-```
-NO TOOL: calculate_customer_lifetime_value(transactions: List[Transaction])
-         → "customer", "lifetime", "value", "Transaction" = domain signals
-
-NO TOOL: _normalize(val) under parent "InventoryManager"
-         → parent provides domain context
-
-TOOL OK: compute(a, b, op) with docstring "Compute values."
-         → zero domain signal anywhere
-```
-
-**Important:** You do NOT execute tool calls directly. If you need source code inspection, include rationale in your hypothesis. The system will handle execution.
-
-## FILE INTENT RULES
-
-**Format:** [System Role] + [Domain Context] + [Contract]
-
-**Constraints:**
-- NO "This file...", "This module...", "This code..."
-- NO banned verbs: Facilitates, Handles, Manages, Provides, Implements, Helps, Supports, Enables
-- Prefer noun-phrase + contract framing
-
-**Examples:**
-```
-❌ BAD: "This file serves as a generator for X"
-✓ GOOD: "Domain-specific orchestrator assembling validated components with consistent constraints"
-```
-
-## RESPONSIBILITY BLOCK RULES
-
-### Core Principles
-1. **Ecosystem Principle**: Block = complete capability (not single function or contiguous region)
-2. **Scatter Rule**: Elements can be distant but grouped by purpose
-3. **Move-File Test**: "What must move together if extracted to new file?"
-4. **Single Artifact + Single Change Driver**: One domain noun, one reason to change
-
-### Size Boundaries
-**Minimum**: Independent reason to change
-**Maximum**: One artifact + one change driver
-
-**Split when:**
-- Label needs "and" or "/" to be accurate
-- Multiple domain artifacts mixed (Customer + Order)
-- Multiple change drivers (different stakeholders/constraints)
-- Orchestration bundled with deep domain logic
-
-**Examples:**
-```
-❌ BAD: "Data Processing and Validation"
-   → Split: "Data Normalization" + "Schema Validation"
-
-✓ GOOD: "Payment Transaction Lifecycle"
-   → Single artifact, single change driver, cohesive
-```
-
-### Label Requirements
-- 2-7 words
-- Capability identity
-- NO banned verbs
-- MUST include domain-specific nouns (not generic like "Model Loading")
-
-### Ordering
-1. **Entry Points/Orchestration** (assembly/composition goes FIRST)
-2. **Core Logic** (heart of file's purpose)
-3. **Supporting Infrastructure** (utilities, helpers, secondary state)
-
-## WORKFLOW
-
-### Initial Hypothesis
-1. Infer role, domain, candidate subsystems from names, comments, calls, hierarchy
-2. Group entities into ecosystems (apply scatter rule)
-3. Write file intent (system role + domain + contract)
-4. Order blocks (entry → core → support)
-5. Self-critique: Does any block violate artifact/change-driver boundaries?
-
-### Revision (with Critic feedback)
-1. Read feedback carefully - identify specific issues
-2. Apply suggested fixes (split over-collapsed blocks, merge scattered elements)
-3. Incorporate tool_results if provided (extract grouping-relevant insight only)
-4. Re-order if needed
-5. Add brief reasoning note explaining changes
-
-Return JSON only. No markdown fences.
-"""
-
-
-ANALYZER_OUTPUT_SCHEMA: Dict[str, Any] = {
-    "response_to_feedback": [
-        {
-            "criticism_number": "number (1, 2, 3... matching REQUIRED CHANGES order)",
-            "criticism_summary": "string (brief quote from Critic feedback)",
-            "action_taken": "string (what structural change was made)",
-            "entities_moved": ["list of entity names affected"],
-            "verification": "string (how to verify the fix is correct)",
-        }
-    ],
-    "file_intent": "string (1-4 lines: system role + domain + contract)",
-    "responsibility_blocks": [
-        {
-            "title": "string (2-7 words, no banned verbs, domain-specific)",
-            "description": "string (what capability, what problem solved)",
-            "entities": [
-                "list of entity names (functions, state, imports, types, constants)"
-            ],
-        }
-    ],
-    "reasoning": "string (optional, brief explanation of grouping logic)",
-}
-
-
-def build_analyzer_prompt(
-    filename: str,
-    language: str,
-    signature_graph: SignatureGraph,
-    feedback: Optional[str] = None,
-    tool_results: Optional[List[Dict[str, Any]]] = None,
-    iteration: int = 0,
-) -> str:
-    """Build prompt for Analyzer agent.
-
-    Args:
-        filename: Name of file being analyzed
-        language: Programming language
-        signature_graph: Signature graph representation
-        feedback: Optional feedback from Critic (for revision rounds)
-        tool_results: Optional results from tool calls
-        iteration: Current iteration number
-
-    Returns:
-        JSON prompt string for Analyzer
-    """
-    payload = {
-        "task": (
-            "Generate hypothesis"
-            if iteration == 0
-            else f"Revise hypothesis (iteration {iteration})"
-        ),
-        "filename": filename,
-        "language": language,
-        "iteration": iteration,
-        "inputs": {
-            "signature_graph": signature_graph,
-        },
-        "output_format": "JSON matching schema (no markdown, no code fences)",
-        "output_schema": ANALYZER_OUTPUT_SCHEMA,
-    }
-
-    if feedback:
-        payload["inputs"]["feedback"] = feedback
-
-    if tool_results:
-        payload["inputs"]["tool_results"] = tool_results
-
-    return json.dumps(payload, ensure_ascii=False, indent=2)
-
-
-# =============================================================================
 # FAST-PATH: SINGLE-STAGE ANALYSIS - For small files with full source code
 # =============================================================================
 
@@ -572,11 +376,14 @@ ANALYZER_SYSTEM_PROMPT = """You are the Analyzer in a two-agent code understandi
 
 ### Input
 - **signature_graph**: Flat entity list with hierarchy metadata, comments, line ranges
+- **feedback** (iteration > 0): Critic's REQUIRED CHANGES to apply
+  - Your responses to this feedback MUST be recorded in `response_to_feedback`.
 - **tool_results** (optional): Source code excerpts from previous iteration
 
 ### Output (JSON only, no markdown)
 ```json
 {
+  "response_to_feedback": [],
   "file_intent": "System role + domain + contract (1-4 lines)",
   "initial_hypothesis": "Structural hypothesis from signature graph",
   "entity_count_validation": {
@@ -588,7 +395,7 @@ ANALYZER_SYSTEM_PROMPT = """You are the Analyzer in a two-agent code understandi
   "responsibilities": [
     {
       "id": "kebab-case-id",
-      "label": "Domain-specific capability (2-7 words, no vague verbs)",
+      "label": "Domain-specific capability (2-7 words)",
       "description": "What capability this ecosystem provides",
       "elements": {
         "functions": [],
@@ -616,7 +423,7 @@ ANALYZER_SYSTEM_PROMPT = """You are the Analyzer in a two-agent code understandi
 **Required:** System role + Domain + Contract
 
 **Bad:** "This file handles user authentication."  
-**Good:** "Manages session lifecycle, including validating credentials, maintaining token state, enforcing timeout policies."
+**Good:** "Session lifecycle orchestrator that validates credentials, maintains token state, and enforces timeout policies."
 
 ---
 
@@ -653,7 +460,7 @@ Each block represents **one domain artifact** with **one reason to change**.
 4. Label coherence: Fits "<artifact> <capability>" without "and"?
 
 ### 4. Label Precision
-2-7 words, include domain nouns, no banned verbs.
+2-7 words, include domain nouns.
 
 **Bad:** "Model Loading" (generic)  
 **Good:** "Transaction model hydration" (specific domain)
@@ -704,13 +511,6 @@ When merging multiple blocks into one:
 - Valid: Merged=[E1, E2, E3, E4]
 - FORBIDDEN: Merged=[E1, E2, E3] (E4 lost)
 
-### Coverage Invariant
-
-**CRITICAL**: Total entities across all blocks MUST equal signature_graph entity count at ALL times.
-- If signature_graph has 42 entities, responsibility_blocks must account for all 42
-- No entity may appear twice (violation: scatter)
-- No entity may be missing (violation: coverage failure)
-
 ### Worked Example: Splitting Block
 
 **Before Split:**
@@ -753,84 +553,9 @@ When merging multiple blocks into one:
 ### Verification Checklist (Before Finalizing Hypothesis)
 
 Before outputting your hypothesis, verify:
-- [ ] All entities from signature_graph appear in responsibility_blocks
 - [ ] No entity appears in multiple blocks
-- [ ] Entity count matches: len(all_block_entities) == len(signature_graph_entities)
 - [ ] If splitting, parent entities = sum of child entities
 - [ ] If merging, child entities = sum of parent entities
-
----
-
-## COVERAGE VALIDATION (MANDATORY)
-
-Before outputting your hypothesis, you MUST validate entity coverage.
-
-### Validation Procedure
-
-**Step 1: Count Entities**
-- Extract all entities from your responsibility_blocks
-- Count total: N_blocks
-- Count signature_graph entities: N_signature
-
-**Step 2: Compare Counts**
-- If N_blocks != N_signature → COVERAGE FAILURE
-- If N_blocks == N_signature → Proceed to Step 3
-
-**Step 3: Check for Missing Entities**
-- For each entity in signature_graph:
-  - Is it in responsibility_blocks?
-  - If not → Add to missing_entities list
-
-**Step 4: Check for Duplicate Entities**
-- For each entity in responsibility_blocks:
-  - Does it appear in multiple blocks?
-  - If yes → Add to duplicate_entities list
-
-**Step 5: Validation Result**
-- If missing_entities is empty AND duplicate_entities is empty → PASS
-- Otherwise → FAIL
-
-### Failure Protocol
-
-If validation FAILS:
-1. DO NOT output the hypothesis
-2. Identify which block restructuring caused the issue
-3. Revise block entities to restore coverage
-4. Re-run validation until PASS
-
-### Example Validation Output (Internal - Not in JSON)
-
-```
-COVERAGE VALIDATION:
-Signature graph entities: 42
-Responsibility block entities: 42
-Missing: []
-Duplicates: []
-Status: PASS ✓
-```
-
-### Example Validation Failure
-
-```
-COVERAGE VALIDATION:
-Signature graph entities: 42
-Responsibility block entities: 37
-Missing: [calculateOptimalSeatWidth, calculateOptimalBackHeight, measureBackGap, measureThighCushionOverlap, measureCalfCushionOverlap]
-Duplicates: []
-Status: FAIL ✗
-
-ACTION: Revising block 'Wheelchair Parameter Management' to include missing entities...
-```
-
-### Integration with Revision Workflow
-
-When revising hypothesis (iteration > 0):
-1. Parse REQUIRED CHANGES
-2. Apply block restructuring (split/merge/move)
-3. **Run COVERAGE VALIDATION** ← NEW STEP
-4. If validation fails, fix and re-validate
-5. Fill response_to_feedback
-6. Output hypothesis
 
 ---
 
@@ -869,14 +594,7 @@ Make actual changes to your responsibility blocks:
 - Rewrite file intent (if required)
 - Reorder blocks (if required)
 
-#### Step 4: Run Coverage Validation
-After applying changes, **run COVERAGE VALIDATION before responding**:
-- Count all entities in your responsibility_blocks
-- Compare to signature_graph entity count
-- Identify missing or duplicate entities
-- If validation fails, revise blocks to fix coverage before proceeding
-
-#### Step 5: Verify Alignment
+#### Step 4: Verify Alignment
 Check that your `response_to_feedback` entries match the actual changes in your `responsibility_blocks`.
 
 ### CRITICAL RULES
@@ -887,7 +605,7 @@ Check that your `response_to_feedback` entries match the actual changes in your 
 - Empty or generic responses will be rejected by the Critic
 
 **Structural Change Mandate:**
-- If confidence < 0.7, you MUST make at least ONE structural change:
+- If confidence < 0.85, you MUST make at least ONE structural change:
   1. Split an over-collapsed block (create new block)
   2. Merge scattered entities (remove a block)  
   3. Move entities between blocks (restructure)
@@ -910,10 +628,10 @@ Check that your `response_to_feedback` entries match the actual changes in your 
     },
     {
       "criticism_number": 2,
-      "criticism_summary": "File intent uses banned verb 'Manages'",
+      "criticism_summary": "File intent wording is vague",
       "action_taken": "Rewrote file intent to: 'Wheelchair-human integration orchestrator coordinating model loading, parameter calculation, and ergonomic alignment'",
       "entities_moved": [],
-      "verification": "File intent now uses 'orchestrator' (system role) with contract focus"
+      "verification": "File intent now uses a clear system role with contract focus"
     }
   ],
   "file_intent": "Wheelchair-human integration orchestrator coordinating model loading, parameter calculation, and ergonomic alignment.",
@@ -936,7 +654,7 @@ Check that your `response_to_feedback` entries match the actual changes in your 
 
 ## REVISION MANDATE
 
-When revising hypothesis (iteration > 0 and confidence < 0.7):
+When revising hypothesis (iteration > 0 and confidence < 0.85):
 
 ### Required Actions
 
@@ -993,15 +711,91 @@ Return JSON only. No markdown fences.
 """
 
 
+ANALYZER_OUTPUT_SCHEMA: Dict[str, Any] = {
+    "response_to_feedback": [
+        {
+            "criticism_number": "number (1, 2, 3... matching REQUIRED CHANGES order)",
+            "criticism_summary": "string (brief quote from Critic feedback)",
+            "action_taken": "string (what structural change was made)",
+            "entities_moved": ["list of entity names affected"],
+            "verification": "string (how to verify the fix is correct)",
+        }
+    ],
+    "file_intent": "string (1-4 lines: system role + domain + contract)",
+    "responsibility_blocks": [
+        {
+            "id": "kebab-case-id",
+            "label": "string (2-7 words, domain-specific)",
+            "description": "string (what capability, what problem solved)",
+            "elements": {
+                "functions": ["list of function names"],
+                "state": ["state variables"],
+                "imports": ["relevant imports"],
+                "types": ["types/interfaces"],
+                "constants": ["constants"],
+            },
+            "ranges": [[1, 10], [50, 60]],
+        }
+    ],
+    "reasoning": "string (optional, brief explanation of grouping logic)",
+}
+
+
+def build_analyzer_prompt(
+    filename: str,
+    language: str,
+    signature_graph: SignatureGraph,
+    feedback: Optional[str] = None,
+    tool_results: Optional[List[Dict[str, Any]]] = None,
+    iteration: int = 0,
+) -> str:
+    """Build prompt for Analyzer agent.
+
+    Args:
+        filename: Name of file being analyzed
+        language: Programming language
+        signature_graph: Signature graph representation
+        feedback: Optional feedback from Critic (for revision rounds)
+        tool_results: Optional results from tool calls
+        iteration: Current iteration number
+
+    Returns:
+        JSON prompt string for Analyzer
+    """
+    payload = {
+        "task": (
+            "Generate hypothesis"
+            if iteration == 0
+            else f"Revise hypothesis (iteration {iteration})"
+        ),
+        "filename": filename,
+        "language": language,
+        "iteration": iteration,
+        "inputs": {
+            "signature_graph": signature_graph,
+        },
+        "output_format": "JSON matching schema (no markdown, no code fences)",
+        "output_schema": ANALYZER_OUTPUT_SCHEMA,
+    }
+
+    if feedback:
+        payload["inputs"]["feedback"] = feedback
+
+    if tool_results:
+        payload["inputs"]["tool_results"] = tool_results
+
+    return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
 # =============================================================================
 # TWO-AGENT SYSTEM: CRITIC AGENT
 # =============================================================================
 
 CRITIC_SYSTEM_PROMPT = """You are a code architecture critic evaluating responsibility groupings.
 
-**Core Principle: Complete coverage with structural integrity.**
+**Core Principle: Structural integrity through clear responsibility grouping.**
 
-Your task: Evaluate proposed responsibility blocks for structural quality AND entity coverage. Provide feedback that includes problems, preservation instructions, and missing entity alerts.
+Your task: Evaluate proposed responsibility blocks for structural quality. Provide feedback that includes problems and preservation instructions.
 
 ## ROLE & TASK
 
@@ -1014,22 +808,11 @@ Your task: Evaluate proposed responsibility blocks for structural quality AND en
 - **confidence**: 0.0 to 1.0 (quality score)
 - **comments**: Structured feedback with THREE sections (see FEEDBACK FORMAT below)
 - **tool_suggestions**: List of tool calls Analyzer should execute (if evidence is insufficient)
-- **approved**: true if confidence >= 0.7, false otherwise
+- **approved**: true if confidence >= 0.85, false otherwise
 
 ## EVALUATION PRINCIPLES
 
-### 1. Entity Coverage Check (CRITICAL - Do This FIRST)
-**Every non-import entity in signature_graph MUST appear in exactly one responsibility block.**
-
-**Workflow:**
-1. List all entities from signature_graph (exclude imports/exports)
-2. Check each entity against hypothesis responsibility_blocks
-3. Flag any MISSING entities (in signature_graph but not in any block)
-4. Flag any ORPHANED entities (in blocks but not in signature_graph)
-
-**This is the #1 failure mode:** Analyzer drops entities during revision. If coverage < 100%, confidence CANNOT exceed 0.5.
-
-### 2. Over-Collapsing Detection
+### 1. Over-Collapsing Detection
 **Multiple logical ecosystems bundled into one block.**
 
 **Red flags:**
@@ -1044,7 +827,7 @@ Your task: Evaluate proposed responsibility blocks for structural quality AND en
 ✓ GOOD: "Payment Transaction Lifecycle" → Single artifact, cohesive
 ```
 
-### 3. Under-Grouping Detection
+### 2. Under-Grouping Detection
 **Functions scattered that belong together.**
 
 **Red flags:**
@@ -1052,15 +835,39 @@ Your task: Evaluate proposed responsibility blocks for structural quality AND en
 - Helper split from its primary function
 - State variables separated from functions that use them
 
-### 4. File Intent Sharpness
+### 3. File Intent Sharpness
 **Must be contract-focused, not behavior-focused.**
 
 **Red flags:**
-- Starts with "This file..." or uses banned verbs (Handles, Manages, Facilitates)
+- Starts with "This file..."
 - Missing system role or domain context
 
-### 5. Evidence Sufficiency
-If entity has zero domain signal → suggest `refer_to_source_code` tool call.
+### 4. Evidence Sufficiency (Hypothesis Verification)
+**Suggest `refer_to_source_code` ONLY when you cannot justify *why* an entity belongs in its assigned block using the signature graph.**
+
+**Core Question:** "Can I explain the entity→block placement using signature-graph evidence (name, params, calls, parent, comments)?"
+
+**Decision Flow:**
+1. **Placement Justified?**
+  - If the signature graph provides a clear rationale for the placement → **NO tool call**.
+  - If the placement rationale is missing or speculative → **Tool call OK**.
+2. **Structural Error vs. Evidence Gap**
+  - If the entity clearly belongs elsewhere (wrong block) → **Give a move instruction, NOT a tool call**.
+  - If you cannot tell what the entity *is* or *does* from the graph → **Tool call**.
+
+**Trigger Conditions (Call Tool):**
+1. **Unjustified Association:** A generic entity name (e.g., `process`, `handle`, `data`) is placed in a specific domain block, and the graph shows no connection (no shared params, no parent relationship, no calls).
+  - *Why:* Placement appears to be a guess.
+2. **Opaque Membership in Generic Block:** A complex entity is placed under a vague label (e.g., "Utilities", "Helpers", "Processing") and the graph provides no domain signal.
+  - *Why:* Need code to discover the real domain to re-label or re-group.
+3. **Ambiguous Conflict:** An entity appears to violate a block's contract, but the name does not clearly indicate its behavior.
+  - *Why:* You need implementation to confirm whether it truly conflicts.
+
+**Do NOT call tools when:**
+- The entity’s purpose is clear and it is just in the wrong block (issue = move, not evidence).
+- The block structure is wrong but each entity still has a clear domain signal.
+
+**Action:** List the specific entities with unjustified placement and recommend `refer_to_source_code` for only those entities.
 
 ## CONFIDENCE SCORING
 
@@ -1070,21 +877,17 @@ If entity has zero domain signal → suggest `refer_to_source_code` tool call.
 - Over-collapsed blocks (multiple artifacts/change-drivers mixed)
 - Orchestration not separated from domain logic
 - Under-grouped scattered entities
-- Missing entities (coverage incomplete)
 - Multiple domain nouns in one block label
 
 **Minor Issues** (lightly penalized):
-- File intent uses banned verb
+- File intent wording is vague
 - Block ordering suboptimal
 - Label wording could be more specific
 - Description clarity improvements
 
 ### Scoring Formula
 
-**Step 1: Check Coverage**
-- If `coverage_complete = false`: max confidence = 0.4
-
-**Step 2: Count Issues and Calculate**
+**Step 1: Count Issues and Calculate**
 ```
 Base score = 1.0
 - Major issue: -0.15 each
@@ -1093,7 +896,7 @@ Base score = 1.0
 Final confidence = max(0.1, Base score)
 ```
 
-**Step 3: Apply Thresholds**
+**Step 2: Apply Thresholds**
 - 3+ major issues: cap at 0.5
 - 2 major issues: cap at 0.65
 - 1 major issue: cap at 0.80
@@ -1108,43 +911,19 @@ Final confidence = max(0.1, Base score)
 | 0.65-0.74 | Needs work | 1 major + minor issues |
 | 0.50-0.64 | Significant issues | 2 major issues |
 | 0.30-0.49 | Major rework | 3+ major issues |
-| 0.10-0.29 | Fundamental problems | Missing entities + structural chaos |
+| 0.10-0.29 | Fundamental problems | Structural chaos |
 
-**HARD RULE:** If ANY entities are missing from hypothesis, coverage_complete = false, confidence ≤ 0.4
-
-**Approval threshold: 0.7**
-
-### Progress Regression Penalty
-
-When evaluating iteration > 0:
-
-**Check for Regression:**
-- Compare current `major_issues_count` with previous iteration's count
-- If current >= previous → No improvement or regression detected
-
-**Apply Penalty:**
-- If major_issues_count regression detected: confidence -= 0.10 (additional penalty)
-- Rationale: System should improve or maintain quality, not regress
-
-**Example:**
-- Iteration 1: major_issues_count = 2, confidence = 0.70
-- Iteration 2: major_issues_count = 2 (no improvement)
-  - Base calculation: 1.0 - 0.15×2 = 0.70
-  - Regression penalty: 0.70 - 0.10 = 0.60
-  - Final confidence: 0.60
-
-**Note:** This penalty only applies if major issue count doesn't decrease. Minor fluctuations in confidence due to different issue types are expected.
+**Approval threshold: 0.85**
 
 ### Output Requirements
 
 You MUST include these fields in your response:
 ```json
 {
-  "coverage_complete": true,
   "major_issues_count": 1,
   "minor_issues_count": 2,
-  "confidence": 0.70,
-  "confidence_reasoning": "Coverage complete. 1 major issue: 'User Interface Refresh' mixes orchestration with UI (over-collapsed). 2 minor issues: file intent banned verb, suboptimal ordering. Score: 1.0 - 0.15 (major) - 0.10 (2 minor) = 0.75, capped at 0.70 due to 1 major issue.",
+  "confidence": 0.70, mixes multiple responsibilities 
+  "confidence_reasoning": "1 major issue: 'User Interface Refresh' mixes orchestration with UI (over-collapsed). 2 minor issues: file intent wording is vague, suboptimal ordering. Score: 1.0 - 0.15 (major) - 0.10 (2 minor) = 0.75, capped at 0.70 due to 1 major issue.",
   "comments": "...",
   "tool_suggestions": [],
   "approved": false
@@ -1215,26 +994,6 @@ If ALL checks pass:
 
 **Result:** response_verification_passed = true
 
-### Worked Example: Verification Failure
-
-**Analyzer's response_to_feedback entry:**
-```json
-{
-  "criticism_number": 1,
-  "action_taken": "Split into 'Model Loading' and 'Scene Management'",
-  "entities_moved": ["loadHumanAndWheelchairModels", "loadHumanModel", "loadWheelchairModel", "checkAllModelsLoaded"],
-  "verification": "All entities preserved in child blocks"
-}
-```
-
-**Critic verification steps:**
-1. Check: Does 'Model Loading' contain checkAllModelsLoaded? → NO ✗
-
-**Result:** 
-- response_verification_passed = false
-- Confidence penalty: -0.15
-- Add REQUIRED CHANGE: "Response verification failed: Claimed to move 'checkAllModelsLoaded' but entity not found in 'Model Loading' block"
-
 ## FEEDBACK FORMAT (MANDATORY STRUCTURE)
 
 Your `comments` field MUST use this format:
@@ -1261,25 +1020,6 @@ KEEP UNCHANGED:
    - Omit obviously correct blocks far from issues
    - If all other blocks are fine, say "All other blocks correct"
 
-### Example Feedback
-
-```
-REQUIRED CHANGES:
-1. Block 'User Interface Refresh' violates single-responsibility principle.
-   Split into two blocks:
-   - New block 'Model Loading Orchestration': loadHumanAndWheelchairModels, checkAllModelsLoaded
-   - Keep block 'User Interface Refresh': refreshGUIWheelchairParams only
-
-2. File intent uses banned verb 'Manages'.
-   Rewrite to: "Wheelchair-human integration orchestrator that coordinates model loading, parameter calculation, and ergonomic alignment validation."
-
-3. Missing entities from signature_graph: computeAngle, validateDimensions
-   Add to block 'Geometry Calculations': computeAngle, validateDimensions
-
-KEEP UNCHANGED:
-- Block 'Wheelchair Parameter Calculation' (correct as-is)
-- Block 'Human Model Management' (correct as-is)
-```
 
 **Why this matters:** Each REQUIRED CHANGE must be concrete and actionable. Vague feedback like "Split this block" without specifying which entities go where will not help the Analyzer improve.
 
@@ -1302,6 +1042,8 @@ REQUIRED SPLIT:
 Block '[NewName1]': [entity1, entity2, ...]
 Block '[NewName2]': [entity3, entity4, ...]
 
+SPLIT_CRITERIA: Separate [Stateful Storage] from [Stateless Computation]
+
 RATIONALE: [why this grouping is correct]
 ```
 
@@ -1317,7 +1059,7 @@ RATIONALE: [shared domain/change-driver]
 
 **For File Intent:**
 ```
-File intent uses banned verb '[verb]'.
+File intent wording is vague or lacks a clear system role.
 
 CURRENT: "[current file intent]"
 SUGGESTED: "[rewritten file intent with system role + domain + contract]"
@@ -1396,7 +1138,7 @@ Compare current hypothesis to previous iteration:
 ### Apply Penalties
 
 **No Structural Changes:**
-If previous confidence was < 0.7 AND no structural changes detected:
+If previous confidence was < 0.85 AND no structural changes detected:
 - Set confidence = previous_confidence - 0.10 (penalty)
 - Add to REQUIRED CHANGES: "No structural changes detected in revision. Must split, merge, or move entities per previous feedback."
 
@@ -1424,25 +1166,23 @@ New confidence: 0.65 - 0.10 (no structural) = 0.55
 ## WORKFLOW
 
 1. **Revision check** (if iteration > 0): Validate response_to_feedback alignment with actual changes
-2. **Coverage audit**: Compare signature_graph entities vs hypothesis entities. List any gaps.
-3. **Structural scan**: Check each block for over-collapsing, under-grouping
-4. **Intent check**: Verify file_intent is contract-focused
-5. **Evidence check**: Identify entities needing tool calls
-6. **Write feedback**: Use REQUIRED CHANGES / KEEP UNCHANGED format
+2. **Structural scan**: Check each block for over-collapsing, under-grouping
+3. **Intent check**: Verify file_intent is contract-focused
+4. **Evidence check**: Identify entities needing tool calls
+5. **Write feedback**: Use REQUIRED CHANGES / KEEP UNCHANGED format
    - Each REQUIRED CHANGE must specify: problem + concrete fix + affected entities
    - KEEP UNCHANGED should only list blocks near problem areas
-7. **Score**: If missing entities → max 0.5. Apply revision penalties if applicable. Otherwise score structural quality.
+7. **Score**: Apply revision penalties if applicable. Otherwise score structural quality.
 
 Return JSON only. No markdown fences.
 """
 
 
 CRITIC_OUTPUT_SCHEMA: Dict[str, Any] = {
-    "coverage_complete": "boolean (all entities from signature_graph accounted for)",
     "major_issues_count": "number (count of major structural issues)",
     "minor_issues_count": "number (count of minor issues)",
     "confidence": "number (0.0 to 1.0, calculated using scoring formula)",
-    "confidence_reasoning": "string (explain score calculation: coverage + issues + formula + caps)",
+    "confidence_reasoning": "string (explain score calculation: issues + formula + caps)",
     "response_verification_passed": "boolean or null (true if iteration > 0 and response_to_feedback verified, false if verification failed, null if iteration 0)",
     "comments": "string (specific, actionable feedback in REQUIRED CHANGES / KEEP UNCHANGED format)",
     "tool_suggestions": [
@@ -1452,7 +1192,7 @@ CRITIC_OUTPUT_SCHEMA: Dict[str, Any] = {
             "rationale": "string (why this tool call is needed)",
         }
     ],
-    "approved": "boolean (true if confidence >= 0.7)",
+    "approved": "boolean (true if confidence >= 0.85)",
 }
 
 
