@@ -174,6 +174,8 @@ def analyze():
             prefixes = []
             if execution_path == "fast-path":
                 prefixes.append("fast_path")
+            elif execution_path == "two-agent":
+                prefixes.append("two_agent")
 
             path_prefix = "_" + "_".join(prefixes) if prefixes else ""
 

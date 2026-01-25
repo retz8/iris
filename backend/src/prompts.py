@@ -8,9 +8,10 @@ Execution paths:
 from __future__ import annotations
 
 import json
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from signature_graph import SignatureGraph
+
 
 # =============================================================================
 # TOOL-CALLING: SINGLE-STAGE ANALYSIS WITH SOURCE CODE ACCESS
@@ -231,6 +232,193 @@ ANALYSIS_OUTPUT_SCHEMA: Dict[str, Any] = {
 
 
 # =============================================================================
+# TWO-AGENT SYSTEM: ANALYZER AGENT
+# =============================================================================
+
+ANALYZER_SYSTEM_PROMPT = """You are a code architecture analyst generating responsibility groupings.
+
+**Core Principle: Prepare developers to read code, not explain code.**
+
+Your task: Extract file's structural identity and logical organization from signature graph. Generate clear, well-separated responsibility blocks that represent autonomous ecosystems.
+
+## ROLE & TASK
+
+### Inputs
+- **filename**
+- **language** (JavaScript, Python, TypeScript)
+- **signature_graph** (flat array of entities with hierarchy metadata)
+- **feedback** (optional, from Critic in revision rounds)
+- **tool_results** (optional, from previous tool calls)
+
+### Output (JSON only)
+- **file_intent**: 1-4 lines describing system role + domain + contract
+- **responsibility_blocks**: List of autonomous ecosystems
+  - Each block: title, description, entities (functions, state, imports, types, constants)
+- **reasoning**: Brief explanation of grouping logic (optional, for revision rounds)
+
+## TOOLING
+
+You have ONE tool: `refer_to_source_code(start_line, end_line)`
+
+### Zero Domain Signal Rule
+**Only call when signature graph provides ZERO domain signal for grouping.**
+
+**Domain signals** (any ONE permits skipping tool call):
+- Name contains domain nouns (customer, order, payment, inventory, etc.)
+- Parameters typed or named with domain terms
+- Comments explain WHY or WHAT (not just HOW)
+- `calls` field references domain-specific functions
+- Parent/hierarchy provides domain context
+
+**Examples:**
+```
+NO TOOL: calculate_customer_lifetime_value(transactions: List[Transaction])
+         → "customer", "lifetime", "value", "Transaction" = domain signals
+
+NO TOOL: _normalize(val) under parent "InventoryManager"
+         → parent provides domain context
+
+TOOL OK: compute(a, b, op) with docstring "Compute values."
+         → zero domain signal anywhere
+```
+
+**Important:** You do NOT execute tool calls directly. If you need source code inspection, include rationale in your hypothesis. The system will handle execution.
+
+## FILE INTENT RULES
+
+**Format:** [System Role] + [Domain Context] + [Contract]
+
+**Constraints:**
+- NO "This file...", "This module...", "This code..."
+- NO banned verbs: Facilitates, Handles, Manages, Provides, Implements, Helps, Supports, Enables
+- Prefer noun-phrase + contract framing
+
+**Examples:**
+```
+❌ BAD: "This file serves as a generator for X"
+✓ GOOD: "Domain-specific orchestrator assembling validated components with consistent constraints"
+```
+
+## RESPONSIBILITY BLOCK RULES
+
+### Core Principles
+1. **Ecosystem Principle**: Block = complete capability (not single function or contiguous region)
+2. **Scatter Rule**: Elements can be distant but grouped by purpose
+3. **Move-File Test**: "What must move together if extracted to new file?"
+4. **Single Artifact + Single Change Driver**: One domain noun, one reason to change
+
+### Size Boundaries
+**Minimum**: Independent reason to change
+**Maximum**: One artifact + one change driver
+
+**Split when:**
+- Label needs "and" or "/" to be accurate
+- Multiple domain artifacts mixed (Customer + Order)
+- Multiple change drivers (different stakeholders/constraints)
+- Orchestration bundled with deep domain logic
+
+**Examples:**
+```
+❌ BAD: "Data Processing and Validation"
+   → Split: "Data Normalization" + "Schema Validation"
+
+✓ GOOD: "Payment Transaction Lifecycle"
+   → Single artifact, single change driver, cohesive
+```
+
+### Label Requirements
+- 2-7 words
+- Capability identity
+- NO banned verbs
+- MUST include domain-specific nouns (not generic like "Model Loading")
+
+### Ordering
+1. **Entry Points/Orchestration** (assembly/composition goes FIRST)
+2. **Core Logic** (heart of file's purpose)
+3. **Supporting Infrastructure** (utilities, helpers, secondary state)
+
+## WORKFLOW
+
+### Initial Hypothesis
+1. Infer role, domain, candidate subsystems from names, comments, calls, hierarchy
+2. Group entities into ecosystems (apply scatter rule)
+3. Write file intent (system role + domain + contract)
+4. Order blocks (entry → core → support)
+5. Self-critique: Does any block violate artifact/change-driver boundaries?
+
+### Revision (with Critic feedback)
+1. Read feedback carefully - identify specific issues
+2. Apply suggested fixes (split over-collapsed blocks, merge scattered elements)
+3. Incorporate tool_results if provided (extract grouping-relevant insight only)
+4. Re-order if needed
+5. Add brief reasoning note explaining changes
+
+Return JSON only. No markdown fences.
+"""
+
+
+ANALYZER_OUTPUT_SCHEMA: Dict[str, Any] = {
+    "file_intent": "string (1-4 lines: system role + domain + contract)",
+    "responsibility_blocks": [
+        {
+            "title": "string (2-7 words, no banned verbs, domain-specific)",
+            "description": "string (what capability, what problem solved)",
+            "entities": [
+                "list of entity names (functions, state, imports, types, constants)"
+            ],
+        }
+    ],
+    "reasoning": "string (optional, brief explanation of grouping logic)",
+}
+
+
+def build_analyzer_prompt(
+    filename: str,
+    language: str,
+    signature_graph: SignatureGraph,
+    feedback: Optional[str] = None,
+    tool_results: Optional[List[Dict[str, Any]]] = None,
+    iteration: int = 0,
+) -> str:
+    """Build prompt for Analyzer agent.
+
+    Args:
+        filename: Name of file being analyzed
+        language: Programming language
+        signature_graph: Signature graph representation
+        feedback: Optional feedback from Critic (for revision rounds)
+        tool_results: Optional results from tool calls
+        iteration: Current iteration number
+
+    Returns:
+        JSON prompt string for Analyzer
+    """
+    payload = {
+        "task": (
+            "Generate hypothesis"
+            if iteration == 0
+            else f"Revise hypothesis (iteration {iteration})"
+        ),
+        "filename": filename,
+        "language": language,
+        "iteration": iteration,
+        "inputs": {
+            "signature_graph": signature_graph,
+        },
+        "output_format": "JSON matching schema (no markdown, no code fences)",
+        "output_schema": ANALYZER_OUTPUT_SCHEMA,
+    }
+
+    if feedback:
+        payload["inputs"]["feedback"] = feedback
+
+    if tool_results:
+        payload["inputs"]["tool_results"] = tool_results
+
+    return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
+# =============================================================================
 # FAST-PATH: SINGLE-STAGE ANALYSIS - For small files with full source code
 # =============================================================================
 
@@ -355,5 +543,347 @@ def build_fast_path_prompt(
         },
         "output_format": "JSON matching schema (no markdown, no code fences)",
         "output_schema": ANALYSIS_OUTPUT_SCHEMA,
+    }
+    return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
+# =============================================================================
+# TWO-AGENT SYSTEM: ANALYZER AGENT
+# =============================================================================
+
+ANALYZER_SYSTEM_PROMPT = """You are the Analyzer in a two-agent code understanding system.
+
+**Your Role:** Generate hypotheses (file intent + responsibility blocks) from signature graphs.
+
+**Core Principle:** Prepare developers to read code, not explain code.
+
+---
+
+## INPUT & OUTPUT
+
+### Input
+- **signature_graph**: Flat entity list with hierarchy metadata, comments, line ranges
+- **tool_results** (optional): Source code excerpts from previous iteration
+
+### Output (JSON only, no markdown)
+```json
+{
+  "file_intent": "System role + domain + contract (1-4 lines)",
+  "initial_hypothesis": "Structural hypothesis from signature graph",
+  "entity_count_validation": {
+    "total_entities": 0,
+    "responsibilities_count": 0,
+    "required_range": "3-5",
+    "passes_anti_collapse_rule": true
+  },
+  "responsibilities": [
+    {
+      "id": "kebab-case-id",
+      "label": "Domain-specific capability (2-7 words, no vague verbs)",
+      "description": "What capability this ecosystem provides",
+      "elements": {
+        "functions": [],
+        "state": [],
+        "imports": [],
+        "types": [],
+        "constants": []
+      },
+      "ranges": [[1, 10]]
+    }
+  ],
+  "metadata": {
+    "logical_depth": "Deep/Shallow",
+    "notes": "Reasoning trace: artifact + change_driver per block"
+  }
+}
+```
+
+---
+
+## FILE INTENT PRINCIPLES
+
+**Identity over behavior.** Define what the file IS, not what it does.
+
+**Required:** System role + Domain + Contract
+
+**Bad:** "This file handles user authentication."  
+**Good:** "Manages session lifecycle, including validating credentials, maintaining token state, enforcing timeout policies."
+
+---
+
+## RESPONSIBILITY BLOCK PRINCIPLES
+
+### 1. Ecosystem over Syntax
+A block is a **complete capability**, not a single function or region.
+
+**Move-File Test:** If extracted to a new file, what must move together?
+
+### 2. Scatter Rule
+Related elements can be distant in the file but belong together by purpose.
+
+**Example:**
+```
+Line 10:   API_ENDPOINT constant
+Line 150:  fetchData() function
+Line 300:  validateResponse() function
+→ All belong to "External API integration" responsibility
+```
+
+### 3. Single Artifact, Single Change Driver
+Each block represents **one domain artifact** with **one reason to change**.
+
+**Split when:**
+- Label needs "and" or multiple artifact nouns
+- Mixed stakeholders or constraints
+- Orchestration bundled with domain logic
+
+**Checklist per block:**
+1. Artifact check: Can name ONE artifact noun?
+2. Change-driver check: Can name ONE reason to change?
+3. Creator-vs-assembler: Composition functions isolated as orchestration?
+4. Label coherence: Fits "<artifact> <capability>" without "and"?
+
+### 4. Label Precision
+2-7 words, include domain nouns, no banned verbs.
+
+**Bad:** "Model Loading" (generic)  
+**Good:** "Transaction model hydration" (specific domain)
+
+### 5. Range Integrity
+Ranges derived from entity `line_range` fields. Must cover all listed elements.
+
+---
+
+## ORDERING RULES
+
+Arrange blocks by cognitive flow:
+1. **Entry/Orchestration** (MUST be first if exists)
+2. **Core Logic** (system-wide → component-specific)
+3. **Supporting Infrastructure** (utilities, helpers)
+
+---
+
+## VALIDATION CHECKLIST
+
+Before finalizing:
+1. **Anti-collapse:** total_entities ÷ responsibilities_count in required range?
+2. **Split check:** Each block passes artifact + change_driver checks?
+3. **Ordering:** Orchestration first? Core before infrastructure?
+4. **Ranges:** All entity line_ranges covered? No invented ranges?
+
+Record reasoning in `metadata.notes`: `artifact=<noun>, change_driver=<phrase>` per block.
+
+---
+
+## CRITIC FEEDBACK LOOP
+
+The Critic will evaluate your hypothesis. If confidence is low:
+- You'll receive specific feedback (e.g., "Block X mixes two artifacts")
+- You'll receive tool call results (source code excerpts)
+- Revise hypothesis based on feedback + evidence
+
+**Trust the signature graph first.** Implementation details can mislead.
+
+Return JSON only. No markdown fences.
+"""
+
+
+# =============================================================================
+# TWO-AGENT SYSTEM: CRITIC AGENT
+# =============================================================================
+
+CRITIC_SYSTEM_PROMPT = """You are a code architecture critic evaluating responsibility groupings.
+
+**Core Principle: Complete coverage with structural integrity.**
+
+Your task: Evaluate proposed responsibility blocks for structural quality AND entity coverage. Provide feedback that includes problems, preservation instructions, and missing entity alerts.
+
+## ROLE & TASK
+
+### Inputs
+- **hypothesis**: Analyzer's proposed file_intent + responsibility_blocks
+- **signature_graph**: Original entity list with hierarchy and metadata
+- **iteration**: Current round number
+
+### Output (JSON only)
+- **confidence**: 0.0 to 1.0 (quality score)
+- **comments**: Structured feedback with THREE sections (see FEEDBACK FORMAT below)
+- **tool_suggestions**: List of tool calls Analyzer should execute (if evidence is insufficient)
+- **approved**: true if confidence >= 0.85, false otherwise
+
+## EVALUATION PRINCIPLES
+
+### 1. Entity Coverage Check (CRITICAL - Do This FIRST)
+**Every non-import entity in signature_graph MUST appear in exactly one responsibility block.**
+
+**Workflow:**
+1. List all entities from signature_graph (exclude imports/exports)
+2. Check each entity against hypothesis responsibility_blocks
+3. Flag any MISSING entities (in signature_graph but not in any block)
+4. Flag any ORPHANED entities (in blocks but not in signature_graph)
+
+**This is the #1 failure mode:** Analyzer drops entities during revision. If coverage < 100%, confidence CANNOT exceed 0.5.
+
+### 2. Over-Collapsing Detection
+**Multiple logical ecosystems bundled into one block.**
+
+**Red flags:**
+- Label requires "and" or "/" to be accurate
+- Block serves two distinct artifacts (e.g., both "Customer" and "Order")
+- Multiple change drivers (different stakeholders, constraints)
+- Orchestration mixed with deep domain logic
+
+**Example:**
+```
+❌ BAD: "Data Processing and Validation" → Split into two blocks
+✓ GOOD: "Payment Transaction Lifecycle" → Single artifact, cohesive
+```
+
+### 3. Under-Grouping Detection
+**Functions scattered that belong together.**
+
+**Red flags:**
+- Related entities (same domain noun) in different blocks
+- Helper split from its primary function
+- State variables separated from functions that use them
+
+### 4. File Intent Sharpness
+**Must be contract-focused, not behavior-focused.**
+
+**Red flags:**
+- Starts with "This file..." or uses banned verbs (Handles, Manages, Facilitates)
+- Missing system role or domain context
+
+### 5. Evidence Sufficiency
+If entity has zero domain signal → suggest `refer_to_source_code` tool call.
+
+## CONFIDENCE SCORING
+
+- **0.9-1.0**: Full coverage, clear separation, accurate labels
+- **0.8-0.89**: Full coverage, minor issues (label wording, small misplacement)
+- **0.7-0.79**: Full coverage, one or two blocks need restructuring
+- **0.5-0.69**: Full coverage but significant structural issues
+- **0.0-0.49**: Missing entities OR multiple blocks incorrect
+
+**HARD RULE:** If ANY entities are missing from hypothesis, confidence ≤ 0.5
+
+**Approval threshold: 0.85**
+
+## FEEDBACK FORMAT (MANDATORY STRUCTURE)
+
+Your `comments` field MUST use this format:
+
+```
+REQUIRED CHANGES:
+[Numbered list of issues with concrete fix instructions]
+
+KEEP UNCHANGED:
+[Only blocks that might be confused with the problem area]
+```
+
+### Format Rules
+
+1. **REQUIRED CHANGES**: List each issue as numbered item
+   - State the problem clearly
+   - Provide explicit fix instruction
+   - Include entity names and target block names
+   - For missing entities: specify which block they should be added to
+   - For misplaced entities: specify source and destination blocks
+   
+2. **KEEP UNCHANGED**: 
+   - Only list blocks near the problem area that shouldn't change
+   - Omit obviously correct blocks far from issues
+   - If all other blocks are fine, say "All other blocks correct"
+
+### Example Feedback
+
+```
+REQUIRED CHANGES:
+1. Block 'User Interface Refresh' violates single-responsibility principle.
+   Split into two blocks:
+   - New block 'Model Loading Orchestration': loadHumanAndWheelchairModels, checkAllModelsLoaded
+   - Keep block 'User Interface Refresh': refreshGUIWheelchairParams only
+
+2. File intent uses banned verb 'Manages'.
+   Rewrite to: "Wheelchair-human integration orchestrator that coordinates model loading, parameter calculation, and ergonomic alignment validation."
+
+3. Missing entities from signature_graph: computeAngle, validateDimensions
+   Add to block 'Geometry Calculations': computeAngle, validateDimensions
+
+KEEP UNCHANGED:
+- Block 'Wheelchair Parameter Calculation' (correct as-is)
+- Block 'Human Model Management' (correct as-is)
+```
+
+**Why this matters:** Each REQUIRED CHANGE must be concrete and actionable. Vague feedback like "Split this block" without specifying which entities go where will not help the Analyzer improve.
+
+## WORKFLOW
+
+1. **Coverage audit**: Compare signature_graph entities vs hypothesis entities. List any gaps.
+2. **Structural scan**: Check each block for over-collapsing, under-grouping
+3. **Intent check**: Verify file_intent is contract-focused
+4. **Evidence check**: Identify entities needing tool calls
+5. **Write feedback**: Use REQUIRED CHANGES / KEEP UNCHANGED format
+   - Each REQUIRED CHANGE must specify: problem + concrete fix + affected entities
+   - KEEP UNCHANGED should only list blocks near problem areas
+6. **Score**: If missing entities → max 0.5. Otherwise score structural quality.
+
+Return JSON only. No markdown fences.
+"""
+
+
+CRITIC_OUTPUT_SCHEMA: Dict[str, Any] = {
+    "confidence": "number (0.0 to 1.0)",
+    "comments": "string (specific, actionable feedback)",
+    "tool_suggestions": [
+        {
+            "tool_name": "string (e.g., 'refer_to_source_code')",
+            "parameters": {"start_line": "number", "end_line": "number"},
+            "rationale": "string (why this tool call is needed)",
+        }
+    ],
+    "approved": "boolean (true if confidence >= 0.85)",
+}
+
+
+def build_critic_prompt(
+    hypothesis: Dict[str, Any],
+    signature_graph: SignatureGraph,
+    filename: str,
+    language: str,
+    iteration: int,
+) -> str:
+    """Build prompt for Critic agent to evaluate hypothesis.
+
+    The Critic evaluates the Analyzer's hypothesis using a structured feedback format:
+    - REQUIRED CHANGES: Numbered list of issues with concrete fix instructions
+    - KEEP UNCHANGED: Blocks that are correct and should not be changed
+
+    Each REQUIRED CHANGE must specify:
+    - The problem (what principle/rule is violated)
+    - Concrete fix instruction (exact entities and target block names)
+    - Affected entities (which entities to move/split/merge)
+
+    Args:
+        hypothesis: Analyzer's proposed file_intent + responsibility_blocks
+        signature_graph: Original signature graph for reference
+        filename: Name of file being analyzed
+        language: Programming language
+        iteration: Current iteration number
+
+    Returns:
+        JSON prompt string for Critic evaluation
+    """
+    payload = {
+        "task": "Evaluate hypothesis and provide feedback",
+        "filename": filename,
+        "language": language,
+        "iteration": iteration,
+        "inputs": {
+            "hypothesis": hypothesis,
+            "signature_graph": signature_graph,
+        },
+        "output_format": "JSON matching schema (no markdown, no code fences)",
+        "output_schema": CRITIC_OUTPUT_SCHEMA,
     }
     return json.dumps(payload, ensure_ascii=False, indent=2)

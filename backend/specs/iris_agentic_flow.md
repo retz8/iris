@@ -86,12 +86,12 @@ The core insight is that **hypothesis generation and evaluation should be separa
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-006 | Create `ANALYZER_SYSTEM_PROMPT` in `backend/src/prompts.py` - focused on hypothesis generation | | |
-| TASK-007 | Create `CRITIC_SYSTEM_PROMPT` in `backend/src/prompts.py` - focused on evaluation and feedback | | |
-| TASK-008 | Update tooling section with condensed "zero domain signal" rule | | |
-| TASK-009 | Update `backend/src/tools/tool_definitions.py` to use minimal description | | |
-| TASK-010 | Create prompt builder functions for Analyzer (`build_analyzer_prompt`) | | |
-| TASK-011 | Create prompt builder functions for Critic (`build_critic_prompt`) | | |
+| TASK-006 | Create `ANALYZER_SYSTEM_PROMPT` in `backend/src/prompts.py` - focused on hypothesis generation | ✅ | 2025-01-25 |
+| TASK-007 | Create `CRITIC_SYSTEM_PROMPT` in `backend/src/prompts.py` - focused on evaluation and feedback | ✅ | 2025-01-25 |
+| TASK-008 | Update tooling section with condensed "zero domain signal" rule | ✅ | 2025-01-25 |
+| TASK-009 | Update `backend/src/tools/tool_definitions.py` to use minimal description | ✅ | 2025-01-25 |
+| TASK-010 | Create prompt builder functions for Analyzer (`build_analyzer_prompt`) | ✅ | 2025-01-25 |
+| TASK-011 | Create prompt builder functions for Critic (`build_critic_prompt`) | ✅ | 2025-01-25 |
 
 ### Implementation Phase 3: Agent Loop Implementation
 
@@ -99,12 +99,12 @@ The core insight is that **hypothesis generation and evaluation should be separa
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-012 | Implement `AnalyzerAgent.generate_hypothesis()` method | | |
-| TASK-013 | Implement `AnalyzerAgent.revise_hypothesis()` method (processes Critic feedback) | | |
-| TASK-014 | Implement `AnalyzerAgent.execute_tool_calls()` method | | |
-| TASK-015 | Implement `CriticAgent.evaluate()` method returning feedback + confidence + tool suggestions | | |
-| TASK-016 | Implement `Orchestrator.run()` method managing the loop until confidence threshold | | |
-| TASK-017 | Define exit conditions: confidence >= threshold OR max_iterations reached | | |
+| TASK-012 | Implement `AnalyzerAgent.generate_hypothesis()` method | ✅ | 2025-01-25 |
+| TASK-013 | Implement `AnalyzerAgent.revise_hypothesis()` method (processes Critic feedback) | ✅ | 2025-01-25 |
+| TASK-014 | Implement `AnalyzerAgent.execute_tool_calls()` method | ✅ | 2025-01-25 |
+| TASK-015 | Implement `CriticAgent.evaluate()` method returning feedback + confidence + tool suggestions | ✅ | 2025-01-25 |
+| TASK-016 | Implement `Orchestrator.run()` method managing the loop until confidence threshold | ✅ | 2025-01-25 |
+| TASK-017 | Define exit conditions: confidence >= threshold OR max_iterations reached | ✅ | 2025-01-25 |
 
 ### Implementation Phase 4: Integration and Migration
 
@@ -112,11 +112,11 @@ The core insight is that **hypothesis generation and evaluation should be separa
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-018 | Update `IrisAgent.analyze()` to use new `Orchestrator` for tool-calling path | | |
-| TASK-019 | Maintain fast-path as single-agent for small/well-written files | | |
-| TASK-020 | Extend `AgentFlowDebugger` to track multi-agent interactions (Analyzer rounds, Critic feedback) | | |
-| TASK-021 | Update debug report markdown generation for two-agent flow | | |
-| TASK-022 | Ensure final output matches existing `ANALYSIS_OUTPUT_SCHEMA` | | |
+| TASK-018 | Update `IrisAgent.analyze()` to use new `Orchestrator` for tool-calling path | ✅ | 2025-01-25 |
+| TASK-019 | Maintain fast-path as single-agent for small/well-written files | ✅ | 2025-01-25 |
+| TASK-020 | Extend `AgentFlowDebugger` to track multi-agent interactions (Analyzer rounds, Critic feedback) | ✅ | 2025-01-25 |
+| TASK-021 | Update debug report markdown generation for two-agent flow | ✅ | 2025-01-25 |
+| TASK-022 | Ensure final output matches existing `ANALYSIS_OUTPUT_SCHEMA` | ✅ | 2025-01-25 |
 
 ### Implementation Phase 5: Testing and Validation
 

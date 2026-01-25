@@ -5,7 +5,7 @@ from openai.types.responses import ToolParam
 REFER_TO_SOURCE_CODE_TOOL: ToolParam = {
     "type": "function",
     "name": "refer_to_source_code",
-    "description": "Retrieve source code for a specific line range. Use according to tooling rules in system prompt.",
+    "description": "Read source code line range. ONLY when signature graph has ZERO domain signal (no domain nouns in name/params/comments/calls/parent).",
     "parameters": {
         "type": "object",
         "properties": {

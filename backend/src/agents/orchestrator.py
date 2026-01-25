@@ -6,7 +6,7 @@ a satisfactory hypothesis is achieved or max iterations is reached.
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from openai import OpenAI
 
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 class Orchestrator:
     """Manages the Analyzer-Critic feedback loop.
-    
+
     Flow:
     1. Analyzer generates initial hypothesis
     2. Critic evaluates hypothesis
@@ -33,11 +33,11 @@ class Orchestrator:
        d. Go to step 2
     4. Return final hypothesis when confidence >= threshold or max_iterations reached
     """
-    
+
     # Default configuration
     DEFAULT_CONFIDENCE_THRESHOLD = 0.85
     DEFAULT_MAX_ITERATIONS = 3
-    
+
     def __init__(
         self,
         client: OpenAI,
@@ -47,7 +47,7 @@ class Orchestrator:
         debugger: Optional["AgentFlowDebugger"] = None,
     ) -> None:
         """Initialize orchestrator with both agents.
-        
+
         Args:
             client: OpenAI client instance
             model: Model to use for both agents
@@ -55,12 +55,14 @@ class Orchestrator:
             max_iterations: Maximum number of revision iterations
             debugger: Optional debugger for tracking multi-agent flow
         """
+        self.client = client
+        self.model = model
         self.analyzer = AnalyzerAgent(client, model, debugger)
         self.critic = CriticAgent(client, model, debugger)
         self.confidence_threshold = confidence_threshold
         self.max_iterations = max_iterations
         self.debugger = debugger
-    
+
     def run(
         self,
         filename: str,
@@ -70,39 +72,231 @@ class Orchestrator:
         file_hash: str,
     ) -> AnalysisResult:
         """Run the Analyzer-Critic loop until convergence.
-        
+
         Args:
             filename: Name of the file being analyzed
             language: Programming language
             signature_graph: Structured representation of code entities
             source_store: Store for source code retrieval
             file_hash: Hash of the source file
-            
+
         Returns:
             Final analysis result with metadata about the process
-            
+
         Exit Conditions:
-            - Critic confidence >= threshold
+            - Critic confidence >= threshold (approved=True)
             - max_iterations reached
-            
-        Note:
-            Full implementation in Phase 3 (Agent Loop Implementation)
         """
-        # TODO: Implement in Phase 3 (Agent Loop Implementation)
-        # Flow:
-        # 1. Generate initial hypothesis
-        # 2. Loop until confidence threshold or max iterations:
-        #    a. Evaluate hypothesis
-        #    b. If not approved:
-        #       - Execute suggested tool calls
-        #       - Revise hypothesis
-        # 3. Return AnalysisResult with metadata
-        
-        # Metadata should include:
-        # - execution_path: "two-agent"
-        # - iterations: number of rounds
-        # - final_confidence: critic's final confidence score
-        # - tool_call_count: total tool calls executed
-        # - total_tokens: combined tokens from both agents
-        
-        raise NotImplementedError("run will be implemented in Phase 3")
+        # Track metadata for debugging
+        iteration_history: List[Dict[str, Any]] = []
+        total_tool_calls = 0
+
+        print(f"[ORCHESTRATOR] Starting Analyzer-Critic loop for {filename}")
+        print(f"  - Confidence threshold: {self.confidence_threshold}")
+        print(f"  - Max iterations: {self.max_iterations}")
+
+        # =====================================================================
+        # Step 1: Generate initial hypothesis
+        # =====================================================================
+        print(f"\n[ITERATION 0] Generating initial hypothesis...")
+
+        hypothesis = self.analyzer.generate_hypothesis(
+            filename=filename,
+            language=language,
+            signature_graph=signature_graph,
+            source_store=source_store,
+            file_hash=file_hash,
+        )
+
+        print(f"  - File Intent: {hypothesis.file_intent[:80]}...")
+        print(f"  - Responsibility blocks: {len(hypothesis.responsibility_blocks)}")
+
+        # Log initial hypothesis to debugger
+        if self.debugger:
+            self.debugger.log_agent_iteration(
+                iteration=0,
+                agent="analyzer",
+                hypothesis={
+                    "file_intent": hypothesis.file_intent,
+                    "responsibility_blocks": [
+                        {
+                            "title": block.title,
+                            "description": block.description,
+                            "entities": block.entities,
+                        }
+                        for block in hypothesis.responsibility_blocks
+                    ],
+                },
+            )
+
+        # =====================================================================
+        # Step 2: Evaluate and revise loop
+        # =====================================================================
+        current_iteration = 0
+        final_feedback: Optional[Feedback] = None
+
+        while current_iteration < self.max_iterations:
+            print(f"\n[ITERATION {current_iteration}] Critic evaluating hypothesis...")
+
+            # Evaluate current hypothesis
+            feedback = self.critic.evaluate(
+                hypothesis=hypothesis,
+                signature_graph=signature_graph,
+                filename=filename,
+                language=language,
+                iteration=current_iteration,
+            )
+
+            final_feedback = feedback
+
+            print(f"  - Confidence: {feedback.confidence:.2f}")
+            print(f"  - Approved: {feedback.approved}")
+            print(f"  - Tool suggestions: {len(feedback.tool_suggestions)}")
+
+            # Log critic feedback to debugger
+            if self.debugger:
+                self.debugger.log_agent_iteration(
+                    iteration=current_iteration,
+                    agent="critic",
+                    feedback=feedback.comments,
+                    confidence=feedback.confidence,
+                    approved=feedback.approved,
+                    tool_suggestions=[
+                        {
+                            "tool_name": ts.tool_name,
+                            "parameters": ts.parameters,
+                            "rationale": ts.rationale,
+                        }
+                        for ts in feedback.tool_suggestions
+                    ],
+                )
+
+            # Record iteration history
+            iteration_history.append(
+                {
+                    "iteration": current_iteration,
+                    "confidence": feedback.confidence,
+                    "approved": feedback.approved,
+                    "comments": feedback.comments[:200] if feedback.comments else "",
+                    "tool_suggestions_count": len(feedback.tool_suggestions),
+                    "responsibility_blocks_count": len(
+                        hypothesis.responsibility_blocks
+                    ),
+                }
+            )
+
+            # =====================================================================
+            # Exit Condition 1: Confidence threshold met (approved)
+            # =====================================================================
+            if feedback.approved:
+                print(
+                    f"\n[ORCHESTRATOR] Hypothesis approved with confidence {feedback.confidence:.2f}"
+                )
+                break
+
+            # =====================================================================
+            # Exit Condition 2: Max iterations reached
+            # =====================================================================
+            if current_iteration >= self.max_iterations - 1:
+                print(
+                    f"\n[ORCHESTRATOR] Max iterations ({self.max_iterations}) reached"
+                )
+                print(f"  - Final confidence: {feedback.confidence:.2f}")
+                break
+
+            # =====================================================================
+            # Step 3a: Execute tool calls suggested by Critic
+            # =====================================================================
+            tool_results: List[Dict[str, Any]] = []
+
+            if feedback.tool_suggestions:
+                print(
+                    f"\n[ITERATION {current_iteration}] Executing {len(feedback.tool_suggestions)} tool calls..."
+                )
+
+                tool_results = self.analyzer.execute_tool_calls(
+                    tool_suggestions=feedback.tool_suggestions,
+                    source_store=source_store,
+                    file_hash=file_hash,
+                )
+
+                total_tool_calls += len(feedback.tool_suggestions)
+
+                for result in tool_results:
+                    if "error" not in result:
+                        params = result.get("parameters", {})
+                        print(
+                            f"    - Lines {params.get('start_line')}-{params.get('end_line')}: {result.get('rationale', '')[:50]}"
+                        )
+
+            # =====================================================================
+            # Step 3b: Revise hypothesis based on feedback and tool results
+            # =====================================================================
+            print(f"\n[ITERATION {current_iteration}] Analyzer revising hypothesis...")
+
+            hypothesis = self.analyzer.revise_hypothesis(
+                current_hypothesis=hypothesis,
+                feedback=feedback,
+                tool_results=tool_results if tool_results else None,
+            )
+
+            print(
+                f"  - Updated responsibility blocks: {len(hypothesis.responsibility_blocks)}"
+            )
+
+            # Log revised hypothesis to debugger
+            if self.debugger:
+                self.debugger.log_agent_iteration(
+                    iteration=current_iteration + 1,
+                    agent="analyzer",
+                    hypothesis={
+                        "file_intent": hypothesis.file_intent,
+                        "responsibility_blocks": [
+                            {
+                                "title": block.title,
+                                "description": block.description,
+                                "entities": block.entities,
+                            }
+                            for block in hypothesis.responsibility_blocks
+                        ],
+                    },
+                )
+
+            current_iteration += 1
+
+        # =====================================================================
+        # Step 4: Build final result
+        # =====================================================================
+        print(f"\n[ORCHESTRATOR] Building final result...")
+
+        # Determine exit reason
+        exit_reason = (
+            "approved"
+            if (final_feedback and final_feedback.approved)
+            else "max_iterations"
+        )
+
+        result = AnalysisResult(
+            file_intent=hypothesis.file_intent,
+            responsibility_blocks=hypothesis.responsibility_blocks,
+            metadata={
+                "execution_path": "two-agent",
+                "iterations": current_iteration + 1,
+                "final_confidence": (
+                    final_feedback.confidence if final_feedback else 0.0
+                ),
+                "approved": final_feedback.approved if final_feedback else False,
+                "exit_reason": exit_reason,
+                "tool_call_count": total_tool_calls,
+                "iteration_history": iteration_history,
+                "confidence_threshold": self.confidence_threshold,
+                "max_iterations": self.max_iterations,
+            },
+        )
+
+        print(f"  - Exit reason: {exit_reason}")
+        print(f"  - Total iterations: {current_iteration + 1}")
+        print(f"  - Total tool calls: {total_tool_calls}")
+        print(f"  - Final responsibility blocks: {len(result.responsibility_blocks)}")
+
+        return result

@@ -6,11 +6,13 @@ actionable feedback and tool suggestions.
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+import json
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from openai import OpenAI
 
 from .schemas import Hypothesis, Feedback, ToolSuggestion
+from prompts import CRITIC_SYSTEM_PROMPT, build_critic_prompt
 
 if TYPE_CHECKING:
     from signature_graph import SignatureGraph
@@ -26,6 +28,9 @@ class CriticAgent:
     3. Suggests tool calls when evidence is insufficient
     4. Assigns confidence score to hypothesis
     """
+
+    # Approval threshold for confidence score
+    CONFIDENCE_THRESHOLD = 0.85
 
     def __init__(
         self,
@@ -50,6 +55,7 @@ class CriticAgent:
         signature_graph: "SignatureGraph",
         filename: str,
         language: str,
+        iteration: int = 0,
     ) -> Feedback:
         """Evaluate hypothesis and provide feedback.
 
@@ -58,18 +64,116 @@ class CriticAgent:
             signature_graph: Original signature graph for context
             filename: Name of the file being analyzed
             language: Programming language
+            iteration: Current iteration number
 
         Returns:
             Feedback with confidence score, comments, and optional tool suggestions
-
-        Note:
-            Prompts will be implemented in Phase 2
         """
-        # TODO: Implement in Phase 2 (Prompt Engineering)
-        # Will use CRITIC_SYSTEM_PROMPT and build_critic_prompt
-        # Returns Feedback with:
-        #   - confidence: float (0.0 to 1.0)
-        #   - comments: str (specific, actionable feedback)
-        #   - tool_suggestions: List[ToolSuggestion] (optional)
-        #   - approved: bool (based on confidence threshold)
-        raise NotImplementedError("evaluate will be implemented in Phase 2")
+        # Track in debugger
+        if self.debugger:
+            self.debugger.start_llm_stage(f"critic_evaluate_iteration_{iteration}")
+
+        # Convert hypothesis to dict for prompt
+        hypothesis_dict = {
+            "file_intent": hypothesis.file_intent,
+            "responsibility_blocks": [
+                {
+                    "title": block.title,
+                    "description": block.description,
+                    "entities": block.entities,
+                }
+                for block in hypothesis.responsibility_blocks
+            ],
+            "iteration": hypothesis.iteration,
+        }
+
+        # Build prompt for evaluation
+        user_prompt = build_critic_prompt(
+            hypothesis=hypothesis_dict,
+            signature_graph=signature_graph,
+            filename=filename,
+            language=language,
+            iteration=iteration,
+        )
+
+        # Call OpenAI Response API
+        response = self.client.responses.create(
+            model=self.model,
+            input=[
+                {"role": "developer", "content": CRITIC_SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.1,
+        )
+
+        # Parse response
+        response_text = response.output_text or ""
+        if not response_text:
+            raise ValueError("Critic returned empty response")
+
+        # Track token usage
+        input_tokens = response.usage.input_tokens if response.usage else 0
+        output_tokens = response.usage.output_tokens if response.usage else 0
+
+        if self.debugger:
+            self.debugger.end_llm_stage(
+                f"critic_evaluate_iteration_{iteration}",
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                llm_response=response_text,
+            )
+
+        # Parse JSON response
+        parsed = self._parse_response(response_text)
+
+        # Convert to Feedback dataclass
+        return self._to_feedback(parsed)
+
+    def _parse_response(self, response: str) -> Dict[str, Any]:
+        """Parse LLM response JSON, handling markdown fences if present."""
+        content = response.strip()
+
+        # Strip markdown code fences if present
+        if content.startswith("```"):
+            content = content.split("```")[1]
+            if content.startswith("json"):
+                content = content[4:]
+            content = content.strip()
+
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to parse Critic response as JSON: {e}")
+
+    def _to_feedback(self, parsed: Dict[str, Any]) -> Feedback:
+        """Convert parsed JSON response to Feedback dataclass."""
+        # Extract confidence (validate range 0.0 - 1.0)
+        confidence = float(parsed.get("confidence", 0.0))
+        confidence = max(0.0, min(1.0, confidence))  # Clamp to valid range
+
+        # Extract comments
+        comments = parsed.get("comments", "")
+
+        # Extract tool suggestions
+        raw_suggestions = parsed.get("tool_suggestions", [])
+        tool_suggestions: List[ToolSuggestion] = []
+
+        for suggestion in raw_suggestions:
+            if isinstance(suggestion, dict):
+                tool_suggestions.append(
+                    ToolSuggestion(
+                        tool_name=suggestion.get("tool_name", "refer_to_source_code"),
+                        parameters=suggestion.get("parameters", {}),
+                        rationale=suggestion.get("rationale", ""),
+                    )
+                )
+
+        # Determine approval based on confidence threshold
+        approved = confidence >= self.CONFIDENCE_THRESHOLD
+
+        return Feedback(
+            confidence=confidence,
+            comments=comments,
+            tool_suggestions=tool_suggestions,
+            approved=approved,
+        )

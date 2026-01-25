@@ -24,6 +24,7 @@ from prompts import (
 from source_store import SourceStore
 from tools.source_reader import SourceReader
 from tools.tool_definitions import IRIS_TOOLS
+from agents import Orchestrator, AnalysisResult
 
 if TYPE_CHECKING:
     from .debugger.debugger import AgentFlowDebugger
@@ -49,11 +50,19 @@ class IrisAgent:
     FAST_PATH_LINE_THRESHOLD = 100
     FAST_PATH_TOKEN_THRESHOLD = 1000
 
+    # Two-agent system configuration
+    DEFAULT_CONFIDENCE_THRESHOLD = 0.85
+    DEFAULT_MAX_ITERATIONS = 3
+    USE_TWO_AGENT_SYSTEM = True  # Feature flag for gradual rollout
+
     def __init__(self, model: str = "gpt-4o-mini", api_key: str | None = None):
         self.client = OpenAI(api_key=api_key)
         self.model = model
-        # Safety limit for tool-calling loop
+        # Safety limit for tool-calling loop (legacy single-agent)
         self.MAX_TOOL_CALLS: int = 30
+        # Two-agent system configuration
+        self.confidence_threshold = self.DEFAULT_CONFIDENCE_THRESHOLD
+        self.max_iterations = self.DEFAULT_MAX_ITERATIONS
 
     def analyze(
         self,
@@ -110,12 +119,7 @@ class IrisAgent:
         # =====================================================================
         else:
             if debugger:
-                debugger.start_llm_stage("tool_calling_analysis")
                 debugger.capture_snapshot("raw_source", source_code)
-
-            print(
-                f"[TOOL-CALLING] Analyzing {filename} with signature graph & tool calling..."
-            )
 
             # Step 1: extract signature graph
             signature_graph = None
@@ -134,25 +138,143 @@ class IrisAgent:
             if signature_graph is None:
                 return IrisError("Empty Signature Graph returned", 500)
 
-            # Step 2: run tool-calling analysis
-            try:
-                result = self._run_tool_calling_analysis(
-                    filename,
-                    language,
-                    source_store,
-                    file_hash,
-                    signature_graph,
-                    debugger,
+            # Step 2: Choose execution path - two-agent or legacy single-agent
+            if self.USE_TWO_AGENT_SYSTEM:
+                # =====================================================================
+                # Two-Agent System (Analyzer + Critic)
+                # =====================================================================
+                if debugger:
+                    debugger.start_llm_stage("two_agent_analysis")
+
+                print(f"[TWO-AGENT] Analyzing {filename} with Analyzer-Critic loop...")
+
+                try:
+                    result = self._run_two_agent_analysis(
+                        filename,
+                        language,
+                        source_store,
+                        file_hash,
+                        signature_graph,
+                        debugger,
+                    )
+
+                    print(f"[TWO-AGENT] Complete!")
+                    print(f"  - File Intent: {result['file_intent'][:80]}...")
+                    print(f"  - Responsibilities: {len(result['responsibilities'])}")
+                    print(f"  - Iterations: {result['metadata'].get('iterations', 1)}")
+                    print(
+                        f"  - Tool Calls: {result['metadata'].get('tool_call_count', 0)}"
+                    )
+                    return result
+                except Exception as e:
+                    print(f"[TWO-AGENT] Error occurred: {e}")
+                    return IrisError(f"Two-Agent Analysis failed: {e}", 500)
+            else:
+                # =====================================================================
+                # Legacy Single-Agent Tool-Calling
+                # =====================================================================
+                if debugger:
+                    debugger.start_llm_stage("tool_calling_analysis")
+
+                print(
+                    f"[TOOL-CALLING] Analyzing {filename} with signature graph & tool calling..."
                 )
 
-                print(f"[TOOL-CALLING] Complete!")
-                print(f"  - File Intent: {result['file_intent'][:80]}...")
-                print(f"  - Responsibilities: {len(result['responsibilities'])}")
-                print(f"  - Tool Calls: {result['metadata'].get('tool_call_count', 0)}")
-                return result
-            except Exception as e:
-                print(f"[TOOL-CALLING] Error occurred: {e}")
-                return IrisError(f"Tool-Calling Analysis failed: {e}", 500)
+                try:
+                    result = self._run_tool_calling_analysis(
+                        filename,
+                        language,
+                        source_store,
+                        file_hash,
+                        signature_graph,
+                        debugger,
+                    )
+
+                    print(f"[TOOL-CALLING] Complete!")
+                    print(f"  - File Intent: {result['file_intent'][:80]}...")
+                    print(f"  - Responsibilities: {len(result['responsibilities'])}")
+                    print(
+                        f"  - Tool Calls: {result['metadata'].get('tool_call_count', 0)}"
+                    )
+                    return result
+                except Exception as e:
+                    print(f"[TOOL-CALLING] Error occurred: {e}")
+                    return IrisError(f"Tool-Calling Analysis failed: {e}", 500)
+
+    def _run_two_agent_analysis(
+        self,
+        filename: str,
+        language: str,
+        source_store: SourceStore,
+        file_hash: str,
+        signature_graph: SignatureGraph,
+        debugger: Optional["AgentFlowDebugger"] = None,
+    ) -> Dict[str, Any]:
+        """Two-agent analysis using Analyzer-Critic loop.
+
+        The Analyzer generates a hypothesis, the Critic evaluates it and suggests
+        tool calls. The loop continues until confidence threshold is met or
+        max iterations is reached.
+
+        Args:
+            filename: Name of the file being analyzed.
+            language: Programming language identifier.
+            source_store: Store containing source code snippets.
+            file_hash: Hash of the source file.
+            signature_graph: Pre-extracted signature graph.
+            debugger: Optional AgentFlowDebugger instance.
+
+        Returns:
+            Dict with file_intent, responsibilities, and metadata.
+        """
+        # Create orchestrator with configured thresholds
+        orchestrator = Orchestrator(
+            client=self.client,
+            model=self.model,
+            confidence_threshold=self.confidence_threshold,
+            max_iterations=self.max_iterations,
+            debugger=debugger,
+        )
+
+        # Run the Analyzer-Critic loop
+        analysis_result: AnalysisResult = orchestrator.run(
+            filename=filename,
+            language=language,
+            signature_graph=signature_graph,
+            source_store=source_store,
+            file_hash=file_hash,
+        )
+
+        # Convert AnalysisResult to dict format compatible with existing API
+        result = analysis_result.to_dict()
+
+        # Ensure tool_reads is populated from debugger
+        if debugger:
+            result["metadata"]["tool_reads"] = [
+                {
+                    "start_line": tc.get("args", {}).get("start_line"),
+                    "end_line": tc.get("args", {}).get("end_line"),
+                    "reason": tc.get("args", {}).get("reason", "Critic suggested"),
+                }
+                for tc in debugger.tool_calls
+            ]
+
+            # End the two-agent stage in debugger
+            debugger.end_llm_stage(
+                "two_agent_analysis",
+                input_tokens=sum(
+                    stage.get("input_tokens", 0)
+                    for stage in debugger.llm_stages.values()
+                    if stage.get("name", "").startswith(("analyzer_", "critic_"))
+                ),
+                output_tokens=sum(
+                    stage.get("output_tokens", 0)
+                    for stage in debugger.llm_stages.values()
+                    if stage.get("name", "").startswith(("analyzer_", "critic_"))
+                ),
+            )
+
+        return result
 
     def _run_tool_calling_analysis(
         self,
@@ -164,6 +286,9 @@ class IrisAgent:
         debugger: Optional["AgentFlowDebugger"] = None,
     ) -> Dict[str, Any]:
         """Single-stage analysis with OpenAI tool-calling (Responses API).
+
+        NOTE: This is the legacy single-agent approach. Use _run_two_agent_analysis
+        for the new Analyzer-Critic system.
 
         The LLM analyzes the signature graph and calls refer_to_source_code()
         when it needs to see actual implementation details.

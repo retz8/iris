@@ -1,0 +1,892 @@
+{
+  "filename": "main.js",
+  "language": "javascript",
+  "signature_graph": {
+    "entities": [
+      {
+        "id": "entity_0",
+        "name": "* as THREE",
+        "type": "import",
+        "signature": "import * as THREE from \"three\";",
+        "line_range": [
+          1,
+          1
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_1",
+        "name": "{ PLYLoader }",
+        "type": "import",
+        "signature": "import { PLYLoader } from \"three/examples/jsm/loaders/PLYLoader.js\";",
+        "line_range": [
+          2,
+          2
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_2",
+        "name": "{ OBJExporter }",
+        "type": "import",
+        "signature": "import { OBJExporter } from \"three/examples/jsm/exporters/OBJExporter.js\";",
+        "line_range": [
+          3,
+          3
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_3",
+        "name": "rotatingFrameTransformation",
+        "type": "import",
+        "signature": "import rotatingFrameTransformation from \"./rotation_of_the_frame.js\";",
+        "line_range": [
+          4,
+          4
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_4",
+        "name": "{ createGUIWithAnth }",
+        "type": "import",
+        "signature": "import { createGUIWithAnth } from \"./modules/guiManager.js\";",
+        "line_range": [
+          7,
+          7
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "// modeling modules",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_5",
+        "name": "{ createManualWheelchair }",
+        "type": "import",
+        "signature": "import { createManualWheelchair } from \"./modules/manualWheelchair.js\";",
+        "line_range": [
+          8,
+          8
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_6",
+        "name": "{ createPoweredWheelchair }",
+        "type": "import",
+        "signature": "import { createPoweredWheelchair } from \"./modules/poweredWheelchair.js\";",
+        "line_range": [
+          9,
+          9
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_7",
+        "name": "LicenseManager",
+        "type": "import",
+        "signature": "import LicenseManager from \"./modules/licenseManager.js\";",
+        "line_range": [
+          12,
+          12
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "// side modules",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_8",
+        "name": "{\n  ASCIIStlWriter,\n  ASCIILMWriter,\n  ASCIIAnthroWriter,\n}",
+        "type": "import",
+        "signature": "import {\n  ASCIIStlWriter,\n  ASCIILMWriter,\n  ASCIIAnthroWriter,\n} from \"./modules/asciiWriters.js\";",
+        "line_range": [
+          13,
+          17
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_9",
+        "name": "SceneManager",
+        "type": "import",
+        "signature": "import SceneManager from \"./modules/sceneManager.js\";",
+        "line_range": [
+          18,
+          18
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_10",
+        "name": "{ showLoadingSymbol, hideLoadingSymbol }",
+        "type": "import",
+        "signature": "import { showLoadingSymbol, hideLoadingSymbol } from \"./utils/loader.js\";",
+        "line_range": [
+          21,
+          21
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "// utils",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_11",
+        "name": "{ dotProduct }",
+        "type": "import",
+        "signature": "import { dotProduct } from \"./utils/matrixCalculation.js\";",
+        "line_range": [
+          22,
+          22
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_12",
+        "name": "{ getDateNow }",
+        "type": "import",
+        "signature": "import { getDateNow } from \"./utils/date.js\";",
+        "line_range": [
+          23,
+          23
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_13",
+        "name": "{ CSVToArray }",
+        "type": "import",
+        "signature": "import { CSVToArray } from \"./utils/csvParser.js\";",
+        "line_range": [
+          24,
+          24
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_14",
+        "name": "{\n  createDebugMesh,\n  createBoundingBox,\n  createAxes,\n  removeAxesFromScene,\n}",
+        "type": "import",
+        "signature": "import {\n  createDebugMesh,\n  createBoundingBox,\n  createAxes,\n  removeAxesFromScene,\n} from \"./utils/3dDebugger.js\";",
+        "line_range": [
+          25,
+          30
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_15",
+        "name": "{ inToM, mmToM, mToIn }",
+        "type": "import",
+        "signature": "import { inToM, mmToM, mToIn } from \"./utils/unitConverter.js\";",
+        "line_range": [
+          31,
+          31
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_16",
+        "name": "{ CSG2Geom, updateGeometryWithCSGData }",
+        "type": "import",
+        "signature": "import { CSG2Geom, updateGeometryWithCSGData } from \"./utils/csgHelper.js\";",
+        "line_range": [
+          32,
+          32
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_17",
+        "name": "{ saveAs }",
+        "type": "import",
+        "signature": "import { saveAs } from \"./js/FileSaver.js\";",
+        "line_range": [
+          33,
+          33
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_18",
+        "name": "{\n  getMeshCenterLine,\n  calculateDistanceBetweenPoints,\n  getHumanModelWorldCoordinates,\n}",
+        "type": "import",
+        "signature": "import {\n  getMeshCenterLine,\n  calculateDistanceBetweenPoints,\n  getHumanModelWorldCoordinates,\n} from \"./utils/meshUtils.js\";",
+        "line_range": [
+          34,
+          38
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_19",
+        "name": "calculateOptimalSeatWidth",
+        "type": "function",
+        "signature": "calculateOptimalSeatWidth(humanMesh)",
+        "line_range": [
+          311,
+          332
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "/**\n * Calculate optimal seat width based on thigh width\n * Using actual thigh indices from advisor\n */",
+        "inline_comment": null,
+        "trailing_comment": "// Convert to inches and add padding",
+        "docstring": null
+      },
+      {
+        "id": "entity_20",
+        "name": "calculateOptimalBackHeight",
+        "type": "function",
+        "signature": "calculateOptimalBackHeight(humanMesh)",
+        "line_range": [
+          338,
+          363
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "/**\n * Calculate optimal back height based on shoulder height\n * Using actual shoulder index from advisor\n */",
+        "inline_comment": null,
+        "trailing_comment": "// const optimalBackHeight = mToIn(backHeight) + padding;",
+        "docstring": null
+      },
+      {
+        "id": "entity_21",
+        "name": "calculateOptimalWheelchairParams",
+        "type": "function",
+        "signature": "calculateOptimalWheelchairParams()",
+        "line_range": [
+          368,
+          388
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [
+          "console.error",
+          "entity_22",
+          "entity_20",
+          "entity_19"
+        ],
+        "leading_comment": "/**\n * Main function to calculate optimal wheelchair parameters\n */",
+        "inline_comment": null,
+        "trailing_comment": "// Start with current params",
+        "docstring": null
+      },
+      {
+        "id": "entity_22",
+        "name": "validateWheelchairParams",
+        "type": "function",
+        "signature": "validateWheelchairParams(params)",
+        "line_range": [
+          393,
+          409
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [
+          "Object.entries"
+        ],
+        "leading_comment": "/**\n * Validate wheelchair parameters are within reasonable ranges\n */",
+        "inline_comment": null,
+        "trailing_comment": "// Check each parameter",
+        "docstring": null
+      },
+      {
+        "id": "entity_23",
+        "name": "updateWheelchairParams",
+        "type": "function",
+        "signature": "updateWheelchairParams(type, newParams)",
+        "line_range": [
+          418,
+          452
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [
+          "Number"
+        ],
+        "leading_comment": "/**\n * @desc Update the global wheelchair parameters using the provided type and newParams.\n *       This function merges newParams with the current (or manual) parameters\n *       and, if the type is \"powered\", updates additional powered-specific parameters.\n * @param {string} type - The wheelchair type (\"manual\" or \"powered\").\n * @param {Object} newParams - An object containing new parameter values to update.\n */",
+        "inline_comment": null,
+        "trailing_comment": "// update global variables",
+        "docstring": null
+      },
+      {
+        "id": "entity_24",
+        "name": "refreshGUIWheelchairParams",
+        "type": "function",
+        "signature": "refreshGUIWheelchairParams()",
+        "line_range": [
+          454,
+          466
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [
+          "gui.refresh"
+        ],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": "// update ANTH wheelchair params with wheelchairParams",
+        "docstring": null
+      },
+      {
+        "id": "entity_25",
+        "name": "loadHumanModel",
+        "type": "function",
+        "signature": "loadHumanModel(\n  humanModelFile,\n  humanPosX,\n  humanPosY,\n  humanPosZ,\n  callback\n)",
+        "line_range": [
+          475,
+          562
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [
+          "loader.load"
+        ],
+        "leading_comment": "/**\n * Load the human model from 3D model file\n * - create human mesh\n * - set human initial position, scale, rotation\n * - add human to the scene\n */",
+        "inline_comment": null,
+        "trailing_comment": "// User can modify model's parameters after loading",
+        "docstring": null
+      },
+      {
+        "id": "entity_26",
+        "name": "updateHumanGeometry",
+        "type": "function",
+        "signature": "updateHumanGeometry(\n  anth,\n  geometry,\n  geometryZero,\n  PCAdata,\n  predAnthNum,\n  predLandmarkNum\n)",
+        "line_range": [
+          582,
+          641
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [
+          "geometry.computeVertexNormals",
+          "humanMesh.updateMatrixWorld",
+          "centerPoint.divideScalar",
+          "positions.setXYZ"
+        ],
+        "leading_comment": "/**\n * Update human model based on human parameters\n */",
+        "inline_comment": null,
+        "trailing_comment": "// Compute vertex normals for lighting",
+        "docstring": null
+      },
+      {
+        "id": "entity_27",
+        "name": "calculateHumanPositionOnWheelchair",
+        "type": "function",
+        "signature": "calculateHumanPositionOnWheelchair(\n  wheelchairParams,\n  wheelchairMesh,\n  wheelchairType,\n  humanPosX,\n  humanPosY,\n  humanPosZ\n)",
+        "line_range": [
+          646,
+          687
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [
+          "inToM",
+          "inToM",
+          "mmToM",
+          "inToM",
+          "inToM",
+          "inToM"
+        ],
+        "leading_comment": "/**\n * Calculate the X,Y,Z position of the human model on the wheelchair\n */",
+        "inline_comment": null,
+        "trailing_comment": "// Get wheelchair center line for consistent positioning",
+        "docstring": null
+      },
+      {
+        "id": "entity_28",
+        "name": "measureBackGap",
+        "type": "function",
+        "signature": "measureBackGap(humanMesh, wheelchairMesh)",
+        "line_range": [
+          698,
+          711
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "/**\n * Measure the gap between human's back and wheelchair's back\n */",
+        "inline_comment": null,
+        "trailing_comment": "// Return the gap between human's back and wheelchair's backrest",
+        "docstring": null
+      },
+      {
+        "id": "entity_29",
+        "name": "measureThighCushionOverlap",
+        "type": "function",
+        "signature": "measureThighCushionOverlap(humanMesh, wheelchairMesh)",
+        "line_range": [
+          716,
+          734
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "/**\n * Measure the overlap between human's thigh and cushion\n */",
+        "inline_comment": null,
+        "trailing_comment": "// Placeholder return until implementation",
+        "docstring": null
+      },
+      {
+        "id": "entity_30",
+        "name": "measureCalfCushionOverlap",
+        "type": "function",
+        "signature": "measureCalfCushionOverlap(humanMesh, wheelchairMesh)",
+        "line_range": [
+          739,
+          757
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "/**\n * Measure the overlap between human's calf and cushion\n */",
+        "inline_comment": null,
+        "trailing_comment": "// const restThickness = 0.1;",
+        "docstring": null
+      },
+      {
+        "id": "entity_31",
+        "name": "optimizeHumanAlignment",
+        "type": "function",
+        "signature": "optimizeHumanAlignment(humanMesh, wheelchairMesh)",
+        "line_range": [
+          765,
+          804
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [
+          "console.warn",
+          "entity_28",
+          "humanMesh.updateMatrixWorld",
+          "Math.abs"
+        ],
+        "leading_comment": "/**\n * Optimize the human model's alignment on Wheelchair\n * - human's back - wheelchair's back (backGap) < threshold\n * - human's thigh should not overlap with the cushion\n * - human's calf should not overlap with the cushion (if so, shift human's position forward)\n */",
+        "inline_comment": null,
+        "trailing_comment": "// Only make small adjustments for calf overlap to maintain back alignment",
+        "docstring": null
+      },
+      {
+        "id": "entity_32",
+        "name": "updateHumanGeometryFromWheelchair",
+        "type": "function",
+        "signature": "updateHumanGeometryFromWheelchair(\n  wheelchairParams,\n  wheelchairMesh,\n  callback\n)",
+        "line_range": [
+          809,
+          838
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [
+          "callback",
+          "entity_31",
+          "humanMesh.updateMatrixWorld",
+          "humanMesh.position.set"
+        ],
+        "leading_comment": "/**\n * Update human model based on wheelchair's change\n */",
+        "inline_comment": null,
+        "trailing_comment": "// ------------------------------------------------------------------------------------------------",
+        "docstring": null
+      },
+      {
+        "id": "entity_33",
+        "name": "loadWheelchairModel",
+        "type": "function",
+        "signature": "loadWheelchairModel(posX, posY, posZ, wheelchairParams, callback)",
+        "line_range": [
+          848,
+          870
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [
+          "callback",
+          "scene.add",
+          "wheelchairMesh.rotation.set",
+          "wheelchairMesh.scale.set",
+          "wheelchairMesh.position.set",
+          "entity_35"
+        ],
+        "leading_comment": "/**\n * Load the wheelchair model\n * - create wheelchair mesh\n * - set wheelchair initial position, scale, rotation\n * - add wheelchair to the scene\n */",
+        "inline_comment": null,
+        "trailing_comment": "// Notify the callback function (init) that the wheelchair model has been loaded",
+        "docstring": null
+      },
+      {
+        "id": "entity_34",
+        "name": "updateWheelchairGeometry",
+        "type": "function",
+        "signature": "updateWheelchairGeometry(wheelchairParams, callback)",
+        "line_range": [
+          878,
+          894
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [
+          "callback",
+          "scene.add",
+          "wheelchairMesh.rotation.set",
+          "wheelchairMesh.scale.set",
+          "wheelchairMesh.position.set",
+          "entity_36",
+          "showLoadingSymbol"
+        ],
+        "leading_comment": "/**\n * Update the wheelchair geometry\n * - update wheelchair mesh\n * - update wheelchair position, scale, rotation\n * - add wheelchair to the scene\n */",
+        "inline_comment": null,
+        "trailing_comment": "// Notify the callback function (init) that the wheelchair model has been loaded",
+        "docstring": null
+      },
+      {
+        "id": "entity_35",
+        "name": "createWheelchairMesh",
+        "type": "function",
+        "signature": "createWheelchairMesh(params, material, type = \"manual\")",
+        "line_range": [
+          900,
+          911
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [
+          "CSG2Geom"
+        ],
+        "leading_comment": "/**\n * Create a new wheelchair Three.js mesh\n * - type: \"manual\" or \"powered\"\n */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_36",
+        "name": "updateWheelchairMesh",
+        "type": "function",
+        "signature": "updateWheelchairMesh(params, material)",
+        "line_range": [
+          916,
+          937
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [
+          "wheelchairMesh.geometry.computeVertexNormals",
+          "wheelchairMesh.geometry.computeBoundingBox",
+          "scene.remove"
+        ],
+        "leading_comment": "/**\n * Update the wheelchairMesh with the updated wheelchair mesh\n */",
+        "inline_comment": null,
+        "trailing_comment": "// ------------------------------------------------------------------------------------------------",
+        "docstring": null
+      },
+      {
+        "id": "entity_37",
+        "name": "setWheelchairParams",
+        "type": "function",
+        "signature": "setWheelchairParams(type = \"manual\")",
+        "line_range": [
+          943,
+          978
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [],
+        "leading_comment": "/**\n * @desc Set the wheelchair parameters\n */",
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_38",
+        "name": "loadHumanAndWheelchairModels",
+        "type": "function",
+        "signature": "loadHumanAndWheelchairModels(humanModelFile)",
+        "line_range": [
+          983,
+          1015
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [
+          "entity_39"
+        ],
+        "calls": [
+          "controls.update",
+          "entity_25",
+          "entity_33"
+        ],
+        "leading_comment": "/**\n * @desc Load the human and wheelchair models\n */",
+        "inline_comment": null,
+        "trailing_comment": "// Load human and wheelchair models using three.js",
+        "docstring": null
+      },
+      {
+        "id": "entity_39",
+        "name": "checkAllModelsLoaded",
+        "type": "function",
+        "signature": "checkAllModelsLoaded()",
+        "line_range": [
+          988,
+          992
+        ],
+        "depth": 1,
+        "scope": "function",
+        "parent_id": "entity_38",
+        "children_ids": [],
+        "calls": [
+          "document.getElementById"
+        ],
+        "leading_comment": null,
+        "inline_comment": null,
+        "trailing_comment": null,
+        "docstring": null
+      },
+      {
+        "id": "entity_40",
+        "name": "init",
+        "type": "function",
+        "signature": "init(data)",
+        "line_range": [
+          1020,
+          1033
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [
+          "entity_38",
+          "entity_37",
+          "sceneManager.getControls",
+          "sceneManager.getScene",
+          "sceneManager.setup"
+        ],
+        "leading_comment": "// ----------------------------------------------------------------------------------------------------------------\n// init function",
+        "inline_comment": null,
+        "trailing_comment": "// 3. Load Models (human and wheelchair)",
+        "docstring": null
+      },
+      {
+        "id": "entity_41",
+        "name": "animate",
+        "type": "function",
+        "signature": "animate()",
+        "line_range": [
+          1036,
+          1145
+        ],
+        "depth": 0,
+        "scope": "module",
+        "parent_id": null,
+        "children_ids": [],
+        "calls": [
+          "sceneManager.render",
+          "removeAxesFromScene",
+          "removeAxesFromScene",
+          "scene.add",
+          "createAxes",
+          "scene.add",
+          "createAxes",
+          "entity_34",
+          "showLoadingSymbol",
+          "Number",
+          "entity_37",
+          "entity_32",
+          "entity_26",
+          "sceneManager.adjustLights",
+          "requestAnimationFrame"
+        ],
+        "leading_comment": "// animate function",
+        "inline_comment": null,
+        "trailing_comment": "// Axes",
+        "docstring": null
+      }
+    ]
+  }
+}

@@ -30,6 +30,7 @@ class AgentFlowDebugger:
     Captures data at various pipeline stages and provides metrics
     for validating the quality of the AST compression.
     Also tracks LLM processing metrics (tokens, timing, responses).
+    Supports multi-agent tracking for Analyzer-Critic two-agent system.
     """
 
     def __init__(self, filename: str, language: str) -> None:
@@ -54,6 +55,10 @@ class AgentFlowDebugger:
 
         # Tool call tracking (for tool-calling architecture)
         self.tool_calls: List[Dict[str, Any]] = []
+
+        # Two-agent system tracking (Analyzer-Critic loop)
+        self.agent_iterations: List[Dict[str, Any]] = []
+        self._current_iteration: int = 0
 
     def capture_snapshot(self, stage_name: str, data: Any) -> None:
         """Capture a deep copy of data at a specific pipeline stage.
@@ -140,13 +145,123 @@ class AgentFlowDebugger:
                 "result_length": result_length,
                 "result_content": result_content,
                 "timestamp": time.time(),
+                "iteration": self._current_iteration,  # Track which iteration made this call
             }
         )
+
+    def log_agent_iteration(
+        self,
+        iteration: int,
+        agent: str,
+        hypothesis: Optional[Dict[str, Any]] = None,
+        feedback: Optional[Dict[str, Any]] = None,
+        confidence: Optional[float] = None,
+        approved: Optional[bool] = None,
+        tool_suggestions: Optional[List[Dict[str, Any]]] = None,
+    ) -> None:
+        """Log an iteration of the Analyzer-Critic loop.
+
+        Records the state of the two-agent system at each iteration,
+        including hypotheses, feedback, and confidence scores.
+
+        Args:
+            iteration: Iteration number (0 = initial hypothesis)
+            agent: Which agent produced this data ("analyzer" or "critic")
+            hypothesis: Current hypothesis from Analyzer (file_intent + responsibility_blocks)
+            feedback: Feedback from Critic (comments + suggestions)
+            confidence: Confidence score from Critic (0.0 to 1.0)
+            approved: Whether the Critic approved the hypothesis
+            tool_suggestions: Tool calls suggested by Critic
+        """
+        self._current_iteration = iteration
+
+        iteration_data = {
+            "iteration": iteration,
+            "agent": agent,
+            "timestamp": time.time(),
+        }
+
+        if hypothesis is not None:
+            iteration_data["hypothesis"] = {
+                "file_intent": hypothesis.get("file_intent", ""),
+                "responsibility_block_count": len(
+                    hypothesis.get("responsibility_blocks", [])
+                ),
+                "responsibility_blocks": [
+                    {
+                        "title": block.get("title", ""),
+                        "entity_count": len(block.get("entities", [])),
+                    }
+                    for block in hypothesis.get("responsibility_blocks", [])
+                ],
+            }
+
+        if feedback is not None:
+            iteration_data["feedback"] = feedback
+
+        if confidence is not None:
+            iteration_data["confidence"] = confidence
+
+        if approved is not None:
+            iteration_data["approved"] = approved
+
+        if tool_suggestions is not None:
+            iteration_data["tool_suggestions"] = tool_suggestions
+
+        self.agent_iterations.append(iteration_data)
+
+    def get_two_agent_summary(self) -> Dict[str, Any]:
+        """Generate a summary of the two-agent system execution.
+
+        Returns:
+            Dictionary with iteration count, total tool calls, final confidence,
+            and per-iteration summaries.
+        """
+        if not self.agent_iterations:
+            return {"enabled": False}
+
+        # Find the final critic evaluation
+        final_critic = None
+        for iteration_data in reversed(self.agent_iterations):
+            if iteration_data.get("agent") == "critic":
+                final_critic = iteration_data
+                break
+
+        # Count iterations (based on analyzer hypotheses)
+        analyzer_count = sum(
+            1 for i in self.agent_iterations if i.get("agent") == "analyzer"
+        )
+        critic_count = sum(
+            1 for i in self.agent_iterations if i.get("agent") == "critic"
+        )
+
+        # Count tool calls per iteration
+        tool_calls_by_iteration: Dict[int, int] = {}
+        for tc in self.tool_calls:
+            iteration = tc.get("iteration", 0)
+            tool_calls_by_iteration[iteration] = (
+                tool_calls_by_iteration.get(iteration, 0) + 1
+            )
+
+        return {
+            "enabled": True,
+            "total_iterations": analyzer_count,
+            "analyzer_rounds": analyzer_count,
+            "critic_rounds": critic_count,
+            "final_confidence": (
+                final_critic.get("confidence") if final_critic else None
+            ),
+            "final_approved": final_critic.get("approved") if final_critic else None,
+            "total_tool_calls": len(self.tool_calls),
+            "tool_calls_by_iteration": tool_calls_by_iteration,
+            "iterations": self.agent_iterations,
+        }
 
     def get_report(self) -> Dict[str, Any]:
         """Generate a comprehensive diagnostic report.
 
         Includes execution path summary, metrics, and LLM tracking.
+        Now also includes two-agent system tracking when applicable.
 
         Returns:
             Dictionary containing filename, language, snapshots, metrics,
@@ -166,6 +281,8 @@ class AgentFlowDebugger:
             "llm_stages": self.llm_stages,
             "tool_calls": self.tool_calls,
             "tool_call_count": len(self.tool_calls),
+            "agent_iterations": self.agent_iterations,
+            "two_agent_summary": self.get_two_agent_summary(),
             "summary": {
                 "node_reduction_ratio": self.metrics.get("node_reduction_ratio", 0),
                 "context_compression_ratio": self.metrics.get(
@@ -237,11 +354,14 @@ class AgentFlowDebugger:
         """
         report = self.get_report()
         snapshots = report.get("snapshots", {})
+        two_agent_summary = report.get("two_agent_summary", {})
 
         # Determine execution path from LLM stages
         llm_stages = report.get("llm_stages", {})
         if "fast_path_analysis" in llm_stages:
             execution_path = "🚀 Fast-Path"
+        elif "two_agent_analysis" in llm_stages or two_agent_summary.get("enabled"):
+            execution_path = "🤝 Two-Agent (Analyzer + Critic)"
         elif "tool_calling_analysis" in llm_stages:
             execution_path = "🔧 Tool-Calling with Signature Graph"
         else:
@@ -255,6 +375,24 @@ class AgentFlowDebugger:
             f"**Execution Path:** {execution_path}  ",
             "",
         ]
+
+        # Add two-agent summary at the top if applicable
+        if two_agent_summary.get("enabled"):
+            md_lines.extend(
+                [
+                    "### Two-Agent Summary",
+                    "",
+                    "| Metric | Value |",
+                    "|--------|-------|",
+                    f"| Iterations | {two_agent_summary.get('total_iterations', 0)} |",
+                    f"| Analyzer Rounds | {two_agent_summary.get('analyzer_rounds', 0)} |",
+                    f"| Critic Rounds | {two_agent_summary.get('critic_rounds', 0)} |",
+                    f"| Final Confidence | {two_agent_summary.get('final_confidence', 0):.2f} |",
+                    f"| Approved | {'✅ Yes' if two_agent_summary.get('final_approved') else '❌ No'} |",
+                    f"| Total Tool Calls | {two_agent_summary.get('total_tool_calls', 0)} |",
+                    "",
+                ]
+            )
 
         md_lines.extend(
             [
@@ -323,6 +461,95 @@ class AgentFlowDebugger:
                 ]
             )
 
+        # Add Two-Agent Iteration Details (if applicable)
+        agent_iterations = report.get("agent_iterations", [])
+        if agent_iterations and two_agent_summary.get("enabled"):
+            md_lines.extend(
+                [
+                    "---",
+                    "",
+                    "## Two-Agent Iteration History",
+                    "",
+                    "The Analyzer-Critic loop ran through the following iterations:",
+                    "",
+                ]
+            )
+
+            for iteration_data in agent_iterations:
+                iteration_num = iteration_data.get("iteration", 0)
+                agent = iteration_data.get("agent", "unknown")
+                agent_emoji = "🔬" if agent == "analyzer" else "🎯"
+
+                md_lines.extend(
+                    [
+                        f"### Iteration {iteration_num}: {agent_emoji} {agent.title()}",
+                        "",
+                    ]
+                )
+
+                # Show hypothesis summary for analyzer
+                if agent == "analyzer" and "hypothesis" in iteration_data:
+                    hyp = iteration_data["hypothesis"]
+                    md_lines.extend(
+                        [
+                            f"**File Intent:** {hyp.get('file_intent', 'N/A')[:100]}...",
+                            "",
+                            f"**Responsibility Blocks:** {hyp.get('responsibility_block_count', 0)}",
+                            "",
+                        ]
+                    )
+                    blocks = hyp.get("responsibility_blocks", [])
+                    if blocks:
+                        md_lines.append("| Block | Entities |")
+                        md_lines.append("|-------|----------|")
+                        for block in blocks:
+                            md_lines.append(
+                                f"| {block.get('title', 'Untitled')} | {block.get('entity_count', 0)} |"
+                            )
+                        md_lines.append("")
+
+                # Show feedback for critic
+                if agent == "critic":
+                    confidence = iteration_data.get("confidence", 0)
+                    approved = iteration_data.get("approved", False)
+                    feedback = iteration_data.get("feedback", "")
+
+                    status_emoji = "✅" if approved else "🔄"
+                    md_lines.extend(
+                        [
+                            f"**Confidence:** {confidence:.2f} {status_emoji}",
+                            f"**Approved:** {'Yes' if approved else 'No'}",
+                            "",
+                        ]
+                    )
+
+                    if feedback:
+                        md_lines.extend(
+                            [
+                                "**Feedback:**",
+                                "",
+                                f"> {feedback[:300]}{'...' if len(str(feedback)) > 300 else ''}",
+                                "",
+                            ]
+                        )
+
+                    # Show tool suggestions
+                    tool_suggestions = iteration_data.get("tool_suggestions", [])
+                    if tool_suggestions:
+                        md_lines.extend(
+                            [
+                                f"**Tool Suggestions:** {len(tool_suggestions)}",
+                                "",
+                            ]
+                        )
+                        for ts in tool_suggestions[:5]:  # Limit to first 5
+                            params = ts.get("parameters", {})
+                            rationale = ts.get("rationale", "")
+                            md_lines.append(
+                                f"- Lines {params.get('start_line', '?')}-{params.get('end_line', '?')}: {rationale[:50]}..."
+                            )
+                        md_lines.append("")
+
         # Add LLM Processing Stages
         llm_stages = report.get("llm_stages", {})
         if llm_stages:
@@ -342,6 +569,15 @@ class AgentFlowDebugger:
                         "### 🚀 Fast-Path Execution",
                         "",
                         "Single-stage analysis using shallow AST + full source code.",
+                        "",
+                    ]
+                )
+            elif two_agent_summary.get("enabled"):
+                md_lines.extend(
+                    [
+                        "### 🤝 Two-Agent Execution",
+                        "",
+                        "Analyzer generates hypothesis, Critic evaluates and suggests tool calls. Loop continues until confidence threshold is met.",
                         "",
                     ]
                 )
