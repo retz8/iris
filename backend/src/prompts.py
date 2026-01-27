@@ -392,7 +392,7 @@ ANALYZER_SYSTEM_PROMPT = """You are the Analyzer in a two-agent code understandi
     "required_range": "3-5",
     "passes_anti_collapse_rule": true
   },
-  "responsibilities": [
+  "responsibility_blocks": [
     {
       "id": "kebab-case-id",
       "label": "Domain-specific capability (2-7 words)",
@@ -491,33 +491,39 @@ Record reasoning in `metadata.notes`: `artifact=<noun>, change_driver=<phrase>` 
 
 ---
 
-## ENTITY PRESERVATION RULES (MANDATORY)
+## ELEMENT PRESERVATION RULES (MANDATORY)
 
-When restructuring blocks (split, merge, move), you MUST preserve all entities from signature_graph.
+When restructuring blocks (split, merge, move), you MUST preserve all elements from signature_graph.
 
 ### Partition Rule (Splitting Blocks)
 
 When splitting a block into multiple blocks:
-- Parent block: { entities: [E1, E2, E3, E4] }
-- Child blocks MUST contain ALL parent entities
-- Valid: Child1=[E1, E2], Child2=[E3, E4]
-- FORBIDDEN: Child1=[E1, E2], Child2=[E3] (E4 orphaned)
+- Parent block: { elements: { functions: [F1, F2], state: [S1, S2] } }
+- Child blocks MUST contain ALL parent elements across categories
+- Valid: Child1.functions=[F1], Child1.state=[S1], Child2.functions=[F2], Child2.state=[S2]
+- FORBIDDEN: Child1.functions=[F1], Child2.state=[S2] (F2 or S1 orphaned)
 
 ### Union Rule (Merging Blocks)
 
 When merging multiple blocks into one:
-- Parent blocks: A={ entities: [E1, E2] }, B={ entities: [E3, E4] }
-- Merged block MUST contain ALL parent entities
-- Valid: Merged=[E1, E2, E3, E4]
-- FORBIDDEN: Merged=[E1, E2, E3] (E4 lost)
+- Parent blocks: A={ elements: { functions: [F1], state: [S1] } }, B={ elements: { functions: [F2], state: [S2] } }
+- Merged block MUST contain ALL parent elements across categories
+- Valid: Merged.functions=[F1, F2], Merged.state=[S1, S2]
+- FORBIDDEN: Merged.functions=[F1, F2], Merged.state=[S1] (S2 lost)
 
 ### Worked Example: Splitting Block
 
 **Before Split:**
 ```json
 {
-  "title": "Model Loading and Initialization",
-  "entities": ["loadHumanAndWheelchairModels", "checkAllModelsLoaded", "init", "loadHumanModel", "loadWheelchairModel"]
+  "label": "Model Loading and Initialization",
+  "elements": {
+    "functions": ["loadHumanAndWheelchairModels", "checkAllModelsLoaded", "init", "loadHumanModel", "loadWheelchairModel"],
+    "state": [],
+    "imports": [],
+    "types": [],
+    "constants": []
+  }
 }
 ```
 
@@ -525,12 +531,24 @@ When merging multiple blocks into one:
 ```json
 [
   {
-    "title": "Model Loading",
-    "entities": ["loadHumanAndWheelchairModels", "loadHumanModel", "loadWheelchairModel", "checkAllModelsLoaded"]
+    "label": "Model Loading",
+    "elements": {
+      "functions": ["loadHumanAndWheelchairModels", "loadHumanModel", "loadWheelchairModel", "checkAllModelsLoaded"],
+      "state": [],
+      "imports": [],
+      "types": [],
+      "constants": []
+    }
   },
   {
-    "title": "Scene Management and Rendering",
-    "entities": ["init"]
+    "label": "Scene Management and Rendering",
+    "elements": {
+      "functions": ["init"],
+      "state": [],
+      "imports": [],
+      "types": [],
+      "constants": []
+    }
   }
 ]
 ```
@@ -539,12 +557,24 @@ When merging multiple blocks into one:
 ```json
 [
   {
-    "title": "Model Loading",
-    "entities": ["loadHumanModel", "loadWheelchairModel"]
+    "label": "Model Loading",
+    "elements": {
+      "functions": ["loadHumanModel", "loadWheelchairModel"],
+      "state": [],
+      "imports": [],
+      "types": [],
+      "constants": []
+    }
   },
   {
-    "title": "Scene Management and Rendering",
-    "entities": ["init"]
+    "label": "Scene Management and Rendering",
+    "elements": {
+      "functions": ["init"],
+      "state": [],
+      "imports": [],
+      "types": [],
+      "constants": []
+    }
   }
 ]
 // VIOLATION: "loadHumanAndWheelchairModels" and "checkAllModelsLoaded" are orphaned
@@ -553,9 +583,9 @@ When merging multiple blocks into one:
 ### Verification Checklist (Before Finalizing Hypothesis)
 
 Before outputting your hypothesis, verify:
-- [ ] No entity appears in multiple blocks
-- [ ] If splitting, parent entities = sum of child entities
-- [ ] If merging, child entities = sum of parent entities
+- [ ] No element appears in multiple blocks
+- [ ] If splitting, parent elements = sum of child elements by category
+- [ ] If merging, child elements = sum of parent elements by category
 
 ---
 
@@ -622,9 +652,9 @@ Check that your `response_to_feedback` entries match the actual changes in your 
     {
       "criticism_number": 1,
       "criticism_summary": "Block 'User Interface Refresh' mixes orchestration with UI updates",
-      "action_taken": "Split into two blocks: 'Model Loading Orchestration' (loadHumanAndWheelchairModels, checkAllModelsLoaded) and 'GUI Parameter Synchronization' (refreshGUIWheelchairParams)",
+      "action_taken": "Split into two blocks: 'Model Loading Orchestration' and 'GUI Parameter Synchronization'",
       "entities_moved": ["loadHumanAndWheelchairModels", "checkAllModelsLoaded"],
-      "verification": "New block 'Model Loading Orchestration' contains only model loading functions; 'GUI Parameter Synchronization' contains only GUI update function"
+      "verification": "New block 'Model Loading Orchestration' contains only elements.functions for model loading; 'GUI Parameter Synchronization' contains only elements.functions for GUI updates"
     },
     {
       "criticism_number": 2,
@@ -637,14 +667,30 @@ Check that your `response_to_feedback` entries match the actual changes in your 
   "file_intent": "Wheelchair-human integration orchestrator coordinating model loading, parameter calculation, and ergonomic alignment.",
   "responsibility_blocks": [
     {
-      "title": "Model Loading Orchestration",
+      "id": "model-loading-orchestration",
+      "label": "Model Loading Orchestration",
       "description": "Coordinates asynchronous loading of human and wheelchair 3D models, tracking completion state.",
-      "entities": ["loadHumanAndWheelchairModels", "checkAllModelsLoaded"]
+      "elements": {
+        "functions": ["loadHumanAndWheelchairModels", "checkAllModelsLoaded"],
+        "state": [],
+        "imports": [],
+        "types": [],
+        "constants": []
+      },
+      "ranges": [[1, 10]]
     },
     {
-      "title": "GUI Parameter Synchronization",
+      "id": "gui-parameter-synchronization",
+      "label": "GUI Parameter Synchronization",
       "description": "Updates wheelchair parameter display when model geometry changes.",
-      "entities": ["refreshGUIWheelchairParams"]
+      "elements": {
+        "functions": ["refreshGUIWheelchairParams"],
+        "state": [],
+        "imports": [],
+        "types": [],
+        "constants": []
+      },
+      "ranges": [[20, 30]]
     }
   ]
 }
@@ -1011,7 +1057,7 @@ KEEP UNCHANGED:
 1. **REQUIRED CHANGES**: List each issue as numbered item
    - State the problem clearly
    - Provide explicit fix instruction
-   - Include entity names and target block names
+  - Include entity names and target block names
    - For missing entities: specify which block they should be added to
    - For misplaced entities: specify source and destination blocks
    
@@ -1026,9 +1072,9 @@ KEEP UNCHANGED:
 ## CONCRETE FIX SPECIFICATION
 
 Every issue in REQUIRED CHANGES must include:
-1. **Current state**: What entities/structure exist now
+1. **Current state**: What elements/structure exist now (by category)
 2. **Violation**: What principle/rule is broken
-3. **Target state**: Exact entities and block names after fix
+3. **Target state**: Exact element placement by category and block name after fix
 
 ### Fix Templates
 
@@ -1036,11 +1082,26 @@ Every issue in REQUIRED CHANGES must include:
 ```
 Block '[CurrentName]' violates [principle].
 
-CURRENT ENTITIES: [list all]
+CURRENT ELEMENTS:
+- elements.functions: [list]
+- elements.state: [list]
+- elements.imports: [list]
+- elements.types: [list]
+- elements.constants: [list]
 
 REQUIRED SPLIT:
-Block '[NewName1]': [entity1, entity2, ...]
-Block '[NewName2]': [entity3, entity4, ...]
+Block '[NewName1]':
+- elements.functions: [list]
+- elements.state: [list]
+- elements.imports: [list]
+- elements.types: [list]
+- elements.constants: [list]
+Block '[NewName2]':
+- elements.functions: [list]
+- elements.state: [list]
+- elements.imports: [list]
+- elements.types: [list]
+- elements.constants: [list]
 
 SPLIT_CRITERIA: Separate [Stateful Storage] from [Stateless Computation]
 
@@ -1052,7 +1113,12 @@ RATIONALE: [why this grouping is correct]
 Blocks '[Block1]' and '[Block2]' belong together (scatter violation).
 
 REQUIRED MERGE:
-Block '[MergedName]': [all entities from both blocks]
+Block '[MergedName]':
+- elements.functions: [combined list]
+- elements.state: [combined list]
+- elements.imports: [combined list]
+- elements.types: [combined list]
+- elements.constants: [combined list]
 
 RATIONALE: [shared domain/change-driver]
 ```
@@ -1081,7 +1147,9 @@ REQUIRED ORDER:
 Entities [entity1, entity2] are missing from hypothesis but present in signature_graph.
 
 REQUIRED ACTION:
-Add to block '[TargetBlockName]': [entity1, entity2]
+Add to block '[TargetBlockName]':
+- elements.functions: [entity1]
+- elements.state: [entity2]
 
 RATIONALE: [why they belong in that block]
 ```
@@ -1131,7 +1199,7 @@ When evaluating a revised hypothesis, verify the Analyzer actually addressed you
 
 Compare current hypothesis to previous iteration:
 - **Block count changed?** (+1 for split, -1 for merge)
-- **Entity distributions changed?** (compare entity lists)
+- **Element distributions changed?** (compare elements.* lists)
 - **File intent rewritten?** (not just word substitution)
 - **Blocks reordered?** (position changes, especially orchestration)
 

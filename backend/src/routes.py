@@ -42,7 +42,7 @@ def analyze():
     {
       "success": true,
       "file_intent": "...",
-      "responsibilities": [...],
+            "responsibility_blocks": [...],
       "metadata": {
         "notes": "...",
         "tool_reads": [...]
@@ -203,7 +203,7 @@ def analyze():
         response = {
             "success": True,
             "file_intent": result.get("file_intent", ""),
-            "responsibilities": result.get("responsibilities", []),
+            "responsibility_blocks": result.get("responsibility_blocks", []),
             "metadata": metadata,
         }
         return jsonify(response), 200

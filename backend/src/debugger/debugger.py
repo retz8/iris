@@ -191,8 +191,10 @@ class AgentFlowDebugger:
                 ),
                 "responsibility_blocks": [
                     {
-                        "title": block.get("title", ""),
-                        "entity_count": len(block.get("entities", [])),
+                        "id": block.get("id", ""),
+                        "label": block.get("label", ""),
+                        "elements": block.get("elements", {}),
+                        "ranges": block.get("ranges", []),
                     }
                     for block in hypothesis.get("responsibility_blocks", [])
                 ],
@@ -590,11 +592,27 @@ class AgentFlowDebugger:
                     )
                     blocks = hyp.get("responsibility_blocks", [])
                     if blocks:
-                        md_lines.append("| Block | Entities |")
-                        md_lines.append("|-------|----------|")
+                        md_lines.append(
+                            "| Block | Functions | State | Imports | Types | Constants |"
+                        )
+                        md_lines.append(
+                            "|-------|-----------|-------|---------|-------|-----------|"
+                        )
                         for block in blocks:
+                            elements = block.get("elements", {}) or {}
+                            functions_count = len(elements.get("functions", []))
+                            state_count = len(elements.get("state", []))
+                            imports_count = len(elements.get("imports", []))
+                            types_count = len(elements.get("types", []))
+                            constants_count = len(elements.get("constants", []))
                             md_lines.append(
-                                f"| {block.get('title', 'Untitled')} | {block.get('entity_count', 0)} |"
+                                "| "
+                                f"{block.get('label', 'Untitled')} | "
+                                f"{functions_count} | "
+                                f"{state_count} | "
+                                f"{imports_count} | "
+                                f"{types_count} | "
+                                f"{constants_count} |"
                             )
                         md_lines.append("")
 

@@ -287,31 +287,26 @@ class AnalyzerAgent:
         """Convert parsed JSON response to Hypothesis dataclass."""
         file_intent = parsed.get("file_intent", "")
 
-        # Handle both old format (responsibilities) and new format (responsibility_blocks)
-        raw_blocks = parsed.get("responsibility_blocks") or parsed.get(
-            "responsibilities", []
-        )
+        raw_blocks = parsed.get("responsibility_blocks", [])
 
         responsibility_blocks: List[ResponsibilityBlock] = []
         for block in raw_blocks:
-            # Extract entities from either flat list or nested elements
-            entities = block.get("entities", [])
-            if not entities and "elements" in block:
-                # Flatten elements structure
-                elements = block["elements"]
-                entities = (
-                    elements.get("functions", [])
-                    + elements.get("state", [])
-                    + elements.get("imports", [])
-                    + elements.get("types", [])
-                    + elements.get("constants", [])
-                )
-
             responsibility_blocks.append(
                 ResponsibilityBlock(
-                    title=block.get("label") or block.get("title", ""),
+                    id=block.get("id", ""),
+                    label=block.get("label", ""),
                     description=block.get("description", ""),
-                    entities=entities,
+                    elements=block.get(
+                        "elements",
+                        {
+                            "functions": [],
+                            "state": [],
+                            "imports": [],
+                            "types": [],
+                            "constants": [],
+                        },
+                    ),
+                    ranges=block.get("ranges", []),
                 )
             )
 

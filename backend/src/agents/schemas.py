@@ -29,14 +29,18 @@ class ResponsibilityBlock:
     """A single responsibility block in the hypothesis.
 
     Attributes:
-        title: Short, descriptive title for the responsibility
-        description: Detailed explanation of what this responsibility handles
-        entities: List of entity names (functions, classes, etc.) in this block
+        id: Stable identifier for the responsibility block
+        label: Short, descriptive label for the responsibility
+        description: Detailed explanation of what this responsibility provides
+        elements: Structured elements grouped by type
+        ranges: Line ranges covering all listed elements
     """
 
-    title: str
+    id: str
+    label: str
     description: str
-    entities: List[str]
+    elements: Dict[str, List[str]]
+    ranges: List[List[int]]
 
 
 @dataclass
@@ -104,11 +108,13 @@ class AnalysisResult:
         """Convert to dictionary format compatible with existing IRIS output schema."""
         return {
             "file_intent": self.file_intent,
-            "responsibilities": [
+            "responsibility_blocks": [
                 {
-                    "title": block.title,
+                    "id": block.id,
+                    "label": block.label,
                     "description": block.description,
-                    "entities": block.entities,
+                    "elements": block.elements,
+                    "ranges": block.ranges,
                 }
                 for block in self.responsibility_blocks
             ],

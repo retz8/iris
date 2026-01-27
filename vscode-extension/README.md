@@ -1,304 +1,71 @@
-# IRIS VS Code Extension MVP
+# iris README
 
-## Background
+This is the README for your extension "iris". After writing up a brief description, we recommend including the following sections.
 
-IRIS is a developer tool designed to reduce the cognitive load of reading unfamiliar source code.
-Rather than generating or modifying code, IRIS overlays **semantic context** on top of existing code so that developers can understand *why* a file exists and *how* responsibilities are structured before reading implementation details.
+## Features
 
-The core insight behind IRIS is that developers already perform mental abstraction when reading code:
+Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
 
-```
-Raw Source Code
-→ Mental Structuring
-→ Conceptual Understanding
-```
+For example if there is an image subfolder under your extension project workspace:
 
-IRIS externalizes this mental step by providing an explicit **intermediate abstraction layer**.
+\!\[feature X\]\(images/feature-x.png\)
 
-For the MVP, IRIS is implemented as a **VS Code Extension** that communicates with an existing backend analysis server and renders results as a non-intrusive UX layer inside the editor.
+> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
 
----
+## Requirements
 
-## IRIS MVP UX Principles
+If you have any requirements or dependencies, add a section describing those and how to install and configure them.
 
-The VS Code Extension follows several strict principles:
+## Extension Settings
 
-* **Non-destructive**: Original source code is never modified
-* **Overlay-based**: IRIS augments, not replaces, the editor
-* **Read-only semantics**: No code generation or evaluation
-* **Honest state**: If analysis is outdated, IRIS clearly communicates it
+Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
 
-IRIS focuses exclusively on helping developers understand code **faster and with less cognitive effort**.
+For example:
 
----
+This extension contributes the following settings:
 
-## Core UX Concepts
+* `myExtension.enable`: Enable/disable this extension.
+* `myExtension.thing`: Set to `blah` to do something.
 
-### 1. File Intent
+## Known Issues
 
-A short, stable explanation of **why the file exists**.
+Calling out known issues can help limit users opening duplicate issues against your extension.
 
-* Displayed before reading code
-* Provides a mental frame of reference
-* Avoids implementation details
+## Release Notes
 
-Example:
+Users appreciate release notes as you update your extension.
 
-* "Checkout session bootstrap logic"
-* "JSON schema validation helpers"
+### 1.0.0
 
----
+Initial release of ...
 
-### 2. Responsibility Blocks
+### 1.0.1
 
-Responsibility Blocks represent **conceptual units of responsibility** within a file.
+Fixed issue #.
 
-* Not equivalent to functions or classes
-* One block corresponds to one reason to change
-* Code belonging to a block may be scattered
+### 1.1.0
 
-Each block contains:
-
-* Name
-* Description
-* Associated line ranges (possibly non-contiguous)
+Added features X, Y, and Z.
 
 ---
 
-## System Architecture Overview
+## Following extension guidelines
 
-```
-IRIS Server        VS Code Extension            Webview
-------------      ------------------           -----------
-Semantic          State & Orchestration  --->   Rendering
-Analysis           (Source of Truth)            Interaction
-(stateless)                                      (stateless)
-```
+Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
 
-* **Server**: Computes semantic meaning (stateless)
-* **Extension**: Owns state and editor interaction
-* **Webview**: Pure UI and user interaction layer
+* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
 
----
+## Working with Markdown
 
-## File Change Strategy (MVP)
+You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
 
-To keep behavior predictable and honest:
+* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
+* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
+* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
 
-* Any file modification immediately invalidates analysis
-* IRIS transitions to a **STALE** state
-* Decorations are removed or visually muted
-* Users must explicitly re-run analysis
+## For more information
 
-Soft changes (e.g. formatting) are intentionally not distinguished at the MVP stage.
+* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
+* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
 
----
-
-## MVP Development Phases
-
-The VS Code Extension is developed incrementally, optimized for first-time extension development and early UX validation.
-
----
-
-### Phase 0 — Development Environment Setup
-
-**Goal**
-
-* Become familiar with VS Code Extension development workflow
-
-**Outcome**
-
-* Extension Development Host can be launched via F5
-* Debugging and logging are understood
-
----
-
-### Phase 1 — Minimal Extension Skeleton
-
-**Goal**
-
-* Verify extension activation
-
-**Scope**
-
-* `extension.ts` entry point
-* One registered command
-
-**Outcome**
-
-* Command is visible in Command Palette
-* Extension lifecycle is confirmed
-
----
-
-### Phase 2 — Editor Context Access
-
-**Goal**
-
-* Read information about the active editor
-
-**Scope**
-
-* Current file path
-* Language identifier
-* Full source text
-
-**Outcome**
-
-* Extension can reliably target the active file
-
----
-
-### Phase 3 — Explicit Analysis Trigger & Server Integration
-
-**Goal**
-
-* Connect VS Code to the IRIS backend
-
-**Scope**
-
-* Command-triggered API request
-* Receive File Intent and Responsibility Blocks
-* Log results for verification
-
-**Outcome**
-
-* End-to-end semantic analysis pipeline is operational
-
----
-
-### Phase 4 — Extension State Model
-
-**Goal**
-
-* Define a single source of truth for IRIS data
-
-**Scope**
-
-* Block identifiers
-* Color assignment
-* Line range normalization
-* Active / stale analysis state
-
-**Outcome**
-
-* Stable internal state model independent of UI
-
----
-
-### Phase 5 — Webview Side Panel (Read-only)
-
-**Goal**
-
-* Visualize IRIS results
-
-**Scope**
-
-* Webview panel creation
-* File Intent display
-* Responsibility Block list rendering
-
-**Outcome**
-
-* IRIS UX becomes visible and testable
-
----
-
-### Phase 6 — Webview ↔ Extension Messaging
-
-**Goal**
-
-* Enable user interaction
-
-**Scope**
-
-* Hover and click events in Webview
-* Message passing to Extension
-
-**Outcome**
-
-* Webview becomes an interactive control surface
-
----
-
-### Phase 7 — Editor Decorations
-
-**Goal**
-
-* Connect semantic blocks to source code
-
-**Scope**
-
-* Line highlighting on hover
-* Decoration cleanup on unhover
-
-**Outcome**
-
-* Semantic overlays appear directly in the editor
-
----
-
-### Phase 8 — Focus Mode (Block Selection)
-
-**Goal**
-
-* Enable conceptual slice view
-
-**Scope**
-
-* Block selection
-* Non-selected code dimming or hiding
-* Exit via ESC or command
-
-**Outcome**
-
-* High-impact UX demonstrating IRIS value
-
----
-
-### Phase 9 — File Change → STALE Transition
-
-**Goal**
-
-* Maintain trust and correctness
-
-**Scope**
-
-* Detect file edits
-* Immediately invalidate analysis
-* Update Webview and editor state
-
-**Outcome**
-
-* IRIS behaves predictably and transparently
-
----
-
-### Phase 10 — UX Polish & Stability
-
-**Goal**
-
-* Make the MVP demo-ready
-
-**Scope**
-
-* Loading states
-* Error handling
-* Manual re-analysis
-* Graceful server failure handling
-
-**Outcome**
-
-* A stable, demoable MVP suitable for user testing
-
----
-
-## Summary
-
-The IRIS VS Code Extension MVP is intentionally simple in logic but deliberate in UX design.
-
-By prioritizing predictability, honesty, and progressive enhancement, the extension validates a single core hypothesis:
-
-> **Providing high-level semantic context before reading code significantly reduces cognitive load.**
-
-This document defines the foundation upon which future automation, heuristics, and cross-file intelligence can be built.
+**Enjoy!**

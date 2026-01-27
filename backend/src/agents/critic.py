@@ -78,9 +78,11 @@ class CriticAgent:
             "file_intent": hypothesis.file_intent,
             "responsibility_blocks": [
                 {
-                    "title": block.title,
+                    "id": block.id,
+                    "label": block.label,
                     "description": block.description,
-                    "entities": block.entities,
+                    "elements": block.elements,
+                    "ranges": block.ranges,
                 }
                 for block in hypothesis.responsibility_blocks
             ],

@@ -5,136 +5,23 @@ version: 1.0
 date_created: 2026-01-26
 status: Planned
 tags: [architecture, design, vscode-extension, mvp]
----------------------------------------------------
-
-## Introduction
-
-![Status: Planned](https://img.shields.io/badge/status-Planned-blue)
-
-This document defines the end-to-end implementation plan for building the **IRIS VS Code Extension MVP**.
-
-The purpose of this plan is to translate the previously defined UX and architectural phases into a structured, machine-readable implementation roadmap. Each phase represents a discrete milestone that can be executed and validated independently.
-
-At this stage, the document establishes the **overall structure and phase breakdown only**. Detailed tasks, file paths, and execution steps will be added incrementally in subsequent iterations.
-
 ---
 
-## 1. Requirements & Constraints
+Reference: [README](../README.md)
 
-This section defines non-negotiable requirements and constraints that govern the IRIS VS Code Extension MVP implementation.
-All implementation phases and tasks MUST comply with the following rules.
-
-### Functional Requirements
-
-* **REQ-001 (Explicit Analysis Trigger)**
-  Analysis triggered only via explicit user command, not automatically.
-
-* **REQ-002 (Single-File Scope)**
-  Analyze only the currently active editor file.
-
-* **REQ-003 (Read-Only Semantics)**
-  Never modify source code, file system, or editor text buffers. Overlay-based only.
-
-* **REQ-004 (State-Driven UI)**
-  All UI components derive from extension state; UI elements are stateless.
-
-* **REQ-005 (Deterministic blockId)**
-  Each Responsibility Block assigned deterministic `blockId` by extension.
-
-### UX Constraints
-
-* **UX-001 (Honest State)**
-  Communicate outdated analysis via `STALE` state and visual indicators.
-
-* **UX-002 (No Implicit Actions)**
-  No auto-highlighting, auto-focus, or auto-reanalysis after edits.
-
-* **UX-003 (Predictable Reset)**
-  On invalidating events: clear decorations, exit Focus Mode, return to neutral state.
-
-### State Management Constraints
-
-* **STATE-001 (Single Source of Truth)**
-  All semantic data in single extension-owned state model.
-
-* **STATE-002 (Explicit Transitions)**
-  All state transitions must be explicit, logged, and traceable.
-
-* **STATE-003 (STALE Until Reanalysis)**
-  `STALE` state remains until explicit user reanalysis.
-
-### Editor & Decoration Constraints
-
-* **ED-001 (Overlay-Only)**
-  Use only `TextEditorDecorationType`; no folding or text replacement.
-
-* **ED-002 (Deterministic Colors)**
-  Colors derived deterministically from `blockId`.
-
-* **ED-003 (Immediate Disposal)**
-  Dispose decorations on state transition to `IDLE`/`STALE`, editor change, or deactivation.
-
-### Logging & Observability Requirements
-
-* **LOG-001 (Centralized Output)**
-  Route all logs to dedicated Output Channel (e.g. `IRIS`).
-
-* **LOG-002 (Severity Levels)**
-  Use explicit levels: INFO, WARN, ERROR.
-
-* **LOG-003 (No Silent Failures)**
-  All errors must be logged and produce visible UI signals.
-
-### Explicit Non-Requirements (MVP Scope Boundaries)
-
-* **NONREQ-001**: No automatic analysis triggering
-* **NONREQ-002**: No cross-file intelligence
-* **NONREQ-003**: No user configuration system
-* **NONREQ-004**: No telemetry or analytics
-* **NONREQ-005**: No performance optimization beyond correctness
-* **NONREQ-006**: No automated testing (manual verification only)
-
-### Guiding Design Principles
-
-* **GUD-001 (Predictability Over Cleverness)**
-  The system must behave consistently, even if that limits advanced heuristics.
-
-* **GUD-002 (Progressive Enhancement)**
-  MVP functionality must form a stable foundation for future phases without refactoring core assumptions.
-
-* **GUD-003 (Cognitive Load Reduction First)**
-  All decisions must prioritize reducing mental effort for first-time code readers.
-
-### Backend Integration Requirements
-
-* **API-000 (Backend Contract)**
-  The extension integrates with the IRIS Analysis Server at `/api/iris/analyze` (POST). Detailed request/response schemas are defined in Phase 3.
-
-* **API-001 (Contract Adherence)**
-  Conform to the `/api/iris/analyze` schema (see Phase 3). Ignore undocumented fields safely.
-
-* **API-002 (Failure Handling)**
-  On `success=false`: clear state, surface user-readable error.
-
-* **API-003 (Opaque Metadata)**
-  Preserve but never interpret `metadata` object.
-
-* **API-004 (Stateless Server)**
-  Assume server is stateless; no caching or session reuse.
-
-## 2. Implementation Steps
+## 1. Implementation Steps
 
 ### Implementation Phase 0 — Development Environment Setup
 
 * GOAL-000: Establish a reproducible local development environment for VS Code Extension development.
-
+  
 | Task      | Description                                                                                   | Completed | Date |
 | --------- | --------------------------------------------------------------------------------------------- | --------- | ---- |
-| TASK-0001 | Install Node.js (LTS) and npm. Verify versions using `node --version` and `npm --version`.    |           |      |
-| TASK-0002 | Install VS Code (stable channel) and enable Extension Development prerequisites.              |           |      |
-| TASK-0003 | Install Yeoman and VS Code Extension Generator globally (`npm install -g yo generator-code`). |           |      |
-| TASK-0004 | Generate a new VS Code Extension scaffold using `yo code` with TypeScript configuration.      |           |      |
-| TASK-0005 | Verify local extension launch using VS Code Extension Development Host (F5).                  |           |      |
+| TASK-0001 | Install Node.js (LTS) and npm. Verify versions using `node --version` and `npm --version`.    | Yes       | 2026-01-27 |
+| TASK-0002 | Install VS Code (stable channel) and enable Extension Development prerequisites.              | Yes       | 2026-01-27 |
+| TASK-0003 | Install Yeoman and VS Code Extension Generator globally (`npm install -g yo generator-code`). | Yes       | 2026-01-27 |
+| TASK-0004 | Generate a new VS Code Extension scaffold using `yo code` with TypeScript configuration.      | Yes       | 2026-01-27 |
+| TASK-0005 | Verify local extension launch using VS Code Extension Development Host (F5).                  | Yes       | 2026-01-27 |
 
 ---
 
@@ -144,11 +31,11 @@ All implementation phases and tasks MUST comply with the following rules.
 
 | Task      | Description                                                                               | Completed | Date |
 | --------- | ----------------------------------------------------------------------------------------- | --------- | ---- |
-| TASK-0011 | Define extension metadata in `package.json` (name, description, activationEvents).        |           |      |
-| TASK-0012 | Register a single activation command (e.g. `iris.runAnalysis`) in `contributes.commands`. |           |      |
-| TASK-0013 | Implement `activate()` and `deactivate()` lifecycle functions in `src/extension.ts`.      |           |      |
-| TASK-0014 | Log activation and command execution to the VS Code Output Channel for visibility.        |           |      |
-| TASK-0015 | Verify command execution via Command Palette and confirm extension activation behavior.   |           |      |
+| TASK-0011 | Define extension metadata in `package.json` (name, description, activationEvents).        | Yes       | 2026-01-27 |
+| TASK-0012 | Register a single activation command (e.g. `iris.runAnalysis`) in `contributes.commands`. | Yes       | 2026-01-27 |
+| TASK-0013 | Implement `activate()` and `deactivate()` lifecycle functions in `src/extension.ts`.      | Yes       | 2026-01-27 |
+| TASK-0014 | Log activation and command execution to the VS Code Output Channel for visibility.        | Yes       | 2026-01-27 |
+| TASK-0015 | Verify command execution via Command Palette and confirm extension activation behavior.   | Yes       | 2026-01-27 |
 
 ---
 
@@ -156,11 +43,13 @@ All implementation phases and tasks MUST comply with the following rules.
 
 * GOAL-002: Enable the extension to read the active editor context and extract file-level information required for analysis.
 
-| TASK-0021 | Access the active text editor via `vscode.window.activeTextEditor` and handle the null case explicitly.                    
-| TASK-0022 | Extract the absolute file path and language identifier from `TextDocument` (`document.uri.fsPath`, `document.languageId`). 
-| TASK-0023 | Read full file contents using `TextDocument.getText()` and store it in an in-memory variable scoped to command execution.  
-| TASK-0024 | Capture basic file metadata (file name, line count) for logging and future request payloads.                               
-| TASK-0025 | Log extracted editor context data to the Output Channel for manual verification.                                           
+| Task      | Description                                                                                                              | Completed | Date |
+| --------- | ------------------------------------------------------------------------------------------------------------------------ | --------- | ---- |
+| TASK-0021 | Access active text editor via `vscode.window.activeTextEditor`; handle null case explicitly.                             | Yes       | 2026-01-27 |
+| TASK-0022 | Extract absolute file path and language identifier from `TextDocument`.                                                  | Yes       | 2026-01-27 |
+| TASK-0023 | Read full file contents using `TextDocument.getText()`.                                                                  | Yes       | 2026-01-27 |
+| TASK-0024 | Capture basic file metadata (file name, line count) for logging and future request payloads.                             | Yes       | 2026-01-27 |
+| TASK-0025 | Log extracted editor context to Output Channel per LOG-001.                                           | Yes       | 2026-01-27 |
 
 ---
 
@@ -178,9 +67,7 @@ All implementation phases and tasks MUST comply with the following rules.
   "filename": "main.js",
   "language": "javascript",
   "source_code": "<full source code string>",
-  "filepath": "/repo/path/main.js",
-  "url": "https://github.com/user/repo/blob/main/main.js",
-  "metadata": { "filepath": "/repo/path/main.js" }
+  "metadata": { "filepath": "/repo/path/main.js", ... }
 }
 ```
 
@@ -188,44 +75,50 @@ Field requirements:
 - `filename`: Base file name only (no path)
 - `language`: VS Code `languageId`
 - `source_code`: Full file contents as UTF-8 string
-- `filepath`: Repository-relative or virtual file path
-- `url`: Canonical source URL (if available)
-- `metadata`: Free-form object, must include `filepath`
+- `metadata`: Free-form object (optional)
 
 **Response Payload**:
 ```json
 {
   "success": true,
   "file_intent": "Short explanation of file purpose",
-  "responsibilities": [
-    {
-      "title": "Responsibility Title",
-      "description": "What this responsibility handles",
-      "entities": ["function1", "function2"]
-    }
+  "responsibility_blocks": [
+      {
+        "id": "kebab-case-id",  // BE-generated stable ID
+        "label": "Responsibility Title",
+        "description": "What this responsibility handles",
+        "elements": {
+          "functions": ["handleSubmit", "validateInput"],
+          "state": ["isLoading", "formData"],
+          "imports": ["useState", "axios"],
+          "types": ["FormData", "ValidationError"],
+          "constants": ["MAX_LENGTH", "API_URL"]
+        },
+        "ranges": [[1, 10], [50, 60]]  // Line ranges this responsibility covers
+      }
   ],
-  "metadata": { "final_confidence": 0.7, "iterations": 4 }
+  "metadata": { "final_confidence": 0.7, "iterations": 4, ... }
 }
 ```
 
 Response requirements:
 - `success=false` → treat as analysis failure
 - `file_intent` → short, stable natural language string
-- `responsibilities` → array of responsibility blocks
-- `metadata` → preserve as opaque data
+- `responsibility_blocks` → array of responsibility blocks
+- `metadata` → free-from object (preserve as opaque data)
 
 #### Tasks
 
 | Task      | Description                                                                                                                                                 | Completed | Date |
 | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---- |
-| TASK-0031 | Define supported language whitelist: `python`, `javascript`, `javascriptreact`, `typescript`, `typescriptreact`.                                           |           |      |
-| TASK-0032 | Validate active editor language against whitelist; abort gracefully if unsupported.                                                                         |           |      |
-| TASK-0033 | Display user-facing notification when unsupported language detected.                                                                                        |           |      |
-| TASK-0034 | Construct HTTP POST request payload per API contract above.                                                                                                 |           |      |
-| TASK-0035 | Send POST request to `/api/iris/analyze` and await JSON response.                                                                                           |           |      |
-| TASK-0036 | Validate response schema per API contract.                                                                                                                  |           |      |
-| TASK-0037 | Handle errors (timeout, non-200 status, `success=false`) and surface readable messages. Reference API-002.                                                  |           |      |
-| TASK-0038 | Log request lifecycle events to Output Channel per LOG-001.                                                
+| TASK-0031 | Define supported language whitelist: `python`, `javascript`, `javascriptreact`, `typescript`, `typescriptreact`.                                           | Yes       | 2026-01-27 |
+| TASK-0032 | Validate active editor language against whitelist; abort gracefully if unsupported.                                                                         | Yes       | 2026-01-27 |
+| TASK-0033 | Display user-facing notification when unsupported language detected.                                                                                        | Yes       | 2026-01-27 |
+| TASK-0034 | Construct HTTP POST request payload per API contract above.                                                                                                 | Yes       | 2026-01-27 |
+| TASK-0035 | Send POST request to `/api/iris/analyze` and await JSON response.                                                                                           | Yes       | 2026-01-27 |
+| TASK-0036 | Validate response schema per API contract.                                                                                                                  | Yes       | 2026-01-27 |
+| TASK-0037 | Handle errors (timeout, non-200 status, `success=false`) and surface readable messages. Reference API-002.                                                  | Yes       | 2026-01-27 |
+| TASK-0038 | Log request lifecycle events to Output Channel per LOG-001.                                                | Yes       | 2026-01-27 |
 
 ---
 
@@ -245,6 +138,24 @@ Response requirements:
 | TASK-0048 | Expose read-only selectors for webview and decorations per REQ-004.                                 |           |      |
 | TASK-0049 | Log all state transitions per LOG-001, LOG-002.                                     
 
+
+TASK-0043 | Define typed structures:
+          | - FileIntent: { text: string }
+          | - ResponsibilityBlock: { 
+          |     id: string; 
+          |     label: string; 
+          |     description: string; 
+          |     elements: { 
+          |       functions: string[]; 
+          |       state: string[]; 
+          |       imports: string[]; 
+          |       types: string[]; 
+          |       constants: string[] 
+          |     }; 
+          |     ranges: Array<[number, number]> 
+          |   }
+          | - AnalysisMetadata: { final_confidence?: number; iterations?: number; [key: string]: any }
+
 ---
 
 ### Implementation Phase 5 — Webview Side Panel (Read-only)
@@ -258,7 +169,7 @@ Response requirements:
 | TASK-0053 | Define minimal, static HTML structure for File Intent and Responsibility Blocks.                      |           |      |
 | TASK-0054 | On `ANALYZED` state, serialize and send analysis data to webview.                                     |           |      |
 | TASK-0055 | Render File Intent prominently at top of panel.                                                       |           |      |
-| TASK-0056 | Render vertical list of Responsibility Blocks (title and description only, no interaction).           |           |      |
+| TASK-0056 | Render vertical list of Responsibility Blocks (label and description only, no interaction).           |           |      |
 | TASK-0057 | Handle non-ANALYZED states per UX-001: empty state for `IDLE`, loading for `ANALYZING`, stale warning.|           |      |
 | TASK-0058 | Ensure webview never persists or mutates data per REQ-004.                                            |           |      |
 | TASK-0059 | Log webview initialization and updates per LOG-001.                                                    
@@ -274,13 +185,30 @@ Response requirements:
 **Canonical Signature**:
 ```ts
 interface ResponsibilityBlockSignature {
-  title: string      // normalized: trim, collapse whitespace
-  entities: string[] // normalized: lowercase, sort lexicographically
+  label: string                        // normalized: trim, collapse whitespace
+  elements: {                          // structured elements
+    functions: string[]                // normalized: lowercase, sort lexicographically
+    state: string[]
+    imports: string[]
+    types: string[]
+    constants: string[]
+  }
 }
 ```
 
 **Hash Function**: SHA-1 hex encoding
-**Format**: `blockId = rb_${sha1(JSON.stringify(signature)).slice(0, 12)}`
+// Hash generation:
+// 1. Normalize label: trim, collapse whitespace
+// 2. Flatten elements into single sorted array:
+//    const allElements = [
+//      ...elements.functions,
+//      ...elements.state,
+//      ...elements.imports,
+//      ...elements.types,
+//      ...elements.constants
+//    ].map(e => e.toLowerCase()).sort()
+// 3. Generate signature: { label: normalizedLabel, elements: allElements }
+// 4. Hash: blockId = `rb_${sha1(JSON.stringify(signature)).slice(0, 12)}`
 
 #### Message Contracts
 
@@ -297,10 +225,28 @@ type WebviewMessage =
 ```ts
 type ExtensionMessage =
   | { type: "STATE_UPDATE"; state: IRISAnalysisState }
-  | { type: "ANALYSIS_DATA"; payload: { fileIntent: string; responsibilities: Array<{blockId, title, description}> }}
+  | { 
+      type: "ANALYSIS_DATA"; 
+      payload: { 
+        fileIntent: string; 
+        responsibility_blocks: Array<{
+          blockId: string;
+          label: string;
+          description: string;
+          elements: {
+            functions: string[];
+            state: string[];
+            imports: string[];
+            types: string[];
+            constants: string[];
+          };
+          ranges: Array<[number, number]>;
+        }> 
+      }
+    }
   | { type: "ERROR"; message: string }
 ```
-
+  
 #### Tasks
 
 | Task      | Description                                                               | Completed | Date |
@@ -314,6 +260,14 @@ type ExtensionMessage =
 | TASK-0067 | Ignore and log malformed or unknown message types per LOG-003.            |           |      |
 | TASK-0068 | Log all blockId interactions per LOG-001.
 
+TASK-0061 | Implement `generateBlockId(block: ResponsibilityBlock)` function:
+          | 1. Extract normalized label (trim, collapse whitespace)
+          | 2. Flatten all elements into single sorted array
+          | 3. Create canonical signature: { label, elements: sortedArray }
+          | 4. Generate SHA-1 hash of JSON.stringify(signature)
+          | 5. Return `rb_${hash.slice(0, 12)}`
+          | See Phase 6 specification for detailed algorithm.
+
 ---
 
 ### Implementation Phase 7 — Editor Decorations (Semantic Highlighting)
@@ -325,9 +279,13 @@ type ExtensionMessage =
 ```ts
 interface ResponsibilityBlockDecoration {
   blockId: string
-  ranges: Array<{ startLine: number; endLine: number }> // zero-based, inclusive
+  ranges: Array<{ startLine: number; endLine: number }> // ZERO-based (VS Code API)
 }
 ```
+
+// Note: Backend returns ONE-based line numbers in ResponsibilityBlock.ranges
+// Conversion required: vscodeRange = backendRange.map(([start, end]) => 
+//   ({ startLine: start - 1, endLine: end - 1 }))
 
 **Color Strategy**: Stable, deterministic color per `blockId` via hash (ED-002).
 
@@ -456,6 +414,107 @@ Ensure: decorations disposed on deactivation per ED-003, webview messages ignore
 
 ---
 
+## 2. Requirements & Constraints
+
+### Functional Requirements
+
+* **REQ-001 (Explicit Analysis Trigger)**
+  Analysis triggered only via explicit user command, not automatically.
+
+* **REQ-002 (Single-File Scope)**
+  Analyze only the currently active editor file.
+
+* **REQ-003 (Read-Only Semantics)**
+  Never modify source code, file system, or editor text buffers. Overlay-based only.
+
+* **REQ-004 (State-Driven UI)**
+  All UI components derive from extension state; UI elements are stateless.
+
+* **REQ-005 (Deterministic blockId)**
+  Each Responsibility Block assigned deterministic `blockId` by extension.
+
+### UX Constraints
+
+* **UX-001 (Honest State)**
+  Communicate outdated analysis via `STALE` state and visual indicators.
+
+* **UX-002 (No Implicit Actions)**
+  No auto-highlighting, auto-focus, or auto-reanalysis after edits.
+
+* **UX-003 (Predictable Reset)**
+  On invalidating events: clear decorations, exit Focus Mode, return to neutral state.
+
+### State Management Constraints
+
+* **STATE-001 (Single Source of Truth)**
+  All semantic data in single extension-owned state model.
+
+* **STATE-002 (Explicit Transitions)**
+  All state transitions must be explicit, logged, and traceable.
+
+* **STATE-003 (STALE Until Reanalysis)**
+  `STALE` state remains until explicit user reanalysis.
+
+### Editor & Decoration Constraints
+
+* **ED-001 (Overlay-Only)**
+  Use only `TextEditorDecorationType`; no folding or text replacement.
+
+* **ED-002 (Deterministic Colors)**
+  Colors derived deterministically from `blockId`.
+
+* **ED-003 (Immediate Disposal)**
+  Dispose decorations on state transition to `IDLE`/`STALE`, editor change, or deactivation.
+
+### Logging & Observability Requirements
+
+* **LOG-001 (Centralized Output)**
+  Route all logs to dedicated Output Channel (e.g. `IRIS`).
+
+* **LOG-002 (Severity Levels)**
+  Use explicit levels: INFO, WARN, ERROR.
+
+* **LOG-003 (No Silent Failures)**
+  All errors must be logged and produce visible UI signals.
+
+### Explicit Non-Requirements (MVP Scope Boundaries)
+
+* **NONREQ-001**: No automatic analysis triggering
+* **NONREQ-002**: No cross-file intelligence
+* **NONREQ-003**: No user configuration system
+* **NONREQ-004**: No telemetry or analytics
+* **NONREQ-005**: No performance optimization beyond correctness
+* **NONREQ-006**: No automated testing (manual verification only)
+
+### Guiding Design Principles
+
+* **GUD-001 (Predictability Over Cleverness)**
+  The system must behave consistently, even if that limits advanced heuristics.
+
+* **GUD-002 (Progressive Enhancement)**
+  MVP functionality must form a stable foundation for future phases without refactoring core assumptions.
+
+* **GUD-003 (Cognitive Load Reduction First)**
+  All decisions must prioritize reducing mental effort for first-time code readers.
+
+### Backend Integration Requirements
+
+* **API-000 (Backend Contract)**
+  The extension integrates with the IRIS Analysis Server at `/api/iris/analyze` (POST). Detailed request/response schemas are defined in Phase 3.
+
+* **API-001 (Contract Adherence)**
+  Conform to the `/api/iris/analyze` schema (see Phase 3). Ignore undocumented fields safely.
+
+* **API-002 (Failure Handling)**
+  On `success=false`: clear state, surface user-readable error.
+
+* **API-003 (Opaque Metadata)**
+  Preserve but never interpret `metadata` object.
+
+* **API-004 (Stateless Server)**
+  Assume server is stateless; no caching or session reuse.
+
+
 ## 3. Alternatives
 
 * **ALT-001 — Automatic Analysis on File Open**
@@ -568,7 +627,7 @@ Automated tests are explicitly out of scope.
   Trigger analysis and confirm:
 
   * Successful request
-  * Correct parsing of `file_intent` and `responsibilities`
+  * Correct parsing of `file_intent` and `responsibility_blocks`
   * Transition to `ANALYZED` state
 
 * **TEST-004 — Unsupported Language Handling**

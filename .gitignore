@@ -6,6 +6,7 @@ __pycache__/
 # extension
 .vscode/
 .env
+node_modules/
 
 # .github
 .github/agents

@@ -126,9 +126,11 @@ class Orchestrator:
                     "file_intent": hypothesis.file_intent,
                     "responsibility_blocks": [
                         {
-                            "title": block.title,
+                            "id": block.id,
+                            "label": block.label,
                             "description": block.description,
-                            "entities": block.entities,
+                            "elements": block.elements,
+                            "ranges": block.ranges,
                         }
                         for block in hypothesis.responsibility_blocks
                     ],
@@ -191,16 +193,13 @@ class Orchestrator:
                 }
             )
 
-            # TASK-FIX2-017: Track confidence for progress detection
             current_confidence = feedback.confidence
             confidence_history.append(current_confidence)
 
-            # TASK-FIX2-018: Calculate confidence delta between iterations
             confidence_delta = None
             if len(confidence_history) >= 2:
                 confidence_delta = abs(confidence_history[-1] - confidence_history[-2])
 
-                # TASK-FIX2-019: Stall detection
                 if confidence_delta < MIN_PROGRESS_THRESHOLD:
                     stall_counter += 1
                     print(
@@ -312,9 +311,11 @@ class Orchestrator:
                             "file_intent": hypothesis.file_intent,
                             "responsibility_blocks": [
                                 {
-                                    "title": block.title,
+                                    "id": block.id,
+                                    "label": block.label,
                                     "description": block.description,
-                                    "entities": block.entities,
+                                    "elements": block.elements,
+                                    "ranges": block.ranges,
                                 }
                                 for block in hypothesis.responsibility_blocks
                             ],
@@ -373,9 +374,11 @@ class Orchestrator:
                         "file_intent": hypothesis.file_intent,
                         "responsibility_blocks": [
                             {
-                                "title": block.title,
+                                "id": block.id,
+                                "label": block.label,
                                 "description": block.description,
-                                "entities": block.entities,
+                                "elements": block.elements,
+                                "ranges": block.ranges,
                             }
                             for block in hypothesis.responsibility_blocks
                         ],

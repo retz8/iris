@@ -52,7 +52,7 @@ class IrisAgent:
 
     # Two-agent system configuration
     DEFAULT_CONFIDENCE_THRESHOLD = 0.85
-    DEFAULT_MAX_ITERATIONS = 3
+    DEFAULT_MAX_ITERATIONS = 1
     USE_TWO_AGENT_SYSTEM = True  # Feature flag for gradual rollout
 
     def __init__(self, model: str = "gpt-4o-mini", api_key: str | None = None):
@@ -111,7 +111,7 @@ class IrisAgent:
 
             print(f"[FAST-PATH] Complete!")
             print(f"  - File Intent: {result['file_intent'][:80]}...")
-            print(f"  - Responsibilities: {len(result['responsibilities'])}")
+            print(f"  - Responsibility blocks: {len(result['responsibility_blocks'])}")
             return result
 
         # =====================================================================
@@ -160,7 +160,9 @@ class IrisAgent:
 
                     print(f"[TWO-AGENT] Complete!")
                     print(f"  - File Intent: {result['file_intent'][:80]}...")
-                    print(f"  - Responsibilities: {len(result['responsibilities'])}")
+                    print(
+                        f"  - Responsibility blocks: {len(result['responsibility_blocks'])}"
+                    )
                     print(f"  - Iterations: {result['metadata'].get('iterations', 1)}")
                     print(
                         f"  - Tool Calls: {result['metadata'].get('tool_call_count', 0)}"
@@ -192,7 +194,9 @@ class IrisAgent:
 
                     print(f"[TOOL-CALLING] Complete!")
                     print(f"  - File Intent: {result['file_intent'][:80]}...")
-                    print(f"  - Responsibilities: {len(result['responsibilities'])}")
+                    print(
+                        f"  - Responsibility blocks: {len(result['responsibility_blocks'])}"
+                    )
                     print(
                         f"  - Tool Calls: {result['metadata'].get('tool_call_count', 0)}"
                     )
@@ -225,7 +229,7 @@ class IrisAgent:
             debugger: Optional AgentFlowDebugger instance.
 
         Returns:
-            Dict with file_intent, responsibilities, and metadata.
+            Dict with file_intent, responsibility_blocks, and metadata.
         """
         # Create orchestrator with configured thresholds
         orchestrator = Orchestrator(
@@ -401,7 +405,7 @@ class IrisAgent:
                 raise ValueError("LLM returned empty response in tool-calling analysis")
             result = self._parse_analysis_response(llm_response_text)
 
-            if "file_intent" not in result or "responsibilities" not in result:
+            if "file_intent" not in result or "responsibility_blocks" not in result:
                 raise ValueError(
                     f"LLM response missing required fields. Got keys: {list(result.keys())}"
                 )
@@ -493,7 +497,7 @@ class IrisAgent:
             signature_graph: Optional signature graph representation.
 
         Returns:
-            Dict with file_intent, responsibilities, and metadata.
+            Dict with file_intent, responsibility_blocks, and metadata.
         """
         try:
             user_prompt = build_fast_path_prompt(filename, language, source_code)
@@ -545,7 +549,7 @@ class IrisAgent:
             raise
 
     def _parse_analysis_response(self, response: str) -> Dict[str, Any]:
-        """Parse LLM Analysis response to extract File Intent + Responsibilities."""
+        """Parse LLM Analysis response to extract File Intent + Responsibility Blocks."""
         try:
             # Strip markdown code fences if present
             content = response.strip()
@@ -562,7 +566,7 @@ class IrisAgent:
             # Return minimal valid structure
             return {
                 "file_intent": "Error: Failed to analyze file",
-                "responsibilities": [],
+                "responsibility_blocks": [],
                 "metadata": {"notes": f"Parsing error: {str(e)}"},
             }
 
