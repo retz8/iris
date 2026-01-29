@@ -26,6 +26,14 @@ from tools.source_reader import SourceReader
 from tools.tool_definitions import IRIS_TOOLS
 from agents import Orchestrator, AnalysisResult
 
+# Experiment imports
+from experiment import (
+    EXPERIMENT_DEVELOPER_PROMPT,
+    build_experiment_user_prompt,
+    LLM_OUTPUT_SCHEMA,
+    LLMOutputSchema,
+)
+
 if TYPE_CHECKING:
     from .debugger.debugger import AgentFlowDebugger
 
@@ -54,6 +62,8 @@ class IrisAgent:
     DEFAULT_CONFIDENCE_THRESHOLD = 0.85
     DEFAULT_MAX_ITERATIONS = 1
     USE_TWO_AGENT_SYSTEM = True  # Feature flag for gradual rollout
+
+    ONLY_FAST_PATH_EXPERIMENT = True  # Experiment flag to only use fast path
 
     def __init__(self, model: str = "gpt-4o-mini", api_key: str | None = None):
         self.client = OpenAI(api_key=api_key)
@@ -91,8 +101,9 @@ class IrisAgent:
         # =====================================================================
         # Fast Path: Single LLM call with full source code
         # =====================================================================
-
-        if self._should_use_fast_path(source_code):
+        if self.ONLY_FAST_PATH_EXPERIMENT or self._should_use_fast_path(source_code):
+            if self.ONLY_FAST_PATH_EXPERIMENT:
+                print(f"***[RAW SOURCE CODE INPUT EXPERIMENT]***")
             print(f"[FAST-PATH] Analyzing {filename} with raw source code...")
 
             # Track fast-path stage in debugger
@@ -106,6 +117,9 @@ class IrisAgent:
                 source_code,
                 debugger,
             )
+
+            return result
+
             result["metadata"]["execution_path"] = "fast-path"
             result["metadata"]["tool_reads"] = []  # No tool reads in fast-path
 
@@ -467,6 +481,7 @@ class IrisAgent:
         Returns:
             True if fast-path should be used, False for two-stage analysis.
         """
+
         # Check line count
         line_count = len(source_code.splitlines())
         if line_count > self.FAST_PATH_LINE_THRESHOLD:
@@ -500,47 +515,88 @@ class IrisAgent:
             Dict with file_intent, responsibility_blocks, and metadata.
         """
         try:
-            user_prompt = build_fast_path_prompt(filename, language, source_code)
 
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": FAST_PATH_SYSTEM_PROMPT},
+            # user_prompt = build_fast_path_prompt(filename, language, source_code)
+
+            # response = self.client.chat.completions.create(
+            #     model=self.model,
+            #     messages=[
+            #         {"role": "system", "content": FAST_PATH_SYSTEM_PROMPT},
+            #         {"role": "user", "content": user_prompt},
+            #     ],
+            #     temperature=0.1,
+            # )
+
+            # NOTE source code only experiment
+            user_prompt = build_experiment_user_prompt(
+                filename,
+                language,
+                source_code,
+            )
+            response = self.client.responses.parse(
+                model="gpt-5-nano-2025-08-07",  # faster cheaper model
+                input=[
+                    {
+                        "role": "developer",
+                        "content": EXPERIMENT_DEVELOPER_PROMPT,
+                    },
                     {"role": "user", "content": user_prompt},
                 ],
-                temperature=0.1,
+                text_format=LLMOutputSchema,
+                reasoning={"effort": "minimal"},
+                # text={
+                #     "format": {
+                #         "type": "json_schema",
+                #         "name": "iris_response",
+                #         "schema": {
+                #             "type": "object",
+                #             "properties": LLM_OUTPUT_SCHEMA,
+                #             "required": ["file_intent", "responsibility_blocks"],
+                #             "additionalProperties": False,
+                #         },
+                #     }
+                # },
             )
 
-            content = response.choices[0].message.content
+            content = response.output_parsed
             if content is None:
                 raise ValueError("LLM returned empty response in fast-path analysis")
 
-            result = self._parse_analysis_response(content)
+            print(
+                f"[DEBUG - EXPERIMENT] input tokens: {response.usage.input_tokens if response.usage else 'N/A'}\n"
+            )
+            print(
+                f"[DEBUG - EXPERIMENT] output tokens: {response.usage.output_tokens if response.usage else 'N/A'}\n"
+            )
+
+            return content.model_dump()  #
+
+            # result = self._parse_analysis_response(content)
 
             # Track LLM metrics if debugger is available
-            if debugger:
-                input_tokens = (
-                    response.usage.prompt_tokens
-                    if response.usage
-                    else self._estimate_tokens_for_fast_path_prompt(
-                        filename, language, source_code
-                    )
-                )
-                output_tokens = (
-                    response.usage.completion_tokens
-                    if response.usage
-                    else self._estimate_tokens_for_response(content)
-                )
+            # if debugger:
+            #     input_tokens = (
+            #         response.usage.prompt_tokens
+            #         if response.usage
+            #         else self._estimate_tokens_for_fast_path_prompt(
+            #             filename, language, source_code
+            #         )
+            #     )
+            #     output_tokens = (
+            #         response.usage.completion_tokens
+            #         if response.usage
+            #         else self._estimate_tokens_for_response(content)
+            #     )
 
-                debugger.end_llm_stage(
-                    "fast_path_analysis",
-                    input_tokens=input_tokens,
-                    output_tokens=output_tokens,
-                    llm_response=content,
-                    parsed_output=result,
-                )
+            #     debugger.end_llm_stage(
+            #         "fast_path_analysis",
+            #         input_tokens=input_tokens,
+            #         output_tokens=output_tokens,
+            #         llm_response=content,
+            #         parsed_output=result,
+            #     )
 
-            return result
+            # return result
         except Exception as e:
             # Fallback to two-stage analysis on error
             print(f"[FAST-PATH] Error occurred: {e}")
@@ -658,3 +714,9 @@ class IrisAgent:
         """Converts milliseconds to seconds."""
         seconds = milliseconds / 1000
         return seconds
+
+    def _to_final_json(self, response) -> dict:
+        """
+        Convert a ParsedResponse[LLMOutputSchema] into a pure JSON-serializable dict.
+        """
+        return response.model_dump()

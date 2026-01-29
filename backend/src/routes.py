@@ -128,6 +128,8 @@ def analyze():
                 debugger=debugger,
             )
 
+            print("RESULT IS HERE: ", result)
+
             if isinstance(result, IrisError):
                 return (
                     jsonify(
@@ -153,7 +155,8 @@ def analyze():
         # =====================================================================
 
         # Print debug report and save markdown if in debug mode
-        if debugger and _debug_mode:
+        # if debugger and _debug_mode:
+        if False:
             # debugger.print_report()
 
             # Save markdown report
