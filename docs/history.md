@@ -40,6 +40,54 @@
 
                 - Direct Extraction - apply same IRIS success criteria (Scatter Rule, Ecosystem Principle) to generate high-quality JSON map immediately                
 
+## 1/19/26 ~ 1/28/26: Two-Agent System Experiment
+
+**Architecture: Analyzer-Critic Loop with Confidence-Based Iteration**
+
+- Implemented two-agent system: Analyzer generates initial hypothesis, Critic evaluates and provides feedback
+- Loop continues until confidence score exceeds threshold or max iterations reached
+- Confidence-driven refinement: each iteration aims to improve responsibility block quality based on critic feedback
+
+**Key Problems Identified:**
+
+1. **Token Explosion**: Multi-turn conversations accumulated massive context, each iteration carrying full history
+2. **Prompt Complexity**: Managing state between agents, formatting critic feedback, tracking confidence changes led to unwieldy prompts
+3. **LLM Performance Degradation**: Longer prompts paradoxically made LLM "dumber" - lost focus, generated inconsistent outputs
+4. **Cost Inefficiency**: 2-3 iterations per file doubled or tripled API costs with marginal quality gains
+5. **Latency Issues**: Sequential agent calls created unacceptable delays for real-time UX goal
+
+**Critical Insight:**
+
+The agentic approach fundamentally conflicts with IRIS's core UX requirement: **instant, on-file-open analysis**. Multi-agent reasoning, while intellectually appealing, sacrifices speed and simplicity for diminishing returns in output quality.
+
+**Outcome:** Two-agent system marked as failed approach. Pivoting to single-shot inference with careful prompt engineering.
+
+---
+
+## 1/29/26~: Pivot to Single-Shot Inference & Model Selection
+
+**Strategic Shift: Abandoning Agentic Complexity**
+
+- **Model Selection**: gpt-5-nano chosen for speed (fast), cost (cheap), and large context window (400k tokens)
+- **Architecture**: Single-shot inference only - no multi-turn, no analyzer/critic, no tool-calling loops
+- **Reasoning Control**: Explicitly disable reasoning via API (`reasoning={"effort": "none"}`) to prevent token bloat
+- **Output Format**: Structured JSON schema for stability, but reasoning control is critical for cost management
+
+**Key Principles Established:**
+
+1. **Raw Source Code Input**: No normalization, no intermediate representations (AST/signature graph attempts failed)
+2. **Minimal Output Schema**: Only `file_intent` and `responsibility_blocks` - stripped all metadata/success flags
+3. **Line Number Accuracy**: Source code must be inserted without indentation to prevent phantom line numbers
+4. **Prompt Discipline**: XML-tagged developer prompt, clear input order, explicit line number assumptions
+
+**Cost Model:**
+- Per-request: ~9k input tokens, ~200-400 output tokens
+- With reasoning disabled: ~$0.001 per request
+- Input dominates cost → caching strategy becomes critical
+
+**Philosophy:**
+Treat LLM like a human reader: give them clean source code, ask for natural reading comprehension, trust their judgment. The simpler the system, the better it performs.
+
 # TODO
 - code clean up
 - local storage multi-layered cache
