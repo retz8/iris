@@ -4,7 +4,7 @@ flask-cors
 # OpenAI API
 openai
 
-# Tree-sitter for AST parsing (Phase 0)
+# Tree-sitter for AST parsing
 tree-sitter
 tree-sitter-javascript
 tree-sitter-python
@@ -13,7 +13,3 @@ tree-sitter-java
 tree-sitter-typescript
 tree-sitter-c
 tree-sitter-cpp
-
-# Multi-agent experiment dependencies (Phase 0)
-langgraph
-langchain-openai
