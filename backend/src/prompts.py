@@ -101,12 +101,22 @@ Phase 3: SYNTHESIZE FILE INTENT
 - Keep it as concise as possible in one sentence, think it as a book title
 - Ideally less than 10 words, but if needed, go up to 20 words
 
-Phase 4. ORDER RESPONSIBILITY BLOCKS
-- Arrange the responsibility blocks in a 'contextual flow'
-- Think about a scenario where a developer reads through the file
-- What order would make the most sense to understand the file quickly?
-- Top to bottom, from general to specific, or by dependency order
+Phase 4: ORDER RESPONSIBILITY BLOCKS FOR COMPREHENSION
 
+IMPORTANT: Reorder the blocks for fastest comprehension, NOT source code line order.
+
+Ask yourself:
+1. Which block explains the file's main purpose? → Put that FIRST
+2. Which blocks are supporting details? → Put those LAST
+3. Which blocks would a developer want to see first when skimming?
+
+Common pattern for application code:
+1. Initialization/entry point
+2. Main domain logic
+3. Helper utilities
+4. Infrastructure/imports
+
+Reorder your blocks now before outputting.
 </analysis_workflow>
 """
 

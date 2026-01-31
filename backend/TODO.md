@@ -1,6 +1,6 @@
 # TODO for 26/1/31
 
-- refine prompts
+- refine prompts [DONE]
     - improve prompt with basic philosophy first
 - then, add debug report to test out sample codes
     - evaluate quality and analyze how to improve (refer to openai's instructions, not only AI)

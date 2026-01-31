@@ -1,9 +1,10 @@
 ---
 
 goal: IRIS VS Code Extension MVP Implementation Plan
-version: 1.0
+version: 1.1
 date_created: 2026-01-26
-status: Planned
+date_updated: 2026-01-31
+status: In Progress
 tags: [architecture, design, vscode-extension, mvp]
 ---
 
@@ -66,38 +67,43 @@ Reference: [README](../README.md)
 {
   "filename": "main.js",
   "language": "javascript",
-  "source_code": "<full source code string>",
-  "metadata": { "filepath": "/repo/path/main.js", ... }
+  "source_code": "<full source code string with line numbers>",
+  "metadata": { "filepath": "/repo/path/main.js" }
 }
 ```
 
-Field requirements:
+Request field requirements:
 - `filename`: Base file name only (no path)
 - `language`: VS Code `languageId`
-- `source_code`: Full file contents as UTF-8 string
+- `source_code`: Full file contents as UTF-8 string with line numbers prefixed in format "LINE_NUMBER | CODE"
 - `metadata`: Free-form object (optional)
 
 **Response Payload**:
 ```json
 {
-  "success": true,
-  "file_intent": "Short explanation of file purpose",
+  "file_intent": "Interactive 3D human-wheelchair modeling tool with parameterized GUI and export options",
+  "metadata": {
+    "filepath": "/retz8/umtri-wheelchair-modeling-tool/blob/main/main.js",
+    "url": "https://github.com/retz8/umtri-wheelchair-modeling-tool/blob/main/main.js"
+  },
   "responsibility_blocks": [
-      {
-        "label": "Responsibility Title",
-        "description": "What this responsibility handles",
-        "ranges": [[1, 10], [50, 60]]  // Line ranges this responsibility covers
-      }
-  ],
-  "metadata": { ... }
+    {
+      "description": "Imports and global module setup, including scene management, loaders, and utilities",
+      "label": "Initialization and Dependencies",
+      "ranges": [[1, 4], [6, 12], [18, 39]]
+    }
+  ]
 }
 ```
 
 Response requirements:
-- `success=false` → treat as analysis failure
-- `file_intent` → short, stable natural language string
-- `responsibility_blocks` → array of responsibility blocks
-- `metadata` → free-from object (preserve as opaque data)
+- HTTP 200 status with all required fields present indicates success
+- HTTP non-200 status OR missing `file_intent` OR missing `responsibility_blocks` → treat as analysis failure
+- `file_intent`: Short, stable natural language string describing file purpose
+- `metadata`: Free-form object (preserve as opaque data, may contain `filepath`, `url`, or other fields)
+- `responsibility_blocks`: Array of responsibility block objects
+  - Each block contains: `description` (string), `label` (string), `ranges` (array of [number, number] tuples)
+  - Field presence is required; field order validation is not required
 
 #### Tasks
 
@@ -106,10 +112,10 @@ Response requirements:
 | TASK-0031 | Define supported language whitelist: `python`, `javascript`, `javascriptreact`, `typescript`, `typescriptreact`.                                           | Yes       | 2026-01-27 |
 | TASK-0032 | Validate active editor language against whitelist; abort gracefully if unsupported.                                                                         | Yes       | 2026-01-27 |
 | TASK-0033 | Display user-facing notification when unsupported language detected.                                                                                        | Yes       | 2026-01-27 |
-| TASK-0034 | Construct HTTP POST request payload per API contract above.                                                                                                 | Yes       | 2026-01-27 |
+| TASK-0034 | Construct HTTP POST request payload per API contract above. Source code must include line numbers in format "LINE_NUMBER | CODE".                          | Yes       | 2026-01-27 |
 | TASK-0035 | Send POST request to `/api/iris/analyze` and await JSON response.                                                                                           | Yes       | 2026-01-27 |
-| TASK-0036 | Validate response schema per API contract.                                                                                                                  | Yes       | 2026-01-27 |
-| TASK-0037 | Handle errors (timeout, non-200 status, `success=false`) and surface readable messages. Reference API-002.                                                  | Yes       | 2026-01-27 |
+| TASK-0036 | Validate response schema: verify HTTP 200 status, presence of `file_intent` field, and presence of `responsibility_blocks` array. Field order validation not required. | Yes       | 2026-01-27 |
+| TASK-0037 | Handle errors (timeout, non-200 HTTP status, missing required fields) and surface readable messages. Reference API-002.                                     | Yes       | 2026-01-27 |
 | TASK-0038 | Log request lifecycle events to Output Channel per LOG-001.                                                | Yes       | 2026-01-27 |
 
 ---
@@ -120,25 +126,15 @@ Response requirements:
 
 | Task      | Description                                                                                         | Completed | Date |
 | --------- | --------------------------------------------------------------------------------------------------- | --------- | ---- |
-| TASK-0041 | Define `IRISAnalysisState` enum: `IDLE`, `ANALYZING`, `ANALYZED`, `STALE`.                         |           |      |
-| TASK-0042 | Create single in-memory state container owned by extension runtime.                                 |           |      |
-| TASK-0043 | Define typed structures: `FileIntent`, `ResponsibilityBlock`, `AnalysisMetadata`.                   |           |      |
-| TASK-0044 | Store raw server response alongside normalized semantic fields.                                     |           |      |
-| TASK-0045 | Update state transitions on analysis trigger start per STATE-002.                                   |           |      |
-| TASK-0046 | On `success=true`, persist analysis data and transition to `ANALYZED`.                              |           |      |
-| TASK-0047 | On failure, clear data and transition to `IDLE` per API-002.                                        |           |      |
-| TASK-0048 | Expose read-only selectors for webview and decorations per REQ-004.                                 |           |      |
-| TASK-0049 | Log all state transitions per LOG-001, LOG-002.                                     
-
-
-TASK-0043 | Define typed structures:
-          | - FileIntent: { text: string }
-          | - ResponsibilityBlock: { 
-          |     label: string; 
-          |     description: string; 
-          |     ranges: Array<[number, number]> 
-          |   }
-          | - AnalysisMetadata: { any }
+| TASK-0041 | Define `IRISAnalysisState` enum: `IDLE`, `ANALYZING`, `ANALYZED`, `STALE`.                         | Yes       | 2026-01-31 |
+| TASK-0042 | Create single in-memory state container owned by extension runtime.                                 | Yes       | 2026-01-31 |
+| TASK-0043 | Define typed structures matching actual API response format: <br/>- `FileIntent`: string (not an object) <br/>- `ResponsibilityBlock`: { description: string; label: string; ranges: Array<[number, number]> } <br/>- `AnalysisMetadata`: { filepath?: string; url?: string; [key: string]: any } | Yes       | 2026-01-31 |
+| TASK-0044 | Store raw server response alongside normalized semantic fields.                                     | Yes       | 2026-01-31 |
+| TASK-0045 | Update state transitions on analysis trigger start per STATE-002.                                   | Yes       | 2026-01-31 |
+| TASK-0046 | On HTTP 200 with valid response schema, persist analysis data and transition to `ANALYZED`.         | Yes       | 2026-01-31 |
+| TASK-0047 | On HTTP error or invalid schema, clear data and transition to `IDLE` per API-002.                   | Yes       | 2026-01-31 |
+| TASK-0048 | Expose read-only selectors for webview and decorations per REQ-004.                                 | Yes       | 2026-01-31 |
+| TASK-0049 | Log all state transitions per LOG-001, LOG-002.                                                     | Yes       | 2026-01-31 |
 
 ---
 
@@ -156,7 +152,7 @@ TASK-0043 | Define typed structures:
 | TASK-0056 | Render vertical list of Responsibility Blocks (label and description only, no interaction).           |           |      |
 | TASK-0057 | Handle non-ANALYZED states per UX-001: empty state for `IDLE`, loading for `ANALYZING`, stale warning.|           |      |
 | TASK-0058 | Ensure webview never persists or mutates data per REQ-004.                                            |           |      |
-| TASK-0059 | Log webview initialization and updates per LOG-001.                                                    
+| TASK-0059 | Log webview initialization and updates per LOG-001.                                                   |           |      |
 
 ---
 
@@ -169,30 +165,38 @@ TASK-0043 | Define typed structures:
 **Canonical Signature**:
 ```ts
 interface ResponsibilityBlockSignature {
-  label: string                        // normalized: trim, collapse whitespace
-  elements: {                          // structured elements
-    functions: string[]                // normalized: lowercase, sort lexicographically
-    state: string[]
-    imports: string[]
-    types: string[]
-    constants: string[]
-  }
+  label: string;                        // From API - normalized: trim, collapse whitespace
+  description: string;                  // From API - normalized: trim, collapse whitespace
+  ranges: Array<[number, number]>;      // From API - for stability across regeneration
 }
 ```
 
 **Hash Function**: SHA-1 hex encoding
-// Hash generation:
+
+**Algorithm**:
+```javascript
 // 1. Normalize label: trim, collapse whitespace
-// 2. Flatten elements into single sorted array:
-//    const allElements = [
-//      ...elements.functions,
-//      ...elements.state,
-//      ...elements.imports,
-//      ...elements.types,
-//      ...elements.constants
-//    ].map(e => e.toLowerCase()).sort()
-// 3. Generate signature: { label: normalizedLabel, elements: allElements }
-// 4. Hash: blockId = `rb_${sha1(JSON.stringify(signature)).slice(0, 12)}`
+const normalizedLabel = block.label.trim().replace(/\s+/g, ' ');
+
+// 2. Normalize description: trim, collapse whitespace
+const normalizedDescription = block.description.trim().replace(/\s+/g, ' ');
+
+// 3. Stringify ranges for consistency
+const stringifiedRanges = JSON.stringify(block.ranges);
+
+// 4. Generate signature object
+const signature = {
+  label: normalizedLabel,
+  description: normalizedDescription,
+  ranges: stringifiedRanges
+};
+
+// 5. Generate blockId
+const hash = sha1(JSON.stringify(signature));
+const blockId = `rb_${hash.slice(0, 12)}`;
+```
+
+**Rationale**: Including `ranges` ensures blockId stability - if the LLM generates the same semantic block with the same line coverage, it gets the same ID. If ranges change meaningfully, the blockId changes, preventing stale decoration mapping.
 
 #### Message Contracts
 
@@ -212,19 +216,17 @@ type ExtensionMessage =
   | { 
       type: "ANALYSIS_DATA"; 
       payload: { 
-        fileIntent: string; 
+        fileIntent: string;
+        metadata: {
+          filepath?: string;
+          url?: string;
+          [key: string]: any;
+        };
         responsibility_blocks: Array<{
-          blockId: string;
-          label: string;
-          description: string;
-          elements: {
-            functions: string[];
-            state: string[];
-            imports: string[];
-            types: string[];
-            constants: string[];
-          };
-          ranges: Array<[number, number]>;
+          blockId: string;           // Added by extension during normalization
+          description: string;       // From API
+          label: string;             // From API
+          ranges: Array<[number, number]>;  // From API (ONE-based line numbers)
         }> 
       }
     }
@@ -235,22 +237,14 @@ type ExtensionMessage =
 
 | Task      | Description                                                               | Completed | Date |
 | --------- | ------------------------------------------------------------------------- | --------- | ---- |
-| TASK-0061 | Implement `generateBlockId(signature)` using SHA-1 canonical encoding.    |           |      |
+| TASK-0061 | Implement `generateBlockId(block: ResponsibilityBlock)` function using SHA-1 canonical encoding per specification above. |           |      |
 | TASK-0062 | Attach `blockId` to all blocks during Phase 4 normalization per REQ-005.  |           |      |
 | TASK-0063 | Define strict TypeScript discriminated unions for all message types.      |           |      |
 | TASK-0064 | Implement message listeners using `webview.onDidReceiveMessage`.          |           |      |
 | TASK-0065 | Implement message dispatch from webview using `vscode.postMessage`.       |           |      |
 | TASK-0066 | Enforce blockId-based routing; prohibit index/title-based logic.          |           |      |
 | TASK-0067 | Ignore and log malformed or unknown message types per LOG-003.            |           |      |
-| TASK-0068 | Log all blockId interactions per LOG-001.
-
-TASK-0061 | Implement `generateBlockId(block: ResponsibilityBlock)` function:
-          | 1. Extract normalized label (trim, collapse whitespace)
-          | 2. Flatten all elements into single sorted array
-          | 3. Create canonical signature: { label, elements: sortedArray }
-          | 4. Generate SHA-1 hash of JSON.stringify(signature)
-          | 5. Return `rb_${hash.slice(0, 12)}`
-          | See Phase 6 specification for detailed algorithm.
+| TASK-0068 | Log all blockId interactions per LOG-001.                                 |           |      |
 
 ---
 
@@ -262,14 +256,18 @@ TASK-0061 | Implement `generateBlockId(block: ResponsibilityBlock)` function:
 
 ```ts
 interface ResponsibilityBlockDecoration {
-  blockId: string
-  ranges: Array<{ startLine: number; endLine: number }> // ZERO-based (VS Code API)
+  blockId: string;
+  ranges: Array<{ startLine: number; endLine: number }>; // ZERO-based (VS Code API)
 }
 ```
 
-// Note: Backend returns ONE-based line numbers in ResponsibilityBlock.ranges
-// Conversion required: vscodeRange = backendRange.map(([start, end]) => 
-//   ({ startLine: start - 1, endLine: end - 1 }))
+**Important**: Backend returns ONE-based line numbers in `ResponsibilityBlock.ranges`.
+Conversion required before applying decorations:
+```ts
+vscodeRange = backendRange.map(([start, end]) => 
+  ({ startLine: start - 1, endLine: end - 1 })
+)
+```
 
 **Color Strategy**: Stable, deterministic color per `blockId` via hash (ED-002).
 
@@ -286,11 +284,11 @@ interface ResponsibilityBlockDecoration {
 | --------- | ---------------------------------------------------------------------- | --------- | ---- |
 | TASK-0071 | Define decoration manager for creating, caching, disposing per blockId.|           |      |
 | TASK-0072 | Implement deterministic color generation from blockId per ED-002.      |           |      |
-| TASK-0073 | Define data structures mapping blockId to editor line ranges.          |           |      |
+| TASK-0073 | Define data structures mapping blockId to editor line ranges. Convert ONE-based API ranges to ZERO-based VS Code ranges. |           |      |
 | TASK-0074 | Apply decorations on `BLOCK_HOVER` using `editor.setDecorations`.     |           |      |
 | TASK-0075 | Clear decorations on `BLOCK_CLEAR`, `IDLE`, `STALE` per ED-003.       |           |      |
 | TASK-0076 | Dispose all decoration types to prevent memory leaks per ED-003.       |           |      |
-| TASK-0077 | Log decoration lifecycle per LOG-001.
+| TASK-0077 | Log decoration lifecycle per LOG-001.                                  |           |      |
 
 ---
 
@@ -302,7 +300,7 @@ interface ResponsibilityBlockDecoration {
 
 ```ts
 interface FocusState {
-  activeBlockId: string | null // null = no focus mode
+  activeBlockId: string | null; // null = no focus mode
 }
 ```
 
@@ -322,12 +320,12 @@ interface FocusState {
 
 | Task      | Description                                             | Completed | Date |
 | --------- | ------------------------------------------------------- | --------- | ---- |
-| TASK-0081 | Extend extension state to include `FocusState`.         |           |      |
-| TASK-0082 | Implement focused decoration style distinct from hover. |           |      |
-| TASK-0083 | Apply selective dimming to non-focused blocks.          |           |      |
-| TASK-0084 | Disable hover-based decorations while focused.          |           |      |
-| TASK-0085 | Implement `FOCUS_CLEAR` message handling.               |           |      |
-| TASK-0086 | Ensure focus exits on `STALE` and editor change.        |           |      |
+| TASK-0081 | Extend extension state to include `FocusState`.         | Yes       | 2026-01-31 |
+| TASK-0082 | Implement focused decoration style distinct from hover. | Yes       | 2026-01-31 |
+| TASK-0083 | Apply selective dimming to non-focused blocks.          | Yes       | 2026-01-31 |
+| TASK-0084 | Disable hover-based decorations while focused.          | Yes       | 2026-01-31 |
+| TASK-0085 | Implement `FOCUS_CLEAR` message handling.               | Yes       | 2026-01-31 |
+| TASK-0086 | Ensure focus exits on `STALE` and editor change.        | Yes       | 2026-01-31 |
 
 ---
 
@@ -354,12 +352,12 @@ interface FocusState {
 
 | Task      | Description                                               | Completed | Date |
 | --------- | --------------------------------------------------------- | --------- | ---- |
-| TASK-0091 | Register document change listeners scoped to active file. |           |      |
-| TASK-0092 | Implement single-shot transition to `STALE` per STATE-003.|           |      |
-| TASK-0093 | Clear decorations and focus state per ED-003.             |           |      |
-| TASK-0094 | Send `ANALYSIS_STALE` message to Webview per UX-001.      |           |      |
-| TASK-0095 | Prevent redundant STALE transitions.                      |           |      |
-| TASK-0096 | Log file invalidation events per LOG-001.                 |           |      |
+| TASK-0091 | Register document change listeners scoped to active file. | Yes       | 2026-01-31 |
+| TASK-0092 | Implement single-shot transition to `STALE` per STATE-003.| Yes       | 2026-01-31 |
+| TASK-0093 | Clear decorations and focus state per ED-003.             | Yes       | 2026-01-31 |
+| TASK-0094 | Send `ANALYSIS_STALE` message to Webview per UX-001.      | Yes       | 2026-01-31 |
+| TASK-0095 | Prevent redundant STALE transitions.                      | Yes       | 2026-01-31 |
+| TASK-0096 | Log file invalidation events per LOG-001.                 | Yes       | 2026-01-31 |
 
 ---
 
@@ -389,12 +387,11 @@ Ensure: decorations disposed on deactivation per ED-003, webview messages ignore
 
 | Task      | Description                                             | Completed | Date |
 | --------- | ------------------------------------------------------- | --------- | ---- |
-| TASK-0101 | Implement global error boundary for server calls.       |           |      |
-| TASK-0102 | Add loading and disabled states to analysis trigger UX. |           |      |
-| TASK-0103 | Validate API response shape defensively per API-002.    |           |      |
-| TASK-0104 | Implement structured logging per LOG-001, LOG-002.      |           |      |
-| TASK-0105 | Ensure full cleanup on extension deactivation.          |           |      |
-| TASK-0106 | Final manual test pass across all phases.               |           |      |
+| TASK-0101 | Implement global error boundary for server calls.       | Yes       | 2026-01-31 |
+| TASK-0102 | Add loading and disabled states to analysis trigger UX. | Yes       | 2026-01-31 |
+| TASK-0103 | Validate API response shape defensively per API-002.    | Yes       | 2026-01-31 |
+| TASK-0104 | Implement structured logging per LOG-001, LOG-002.      | Yes       | 2026-01-31 |
+| TASK-0105 | Ensure full cleanup on extension deactivation.          | Yes       | 2026-01-31 |
 
 ---
 
@@ -415,7 +412,7 @@ Ensure: decorations disposed on deactivation per ED-003, webview messages ignore
   All UI components derive from extension state; UI elements are stateless.
 
 * **REQ-005 (Deterministic blockId)**
-  Each Responsibility Block assigned deterministic `blockId` by extension.
+  Each Responsibility Block assigned deterministic `blockId` by extension using canonical signature including label, description, and ranges.
 
 ### UX Constraints
 
@@ -490,7 +487,7 @@ Ensure: decorations disposed on deactivation per ED-003, webview messages ignore
   Conform to the `/api/iris/analyze` schema (see Phase 3). Ignore undocumented fields safely.
 
 * **API-002 (Failure Handling)**
-  On `success=false`: clear state, surface user-readable error.
+  On HTTP non-200 status or missing required fields (`file_intent`, `responsibility_blocks`): clear state, surface user-readable error.
 
 * **API-003 (Opaque Metadata)**
   Preserve but never interpret `metadata` object.
@@ -498,6 +495,7 @@ Ensure: decorations disposed on deactivation per ED-003, webview messages ignore
 * **API-004 (Stateless Server)**
   Assume server is stateless; no caching or session reuse.
 
+---
 
 ## 3. Alternatives
 
@@ -518,6 +516,9 @@ Ensure: decorations disposed on deactivation per ED-003, webview messages ignore
 
 * **ALT-006 — Persistent Analysis Across Sessions**
   Rejected to avoid stale or misleading analysis restoration.
+
+* **ALT-007 — Exclude ranges from blockId generation**
+  Rejected because including ranges ensures stability - same semantic block with same coverage gets same ID, preventing stale decoration mapping.
 
 ---
 
@@ -566,7 +567,7 @@ Paths are relative to the extension root.
   Contains:
 
   * `IRISAnalysisState` enum
-  * Normalized analysis data
+  * Normalized analysis data (with blockId attached)
   * Focus state
   * Read-only selectors
 
@@ -588,9 +589,11 @@ Paths are relative to the extension root.
 
   * Deterministic color generation
   * Decoration creation, caching, and disposal
+  * ONE-based to ZERO-based line number conversion
 
 * **FILE-007 — `src/utils/blockId.ts`**
   Implements deterministic `blockId` generation using SHA-1 canonical hashing.
+  Signature includes: label, description, ranges.
 
 ---
 
@@ -605,13 +608,13 @@ Automated tests are explicitly out of scope.
   Verify the analysis command appears in the Command Palette and activates the extension.
 
 * **TEST-002 — Editor Context Extraction**
-  Verify correct filename, languageId, and full source text are extracted from the active editor.
+  Verify correct filename, languageId, and full source text (with line numbers) are extracted from the active editor.
 
 * **TEST-003 — Server Integration Success Path**
   Trigger analysis and confirm:
 
-  * Successful request
-  * Correct parsing of `file_intent` and `responsibility_blocks`
+  * Successful HTTP 200 request
+  * Correct parsing of `file_intent`, `metadata`, and `responsibility_blocks`
   * Transition to `ANALYZED` state
 
 * **TEST-004 — Unsupported Language Handling**
@@ -647,6 +650,11 @@ Automated tests are explicitly out of scope.
 * **TEST-010 — Extension Deactivation Cleanup**
   Deactivate the extension and confirm all resources are disposed safely.
 
+* **TEST-011 — blockId Stability**
+  Run analysis twice on the same file without edits and verify:
+  * Same blocks receive identical blockIds
+  * Decorations map correctly across re-runs
+
 ---
 
 ## 7. Risks & Assumptions
@@ -660,6 +668,9 @@ Automated tests are explicitly out of scope.
 * **RISK-003 — Network Fragility**
   Analysis depends on server availability; no offline fallback exists in MVP.
 
+* **RISK-004 — blockId Collision**
+  SHA-1 truncated to 12 characters has small collision probability. Acceptable for MVP scope.
+
 * **ASSUMPTION-001 — Server Contract Stability**
   The `/api/iris/analyze` API contract will remain stable for the duration of the MVP.
 
@@ -668,5 +679,8 @@ Automated tests are explicitly out of scope.
 
 * **ASSUMPTION-003 — Manual Control Preference**
   Users prefer explicit analysis triggering over automatic behavior in early-stage tooling.
+
+* **ASSUMPTION-004 — Line Number Stability**
+  LLM will generate consistent line ranges for the same semantic blocks when source code is unchanged.
 
 ---

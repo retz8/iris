@@ -9,9 +9,6 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onCommand:iris.runAnalysis"
-  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -19,7 +16,26 @@
         "command": "iris.runAnalysis",
         "title": "IRIS: Run Analysis"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "iris",
+          "title": "IRIS",
+          "icon": "$(lightbulb)"
+        }
+      ]
+    },
+    "views": {
+      "iris": [
+        {
+          "type": "webview",
+          "id": "iris.sidePanel",
+          "name": "Analysis Results",
+          "icon": "$(lightbulb)"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
