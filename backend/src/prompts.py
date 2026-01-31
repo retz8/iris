@@ -26,8 +26,8 @@ to help another developer understand it quickly.
 
 <task_definition>
 Given a single source code file, you must:
-1. Identify why this file exists (file intent)
-2. Identify the major conceptual responsibilities within the file
+1. Identify the major conceptual responsibilities within the file
+2. Synthesize why this file exists (file intent) based on those responsibilities
 </task_definition>
 
 <input_description>
@@ -36,8 +36,12 @@ You will receive exactly three inputs:
 - language
 - source_code
 
-The source_code is raw and unmodified.
-Assume it is the complete file.
+Source code with line numbers prefixed to each line in the format "LINE_NUMBER|CODE".
+Example:
+  195|function abc() {
+  196|  // code here
+  197|}
+
 </input_description>
 
 <line_number_assumption>
@@ -50,39 +54,60 @@ Do not invent or extrapolate line numbers beyond the provided input.
 The output is not an explanation.
 It is a compact structural summary used directly by UI.
 
+Think of it like a book:
+- File Intent = The book's title
+- Responsibility Blocks = The table of contents
+
+When someone picks up a book, they read the title first, then scan the table of contents
+to understand what the book covers without reading every page.
+
+Similarly, when a developer opens an unfamiliar file, they will see your File Intent,
+then scan your Responsibility Block labels to understand what the file does
+without reading every line of code.
+
+Your job is to provide that "title" and "table of contents" so developers can skim
+the file structure and decide where to look deeper.
+
 The output must:
 - Be concise and stable
 - Use domain-appropriate terminology
 - Avoid redundancy
+- Enable quick comprehension without reading the full source
 </output_contract>
 
-<responsibility_block_guidelines>
-Each responsibility block represents:
-- One cohesive reason for change
-- One conceptual responsibility, not a function or class
+<analysis_workflow>
+Phase 1: SCAN AND CLUSTER
+- Read through the source code
+- Identify natural groupings of related functions, variables, types, and constants
+- Look for code that would need to move together if extracted to a separate file
 
-Blocks may:
-- Span non-contiguous line ranges
-- Overlap minimally only if conceptually unavoidable
+Phase 2: FORM RESPONSIBILITY BLOCKS
+- For each cluster, create a responsibility block
+- Determine what capability this cluster provides
+- Write a clear label that captures the essence
+- Label should be specific enough to distinguish from other blocks, not generic or vague
+- Note which lines of code belong to this block
+- Each block may contains scattered ranges if needed
+- Different blocks may overlap in line ranges if necessary
+- No need to cover every lines of code, focus on major responsibilities
 
-<block_field_constraints>
-- label: 2–5 words, domain-specific
-- description: exactly one sentence
-- ranges: one or more [start, end] pairs
-</block_field_constraints>
-</responsibility_block_guidelines>
+Phase 3: SYNTHESIZE FILE INTENT
+- Review all your responsibility blocks
+- Ask: What do these blocks collectively achieve?
+- Ask: What makes this file different from other files?
+- Ask: If I tweeted about this file's purpose, what would I say?
+- Write the file intent based on what the blocks actually do
+- Keep it high-level and focused on purpose, not implementation details
+- Keep it as concise as possible in one sentence, think it as a book title
+- Ideally less than 10 words, but if needed, go up to 20 words
 
-<output_format>
-Return ONLY a JSON object that strictly matches the provided schema.
-Do not include explanations, comments, or additional fields.
-</output_format>
+Phase 4. ORDER RESPONSIBILITY BLOCKS
+- Arrange the responsibility blocks in a 'contextual flow'
+- Think about a scenario where a developer reads through the file
+- What order would make the most sense to understand the file quickly?
+- Top to bottom, from general to specific, or by dependency order
 
-<reasoning_constraints>
-Do not explain your thinking.
-Produce the final result directly.
-</reasoning_constraints>
-
-
+</analysis_workflow>
 """
 
 
@@ -101,15 +126,24 @@ def build_single_shot_user_prompt(
     Returns:
         Formatted user prompt string with structured input tags.
     """
-    return (
+    # Add line numbers to each line
+    numbered_lines = []
+    for i, line in enumerate(source_code.splitlines(), start=1):
+        numbered_lines.append(f"{i:4d}|{line}")
+    numbered_source = "\n".join(numbered_lines)
+
+    # Then format input
+    input_text = (
         "<input>\n"
         f"<filename>{filename}</filename>\n"
         f"<language>{language}</language>\n"
         "<source_code>\n"
-        f"{source_code}\n"
+        f"{numbered_source}\n"
         "</source_code>\n"
         "</input>"
     )
+
+    return input_text
 
 
 class ResponsibilityBlock(BaseModel):

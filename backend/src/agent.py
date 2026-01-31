@@ -34,7 +34,7 @@ class IrisError(Exception):
 
 class IrisAgent:
     """Single-shot inference agent for File Intent + Responsibility Blocks extraction.
-    
+
     Uses a streamlined single-LLM-call approach with full source code for fast,
     reliable analysis without complex branching or multi-stage orchestration.
     """
@@ -50,11 +50,11 @@ class IrisAgent:
         source_code: str,
     ) -> Dict[str, Any] | IrisError:
         """Analyze a file using single-shot LLM inference.
-        
+
         This method uses a streamlined single-LLM-call approach with full source code,
         eliminating complex branching logic, multi-stage orchestration, and tool-calling
         overhead. The entire analysis completes in one API call with structured output.
-        
+
         Architecture:
         - Direct LLM inference with full source code
         - Structured output parsing via OpenAI responses API
@@ -65,17 +65,15 @@ class IrisAgent:
             filename: Name of the file being analyzed.
             language: Programming language identifier (e.g., 'python', 'javascript').
             source_code: Complete source code content of the file.
-            
+
         Returns:
             Dictionary with 'file_intent', 'responsibility_blocks', and 'metadata' keys.
-            
+
         Raises:
             IrisError: On LLM API failures or invalid responses.
         """
         print(f"[IRIS] Analyzing {filename} with single-shot inference...")
         return self._analyze_with_llm(filename, language, source_code)
-
-
 
     def _analyze_with_llm(
         self,
@@ -92,7 +90,7 @@ class IrisAgent:
 
         Returns:
             Dict with file_intent, responsibility_blocks, and metadata.
-            
+
         Raises:
             Exception: On LLM API failures or parsing errors.
         """
@@ -113,6 +111,13 @@ class IrisAgent:
                 ],
                 text_format=LLMOutputSchema,
                 reasoning={"effort": SINGLE_SHOT_REASONING_EFFORT},
+            )
+
+            # debugging token usage (will moved to debugger later)
+            print(
+                f"[IRIS] LLM response received. "
+                f"Input tokens: {response.usage.input_tokens}, "
+                f"Output tokens: {response.usage.output_tokens}, "
             )
 
             content = response.output_parsed

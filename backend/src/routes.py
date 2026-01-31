@@ -128,7 +128,6 @@ def analyze():
         # =====================================================================
         metadata = metadata_from_data.copy()
         metadata.update(result.get("metadata", {}))
-        metadata["analysis_input"] = "signature_graph"
 
         response = {
             "success": True,
