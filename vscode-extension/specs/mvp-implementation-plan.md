@@ -84,20 +84,12 @@ Field requirements:
   "file_intent": "Short explanation of file purpose",
   "responsibility_blocks": [
       {
-        "id": "kebab-case-id",  // BE-generated stable ID
         "label": "Responsibility Title",
         "description": "What this responsibility handles",
-        "elements": {
-          "functions": ["handleSubmit", "validateInput"],
-          "state": ["isLoading", "formData"],
-          "imports": ["useState", "axios"],
-          "types": ["FormData", "ValidationError"],
-          "constants": ["MAX_LENGTH", "API_URL"]
-        },
         "ranges": [[1, 10], [50, 60]]  // Line ranges this responsibility covers
       }
   ],
-  "metadata": { "final_confidence": 0.7, "iterations": 4, ... }
+  "metadata": { ... }
 }
 ```
 
@@ -142,19 +134,11 @@ Response requirements:
 TASK-0043 | Define typed structures:
           | - FileIntent: { text: string }
           | - ResponsibilityBlock: { 
-          |     id: string; 
           |     label: string; 
           |     description: string; 
-          |     elements: { 
-          |       functions: string[]; 
-          |       state: string[]; 
-          |       imports: string[]; 
-          |       types: string[]; 
-          |       constants: string[] 
-          |     }; 
           |     ranges: Array<[number, number]> 
           |   }
-          | - AnalysisMetadata: { final_confidence?: number; iterations?: number; [key: string]: any }
+          | - AnalysisMetadata: { any }
 
 ---
 

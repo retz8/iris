@@ -114,11 +114,12 @@ class IrisAgent:
             )
 
             # debugging token usage (will moved to debugger later)
-            print(
-                f"[IRIS] LLM response received. "
-                f"Input tokens: {response.usage.input_tokens}, "
-                f"Output tokens: {response.usage.output_tokens}, "
-            )
+            if response.usage:
+                print(
+                    f"[IRIS] LLM response received. "
+                    f"Input tokens: {response.usage.input_tokens}, "
+                    f"Output tokens: {response.usage.output_tokens}, "
+                )
 
             content = response.output_parsed
             if content is None:
