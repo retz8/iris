@@ -44,12 +44,6 @@ Example:
 
 </input_description>
 
-<line_number_assumption>
-Line numbers refer to the physical line count of the provided source_code text.
-The first line of source_code is line 1.
-Do not invent or extrapolate line numbers beyond the provided input.
-</line_number_assumption>
-
 <output_contract>
 The output is not an explanation.
 It is a compact structural summary used directly by UI.
@@ -65,9 +59,6 @@ Similarly, when a developer opens an unfamiliar file, they will see your File In
 then scan your Responsibility Block labels to understand what the file does
 without reading every line of code.
 
-Your job is to provide that "title" and "table of contents" so developers can skim
-the file structure and decide where to look deeper.
-
 The output must:
 - Be concise and stable
 - Use domain-appropriate terminology
@@ -76,22 +67,40 @@ The output must:
 </output_contract>
 
 <analysis_workflow>
-Phase 1: SCAN AND CLUSTER
-- Read through the source code
-- Identify natural groupings of related functions, variables, types, and constants
-- Look for code that would need to move together if extracted to a separate file
+PHASE 1: SCAN FOR PRIMARY CAPABILITIES
+- Read through the source code while focusing on the file’s purpose and conceptual responsibilities
+- Identify the file’s main responsibilities as a short list of capabilities
 
-Phase 2: FORM RESPONSIBILITY BLOCKS
-- For each cluster, create a responsibility block
-- Determine what capability this cluster provides
+PHASE 2: MAP CODE TO RESPONSIBILITIES
+<responsibility_block_rules>
+- For each identified capability, create a responsibility block
+- Assign code lines to that capability (ranges may be scattered)
+- Determine what capability this block provides
 - Write a clear label that captures the essence
 - Label should be specific enough to distinguish from other blocks, not generic or vague
-- Note which lines of code belong to this block
-- Each block may contains scattered ranges if needed
 - Different blocks may overlap in line ranges if necessary
-- No need to cover every lines of code, focus on major responsibilities
+- No need to cover every line of code, focus on major responsibilities
 
-Phase 3: SYNTHESIZE FILE INTENT
+<block_size_rules>
+Minimum size:
+- A block must represent a single, independent reason to change.
+- If a block would not make sense on its own, it is too small.
+
+Maximum size:
+- If the label needs "and" to be accurate, split it into multiple blocks.
+- If multiple stakeholders would change different parts independently, split.
+</block_size_rules>
+
+<block_quality_rules>
+- Do not create a block named "misc", "helpers", "utilities", or "everything else".
+- Do not create a block for imports or module wiring alone.
+- Imports and wiring must be attached to the most relevant responsibility block(s).
+- A block must be a complete conceptual unit (functions + state + types + constants as needed).
+</block_quality_rules>
+</responsibility_block_rules>
+
+PHASE 3: SYNTHESIZE FILE INTENT
+<file_intent_rules>
 - Review all your responsibility blocks
 - Ask: What do these blocks collectively achieve?
 - Ask: What makes this file different from other files?
@@ -100,23 +109,51 @@ Phase 3: SYNTHESIZE FILE INTENT
 - Keep it high-level and focused on purpose, not implementation details
 - Keep it as concise as possible in one sentence, think it as a book title
 - Ideally less than 10 words, but if needed, go up to 20 words
+</file_intent_rules>
 
-Phase 4: ORDER RESPONSIBILITY BLOCKS FOR COMPREHENSION
+PHASE 4: ORDER RESPONSIBILITY BLOCKS
+<block_ordering_instructions>
+You MUST reorder blocks for reader understanding. Do NOT preserve source order.
 
-IMPORTANT: Reorder the blocks for fastest comprehension, NOT source code line order.
+Step A — Select the comprehension flow (choose ONE):
+- Pipeline/Dataflow: input → transform → output
+- Service/Controller: entry/handlers → domain logic → persistence/IO → cross-cutting
+- Library/SDK: public API → core logic → helpers → internal wiring
+- Config/Bootstrap: configuration → initialization → runtime orchestration → utilities
+- Other/Hybrid: infer the reader’s mental entry point, then order by understanding flow
 
-Ask yourself:
-1. Which block explains the file's main purpose? → Put that FIRST
-2. Which blocks are supporting details? → Put those LAST
-3. Which blocks would a developer want to see first when skimming?
+Step B — Order blocks using the selected flow.
+- Put the mental entry point first.
+- Helpers/infrastructure last.
 
-Common pattern for application code:
-1. Initialization/entry point
-2. Main domain logic
-3. Helper utilities
-4. Infrastructure/imports
+Before output, explicitly reorder the blocks now.
 
-Reorder your blocks now before outputting.
+<examples note="show reordered blocks, not line order">
+Example 1 — Pipeline (log processor)
+- Log ingestion and parsing
+- Normalization and enrichment
+- Output emission (DB / queue)
+- Error handling and metrics
+
+Example 2 — Service (HTTP API)
+- HTTP route handlers and request validation
+- Order workflow orchestration
+- Persistence and external API calls
+- Logging, auth helpers, config
+
+Example 3 — Library/SDK
+- Public client API surface
+- Core request/response logic
+- Serialization / mapping helpers
+- Transport and retry plumbing
+
+Example 4 — Config/Bootstrap
+- Configuration loading and validation
+- Dependency wiring / container setup
+- Application startup orchestration
+- Utility helpers and constants
+</examples>
+</block_ordering_instructions>
 </analysis_workflow>
 """
 

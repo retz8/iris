@@ -101,7 +101,7 @@ def analyze():
                 source_code=source_code,
             )
 
-            print("RESULT IS HERE: ", result)
+            print(f"Result JSON: {jsonify(result).get_json()}")
 
             if isinstance(result, IrisError):
                 return (
