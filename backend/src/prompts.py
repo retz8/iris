@@ -67,11 +67,11 @@ The output must:
 </output_contract>
 
 <analysis_workflow>
-PHASE 1: SCAN FOR PRIMARY CAPABILITIES
+## PHASE 1: SCAN FOR PRIMARY CAPABILITIES
 - Read through the source code while focusing on the file’s purpose and conceptual responsibilities
 - Identify the file’s main responsibilities as a short list of capabilities
 
-PHASE 2: MAP CODE TO RESPONSIBILITIES
+## PHASE 2: MAP CODE TO RESPONSIBILITIES
 <responsibility_block_rules>
 - For each identified capability, create a responsibility block
 - Assign code lines to that capability (ranges may be scattered)
@@ -99,19 +99,7 @@ Maximum size:
 </block_quality_rules>
 </responsibility_block_rules>
 
-PHASE 3: SYNTHESIZE FILE INTENT
-<file_intent_rules>
-- Review all your responsibility blocks
-- Ask: What do these blocks collectively achieve?
-- Ask: What makes this file different from other files?
-- Ask: If I tweeted about this file's purpose, what would I say?
-- Write the file intent based on what the blocks actually do
-- Keep it high-level and focused on purpose, not implementation details
-- Keep it as concise as possible in one sentence, think it as a book title
-- Ideally less than 10 words, but if needed, go up to 20 words
-</file_intent_rules>
-
-PHASE 4: ORDER RESPONSIBILITY BLOCKS
+## PHASE 3: ORDER RESPONSIBILITY BLOCKS
 <block_ordering_instructions>
 You MUST reorder blocks for reader understanding. Do NOT preserve source order.
 
@@ -154,6 +142,18 @@ Example 4 — Config/Bootstrap
 - Utility helpers and constants
 </examples>
 </block_ordering_instructions>
+
+## PHASE 4: SYNTHESIZE FILE INTENT
+<file_intent_rules>
+- Review all your responsibility blocks
+- Ask: What do these blocks collectively achieve?
+- Ask: What makes this file different from other files?
+- Ask: If I tweeted about this file's purpose, what would I say?
+- Write the file intent based on what the blocks actually do
+- Keep it high-level and focused on purpose, not implementation details
+- Ideally less than 10 words, but if needed, go up to 20 words
+- If the file has multiple responsibilities, capture the primary one
+</file_intent_rules>
 </analysis_workflow>
 """
 

@@ -64,7 +64,7 @@ The agentic approach fundamentally conflicts with IRIS's core UX requirement: **
 
 ---
 
-## 1/29/26~: Pivot to Single-Shot Inference & Model Selection
+## 1/29/26 ~ 1/31/26: Pivot to Single-Shot Inference & Model Selection
 
 **Strategic Shift: Abandoning Agentic Complexity**
 
@@ -87,6 +87,13 @@ The agentic approach fundamentally conflicts with IRIS's core UX requirement: **
 
 **Philosophy:**
 Treat LLM like a human reader: give them clean source code, ask for natural reading comprehension, trust their judgment. The simpler the system, the better it performs.
+
+**Analysis Workflow:**
+1. Skim through the code
+2. list up main functionalities (responsibilities)
+3. match code lines to the functionalities and convert it to resp blocks
+4. extract file intent based on resp blocks (bottom to top)
+5. reorder resp blocks
 
 # TODO
 - code clean up
