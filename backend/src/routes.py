@@ -23,7 +23,7 @@ except Exception as exc:  # pragma: no cover - initialization fallback
 
 
 @iris_bp.route("/analyze", methods=["POST"])
-def analyze():
+async def analyze():
     """Analyze a source file to extract File Intent + Responsibility Blocks.
 
     Request body:
@@ -95,7 +95,7 @@ def analyze():
         result = None
 
         try:
-            result = _iris_agent.analyze(
+            result = await _iris_agent.analyze(
                 filename=filename,
                 language=language,
                 source_code=source_code,
