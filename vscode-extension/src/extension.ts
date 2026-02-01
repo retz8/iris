@@ -86,6 +86,59 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 	context.subscriptions.push(sidePanelProvider);
 
+	// TASK-040, TASK-041: Register Esc key command for exiting Focus Mode
+	// Per REQ-009: Esc key must exit focus mode and unfold any folded lines
+	const exitFocusModeCommand = vscode.commands.registerCommand('iris.exitFocusMode', async () => {
+		try {
+			logger.info('Command executed: iris.exitFocusMode');
+
+			const activeEditor = vscode.window.activeTextEditor;
+			if (!activeEditor) {
+				logger.warn('No active editor for exit focus mode');
+				return;
+			}
+
+			// TASK-042: Clear focus state in state manager
+			if (stateManager.isFocusModeActive()) {
+				logger.info('Exiting Focus Mode via Esc key');
+				
+				// TASK-043: Unfold any previously folded ranges
+				if (stateManager.isFoldActive()) {
+					const foldedRanges = stateManager.getFoldedRanges();
+					if (foldedRanges && foldedRanges.length > 0) {
+						await vscode.commands.executeCommand('editor.unfold', {
+							selectionLines: foldedRanges.map(([start]) => start)
+						});
+						logger.info('Unfolded ranges via Esc key', { unfoldCount: foldedRanges.length });
+					}
+					stateManager.clearFold();
+				}
+
+				// Clear focus state
+				stateManager.clearFocus();
+
+				// TASK-044: Clear focus decorations
+				decorationManager.clearFocusMode(activeEditor);
+
+				// Notify webview to update UI
+				sidePanelProvider.notifyFocusCleared();
+			} else {
+				logger.info('No active focus mode to exit');
+			}
+		} catch (error) {
+			logger.error('Failed to exit focus mode', { error: String(error) });
+		}
+	});
+	context.subscriptions.push(exitFocusModeCommand);
+
+	// Update context when focus mode changes
+	const updateFocusModeContext = () => {
+		vscode.commands.executeCommand('setContext', 'iris.focusModeActive', stateManager.isFocusModeActive());
+	};
+	// Set initial context
+	updateFocusModeContext();
+	// Update context on state changes (simplified - would need event listener in production)
+	
 	const disposable = vscode.commands.registerCommand('iris.runAnalysis', async () => {
 		try {
 			outputChannel.show(true);

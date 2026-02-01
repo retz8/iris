@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as crypto from 'crypto';
 import type { NormalizedResponsibilityBlock } from '../state/irisState';
 import { createLogger, Logger } from '../utils/logger';
+import { generateBlockColor, generateBlockColorOpaque } from '../utils/colorAssignment';
 
 /**
  * Decoration range in ZERO-based VS Code format
@@ -61,30 +62,21 @@ export class DecorationManager implements vscode.Disposable {
   }
 
   /**
-   * Generate deterministic color from blockId using hash function
-   * Per ED-002, TASK-0072
+   * Generate deterministic color from blockId using smart color assignment
+   * Phase 7: Smart Color Assignment (TASK-051)
    * 
-   * Strategy: Hash blockId to generate stable RGB values
-   * Ensures same blockId always gets same color
+   * Uses golden ratio distribution for visual distinctiveness and WCAG AA compliance
+   * Delegates to colorAssignment utility for intelligent color generation
    */
   private generateColorFromBlockId(blockId: string): string {
-    // Use first 6 characters of SHA-1 hash for RGB color
-    const hash = crypto.createHash('sha1').update(blockId).digest('hex');
+    // Detect current theme (dark vs light)
+    const isDarkTheme = vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark ||
+                        vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.HighContrast;
     
-    // Extract RGB values from hash (use positions 0-1, 2-3, 4-5)
-    let r = parseInt(hash.substring(0, 2), 16);
-    let g = parseInt(hash.substring(2, 4), 16);
-    let b = parseInt(hash.substring(4, 6), 16);
+    // Generate visually distinct, accessible color
+    const color = generateBlockColor(blockId, isDarkTheme);
     
-    // Ensure colors are vibrant enough and not too dark
-    // Normalize to range [80, 220] for better visibility
-    r = 80 + (r % 140);
-    g = 80 + (g % 140);
-    b = 80 + (b % 140);
-    
-    const color = `rgb(${r}, ${g}, ${b})`;
-    
-    this.logger.debug(`Generated color for blockId`, { blockId, color });
+    this.logger.debug(`Generated color for blockId`, { blockId, color, isDarkTheme });
     return color;
   }
 
@@ -110,10 +102,11 @@ export class DecorationManager implements vscode.Disposable {
 
   /**
    * Create or retrieve cached decoration type for a blockId
-   * Per TASK-0071, ED-001
+   * Per TASK-0071, ED-001, Phase 7 (TASK-051)
    * 
    * Uses TextEditorDecorationType for overlay-only highlighting
    * Caches decoration types to prevent redundant creation
+   * Phase 7: Uses smart color assignment with alpha transparency
    */
   private getOrCreateDecorationType(blockId: string): vscode.TextEditorDecorationType {
     const cached = this.decorationCache.get(blockId);
@@ -122,18 +115,25 @@ export class DecorationManager implements vscode.Disposable {
       return cached.decorationType;
     }
 
-    // Generate deterministic color per ED-002
-    const backgroundColor = this.generateColorFromBlockId(blockId);
+    // Detect current theme
+    const isDarkTheme = vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark ||
+                        vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.HighContrast;
+    
+    // Generate background color with 0.2 alpha for subtle hover (TASK-058)
+    const baseColor = generateBlockColor(blockId, isDarkTheme);
+    // Adjust alpha to 0.2 for hover state (highlights behind text)
+    const backgroundColor = baseColor.replace(/,\s*[\d.]+\)$/, ', 0.2)');
+    const opaqueColor = generateBlockColorOpaque(blockId, isDarkTheme);
     
     // Create decoration type per ED-001 (overlay-only)
+    // TASK-055, TASK-056: Use backgroundColor only, no borders/before/after
+    // TASK-057: Set rangeBehavior to ClosedClosed for precise highlighting
     const decorationType = vscode.window.createTextEditorDecorationType({
-      backgroundColor: backgroundColor,
+      backgroundColor: backgroundColor,  // rgba with 0.2 alpha - renders behind text
       isWholeLine: true,
-      overviewRulerColor: backgroundColor,
-      overviewRulerLane: vscode.OverviewRulerLane.Right,
-      // Add subtle border for better visibility
-      border: `1px solid ${backgroundColor}`,
-      borderRadius: '2px'
+      rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+      overviewRulerColor: opaqueColor,   // Opaque for ruler visibility only
+      overviewRulerLane: vscode.OverviewRulerLane.Right
     });
 
     this.logger.info( 'Created new decoration type', { blockId, backgroundColor });
@@ -143,6 +143,7 @@ export class DecorationManager implements vscode.Disposable {
   /**
    * Create focused decoration type for a blockId
    * Per TASK-0082: Implement focused decoration style distinct from hover
+   * Phase 7 (TASK-051): Uses smart color assignment with enhanced alpha
    * 
    * Focused decorations have enhanced emphasis compared to hover
    */
@@ -152,21 +153,25 @@ export class DecorationManager implements vscode.Disposable {
       return cached;
     }
 
-    // Generate deterministic color per ED-002
-    const backgroundColor = this.generateColorFromBlockId(blockId);
+    // Detect current theme
+    const isDarkTheme = vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark ||
+                        vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.HighContrast;
+    
+    // Generate background color with 0.3 alpha for prominent focus (TASK-058)
+    const baseColor = generateBlockColor(blockId, isDarkTheme);
+    // Use 0.3 alpha for focus mode (more prominent than hover, still behind text)
+    const backgroundColor = baseColor.replace(/,\s*[\d.]+\)$/, ', 0.3)');
+    const opaqueColor = generateBlockColorOpaque(blockId, isDarkTheme);
     
     // Create enhanced decoration for focus mode
+    // TASK-055, TASK-056: Use backgroundColor only, no borders/before/after
+    // TASK-057: Set rangeBehavior to ClosedClosed for precise highlighting
     const decorationType = vscode.window.createTextEditorDecorationType({
-      backgroundColor: backgroundColor,
+      backgroundColor: backgroundColor,  // rgba with 0.3 alpha - renders behind text
       isWholeLine: true,
-      overviewRulerColor: backgroundColor,
-      overviewRulerLane: vscode.OverviewRulerLane.Center,
-      // Enhanced styling for focus mode
-      border: `2px solid ${backgroundColor}`,
-      borderRadius: '3px',
-      // Add gutter icon for focused block
-      gutterIconPath: undefined,
-      gutterIconSize: 'contain'
+      rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+      overviewRulerColor: opaqueColor,   // Opaque for ruler visibility only
+      overviewRulerLane: vscode.OverviewRulerLane.Center
     });
 
     this.focusedDecorationCache.set(blockId, decorationType);

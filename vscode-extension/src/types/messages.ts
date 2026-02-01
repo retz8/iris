@@ -28,6 +28,26 @@ export interface BlockHoverMessage {
 }
 
 /**
+ * Sent when user clicks on a responsibility block
+ * Triggers scroll to first line and enters focus mode without folding
+ * Per Phase 4, REQ-006, TASK-026
+ */
+export interface BlockClickMessage {
+  type: 'BLOCK_CLICK';
+  blockId: string;
+}
+
+/**
+ * Sent when user double-clicks on a responsibility block
+ * Triggers scroll to first line, enters focus mode, and folds gaps between scattered ranges
+ * Per Phase 5, REQ-007, TASK-033
+ */
+export interface BlockDoubleClickMessage {
+  type: 'BLOCK_DOUBLE_CLICK';
+  blockId: string;
+}
+
+/**
  * Sent when user selects a responsibility block for Focus Mode
  * Triggers enhanced decoration and dims other blocks per Phase 8
  */
@@ -59,6 +79,8 @@ export interface FocusClearMessage {
 export type WebviewMessage = 
   | WebviewReadyMessage
   | BlockHoverMessage
+  | BlockClickMessage
+  | BlockDoubleClickMessage
   | BlockSelectMessage
   | BlockClearMessage
   | FocusClearMessage;
@@ -136,6 +158,8 @@ export function isWebviewMessage(message: any): message is WebviewMessage {
       return true;
     
     case 'BLOCK_HOVER':
+    case 'BLOCK_CLICK':
+    case 'BLOCK_DOUBLE_CLICK':
     case 'BLOCK_SELECT':
       return typeof message.blockId === 'string' && message.blockId.length > 0;
     

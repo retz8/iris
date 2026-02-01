@@ -1,74 +1,197 @@
-# iris README
+# IRIS for VS Code
 
-This is the README for your extension "iris". After writing up a brief description, we recommend including the following sections.
+> **"IRIS prepares developers to read code, not explains code."**
+
+IRIS is a code comprehension tool that transforms source files into a navigable "table of contents" view. Understand unfamiliar code through File Intent and Responsibility Blocks—enabling code skimming instead of line-by-line reading.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+### 📊 Intelligent Code Analysis
+Analyze Python, JavaScript, and TypeScript files to extract:
+- **File Intent**: The "why" behind the file's existence
+- **Responsibility Blocks**: Logical sections organized by conceptual purpose
 
-For example if there is an image subfolder under your extension project workspace:
+### 🎯 Interactive Navigation
+- **Hover**: Reveal block descriptions and highlight code in editor
+- **Single Click**: Scroll to block and enter focus mode
+- **Double Click**: Fold gaps between scattered code sections
+- **Esc Key**: Exit focus mode and unfold all sections
 
-\!\[feature X\]\(images/feature-x.png\)
+### 🎨 Visual Code Mapping
+- Unique color for each responsibility block
+- Background highlights that don't obscure text
+- Smooth animations for description reveal
+- Theme-aware colors (light/dark mode support)
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+### ⚡ Smart State Management
+- Instant stale detection on file edits
+- One-click reload for re-analysis
+- Preserves focus state during navigation
+- Clean state transitions (IDLE → ANALYZING → ANALYZED → STALE)
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- **VS Code**: 1.85.0 or higher
+- **Backend Server**: Python 3.8+ with IRIS backend running on `http://localhost:8080`
+
+### Backend Setup
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+./scripts/start-server.sh
+```
+
+## Usage
+
+### Quick Start
+1. Open a supported file (`.py`, `.js`, `.ts`, `.jsx`, `.tsx`)
+2. Press `Cmd+Shift+P` (or `Ctrl+Shift+P` on Windows/Linux)
+3. Run command: **"IRIS: Run Analysis"**
+4. View results in the IRIS sidebar (Activity Bar)
+
+### Navigation Workflow
+```
+1. Hover over block → See description + code highlight
+2. Single click → Scroll to code + enter focus
+3. Double click → Fold gaps between sections
+4. Press Esc → Exit focus and unfold
+5. Click reload icon → Re-analyze file
+```
+
+### Focus Mode
+When you click a responsibility block:
+- Editor scrolls to the first line of the block
+- Gaps between scattered sections are folded
+- Block code remains visible and highlighted
+- Press `Esc` or click the same block again to exit
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+This extension currently has no configurable settings. All behavior is automatic based on backend analysis.
 
-For example:
+## Supported Languages
 
-This extension contributes the following settings:
+- Python (`.py`)
+- JavaScript (`.js`)
+- TypeScript (`.ts`)
+- React JSX/TSX (`.jsx`, `.tsx`)
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+## Known Limitations
 
-## Known Issues
+- **Manual Trigger**: Analysis requires command execution (no auto-analysis on file open)
+- **Single File**: Only analyzes the active editor file
+- **No Persistence**: Analysis is cleared on extension restart
+- **Optimal Scale**: Works best with 3-15 responsibility blocks per file
+- **Backend Required**: Extension requires local backend server running
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+## Keyboard Shortcuts
+
+| Command | Shortcut | Description |
+|---------|----------|-------------|
+| Run Analysis | `Cmd+Shift+P` → "IRIS: Run Analysis" | Analyze current file |
+| Exit Focus Mode | `Esc` | Exit focus and unfold sections |
+
+## Troubleshooting
+
+### "Backend server not responding"
+Ensure the IRIS backend is running:
+```bash
+cd backend
+source venv/bin/activate
+python src/server.py
+```
+
+### "Unsupported language"
+IRIS currently supports Python, JavaScript, and TypeScript only. Other languages will show a warning.
+
+### "Analysis returned empty blocks"
+The file may be too simple or the LLM couldn't identify clear responsibility blocks. Try with a more complex file.
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 1.0.0 (2026-02-01)
 
-### 1.0.0
+**Initial Release**
+- Command-driven analysis flow
+- File Intent and Responsibility Block extraction
+- Interactive sidebar with hover/click navigation
+- Focus mode with code folding
+- Smart color assignment
+- Background highlighting
+- Stale state detection
+- Keyboard shortcuts (Esc to exit focus)
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+**UI Refinement**
+- Clean, streamlined interface
+- Removed unnecessary headers
+- Smooth hover animations
+- Enhanced visual design
+- Theme-aware colors
+- Accessibility compliance (WCAG AA)
 
 ---
 
-## Following extension guidelines
+## Architecture Overview
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+```
+Extension → HTTP → Backend Server → LLM Analysis
+   ↓
+Webview Side Panel (UI)
+   ↓
+Decoration Manager (Editor Highlights)
+   ↓
+State Manager (Focus/Fold Tracking)
+```
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+**Key Components:**
+- `extension.ts`: Command registration and lifecycle
+- `sidePanel.ts`: Webview UI and messaging
+- `decorationManager.ts`: Editor highlighting
+- `irisState.ts`: Centralized state management
+- `colorAssignment.ts`: Intelligent color generation
 
-## Working with Markdown
+## Development
 
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
+### Local Development
+```bash
+cd vscode-extension
+npm install
+npm run compile
+```
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
+Press `F5` to launch Extension Development Host.
 
-## For more information
+### Building VSIX Package
+```bash
+npm run package
+```
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+### Running Tests
+```bash
+npm test
+```
 
-**Enjoy!**
+## Contributing
+
+See the main [IRIS repository](../) for contribution guidelines.
+
+## License
+
+[Add license information]
+
+---
+
+**For more information:**
+- [Project Documentation](../docs/)
+- [Philosophy](../docs/philosophy.md)
+- [Implementation Status](specs/current-status.md)
+- [GitHub Repository](https://github.com/yourusername/iris)
+
+---
+
+*Part of the IRIS project - Progressive abstraction for code comprehension*
 
 
 

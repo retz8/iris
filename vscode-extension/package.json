@@ -15,6 +15,17 @@
       {
         "command": "iris.runAnalysis",
         "title": "IRIS: Run Analysis"
+      },
+      {
+        "command": "iris.exitFocusMode",
+        "title": "IRIS: Exit Focus Mode"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "iris.exitFocusMode",
+        "key": "escape",
+        "when": "editorTextFocus && iris.focusModeActive"
       }
     ],
     "viewsContainers": {

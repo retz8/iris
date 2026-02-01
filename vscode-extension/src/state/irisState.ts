@@ -77,6 +77,15 @@ export interface FocusState {
 }
 
 /**
+ * Fold state for Phase 5: Double-Click Fold Behavior
+ * Per TASK-035
+ */
+export interface FoldState {
+  foldedBlockId: string | null;         // null = no block currently folded
+  foldedRanges: Array<[number, number]> | null; // ZERO-based line ranges of folded gaps
+}
+
+/**
  * Complete extension state container
  * Per STATE-001: Single source of truth
  */
@@ -85,6 +94,7 @@ interface ExtensionState {
   analysisData: AnalysisData | null;
   activeFileUri: string | null;  // Currently active file being tracked
   focusState: FocusState;         // Phase 8: Focus Mode state
+  foldState: FoldState;           // Phase 5: Fold state tracking
 }
 
 /**
@@ -119,7 +129,8 @@ export class IRISStateManager {
       currentState: IRISAnalysisState.IDLE,
       analysisData: null,
       activeFileUri: null,
-      focusState: { activeBlockId: null }
+      focusState: { activeBlockId: null },
+      foldState: { foldedBlockId: null, foldedRanges: null }
     };
     
     this.logger.info('State manager initialized', { initialState: IRISAnalysisState.IDLE });
@@ -195,6 +206,7 @@ export class IRISStateManager {
    * Transition to STALE state when file is modified
    * Per STATE-003
    * Phase 8: Exit Focus Mode per TASK-0086
+   * Phase 5: Clear Fold State per TASK-039
    */
   public setStale(): void {
     const previousState = this.state.currentState;
@@ -210,6 +222,9 @@ export class IRISStateManager {
     // Exit Focus Mode per TASK-0086
     this.clearFocus();
     
+    // Clear Fold State per TASK-039
+    this.clearFold();
+    
     this.logStateTransition(previousState, IRISAnalysisState.STALE, fileUri);
     this.stateChangeEmitter.fire(IRISAnalysisState.STALE);
   }
@@ -217,6 +232,7 @@ export class IRISStateManager {
   /**
    * Reset to IDLE state (user-initiated or editor change)
    * Phase 8: Exit Focus Mode per TASK-0086
+   * Phase 5: Clear Fold State per TASK-039
    */
   public reset(): void {
     const previousState = this.state.currentState;
@@ -227,6 +243,9 @@ export class IRISStateManager {
     
     // Exit Focus Mode per TASK-0086
     this.clearFocus();
+    
+    // Clear Fold State per TASK-039
+    this.clearFold();
     
     this.logStateTransition(previousState, IRISAnalysisState.IDLE, undefined, { reason: 'reset' });
     this.stateChangeEmitter.fire(IRISAnalysisState.IDLE);
@@ -361,6 +380,71 @@ export class IRISStateManager {
    */
   public isFocusModeActive(): boolean {
     return this.state.focusState.activeBlockId !== null;
+  }
+
+  // ========================================
+  // FOLD STATE MANAGEMENT (Phase 5)
+  // ========================================
+
+  /**
+   * Set fold state for a block with folded ranges
+   * Per TASK-035, GOAL-005
+   */
+  public setFoldedBlock(blockId: string, foldedRanges: Array<[number, number]>): void {
+    this.state.foldState.foldedBlockId = blockId;
+    this.state.foldState.foldedRanges = foldedRanges;
+    
+    this.logger.info('Set fold state', { 
+      blockId, 
+      foldedRangeCount: foldedRanges.length 
+    });
+  }
+
+  /**
+   * Clear fold state
+   * Per TASK-037, TASK-039
+   */
+  public clearFold(): void {
+    const previousBlockId = this.state.foldState.foldedBlockId;
+    
+    if (previousBlockId === null) {
+      return; // Already not folded
+    }
+    
+    this.state.foldState.foldedBlockId = null;
+    this.state.foldState.foldedRanges = null;
+    
+    this.logger.info('Cleared fold state', { 
+      previousBlockId 
+    });
+  }
+
+  /**
+   * Get current folded block ID
+   */
+  public getFoldedBlockId(): string | null {
+    return this.state.foldState.foldedBlockId;
+  }
+
+  /**
+   * Get current folded ranges (ZERO-based line numbers)
+   */
+  public getFoldedRanges(): Array<[number, number]> | null {
+    return this.state.foldState.foldedRanges;
+  }
+
+  /**
+   * Check if a specific block is currently folded
+   */
+  public isBlockFolded(blockId: string): boolean {
+    return this.state.foldState.foldedBlockId === blockId;
+  }
+
+  /**
+   * Check if any block is folded
+   */
+  public isFoldActive(): boolean {
+    return this.state.foldState.foldedBlockId !== null;
   }
 
   // ========================================
