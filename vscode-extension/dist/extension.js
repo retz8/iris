@@ -35,7 +35,7 @@ __export(extension_exports, {
 });
 module.exports = __toCommonJS(extension_exports);
 var path = __toESM(require("path"));
-var vscode5 = __toESM(require("vscode"));
+var vscode6 = __toESM(require("vscode"));
 
 // src/state/irisState.ts
 var vscode2 = __toESM(require("vscode"));
@@ -129,8 +129,7 @@ var IRISStateManager = class {
       currentState: "IDLE" /* IDLE */,
       analysisData: null,
       activeFileUri: null,
-      focusState: { activeBlockId: null },
-      foldState: { foldedBlockId: null, foldedRanges: null }
+      selectionState: { selectedBlockId: null, currentSegmentIndex: 0 }
     };
     this.logger.info("State manager initialized", { initialState: "IDLE" /* IDLE */ });
   }
@@ -181,19 +180,26 @@ var IRISStateManager = class {
   /**
    * Transition to IDLE state on error or invalid schema
    * Per STATE-002, TASK-0047, API-002
+   * 
+   * REQ-007: Clear selection state when analysis fails
+   * Rationale: Selected block becomes invalid when analysis data is cleared
+   * This ensures UI doesn't show stale selection for non-existent blocks
    */
   setError(error, fileUri) {
     const previousState = this.state.currentState;
     this.state.currentState = "IDLE" /* IDLE */;
     this.state.analysisData = null;
+    this.deselectBlock();
     this.logStateTransition(previousState, "IDLE" /* IDLE */, fileUri, { error });
     this.stateChangeEmitter.fire("IDLE" /* IDLE */);
   }
   /**
    * Transition to STALE state when file is modified
    * Per STATE-003
-   * Phase 8: Exit Focus Mode per TASK-0086
-   * Phase 5: Clear Fold State per TASK-039
+   * 
+   * REQ-008: Clear selection state when analysis becomes stale
+   * Rationale: File modifications may invalidate block ranges, so deselect to prevent
+   * highlighting incorrect code regions. User must re-analyze to select blocks again.
    */
   setStale() {
     const previousState = this.state.currentState;
@@ -202,23 +208,20 @@ var IRISStateManager = class {
     }
     const fileUri = this.state.analysisData?.analyzedFileUri;
     this.state.currentState = "STALE" /* STALE */;
-    this.clearFocus();
-    this.clearFold();
+    this.deselectBlock();
     this.logStateTransition(previousState, "STALE" /* STALE */, fileUri);
     this.stateChangeEmitter.fire("STALE" /* STALE */);
   }
   /**
    * Reset to IDLE state (user-initiated or editor change)
-   * Phase 8: Exit Focus Mode per TASK-0086
-   * Phase 5: Clear Fold State per TASK-039
+   * Clear selection state on reset
    */
   reset() {
     const previousState = this.state.currentState;
     this.state.currentState = "IDLE" /* IDLE */;
     this.state.analysisData = null;
     this.state.activeFileUri = null;
-    this.clearFocus();
-    this.clearFold();
+    this.deselectBlock();
     this.logStateTransition(previousState, "IDLE" /* IDLE */, void 0, { reason: "reset" });
     this.stateChangeEmitter.fire("IDLE" /* IDLE */);
   }
@@ -292,99 +295,73 @@ var IRISStateManager = class {
     return this.state.analysisData?.rawResponse ?? null;
   }
   // ========================================
-  // FOCUS STATE MANAGEMENT (Phase 8)
+  // SELECTION STATE MANAGEMENT (UI Refinement 2)
   // ========================================
   /**
-   * Enter Focus Mode for a specific block
-   * Per TASK-0081, GOAL-008
+   * Select a block (pin/unpin model)
+   * Per REQ-005
+   * CON-001: Log selection with structured logging
    */
-  setFocusedBlock(blockId) {
-    const previousBlockId = this.state.focusState.activeBlockId;
-    this.state.focusState.activeBlockId = blockId;
-    this.logger.info("Entered Focus Mode", {
+  selectBlock(blockId) {
+    const previousBlockId = this.state.selectionState.selectedBlockId;
+    this.state.selectionState.selectedBlockId = blockId;
+    this.state.selectionState.currentSegmentIndex = 0;
+    this.logger.info("Block selected", {
       blockId,
-      previousBlockId
+      previousBlockId,
+      segmentIndex: 0
     });
   }
   /**
-   * Exit Focus Mode
-   * Per TASK-0085
+   * Deselect current block (pin/unpin model)
+   * Per REQ-005
+   * CON-001: Log deselection with structured logging
    */
-  clearFocus() {
-    const previousBlockId = this.state.focusState.activeBlockId;
+  deselectBlock() {
+    const previousBlockId = this.state.selectionState.selectedBlockId;
     if (previousBlockId === null) {
       return;
     }
-    this.state.focusState.activeBlockId = null;
-    this.logger.info("Exited Focus Mode", {
+    this.state.selectionState.selectedBlockId = null;
+    this.state.selectionState.currentSegmentIndex = 0;
+    this.logger.info("Block deselected", {
       previousBlockId
     });
   }
   /**
-   * Get current focused block ID
+   * Get current segment index for selected block
+   * Per REQ-005
    */
-  getFocusedBlockId() {
-    return this.state.focusState.activeBlockId;
+  getCurrentSegmentIndex() {
+    return this.state.selectionState.currentSegmentIndex;
   }
   /**
-   * Check if Focus Mode is active
+   * Set current segment index for navigation
+   * Per REQ-005
+   * CON-001: Log segment navigation with structured logging
    */
-  isFocusModeActive() {
-    return this.state.focusState.activeBlockId !== null;
-  }
-  // ========================================
-  // FOLD STATE MANAGEMENT (Phase 5)
-  // ========================================
-  /**
-   * Set fold state for a block with folded ranges
-   * Per TASK-035, GOAL-005
-   */
-  setFoldedBlock(blockId, foldedRanges) {
-    this.state.foldState.foldedBlockId = blockId;
-    this.state.foldState.foldedRanges = foldedRanges;
-    this.logger.info("Set fold state", {
+  setCurrentSegmentIndex(index) {
+    const previousIndex = this.state.selectionState.currentSegmentIndex;
+    const blockId = this.state.selectionState.selectedBlockId;
+    this.state.selectionState.currentSegmentIndex = index;
+    this.logger.info("Segment navigation", {
       blockId,
-      foldedRangeCount: foldedRanges.length
+      previousIndex,
+      currentIndex: index
     });
   }
   /**
-   * Clear fold state
-   * Per TASK-037, TASK-039
+   * Get currently selected block ID
+   * Per REQ-006
    */
-  clearFold() {
-    const previousBlockId = this.state.foldState.foldedBlockId;
-    if (previousBlockId === null) {
-      return;
-    }
-    this.state.foldState.foldedBlockId = null;
-    this.state.foldState.foldedRanges = null;
-    this.logger.info("Cleared fold state", {
-      previousBlockId
-    });
+  getSelectedBlockId() {
+    return this.state.selectionState.selectedBlockId;
   }
   /**
-   * Get current folded block ID
+   * Check if a block is currently selected
    */
-  getFoldedBlockId() {
-    return this.state.foldState.foldedBlockId;
-  }
-  /**
-   * Get current folded ranges (ZERO-based line numbers)
-   */
-  getFoldedRanges() {
-    return this.state.foldState.foldedRanges;
-  }
-  /**
-   * Check if a specific block is currently folded
-   */
-  isBlockFolded(blockId) {
-    return this.state.foldState.foldedBlockId === blockId;
-  }
-  /**
-   * Check if any block is folded
-   */
-  isFoldActive() {
-    return this.state.foldState.foldedBlockId !== null;
+  isBlockSelected() {
+    return this.state.selectionState.selectedBlockId !== null;
   }
   // ========================================
   // LOGGING per LOG-001, LOG-002
@@ -418,12 +395,13 @@ function isWebviewMessage(message) {
     case "WEBVIEW_READY":
       return true;
     case "BLOCK_HOVER":
-    case "BLOCK_CLICK":
-    case "BLOCK_DOUBLE_CLICK":
-    case "BLOCK_SELECT":
+    case "BLOCK_SELECTED":
+    case "BLOCK_DESELECTED":
       return typeof message.blockId === "string" && message.blockId.length > 0;
+    case "SEGMENT_NAVIGATED":
+      return typeof message.blockId === "string" && typeof message.segmentIndex === "number" && typeof message.totalSegments === "number";
     case "BLOCK_CLEAR":
-    case "FOCUS_CLEAR":
+    case "ESCAPE_PRESSED":
       return true;
     default:
       return false;
@@ -432,10 +410,11 @@ function isWebviewMessage(message) {
 
 // src/webview/sidePanel.ts
 var IRISSidePanelProvider = class {
-  constructor(extensionUri, stateManager, decorationManager, outputChannel) {
+  constructor(extensionUri, stateManager, decorationManager, segmentNavigator, outputChannel) {
     this.extensionUri = extensionUri;
     this.stateManager = stateManager;
     this.decorationManager = decorationManager;
+    this.segmentNavigator = segmentNavigator;
     this.logger = createLogger(outputChannel, "SidePanel");
     this.disposables.push(
       this.stateManager.onStateChange((state) => {
@@ -448,6 +427,7 @@ var IRISSidePanelProvider = class {
   view;
   stateManager;
   decorationManager;
+  segmentNavigator;
   disposables = [];
   logger;
   /**
@@ -505,20 +485,21 @@ var IRISSidePanelProvider = class {
       case "BLOCK_HOVER":
         this.handleBlockHover(message.blockId);
         break;
-      case "BLOCK_CLICK":
-        this.handleBlockClick(message.blockId);
+      // UI Refinement 2: Pin/unpin selection model message types
+      case "BLOCK_SELECTED":
+        this.handleBlockSelected(message.blockId);
         break;
-      case "BLOCK_DOUBLE_CLICK":
-        this.handleBlockDoubleClick(message.blockId);
+      case "BLOCK_DESELECTED":
+        this.handleBlockDeselected(message.blockId);
         break;
-      case "BLOCK_SELECT":
-        this.handleBlockSelect(message.blockId);
+      case "SEGMENT_NAVIGATED":
+        this.handleSegmentNavigated(message.blockId, message.segmentIndex, message.totalSegments);
+        break;
+      case "ESCAPE_PRESSED":
+        this.handleEscapePressed();
         break;
       case "BLOCK_CLEAR":
         this.handleBlockClear();
-        break;
-      case "FOCUS_CLEAR":
-        this.handleFocusClear();
         break;
       default:
         const _exhaustive = message;
@@ -568,70 +549,12 @@ var IRISSidePanelProvider = class {
     this.decorationManager.applyBlockHover(activeEditor, block);
   }
   /**
-   * Handle BLOCK_CLICK message
-   * Per Phase 4, REQ-006: Scroll to first line and enter focus mode without folding
-   * Per Phase 6, REQ-010: Clicking on currently selected block must exit focus mode
-   * TASK-029: Scroll-to-line logic with InCenter reveal
-   * TASK-030: Integrate with focus mode
-   * TASK-031: Apply focus decorations after scroll
-   * TASK-045, TASK-046: Click-to-exit logic for already-focused blocks
+   * Handle BLOCK_SELECTED message
+   * UI Refinement 2: Pin/unpin selection model
+   * REQ-042: Select block and apply persistent highlighting with segment navigation
    */
-  handleBlockClick(blockId) {
-    this.logger.info("Block click", { blockId });
-    const activeEditor = vscode3.window.activeTextEditor;
-    if (!activeEditor) {
-      this.logger.warn("No active editor for block click");
-      return;
-    }
-    const currentFocusedBlockId = this.stateManager.getFocusedBlockId();
-    if (currentFocusedBlockId === blockId) {
-      this.logger.info("Clicked on already-focused block - exiting Focus Mode", { blockId });
-      if (this.stateManager.isFoldActive()) {
-        this.unfoldRanges(activeEditor);
-        this.stateManager.clearFold();
-      }
-      this.stateManager.clearFocus();
-      this.decorationManager.clearFocusMode(activeEditor);
-      this.logger.info("Exited Focus Mode via click-to-exit", { blockId });
-      return;
-    }
-    const blocks = this.stateManager.getResponsibilityBlocks();
-    if (!blocks) {
-      this.logger.warn("No responsibility blocks available");
-      return;
-    }
-    const block = blocks.find((b) => b.blockId === blockId);
-    if (!block) {
-      this.logger.warn("Block not found", { blockId });
-      return;
-    }
-    if (block.ranges.length === 0) {
-      this.logger.warn("Block has no ranges", { blockId });
-      return;
-    }
-    const firstLineOneBased = block.ranges[0][0];
-    const firstLineZeroBased = firstLineOneBased - 1;
-    this.logger.info("Scrolling to first line and entering Focus Mode", {
-      blockId,
-      lineOneBased: firstLineOneBased,
-      lineZeroBased: firstLineZeroBased
-    });
-    const position = new vscode3.Position(firstLineZeroBased, 0);
-    const range = new vscode3.Range(position, position);
-    activeEditor.revealRange(range, vscode3.TextEditorRevealType.InCenter);
-    activeEditor.selection = new vscode3.Selection(position, position);
-    this.stateManager.setFocusedBlock(blockId);
-    this.decorationManager.applyFocusMode(activeEditor, block, blocks);
-    vscode3.commands.executeCommand("setContext", "iris.focusModeActive", true);
-    this.logger.info("Completed block click: scrolled and entered focus mode", { blockId });
-  }
-  /**
-   * Handle BLOCK_SELECT message
-   * Per TASK-0066, TASK-0068: blockId-based routing with logging
-   * Triggers Focus Mode (Phase 8)
-   */
-  handleBlockSelect(blockId) {
-    this.logger.info("Block select - entering Focus Mode", { blockId });
+  handleBlockSelected(blockId) {
+    this.logger.info("Block selected - pin/unpin model", { blockId });
     const activeEditor = vscode3.window.activeTextEditor;
     if (!activeEditor) {
       this.logger.warn("No active editor for block select");
@@ -647,12 +570,21 @@ var IRISSidePanelProvider = class {
       this.logger.warn("Block not found", { blockId });
       return;
     }
-    this.stateManager.setFocusedBlock(blockId);
-    this.decorationManager.applyFocusMode(activeEditor, block, blocks);
+    this.stateManager.selectBlock(blockId);
+    const totalSegments = block.ranges.length;
+    const currentSegment = 0;
+    this.segmentNavigator.showNavigator(blockId, currentSegment, totalSegments);
+    this.decorationManager.applyBlockSelection(activeEditor, block);
+    vscode3.commands.executeCommand("setContext", "iris.blockSelected", true);
+    this.logger.info("Block selected with segment navigator", {
+      blockId,
+      totalSegments,
+      label: block.label
+    });
   }
   /**
    * Handle BLOCK_CLEAR message
-   * Clears decorations and exits focus mode
+   * REQ-022: Deselects/unpins block and clears decorations
    */
   handleBlockClear() {
     this.logger.info("Block clear");
@@ -663,160 +595,107 @@ var IRISSidePanelProvider = class {
     this.decorationManager.clearCurrentHighlight(activeEditor);
   }
   /**
-   * Handle FOCUS_CLEAR message
-   * Per TASK-0085: Exit Focus Mode
-   * Phase 5: Also clear fold state per TASK-037
-   * Phase 6: Update VS Code context for keybinding
+   * Handle BLOCK_DESELECTED message
+   * UI Refinement 2: Pin/unpin selection model
+   * REQ-043: Deselect block, clear highlighting, and hide segment navigator
    */
-  handleFocusClear() {
-    this.logger.info("Focus clear - exiting Focus Mode");
+  handleBlockDeselected(blockId) {
+    this.logger.info("Block deselected - pin/unpin model", { blockId });
     const activeEditor = vscode3.window.activeTextEditor;
     if (!activeEditor) {
       return;
     }
-    this.stateManager.clearFocus();
-    if (this.stateManager.isFoldActive()) {
-      this.unfoldRanges(activeEditor);
-      this.stateManager.clearFold();
-    }
-    this.decorationManager.clearFocusMode(activeEditor);
-    vscode3.commands.executeCommand("setContext", "iris.focusModeActive", false);
+    this.stateManager.deselectBlock();
+    this.decorationManager.clearCurrentHighlight(activeEditor);
+    this.segmentNavigator.hideNavigator();
+    vscode3.commands.executeCommand("setContext", "iris.blockSelected", false);
+    this.logger.info("Block deselected - navigator hidden", { blockId });
   }
   /**
-   * Handle BLOCK_DOUBLE_CLICK message
-   * Per Phase 5, REQ-007, REQ-008: Fold gaps or toggle fold state
-   * TASK-034: Detect fold gaps
-   * TASK-036: Apply folds
-   * TASK-037: Unfold
-   * TASK-038: Toggle behavior
+   * Handle SEGMENT_NAVIGATED message
+   * UI Refinement 2: Navigate between scattered segments of a block
+   * REQ-044: Scroll editor to target segment and update navigator indicator
    */
-  handleBlockDoubleClick(blockId) {
-    this.logger.info("Block double-click - fold/unfold gaps", { blockId });
+  handleSegmentNavigated(blockId, segmentIndex, totalSegments) {
+    this.logger.info("Segment navigated", { blockId, segmentIndex, totalSegments });
     const activeEditor = vscode3.window.activeTextEditor;
     if (!activeEditor) {
-      this.logger.warn("No active editor for block double-click");
+      this.logger.warn("No active editor for segment navigation");
       return;
     }
     const blocks = this.stateManager.getResponsibilityBlocks();
     if (!blocks) {
-      this.logger.warn("No responsibility blocks available");
+      this.logger.error("No responsibility blocks available for segment navigation");
       return;
     }
     const block = blocks.find((b) => b.blockId === blockId);
-    if (!block) {
-      this.logger.warn("Block not found", { blockId });
+    if (!block || !block.ranges || segmentIndex >= block.ranges.length) {
+      this.logger.error("Invalid segment navigation", { blockId, segmentIndex });
       return;
     }
-    const isFocused = this.stateManager.getFocusedBlockId() === blockId;
-    const isFolded = this.stateManager.isBlockFolded(blockId);
-    if (isFocused && isFolded) {
-      this.logger.info("Toggling fold: unfolding block", { blockId });
-      this.unfoldRanges(activeEditor);
-      this.stateManager.clearFold();
-      return;
-    }
-    if (block.ranges.length === 0) {
-      this.logger.warn("Block has no ranges", { blockId });
-      return;
-    }
-    const firstLineOneBased = block.ranges[0][0];
-    const firstLineZeroBased = firstLineOneBased - 1;
-    this.logger.info("Scrolling to first line", {
-      blockId,
-      lineOneBased: firstLineOneBased,
-      lineZeroBased: firstLineZeroBased
-    });
-    const position = new vscode3.Position(firstLineZeroBased, 0);
+    this.stateManager.setCurrentSegmentIndex(segmentIndex);
+    const [startLine, endLine] = block.ranges[segmentIndex];
+    const position = new vscode3.Position(startLine - 1, 0);
     const range = new vscode3.Range(position, position);
     activeEditor.revealRange(range, vscode3.TextEditorRevealType.InCenter);
     activeEditor.selection = new vscode3.Selection(position, position);
-    this.stateManager.setFocusedBlock(blockId);
-    this.decorationManager.applyFocusMode(activeEditor, block, blocks);
-    vscode3.commands.executeCommand("setContext", "iris.focusModeActive", true);
-    const foldGaps = this.detectFoldGaps(block.ranges);
-    if (foldGaps.length > 0) {
-      this.logger.info("Detected fold gaps", {
-        blockId,
-        gapCount: foldGaps.length,
-        gaps: foldGaps
-      });
-      this.foldRanges(activeEditor, foldGaps);
-      this.stateManager.setFoldedBlock(blockId, foldGaps);
-    } else {
-      this.logger.info("No fold gaps detected - block has contiguous ranges", { blockId });
-    }
-    this.logger.info("Completed block double-click: scrolled, entered focus, and folded gaps", { blockId });
-  }
-  /**
-   * Detect gaps between scattered block ranges
-   * Per TASK-034: Implement fold gap detection algorithm
-   * 
-   * Algorithm:
-   * 1. Sort ranges by start line
-   * 2. For each consecutive pair of ranges, check if there's a gap
-   * 3. If end of range[i] + 1 < start of range[i+1], there's a gap
-   * 4. Gap range: [end of range[i] + 1, start of range[i+1] - 1]
-   * 
-   * @param ranges ONE-based ranges from API
-   * @returns ZERO-based fold gap ranges
-   */
-  detectFoldGaps(ranges) {
-    if (ranges.length <= 1) {
-      return [];
-    }
-    const sortedRanges = [...ranges].sort((a, b) => a[0] - b[0]);
-    const gaps = [];
-    for (let i = 0; i < sortedRanges.length - 1; i++) {
-      const currentEnd = sortedRanges[i][1];
-      const nextStart = sortedRanges[i + 1][0];
-      if (currentEnd + 1 < nextStart) {
-        const gapStartZeroBased = currentEnd;
-        const gapEndZeroBased = nextStart - 2;
-        gaps.push([gapStartZeroBased, gapEndZeroBased]);
-      }
-    }
-    return gaps;
-  }
-  /**
-   * Fold line ranges in the editor
-   * Per TASK-036: Implement fold logic using VS Code folding API
-   * 
-   * @param editor Active text editor
-   * @param ranges ZERO-based line ranges to fold
-   */
-  async foldRanges(editor, ranges) {
-    const foldingRanges = ranges.map(
-      ([start, end]) => new vscode3.Range(
-        new vscode3.Position(start, 0),
-        new vscode3.Position(end, editor.document.lineAt(end).text.length)
-      )
-    );
-    await vscode3.commands.executeCommand("editor.fold", {
-      selectionLines: ranges.map(([start]) => start)
-    });
-    this.logger.info("Applied folds", {
-      foldCount: ranges.length,
-      ranges
+    this.segmentNavigator.updateNavigator(segmentIndex, totalSegments);
+    this.logger.info("Scrolled to segment and updated navigator", {
+      blockId,
+      segmentIndex: segmentIndex + 1,
+      totalSegments,
+      startLine
     });
   }
   /**
-   * Unfold previously folded ranges
-   * Per TASK-037: Implement unfold logic
-   * 
-   * @param editor Active text editor
+   * Handle ESCAPE_PRESSED message
+   * UI Refinement 2: Simplified escape handling for pin/unpin model
+   * REQ-045: Deselect current block via Escape key (same as BLOCK_DESELECTED)
    */
-  async unfoldRanges(editor) {
-    const foldedRanges = this.stateManager.getFoldedRanges();
-    if (!foldedRanges || foldedRanges.length === 0) {
+  handleEscapePressed() {
+    this.logger.info("Escape pressed - deselecting block");
+    const selectedBlockId = this.stateManager.getSelectedBlockId();
+    if (!selectedBlockId) {
+      this.logger.info("No block selected - ignoring Escape");
       return;
     }
-    await vscode3.commands.executeCommand("editor.unfold", {
-      selectionLines: foldedRanges.map(([start]) => start)
+    const activeEditor = vscode3.window.activeTextEditor;
+    if (!activeEditor) {
+      return;
+    }
+    this.stateManager.deselectBlock();
+    this.decorationManager.clearCurrentHighlight(activeEditor);
+    this.segmentNavigator.hideNavigator();
+    vscode3.commands.executeCommand("setContext", "iris.blockSelected", false);
+    this.sendStateUpdate();
+    this.logger.info("Block deselected via Escape", { blockId: selectedBlockId });
+  }
+  /**
+   * Send state update message to webview
+   * Used for notifying webview of state changes
+   */
+  sendStateUpdate() {
+    const currentState = this.stateManager.getCurrentState();
+    this.postMessageToWebview({
+      type: "STATE_UPDATE",
+      state: currentState
     });
-    this.logger.info("Unfolded ranges", {
-      unfoldCount: foldedRanges.length,
-      ranges: foldedRanges
+  }
+  /**
+   * Send navigation command to webview for segment navigation
+   * REQ-079, REQ-080: Support keyboard shortcuts for segment navigation
+   * @param direction - 'prev' or 'next'
+   */
+  sendNavigationCommand(direction) {
+    if (!this.view) {
+      this.logger.warn("Cannot send navigation command - webview not initialized");
+      return;
+    }
+    this.postMessageToWebview({
+      type: "NAVIGATE_SEGMENT",
+      direction
     });
+    this.logger.info("Sent segment navigation command", { direction });
   }
   /**
    * Post message to webview
@@ -951,9 +830,6 @@ var IRISSidePanelProvider = class {
                 </div>
               </div>
             `).join("")}
-          </div>
-          <div class="focus-controls">
-            <button class="focus-clear-button" onclick="handleFocusClear()">Clear Focus</button>
           </div>
         </div>
       ` : `
@@ -1246,7 +1122,7 @@ var IRISSidePanelProvider = class {
       margin-top: var(--iris-spacing-xs);
     }
     
-    /* Phase 3: TASK-023 - Keep description visible when block is in focus mode */
+    /* UI Refinement 2: Keep description visible when block is selected (pinned) */
     .block-item.active .block-description-container {
       max-height: 200px;
       opacity: 1;
@@ -1270,36 +1146,69 @@ var IRISSidePanelProvider = class {
       font-size: 13px;
     }
     
-    /* Focus Controls - TASK-011: Added transitions */
-    .focus-controls {
-      margin-top: var(--iris-spacing-md);
-      padding: var(--iris-spacing-sm) 0;
-      text-align: center;
-    }
-    
-    .focus-clear-button {
-      padding: var(--iris-spacing-sm) var(--iris-spacing-lg);
-      background: var(--vscode-button-background);
-      color: var(--vscode-button-foreground);
-      border: none;
+    /* UI Refinement 2 Phase 3: Floating Segment Navigator (REQ-062 to REQ-065) */
+    /* REQ-062: Floating navigator positioning at bottom-right of viewport */
+    .segment-navigator {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: none; /* Hidden by default, shown when block selected */
+      flex-direction: column;
+      gap: var(--iris-spacing-xs);
+      background: var(--vscode-sideBar-background);
+      border: 1px solid var(--vscode-widget-border);
       border-radius: var(--iris-border-radius);
+      padding: var(--iris-spacing-xs);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* REQ-065: Visibility toggle class */
+    .segment-navigator.navigator-visible {
+      display: flex;
+    }
+    
+    /* REQ-063: Up/down button styling - accessible, minimal visual weight */
+    .segment-nav-button {
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
+      border: none;
+      border-radius: 4px;
+      width: 32px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
+      font-size: 14px;
+      transition: all var(--iris-transition-fast);
+    }
+    
+    .segment-nav-button:hover:not(:disabled) {
+      background: var(--vscode-button-secondaryHoverBackground);
+      transform: translateY(-1px);
+    }
+    
+    .segment-nav-button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    
+    .segment-nav-button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    
+    /* REQ-064: Segment indicator text - centered, monospace, subtle background */
+    .segment-indicator {
       font-family: var(--vscode-editor-font-family);
-      font-size: 12px;
-      font-weight: 500;
-      transition: all var(--iris-transition-fast); /* TASK-011: Smooth transitions */
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .focus-clear-button:hover {
-      background: var(--vscode-button-hoverBackground);
-      transform: translateY(-1px); /* Subtle lift on hover */
-    }
-    
-    .focus-clear-button:active {
-      background: var(--vscode-button-activeBackground);
-      transform: translateY(0); /* Press down effect */
+      font-size: 11px;
+      text-align: center;
+      padding: 4px 8px;
+      background: var(--vscode-input-background);
+      border-radius: 3px;
+      color: var(--vscode-input-foreground);
+      user-select: none;
+      font-variant-numeric: tabular-nums;
     }
   </style>
 </head>
@@ -1309,23 +1218,58 @@ var IRISSidePanelProvider = class {
     // VS Code API for posting messages
     const vscode = acquireVsCodeApi();
     
-    // Track active focused block
-    let activeFocusedBlockId = null;
+    // UI Refinement 2: Pin/unpin selection model state
+    // REQ-009: Renamed from activeFocusedBlockId for semantic clarity
+    let selectedBlockId = null;
     
-    // Phase 5: TASK-032 - Double-click detection state
-    let lastClickTime = 0;
-    let lastClickedBlockId = null;
-    const DOUBLE_CLICK_THRESHOLD_MS = 300;
+    // REQ-012: Track which segment of selected block is currently visible
+    let currentSegmentIndex = 0;
+    
+    // REQ-013: Track total segment count of selected block
+    let segmentCount = 0;
+    
+    // Store analysis data for segment navigation (REQ-023)
+    let analysisData = null;
     
     // Send WEBVIEW_READY on initialization
     window.addEventListener('DOMContentLoaded', () => {
       vscode.postMessage({ type: 'WEBVIEW_READY' });
     });
     
+    // REQ-067 to REQ-071: Keyboard shortcuts for segment navigation
+    // Listen for Ctrl+ArrowUp, Ctrl+ArrowDown, and Escape key
+    window.addEventListener('keydown', (event) => {
+      // REQ-071: Only process shortcuts when a block is selected
+      if (!selectedBlockId) {
+        return;
+      }
+      
+      // REQ-068: Ctrl+Up navigates to previous segment
+      if (event.ctrlKey && event.key === 'ArrowUp') {
+        event.preventDefault();
+        handleSegmentNavigation('prev');
+        return;
+      }
+      
+      // REQ-069: Ctrl+Down navigates to next segment
+      if (event.ctrlKey && event.key === 'ArrowDown') {
+        event.preventDefault();
+        handleSegmentNavigation('next');
+        return;
+      }
+      
+      // REQ-070: Escape key deselects the block
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        executeDeselectBlock(selectedBlockId);
+        return;
+      }
+    });
+    
     // Handle block hover
     function handleBlockHover(blockId) {
-      // Don't send hover if in focus mode
-      if (activeFocusedBlockId !== null) {
+      // REQ-014: Don't send hover if block is selected/pinned
+      if (selectedBlockId !== null) {
         return;
       }
       vscode.postMessage({ type: 'BLOCK_HOVER', blockId: blockId });
@@ -1333,65 +1277,56 @@ var IRISSidePanelProvider = class {
     
     // Handle block clear (mouse leave)
     function handleBlockClear() {
-      // Don't send clear if in focus mode
-      if (activeFocusedBlockId !== null) {
+      // REQ-015: Don't send clear if block is selected/pinned
+      if (selectedBlockId !== null) {
         return;
       }
       vscode.postMessage({ type: 'BLOCK_CLEAR' });
     }
     
-    // Handle block click (single click or first click of double-click)
-    // Per Phase 4, TASK-025, TASK-027: Send BLOCK_CLICK message
-    // Per Phase 5, TASK-032: Detect double-click and send BLOCK_DOUBLE_CLICK
+    // Handle block click - UI Refinement 2: Pin/unpin toggle model
+    // REQ-016 to REQ-020: Simplified click handler without double-click detection
+    // Pin/Unpin toggle model:
+    // - First click on a block: selects it (pins it, applies persistent highlighting)
+    // - Second click on same block: deselects it (unpins it, clears highlighting)
+    // - Click on different block: deselects current, selects new one
+    // - No focus mode, no folding, no double-click - just simple toggle
     function handleBlockClick(blockId) {
-      const now = Date.now();
-      const timeSinceLastClick = now - lastClickTime;
-      
-      // Check if this is a double-click
-      if (timeSinceLastClick < DOUBLE_CLICK_THRESHOLD_MS && lastClickedBlockId === blockId) {
-        // Double-click detected
-        handleBlockDoubleClick(blockId);
-        // Reset click tracking
-        lastClickTime = 0;
-        lastClickedBlockId = null;
+      // REQ-016: Detect if block is already selected (pin/unpin toggle)
+      if (selectedBlockId === blockId) {
+        // REQ-017: Block already selected - unpin it
+        executeDeselectBlock(blockId);
+      } else {
+        // REQ-018: Block not selected - pin it
+        executeSelectBlock(blockId);
+      }
+    }
+    
+    // REQ-021: Execute block selection (pin block)
+    // UI Refinement 2: Select a block and apply persistent highlighting
+    function executeSelectBlock(blockId) {
+      // REQ-021 (1): Find block in analysis data
+      if (!analysisData || !analysisData.responsibilityBlocks) {
+        console.error('Cannot select block: no analysis data available');
         return;
       }
       
-      // Record this click for potential double-click detection
-      lastClickTime = now;
-      lastClickedBlockId = blockId;
-      
-      // Delay single-click action to allow double-click detection
-      setTimeout(() => {
-        // Check if a double-click occurred during the delay
-        if (lastClickedBlockId === blockId && lastClickTime === now) {
-          // No double-click occurred, execute single-click behavior
-          executeSingleClick(blockId);
-        }
-      }, DOUBLE_CLICK_THRESHOLD_MS);
-    }
-    
-    // Execute single-click behavior
-    // Per Phase 6, REQ-010: Clicking on currently selected block exits focus mode
-    function executeSingleClick(blockId) {
-      // Check if clicking on already-focused block (click-to-exit)
-      if (activeFocusedBlockId === blockId) {
-        // Exit focus mode
-        activeFocusedBlockId = null;
-        
-        // Remove active state from all blocks
-        document.querySelectorAll('.block-item').forEach(item => {
-          item.classList.remove('active');
-        });
-        
-        vscode.postMessage({ type: 'BLOCK_CLICK', blockId: blockId });
+      const block = analysisData.responsibilityBlocks.find(b => b.blockId === blockId);
+      if (!block) {
+        console.error('Cannot select block: block not found', blockId);
         return;
       }
       
-      // Enter focus mode for new block
-      activeFocusedBlockId = blockId;
+      // Update selection state
+      selectedBlockId = blockId;
       
-      // Update UI to show focused state
+      // REQ-021 (4): Reset segment index to 0 when selecting new block
+      currentSegmentIndex = 0;
+      
+      // Calculate segment count from block ranges
+      segmentCount = block.ranges ? block.ranges.length : 0;
+      
+      // REQ-021 (3): Update DOM - set active class on clicked block
       document.querySelectorAll('.block-item').forEach(item => {
         if (item.dataset.blockId === blockId) {
           item.classList.add('active');
@@ -1400,54 +1335,87 @@ var IRISSidePanelProvider = class {
         }
       });
       
-      vscode.postMessage({ type: 'BLOCK_CLICK', blockId: blockId });
+      // REQ-021 (2): Send BLOCK_SELECTED message to extension with blockId
+      vscode.postMessage({ type: 'BLOCK_SELECTED', blockId: blockId });
+      
+      // REQ-021 (5): Note - navigation buttons will be shown in future implementation
+      console.log('Block selected:', blockId, 'segments:', segmentCount);
     }
     
-    // Handle block double-click
-    // Per Phase 5, TASK-032: Send BLOCK_DOUBLE_CLICK message
-    function handleBlockDoubleClick(blockId) {
-      // Enter focus mode
-      activeFocusedBlockId = blockId;
+    // REQ-022: Execute block deselection (unpin block)
+    // UI Refinement 2: Deselect a block and clear highlighting
+    function executeDeselectBlock(blockId) {
+      // REQ-022 (1): Send BLOCK_DESELECTED message to extension
+      vscode.postMessage({ type: 'BLOCK_DESELECTED', blockId: blockId });
       
-      // Update UI to show focused state
-      document.querySelectorAll('.block-item').forEach(item => {
-        if (item.dataset.blockId === blockId) {
-          item.classList.add('active');
-        } else {
-          item.classList.remove('active');
-        }
-      });
-      
-      vscode.postMessage({ type: 'BLOCK_DOUBLE_CLICK', blockId: blockId });
-    }
-    
-    // Handle block select (legacy - kept for compatibility)
-    function handleBlockSelect(blockId) {
-      // Enter focus mode
-      activeFocusedBlockId = blockId;
-      
-      // Update UI to show focused state
-      document.querySelectorAll('.block-item').forEach(item => {
-        if (item.dataset.blockId === blockId) {
-          item.classList.add('active');
-        } else {
-          item.classList.remove('active');
-        }
-      });
-      
-      vscode.postMessage({ type: 'BLOCK_SELECT', blockId: blockId });
-    }
-    
-    // Handle focus clear
-    function handleFocusClear() {
-      activeFocusedBlockId = null;
-      
-      // Remove active state from all blocks
+      // REQ-022 (2): Remove active class from all blocks
       document.querySelectorAll('.block-item').forEach(item => {
         item.classList.remove('active');
       });
       
-      vscode.postMessage({ type: 'FOCUS_CLEAR' });
+      // REQ-022 (3): Clear selection state
+      selectedBlockId = null;
+      currentSegmentIndex = 0;
+      segmentCount = 0;
+      
+      // REQ-022 (4): Note - navigation buttons will be hidden in future implementation
+    }
+    
+    // REQ-023: Handle segment navigation for blocks with scattered ranges
+    // UI Refinement 2: Navigate between non-contiguous code segments
+    // 
+    // Navigation flow:
+    // 1. User presses Ctrl+Up/Down or clicks navigation buttons in webview
+    // 2. Calculate new segment index (bounded by segment count)
+    // 3. Send SEGMENT_NAVIGATED message to extension with new index
+    // 4. Extension scrolls editor to target segment and updates state
+    // 5. Extension sends back updated segment count via navigator update
+    function handleSegmentNavigation(direction) {
+      // Validate that a block is selected
+      if (!selectedBlockId) {
+        console.warn('Cannot navigate segments: no block selected');
+        return;
+      }
+      
+      // Get the selected block from analysis data
+      if (!analysisData || !analysisData.responsibilityBlocks) {
+        console.error('Cannot navigate: no analysis data available');
+        return;
+      }
+      
+      const block = analysisData.responsibilityBlocks.find(b => b.blockId === selectedBlockId);
+      if (!block || !block.ranges || block.ranges.length === 0) {
+        console.error('Cannot navigate: block has no ranges');
+        return;
+      }
+      
+      // Calculate new segment index based on direction
+      let newIndex = currentSegmentIndex;
+      if (direction === 'next') {
+        newIndex = Math.min(currentSegmentIndex + 1, block.ranges.length - 1);
+      } else if (direction === 'prev') {
+        newIndex = Math.max(currentSegmentIndex - 1, 0);
+      }
+      
+      // Only proceed if index actually changed
+      if (newIndex === currentSegmentIndex) {
+        console.log('Already at', direction === 'next' ? 'last' : 'first', 'segment');
+        return;
+      }
+      
+      // REQ-023: Update current segment index
+      currentSegmentIndex = newIndex;
+      
+      // REQ-023: Send SEGMENT_NAVIGATED message with new index to extension
+      // Extension will handle scrolling editor to the segment
+      vscode.postMessage({ 
+        type: 'SEGMENT_NAVIGATED', 
+        blockId: selectedBlockId,
+        segmentIndex: currentSegmentIndex,
+        totalSegments: block.ranges.length
+      });
+      
+      console.log('Navigated to segment', currentSegmentIndex + 1, 'of', block.ranges.length);
     }
     
     // Listen for messages from extension
@@ -1455,23 +1423,46 @@ var IRISSidePanelProvider = class {
       const message = event.data;
       console.log('Received message from extension:', message);
       
+      // Store analysis data for segment navigation (REQ-023)
+      if (message.type === 'ANALYSIS_DATA') {
+        analysisData = message.payload;
+        console.log('Stored analysis data:', analysisData.responsibilityBlocks.length, 'blocks');
+      }
+      
       // Handle state changes
       if (message.type === 'STATE_UPDATE') {
-        // Clear focus mode on state changes to IDLE or STALE
+        // REQ-072: Clear selection on state transitions to IDLE or STALE
         if (message.state === 'IDLE' || message.state === 'STALE') {
-          activeFocusedBlockId = null;
-          document.querySelectorAll('.block-item').forEach(item => {
-            item.classList.remove('active');
-          });
+          if (selectedBlockId !== null) {
+            console.log('Clearing selection due to state transition to', message.state);
+            selectedBlockId = null;
+            currentSegmentIndex = 0;
+            segmentCount = 0;
+            document.querySelectorAll('.block-item').forEach(item => {
+              item.classList.remove('active');
+            });
+          }
         }
       }
       
-      // Phase 6: Handle focus cleared via Esc key
-      if (message.type === 'FOCUS_CLEARED_VIA_ESC') {
-        activeFocusedBlockId = null;
+      // REQ-032: Handle ESCAPE_PRESSED message (replaces FOCUS_CLEARED_VIA_ESC)
+      if (message.type === 'ESCAPE_PRESSED') {
+        selectedBlockId = null;
+        currentSegmentIndex = 0;
+        segmentCount = 0;
         document.querySelectorAll('.block-item').forEach(item => {
           item.classList.remove('active');
         });
+      }
+
+      // REQ-079, REQ-080: Handle NAVIGATE_SEGMENT message from keyboard shortcuts
+      if (message.type === 'NAVIGATE_SEGMENT') {
+        if (selectedBlockId !== null) {
+          console.log('Navigating segment via keyboard shortcut:', message.direction);
+          handleSegmentNavigation(message.direction);
+        } else {
+          console.log('No block selected, ignoring navigation command');
+        }
       }
     });
   </script>
@@ -1486,9 +1477,9 @@ var IRISSidePanelProvider = class {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
   /**
-   * Notify webview that focus mode has been cleared
+   * REQ-094: Notify webview that block has been deselected (round-trip message verification)
    * Called by Esc key handler in extension.ts
-   * Per Phase 6: TASK-040
+   * UI Refinement 2: Updated to use ESCAPE_PRESSED message
    */
   notifyFocusCleared() {
     if (!this.view) {
@@ -1498,8 +1489,8 @@ var IRISSidePanelProvider = class {
       type: "STATE_UPDATE",
       state: this.stateManager.getCurrentState()
     });
-    this.view.webview.postMessage({ type: "FOCUS_CLEARED_VIA_ESC" });
-    this.logger.info("Notified webview of focus clear");
+    this.view.webview.postMessage({ type: "ESCAPE_PRESSED" });
+    this.logger.info("Notified webview of escape pressed");
   }
   /**
    * Dispose resources per TASK-0105
@@ -1658,18 +1649,15 @@ function generateBlockColorOpaque(blockId, isDarkTheme) {
 // src/decorations/decorationManager.ts
 var DecorationManager = class {
   decorationCache;
-  focusedDecorationCache;
-  dimmingDecorationType;
   currentlyHighlightedBlockId;
   currentlyFocusedBlockId;
+  // UI Refinement 2: Tracks selected/pinned block
   outputChannel;
   logger;
   constructor(outputChannel) {
     this.outputChannel = outputChannel;
     this.logger = createLogger(outputChannel, "DecorationManager");
     this.decorationCache = /* @__PURE__ */ new Map();
-    this.focusedDecorationCache = /* @__PURE__ */ new Map();
-    this.dimmingDecorationType = null;
     this.currentlyHighlightedBlockId = null;
     this.currentlyFocusedBlockId = null;
     this.logger.info("Decoration manager initialized");
@@ -1723,11 +1711,11 @@ var DecorationManager = class {
     }
     const isDarkTheme = vscode4.window.activeColorTheme.kind === vscode4.ColorThemeKind.Dark || vscode4.window.activeColorTheme.kind === vscode4.ColorThemeKind.HighContrast;
     const baseColor = generateBlockColor(blockId, isDarkTheme);
-    const backgroundColor = baseColor.replace(/,\s*[\d.]+\)$/, ", 0.2)");
+    const backgroundColor = baseColor.replace(/,\s*[\d.]+\)$/, ", 0.25)");
     const opaqueColor = generateBlockColorOpaque(blockId, isDarkTheme);
     const decorationType = vscode4.window.createTextEditorDecorationType({
       backgroundColor,
-      // rgba with 0.2 alpha - renders behind text
+      // rgba with 0.25 alpha - renders behind text
       isWholeLine: true,
       rangeBehavior: vscode4.DecorationRangeBehavior.ClosedClosed,
       overviewRulerColor: opaqueColor,
@@ -1737,50 +1725,10 @@ var DecorationManager = class {
     this.logger.info("Created new decoration type", { blockId, backgroundColor });
     return decorationType;
   }
-  /**
-   * Create focused decoration type for a blockId
-   * Per TASK-0082: Implement focused decoration style distinct from hover
-   * Phase 7 (TASK-051): Uses smart color assignment with enhanced alpha
-   * 
-   * Focused decorations have enhanced emphasis compared to hover
-   */
-  getOrCreateFocusedDecorationType(blockId) {
-    const cached = this.focusedDecorationCache.get(blockId);
-    if (cached) {
-      return cached;
-    }
-    const isDarkTheme = vscode4.window.activeColorTheme.kind === vscode4.ColorThemeKind.Dark || vscode4.window.activeColorTheme.kind === vscode4.ColorThemeKind.HighContrast;
-    const baseColor = generateBlockColor(blockId, isDarkTheme);
-    const backgroundColor = baseColor.replace(/,\s*[\d.]+\)$/, ", 0.3)");
-    const opaqueColor = generateBlockColorOpaque(blockId, isDarkTheme);
-    const decorationType = vscode4.window.createTextEditorDecorationType({
-      backgroundColor,
-      // rgba with 0.3 alpha - renders behind text
-      isWholeLine: true,
-      rangeBehavior: vscode4.DecorationRangeBehavior.ClosedClosed,
-      overviewRulerColor: opaqueColor,
-      // Opaque for ruler visibility only
-      overviewRulerLane: vscode4.OverviewRulerLane.Center
-    });
-    this.focusedDecorationCache.set(blockId, decorationType);
-    this.logger.info("Created focused decoration type", { blockId, backgroundColor });
-    return decorationType;
-  }
-  /**
-   * Get or create dimming decoration type
-   * Per TASK-0083: Apply selective dimming to non-focused blocks
-   */
-  getOrCreateDimmingDecorationType() {
-    if (this.dimmingDecorationType) {
-      return this.dimmingDecorationType;
-    }
-    this.dimmingDecorationType = vscode4.window.createTextEditorDecorationType({
-      opacity: "0.4",
-      isWholeLine: true
-    });
-    this.logger.info("Created dimming decoration type");
-    return this.dimmingDecorationType;
-  }
+  // ========================================
+  // BLOCK SELECTION (UI Refinement 2: Phase 4)
+  // REQ-049 to REQ-055: Replaced focus mode with pin/unpin selection model
+  // ========================================
   /**
    * Prepare decoration data for a responsibility block
    * Converts ranges and creates/caches decoration type
@@ -1809,16 +1757,16 @@ var DecorationManager = class {
   /**
    * Apply decorations for a specific block on BLOCK_HOVER
    * Per TASK-0074
-   * Per TASK-0084: Disable hover while in Focus Mode
+   * Per TASK-0084: Disable hover while block is selected (pin/unpin model)
    * 
    * @param editor - The text editor to apply decorations to
    * @param block - The responsibility block to highlight
    */
   applyBlockHover(editor, block) {
     if (this.currentlyFocusedBlockId !== null) {
-      this.logger.info("Hover disabled while in Focus Mode", {
+      this.logger.info("Hover disabled while block selected", {
         blockId: block.blockId,
-        focusedBlockId: this.currentlyFocusedBlockId
+        selectedBlockId: this.currentlyFocusedBlockId
       });
       return;
     }
@@ -1868,12 +1816,6 @@ var DecorationManager = class {
       for (const decorationData of this.decorationCache.values()) {
         editor.setDecorations(decorationData.decorationType, []);
       }
-      for (const decorationType of this.focusedDecorationCache.values()) {
-        editor.setDecorations(decorationType, []);
-      }
-      if (this.dimmingDecorationType) {
-        editor.setDecorations(this.dimmingDecorationType, []);
-      }
       this.logger.info("Cleared all decorations from editor", {
         editorUri: editor.document.uri.toString()
       });
@@ -1883,92 +1825,59 @@ var DecorationManager = class {
     this.logger.info("Cleared all decoration state");
   }
   // ========================================
-  // FOCUS MODE (Phase 8: GOAL-008)
+  // BLOCK SELECTION (UI Refinement 2: Phase 4)
+  // REQ-053, REQ-054: Pin/Unpin selection model
   // ========================================
   /**
-   * Enter Focus Mode for a specific block
-   * Per TASK-0082, TASK-0083, GOAL-008
+   * Apply block selection highlighting
+   * REQ-053: Applies persistent highlighting to all segments with consistent color
    * 
-   * Visual behavior:
-   * - Active block: enhanced decoration emphasis
-   * - Inactive blocks: reduced opacity/dimming
-   * - Non-responsibility code: untouched
+   * Block selection (pin/unpin model):
+   * - Uses same 0.25 alpha decoration as hover for visual consistency (REQ-055)
+   * - Applies highlighting to ALL segments of the block simultaneously
+   * - Persists until block is deselected (unlike hover which clears on mouse out)
+   * - No dimming of other blocks (simplified from focus mode)
    * 
-   * @param editor - The text editor to apply focus decorations
-   * @param focusedBlock - The block to focus on
-   * @param allBlocks - All responsibility blocks for dimming calculation
+   * Replaces focus mode - no dimming, just persistent highlighting on selected block
+   * 
+   * @param editor - The text editor to apply selection decorations
+   * @param block - The selected responsibility block to highlight
    */
-  applyFocusMode(editor, focusedBlock, allBlocks) {
+  applyBlockSelection(editor, block) {
     this.clearCurrentHighlight(editor);
-    this.clearFocusMode(editor);
-    const focusedDecorationType = this.getOrCreateFocusedDecorationType(focusedBlock.blockId);
-    const focusedData = this.prepareBlockDecoration(focusedBlock);
-    const focusedRanges = focusedData.ranges.map(
+    const decorationData = this.prepareBlockDecoration(block);
+    const vscodeRanges = decorationData.ranges.map(
       (range) => new vscode4.Range(
         new vscode4.Position(range.startLine, 0),
         new vscode4.Position(range.endLine, Number.MAX_SAFE_INTEGER)
       )
     );
-    editor.setDecorations(focusedDecorationType, focusedRanges);
-    const dimmingDecorationType = this.getOrCreateDimmingDecorationType();
-    const dimmingRanges = [];
-    for (const block of allBlocks) {
-      if (block.blockId !== focusedBlock.blockId) {
-        const blockData = this.prepareBlockDecoration(block);
-        const blockRanges = blockData.ranges.map(
-          (range) => new vscode4.Range(
-            new vscode4.Position(range.startLine, 0),
-            new vscode4.Position(range.endLine, Number.MAX_SAFE_INTEGER)
-          )
-        );
-        dimmingRanges.push(...blockRanges);
-      }
-    }
-    if (dimmingRanges.length > 0) {
-      editor.setDecorations(dimmingDecorationType, dimmingRanges);
-    }
-    this.currentlyFocusedBlockId = focusedBlock.blockId;
-    this.logger.info("Applied Focus Mode", {
-      focusedBlockId: focusedBlock.blockId,
-      focusedRangeCount: focusedRanges.length,
-      dimmedBlockCount: allBlocks.length - 1,
-      dimmedRangeCount: dimmingRanges.length,
-      label: focusedBlock.label
+    editor.setDecorations(decorationData.decorationType, vscodeRanges);
+    this.currentlyFocusedBlockId = block.blockId;
+    this.logger.info("Applied block selection", {
+      blockId: block.blockId,
+      rangeCount: vscodeRanges.length,
+      label: block.label
     });
   }
   /**
-   * Exit Focus Mode and clear all focus decorations
-   * Per TASK-0085
+   * Clear block selection highlighting
+   * REQ-054: Clears selection highlights for a specific block
    * 
-   * @param editor - The text editor to clear focus decorations from
+   * @param editor - The text editor to clear selection decorations from
+   * @param blockId - The block ID to clear (optional, clears current if not provided)
    */
-  clearFocusMode(editor) {
-    if (this.currentlyFocusedBlockId === null) {
+  clearBlockSelection(editor, blockId) {
+    const targetBlockId = blockId || this.currentlyFocusedBlockId;
+    if (!targetBlockId) {
       return;
     }
-    const previousFocusedBlockId = this.currentlyFocusedBlockId;
-    for (const decorationType of this.focusedDecorationCache.values()) {
-      editor.setDecorations(decorationType, []);
-    }
-    if (this.dimmingDecorationType) {
-      editor.setDecorations(this.dimmingDecorationType, []);
+    const decorationData = this.decorationCache.get(targetBlockId);
+    if (decorationData) {
+      editor.setDecorations(decorationData.decorationType, []);
+      this.logger.info("Cleared block selection", { blockId: targetBlockId });
     }
     this.currentlyFocusedBlockId = null;
-    this.logger.info("Cleared Focus Mode", {
-      previousFocusedBlockId
-    });
-  }
-  /**
-   * Check if currently in Focus Mode
-   */
-  isFocusModeActive() {
-    return this.currentlyFocusedBlockId !== null;
-  }
-  /**
-   * Get currently focused block ID
-   */
-  getFocusedBlockId() {
-    return this.currentlyFocusedBlockId;
   }
   /**
    * Dispose all decoration types
@@ -1978,25 +1887,15 @@ var DecorationManager = class {
    * Prevents memory leaks by properly disposing TextEditorDecorationType instances
    */
   disposeAllDecorations() {
-    const hoverCount = this.decorationCache.size;
-    const focusCount = this.focusedDecorationCache.size;
+    const decorationCount = this.decorationCache.size;
     for (const decorationData of this.decorationCache.values()) {
       decorationData.decorationType.dispose();
     }
-    for (const decorationType of this.focusedDecorationCache.values()) {
-      decorationType.dispose();
-    }
-    if (this.dimmingDecorationType) {
-      this.dimmingDecorationType.dispose();
-      this.dimmingDecorationType = null;
-    }
     this.decorationCache.clear();
-    this.focusedDecorationCache.clear();
     this.currentlyHighlightedBlockId = null;
     this.currentlyFocusedBlockId = null;
     this.logger.info("Disposed all decoration types", {
-      hoverCount,
-      focusCount
+      decorationCount
     });
   }
   /**
@@ -2024,6 +1923,299 @@ var DecorationManager = class {
   dispose() {
     this.disposeAllDecorations();
     this.logger.info("Decoration manager disposed");
+  }
+};
+
+// src/decorations/segmentNavigator.ts
+var vscode5 = __toESM(require("vscode"));
+var SegmentNavigator = class {
+  outputChannel;
+  logger;
+  // Decoration types for navigation UI components
+  upButtonDecorationType = null;
+  downButtonDecorationType = null;
+  indicatorDecorationType = null;
+  // Current navigation state
+  isVisible = false;
+  currentBlockId = null;
+  currentSegment = 0;
+  totalSegments = 0;
+  // Virtual line position for floating UI (placed after last visible line)
+  virtualLinePosition = 0;
+  constructor(outputChannel) {
+    this.outputChannel = outputChannel;
+    this.logger = createLogger(outputChannel, "SegmentNavigator");
+    this.logger.info("Segment navigator initialized");
+  }
+  /**
+   * Show segment navigator with current position indicator
+   * REQ-037: Display floating navigation UI when block is selected
+   * 
+   * @param blockId - ID of selected block
+   * @param currentSegment - Current segment index (0-based)
+   * @param totalSegments - Total number of segments in block
+   */
+  showNavigator(blockId, currentSegment, totalSegments) {
+    const editor = vscode5.window.activeTextEditor;
+    if (!editor) {
+      this.logger.warn("Cannot show navigator: no active editor");
+      return;
+    }
+    this.logger.info("Showing segment navigator", { blockId, currentSegment, totalSegments });
+    this.currentBlockId = blockId;
+    this.currentSegment = currentSegment;
+    this.totalSegments = totalSegments;
+    this.isVisible = true;
+    this.renderNavigator(editor);
+  }
+  /**
+   * Update navigator with new segment position
+   * REQ-038: Refresh indicator when user navigates between segments
+   * 
+   * Called when user presses Ctrl+Up/Down or clicks navigation buttons
+   * Updates the displayed segment indicator ("X/Y") without changing visibility
+   * 
+   * @param currentSegment - New current segment index (0-based)
+   * @param totalSegments - Total number of segments (may change if block updated)
+   */
+  updateNavigator(currentSegment, totalSegments) {
+    if (!this.isVisible) {
+      this.logger.warn("Cannot update navigator: not visible");
+      return;
+    }
+    const editor = vscode5.window.activeTextEditor;
+    if (!editor) {
+      this.logger.warn("Cannot update navigator: no active editor");
+      return;
+    }
+    this.logger.debug("Updating segment navigator", { currentSegment, totalSegments });
+    this.currentSegment = currentSegment;
+    this.totalSegments = totalSegments;
+    this.renderNavigator(editor);
+  }
+  /**
+   * Hide navigator and clear all decorations
+   * REQ-039: Remove floating UI when block is deselected
+   */
+  hideNavigator() {
+    if (!this.isVisible) {
+      return;
+    }
+    this.logger.info("Hiding segment navigator", { blockId: this.currentBlockId });
+    const editor = vscode5.window.activeTextEditor;
+    if (editor) {
+      this.clearDecorations(editor);
+    }
+    this.disposeDecorationTypes();
+    this.isVisible = false;
+    this.currentBlockId = null;
+    this.currentSegment = 0;
+    this.totalSegments = 0;
+  }
+  /**
+   * Render navigator UI in editor using decorations
+   * REQ-035, REQ-036, REQ-040: Create floating buttons with proper styling and state
+   * CON-002: Non-intrusive positioning, does not interfere with editing
+   */
+  renderNavigator(editor) {
+    this.clearDecorations(editor);
+    this.disposeDecorationTypes();
+    const lastLine = editor.document.lineCount - 1;
+    this.virtualLinePosition = lastLine;
+    this.createUpButtonDecoration(editor);
+    this.createIndicatorDecoration(editor);
+    this.createDownButtonDecoration(editor);
+    this.logger.debug("Navigator rendered", {
+      currentSegment: this.currentSegment,
+      totalSegments: this.totalSegments,
+      virtualLine: this.virtualLinePosition
+    });
+  }
+  /**
+   * Create up arrow button decoration
+   * REQ-040: Disabled when currentSegment === 0
+   */
+  createUpButtonDecoration(editor) {
+    const isDisabled = this.currentSegment === 0;
+    const opacity = isDisabled ? "0.3" : "1.0";
+    const cursor = isDisabled ? "not-allowed" : "pointer";
+    const isDarkTheme = vscode5.window.activeColorTheme.kind === vscode5.ColorThemeKind.Dark || vscode5.window.activeColorTheme.kind === vscode5.ColorThemeKind.HighContrast;
+    const textColor = isDarkTheme ? "#CCCCCC" : "#333333";
+    const bgColor = isDarkTheme ? "rgba(60, 60, 60, 0.9)" : "rgba(245, 245, 245, 0.9)";
+    const hoverBgColor = isDarkTheme ? "rgba(80, 80, 80, 0.95)" : "rgba(230, 230, 230, 0.95)";
+    this.upButtonDecorationType = vscode5.window.createTextEditorDecorationType({
+      after: {
+        contentText: "\u2191",
+        color: textColor,
+        backgroundColor: bgColor,
+        margin: "0 2px",
+        width: "24px",
+        height: "24px",
+        textDecoration: `none; 
+          display: inline-flex; 
+          align-items: center; 
+          justify-content: center; 
+          border-radius: 4px; 
+          opacity: ${opacity}; 
+          cursor: ${cursor};
+          font-size: 16px;
+          font-weight: bold;
+          box-sizing: border-box;
+          border: 1px solid ${isDarkTheme ? "rgba(100, 100, 100, 0.5)" : "rgba(200, 200, 200, 0.5)"};`
+      },
+      isWholeLine: false,
+      rangeBehavior: vscode5.DecorationRangeBehavior.ClosedClosed
+    });
+    const range = new vscode5.Range(
+      this.virtualLinePosition,
+      0,
+      this.virtualLinePosition,
+      0
+    );
+    editor.setDecorations(this.upButtonDecorationType, [range]);
+  }
+  /**
+   * Create segment indicator decoration (e.g., "2/5")
+   * Shows current position among total segments
+   */
+  createIndicatorDecoration(editor) {
+    const displayText = `${this.currentSegment + 1}/${this.totalSegments}`;
+    const isDarkTheme = vscode5.window.activeColorTheme.kind === vscode5.ColorThemeKind.Dark || vscode5.window.activeColorTheme.kind === vscode5.ColorThemeKind.HighContrast;
+    const textColor = isDarkTheme ? "#CCCCCC" : "#333333";
+    const bgColor = isDarkTheme ? "rgba(50, 50, 50, 0.9)" : "rgba(250, 250, 250, 0.9)";
+    this.indicatorDecorationType = vscode5.window.createTextEditorDecorationType({
+      after: {
+        contentText: displayText,
+        color: textColor,
+        backgroundColor: bgColor,
+        margin: "0 2px",
+        textDecoration: `none; 
+          display: inline-flex; 
+          align-items: center; 
+          justify-content: center; 
+          padding: 2px 8px;
+          border-radius: 4px; 
+          font-family: monospace;
+          font-size: 12px;
+          font-weight: 500;
+          box-sizing: border-box;
+          border: 1px solid ${isDarkTheme ? "rgba(100, 100, 100, 0.5)" : "rgba(200, 200, 200, 0.5)"};
+          min-width: 40px;`
+      },
+      isWholeLine: false,
+      rangeBehavior: vscode5.DecorationRangeBehavior.ClosedClosed
+    });
+    const range = new vscode5.Range(
+      this.virtualLinePosition,
+      30,
+      this.virtualLinePosition,
+      30
+    );
+    editor.setDecorations(this.indicatorDecorationType, [range]);
+  }
+  /**
+   * Create down arrow button decoration
+   * REQ-040: Disabled when currentSegment === totalSegments - 1 (last segment)
+   */
+  createDownButtonDecoration(editor) {
+    const isDisabled = this.currentSegment >= this.totalSegments - 1;
+    const opacity = isDisabled ? "0.3" : "1.0";
+    const cursor = isDisabled ? "not-allowed" : "pointer";
+    const isDarkTheme = vscode5.window.activeColorTheme.kind === vscode5.ColorThemeKind.Dark || vscode5.window.activeColorTheme.kind === vscode5.ColorThemeKind.HighContrast;
+    const textColor = isDarkTheme ? "#CCCCCC" : "#333333";
+    const bgColor = isDarkTheme ? "rgba(60, 60, 60, 0.9)" : "rgba(245, 245, 245, 0.9)";
+    this.downButtonDecorationType = vscode5.window.createTextEditorDecorationType({
+      after: {
+        contentText: "\u2193",
+        color: textColor,
+        backgroundColor: bgColor,
+        margin: "0 2px",
+        width: "24px",
+        height: "24px",
+        textDecoration: `none; 
+          display: inline-flex; 
+          align-items: center; 
+          justify-content: center; 
+          border-radius: 4px; 
+          opacity: ${opacity}; 
+          cursor: ${cursor};
+          font-size: 16px;
+          font-weight: bold;
+          box-sizing: border-box;
+          border: 1px solid ${isDarkTheme ? "rgba(100, 100, 100, 0.5)" : "rgba(200, 200, 200, 0.5)"};`
+      },
+      isWholeLine: false,
+      rangeBehavior: vscode5.DecorationRangeBehavior.ClosedClosed
+    });
+    const range = new vscode5.Range(
+      this.virtualLinePosition,
+      75,
+      this.virtualLinePosition,
+      75
+    );
+    editor.setDecorations(this.downButtonDecorationType, [range]);
+  }
+  /**
+   * Clear all navigator decorations from editor
+   */
+  clearDecorations(editor) {
+    if (this.upButtonDecorationType) {
+      editor.setDecorations(this.upButtonDecorationType, []);
+    }
+    if (this.indicatorDecorationType) {
+      editor.setDecorations(this.indicatorDecorationType, []);
+    }
+    if (this.downButtonDecorationType) {
+      editor.setDecorations(this.downButtonDecorationType, []);
+    }
+  }
+  /**
+   * Dispose all decoration types to prevent memory leaks
+   */
+  disposeDecorationTypes() {
+    if (this.upButtonDecorationType) {
+      this.upButtonDecorationType.dispose();
+      this.upButtonDecorationType = null;
+    }
+    if (this.indicatorDecorationType) {
+      this.indicatorDecorationType.dispose();
+      this.indicatorDecorationType = null;
+    }
+    if (this.downButtonDecorationType) {
+      this.downButtonDecorationType.dispose();
+      this.downButtonDecorationType = null;
+    }
+  }
+  /**
+   * Check if navigator is currently visible
+   */
+  isNavigatorVisible() {
+    return this.isVisible;
+  }
+  /**
+   * Get current segment index
+   */
+  getCurrentSegment() {
+    return this.currentSegment;
+  }
+  /**
+   * Get total segments count
+   */
+  getTotalSegments() {
+    return this.totalSegments;
+  }
+  /**
+   * Dispose all resources
+   */
+  dispose() {
+    this.logger.info("Disposing segment navigator");
+    const editor = vscode5.window.activeTextEditor;
+    if (editor) {
+      this.clearDecorations(editor);
+    }
+    this.disposeDecorationTypes();
+    this.isVisible = false;
+    this.currentBlockId = null;
   }
 };
 
@@ -2306,7 +2498,7 @@ var SUPPORTED_LANGUAGES = /* @__PURE__ */ new Set([
 var ANALYZE_ENDPOINT = "http://localhost:8080/api/iris/analyze";
 var REQUEST_TIMEOUT_MS = 15e3;
 function activate(context) {
-  const outputChannel = vscode5.window.createOutputChannel(OUTPUT_CHANNEL_NAME);
+  const outputChannel = vscode6.window.createOutputChannel(OUTPUT_CHANNEL_NAME);
   context.subscriptions.push(outputChannel);
   const logger = createLogger(outputChannel, "Extension");
   logger.info("Extension activated", { version: context.extension.packageJSON.version });
@@ -2314,6 +2506,8 @@ function activate(context) {
   context.subscriptions.push(stateManager);
   const decorationManager = new DecorationManager(outputChannel);
   context.subscriptions.push(decorationManager);
+  const segmentNavigator = new SegmentNavigator(outputChannel);
+  context.subscriptions.push(segmentNavigator);
   const apiClient = new IRISAPIClient(
     {
       endpoint: ANALYZE_ENDPOINT,
@@ -2322,7 +2516,7 @@ function activate(context) {
     createLogger(outputChannel, "APIClient")
   );
   stateManager.onStateChange((newState) => {
-    const activeEditor = vscode5.window.activeTextEditor;
+    const activeEditor = vscode6.window.activeTextEditor;
     if (newState === "IDLE" /* IDLE */ || newState === "STALE" /* STALE */) {
       if (activeEditor) {
         decorationManager.clearAllDecorations(activeEditor);
@@ -2335,63 +2529,85 @@ function activate(context) {
     context.extensionUri,
     stateManager,
     decorationManager,
+    segmentNavigator,
     outputChannel
   );
   context.subscriptions.push(
-    vscode5.window.registerWebviewViewProvider(
+    vscode6.window.registerWebviewViewProvider(
       IRISSidePanelProvider.viewType,
       sidePanelProvider
     )
   );
   context.subscriptions.push(sidePanelProvider);
-  const exitFocusModeCommand = vscode5.commands.registerCommand("iris.exitFocusMode", async () => {
+  const exitFocusModeCommand = vscode6.commands.registerCommand("iris.exitFocusMode", async () => {
     try {
-      logger.info("Command executed: iris.exitFocusMode");
-      const activeEditor = vscode5.window.activeTextEditor;
+      logger.info("Command executed: iris.exitFocusMode (deselect block)");
+      const activeEditor = vscode6.window.activeTextEditor;
       if (!activeEditor) {
-        logger.warn("No active editor for exit focus mode");
+        logger.warn("No active editor for deselect block");
         return;
       }
-      if (stateManager.isFocusModeActive()) {
-        logger.info("Exiting Focus Mode via Esc key");
-        if (stateManager.isFoldActive()) {
-          const foldedRanges = stateManager.getFoldedRanges();
-          if (foldedRanges && foldedRanges.length > 0) {
-            await vscode5.commands.executeCommand("editor.unfold", {
-              selectionLines: foldedRanges.map(([start]) => start)
-            });
-            logger.info("Unfolded ranges via Esc key", { unfoldCount: foldedRanges.length });
-          }
-          stateManager.clearFold();
-        }
-        stateManager.clearFocus();
-        decorationManager.clearFocusMode(activeEditor);
-        sidePanelProvider.notifyFocusCleared();
+      const selectedBlockId = stateManager.getSelectedBlockId();
+      if (selectedBlockId) {
+        logger.info("Deselecting block via Esc key", { blockId: selectedBlockId });
+        stateManager.deselectBlock();
+        decorationManager.clearCurrentHighlight(activeEditor);
+        segmentNavigator.hideNavigator();
+        vscode6.commands.executeCommand("setContext", "iris.blockSelected", false);
+        sidePanelProvider.sendStateUpdate();
+        logger.info("Block deselected via Esc key");
       } else {
-        logger.info("No active focus mode to exit");
+        logger.info("No selected block to deselect");
       }
     } catch (error) {
-      logger.error("Failed to exit focus mode", { error: String(error) });
+      logger.error("Failed to deselect block", { error: String(error) });
     }
   });
   context.subscriptions.push(exitFocusModeCommand);
-  const updateFocusModeContext = () => {
-    vscode5.commands.executeCommand("setContext", "iris.focusModeActive", stateManager.isFocusModeActive());
-  };
-  updateFocusModeContext();
-  const disposable = vscode5.commands.registerCommand("iris.runAnalysis", async () => {
+  const navigatePreviousSegmentCommand = vscode6.commands.registerCommand("iris.navigatePreviousSegment", async () => {
+    try {
+      logger.info("Command executed: iris.navigatePreviousSegment");
+      const selectedBlockId = stateManager.getSelectedBlockId();
+      if (!selectedBlockId) {
+        logger.warn("No selected block for segment navigation");
+        return;
+      }
+      sidePanelProvider.sendNavigationCommand("prev");
+      logger.info("Sent navigate previous segment command to webview", { blockId: selectedBlockId });
+    } catch (error) {
+      logger.error("Failed to navigate to previous segment", { error: String(error) });
+    }
+  });
+  context.subscriptions.push(navigatePreviousSegmentCommand);
+  const navigateNextSegmentCommand = vscode6.commands.registerCommand("iris.navigateNextSegment", async () => {
+    try {
+      logger.info("Command executed: iris.navigateNextSegment");
+      const selectedBlockId = stateManager.getSelectedBlockId();
+      if (!selectedBlockId) {
+        logger.warn("No selected block for segment navigation");
+        return;
+      }
+      sidePanelProvider.sendNavigationCommand("next");
+      logger.info("Sent navigate next segment command to webview", { blockId: selectedBlockId });
+    } catch (error) {
+      logger.error("Failed to navigate to next segment", { error: String(error) });
+    }
+  });
+  context.subscriptions.push(navigateNextSegmentCommand);
+  vscode6.commands.executeCommand("setContext", "iris.blockSelected", false);
+  const disposable = vscode6.commands.registerCommand("iris.runAnalysis", async () => {
     try {
       outputChannel.show(true);
       logger.info("Command executed: iris.runAnalysis");
       if (stateManager.isAnalyzing()) {
         logger.warn("Analysis already in progress, ignoring duplicate trigger");
-        vscode5.window.showWarningMessage("IRIS: Analysis already in progress.");
+        vscode6.window.showWarningMessage("IRIS: Analysis already in progress.");
         return;
       }
-      const activeEditor = vscode5.window.activeTextEditor;
+      const activeEditor = vscode6.window.activeTextEditor;
       if (!activeEditor) {
         logger.warn("No active editor found");
-        vscode5.window.showInformationMessage("IRIS: No active editor to analyze.");
+        vscode6.window.showInformationMessage("IRIS: No active editor to analyze.");
         return;
       }
       const document = activeEditor.document;
@@ -2410,7 +2626,7 @@ function activate(context) {
       });
       if (!SUPPORTED_LANGUAGES.has(languageId)) {
         logger.warn("Unsupported language detected", { languageId });
-        vscode5.window.showWarningMessage(
+        vscode6.window.showWarningMessage(
           `IRIS: Unsupported language "${languageId}". Supported: ${Array.from(SUPPORTED_LANGUAGES).join(", ")}`
         );
         return;
@@ -2426,9 +2642,9 @@ function activate(context) {
         }
       };
       stateManager.startAnalysis(fileUri);
-      await vscode5.window.withProgress(
+      await vscode6.window.withProgress(
         {
-          location: vscode5.ProgressLocation.Notification,
+          location: vscode6.ProgressLocation.Notification,
           title: "IRIS",
           cancellable: false
         },
@@ -2439,7 +2655,7 @@ function activate(context) {
             const response = await apiClient.analyze(payload);
             if (response.responsibility_blocks.length === 0) {
               logger.warn("Server returned empty responsibility blocks");
-              vscode5.window.showWarningMessage("IRIS: No responsibility blocks found in file.");
+              vscode6.window.showWarningMessage("IRIS: No responsibility blocks found in file.");
               stateManager.setError("No responsibility blocks found", fileUri);
               return;
             }
@@ -2464,7 +2680,7 @@ function activate(context) {
               blockCount: normalizedBlocks.length,
               fileIntent: response.file_intent.substring(0, 50)
             });
-            vscode5.window.showInformationMessage("IRIS: Analysis completed successfully.");
+            vscode6.window.showInformationMessage("IRIS: Analysis completed successfully.");
           } catch (error) {
             if (error instanceof APIError) {
               const userMessage = IRISAPIClient.getUserMessage(error);
@@ -2474,12 +2690,12 @@ function activate(context) {
                 message: error.message
               });
               stateManager.setError(error.message, fileUri);
-              vscode5.window.showErrorMessage(`IRIS: ${userMessage}`);
+              vscode6.window.showErrorMessage(`IRIS: ${userMessage}`);
             } else {
               const message = error instanceof Error ? error.message : "Unknown error";
               logger.errorWithException("Unexpected error during analysis", error);
               stateManager.setError(message, fileUri);
-              vscode5.window.showErrorMessage("IRIS: Analysis failed due to an unexpected error.");
+              vscode6.window.showErrorMessage("IRIS: Analysis failed due to an unexpected error.");
             }
           }
         }
@@ -2488,12 +2704,12 @@ function activate(context) {
       const message = error instanceof Error ? error.message : "Unknown error";
       logger.errorWithException("Command execution failed", error);
       stateManager.setError(message);
-      vscode5.window.showErrorMessage("IRIS: Analysis failed.");
+      vscode6.window.showErrorMessage("IRIS: Analysis failed.");
     }
   });
   context.subscriptions.push(disposable);
   context.subscriptions.push(
-    vscode5.workspace.onDidChangeTextDocument((event) => {
+    vscode6.workspace.onDidChangeTextDocument((event) => {
       const currentState = stateManager.getCurrentState();
       if (currentState !== "ANALYZED" /* ANALYZED */) {
         return;
@@ -2515,13 +2731,12 @@ function activate(context) {
     })
   );
   context.subscriptions.push(
-    vscode5.window.onDidChangeActiveTextEditor((editor) => {
-      if (stateManager.isFocusModeActive()) {
-        logger.info("Active editor changed - exiting Focus Mode");
-        stateManager.clearFocus();
-        if (editor) {
-          decorationManager.clearFocusMode(editor);
-        }
+    vscode6.window.onDidChangeActiveTextEditor((editor) => {
+      const selectedBlockId = stateManager.getSelectedBlockId();
+      if (selectedBlockId && editor) {
+        logger.info("Active editor changed - clearing block selection");
+        stateManager.deselectBlock();
+        decorationManager.clearBlockSelection(editor);
       }
     })
   );

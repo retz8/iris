@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { IRISStateManager, IRISAnalysisState, AnalysisData } from '../state/irisState';
 import { DecorationManager } from '../decorations/decorationManager';
+import { SegmentNavigator } from '../decorations/segmentNavigator';
 import { createLogger, Logger } from '../utils/logger';
 import { 
   WebviewMessage, 
@@ -21,7 +22,7 @@ import {
  * Per GOAL-005 (Read-only Webview):
  * - Renders File Intent prominently at top
  * - Displays vertical list of Responsibility Blocks (label + description)
- * - No interactive elements (Phase 5 is read-only only)
+ * - Interactive block selection with pin/unpin toggle (UI Refinement 2)
  * 
  * Per UX-001 (Honest State):
  * - IDLE: empty state message
@@ -38,6 +39,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private stateManager: IRISStateManager;
   private decorationManager: DecorationManager;
+  private segmentNavigator: SegmentNavigator;
   private disposables: vscode.Disposable[] = [];
   private logger: Logger;
 
@@ -45,10 +47,12 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     private readonly extensionUri: vscode.Uri,
     stateManager: IRISStateManager,
     decorationManager: DecorationManager,
+    segmentNavigator: SegmentNavigator,
     outputChannel: vscode.OutputChannel
   ) {
     this.stateManager = stateManager;
     this.decorationManager = decorationManager;
+    this.segmentNavigator = segmentNavigator;
     this.logger = createLogger(outputChannel, 'SidePanel');
     
     // Subscribe to state changes
@@ -138,24 +142,25 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
         this.handleBlockHover(message.blockId);
         break;
       
-      case 'BLOCK_CLICK':
-        this.handleBlockClick(message.blockId);
+      // UI Refinement 2: Pin/unpin selection model message types
+      case 'BLOCK_SELECTED':
+        this.handleBlockSelected(message.blockId);
         break;
       
-      case 'BLOCK_DOUBLE_CLICK':
-        this.handleBlockDoubleClick(message.blockId);
+      case 'BLOCK_DESELECTED':
+        this.handleBlockDeselected(message.blockId);
         break;
       
-      case 'BLOCK_SELECT':
-        this.handleBlockSelect(message.blockId);
+      case 'SEGMENT_NAVIGATED':
+        this.handleSegmentNavigated(message.blockId, message.segmentIndex, message.totalSegments);
+        break;
+      
+      case 'ESCAPE_PRESSED':
+        this.handleEscapePressed();
         break;
       
       case 'BLOCK_CLEAR':
         this.handleBlockClear();
-        break;
-      
-      case 'FOCUS_CLEAR':
-        this.handleFocusClear();
         break;
       
       default:
@@ -220,47 +225,20 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * Handle BLOCK_CLICK message
-   * Per Phase 4, REQ-006: Scroll to first line and enter focus mode without folding
-   * Per Phase 6, REQ-010: Clicking on currently selected block must exit focus mode
-   * TASK-029: Scroll-to-line logic with InCenter reveal
-   * TASK-030: Integrate with focus mode
-   * TASK-031: Apply focus decorations after scroll
-   * TASK-045, TASK-046: Click-to-exit logic for already-focused blocks
+   * Handle BLOCK_SELECTED message
+   * UI Refinement 2: Pin/unpin selection model
+   * REQ-042: Select block and apply persistent highlighting with segment navigation
    */
-  private handleBlockClick(blockId: string): void {
-    this.logger.info('Block click', { blockId });
+  private handleBlockSelected(blockId: string): void {
+    this.logger.info('Block selected - pin/unpin model', { blockId });
     
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor) {
-      this.logger.warn('No active editor for block click');
+      this.logger.warn('No active editor for block select');
       return;
     }
 
-    // TASK-045: Detect if clicked block is already focused
-    const currentFocusedBlockId = this.stateManager.getFocusedBlockId();
-    
-    if (currentFocusedBlockId === blockId) {
-      // TASK-046: Click-to-exit logic - exit focus mode and unfold
-      this.logger.info('Clicked on already-focused block - exiting Focus Mode', { blockId });
-      
-      // Unfold any previously folded ranges
-      if (this.stateManager.isFoldActive()) {
-        this.unfoldRanges(activeEditor);
-        this.stateManager.clearFold();
-      }
-      
-      // Clear focus state
-      this.stateManager.clearFocus();
-      
-      // Clear focus decorations
-      this.decorationManager.clearFocusMode(activeEditor);
-      
-      this.logger.info('Exited Focus Mode via click-to-exit', { blockId });
-      return;
-    }
-
-    // Find the block by blockId
+    // REQ-042 (1): Find the block by blockId
     const blocks = this.stateManager.getResponsibilityBlocks();
     if (!blocks) {
       this.logger.warn('No responsibility blocks available');
@@ -273,78 +251,32 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    // Get first range start line (API returns ONE-based, convert to ZERO-based)
-    if (block.ranges.length === 0) {
-      this.logger.warn('Block has no ranges', { blockId });
-      return;
-    }
-
-    const firstLineOneBased = block.ranges[0][0];
-    const firstLineZeroBased = firstLineOneBased - 1;
+    // REQ-042 (1): Store selection state in state manager
+    this.stateManager.selectBlock(blockId);
     
-    this.logger.info('Scrolling to first line and entering Focus Mode', { 
+    // REQ-042 (3): Count segments (distinct ranges)
+    const totalSegments = block.ranges.length;
+    const currentSegment = 0; // Always start at first segment
+    
+    // REQ-042 (4): Show segment navigator with segment count
+    this.segmentNavigator.showNavigator(blockId, currentSegment, totalSegments);
+    
+    // REQ-042 (5): Apply highlighting decoration to all block segments (REQ-053)
+    this.decorationManager.applyBlockSelection(activeEditor, block);
+    
+    // REQ-048: Update VS Code context for keybinding
+    vscode.commands.executeCommand('setContext', 'iris.blockSelected', true);
+    
+    this.logger.info('Block selected with segment navigator', { 
       blockId, 
-      lineOneBased: firstLineOneBased,
-      lineZeroBased: firstLineZeroBased 
+      totalSegments,
+      label: block.label 
     });
-
-    // Scroll to first line with InCenter reveal
-    const position = new vscode.Position(firstLineZeroBased, 0);
-    const range = new vscode.Range(position, position);
-    activeEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-    
-    // Move cursor to first line
-    activeEditor.selection = new vscode.Selection(position, position);
-
-    // Enter Focus Mode via state manager (TASK-030)
-    this.stateManager.setFocusedBlock(blockId);
-    
-    // Apply focus decorations (TASK-031)
-    this.decorationManager.applyFocusMode(activeEditor, block, blocks);
-    
-    // Update VS Code context for keybinding
-    vscode.commands.executeCommand('setContext', 'iris.focusModeActive', true);
-    
-    this.logger.info('Completed block click: scrolled and entered focus mode', { blockId });
-  }
-
-  /**
-   * Handle BLOCK_SELECT message
-   * Per TASK-0066, TASK-0068: blockId-based routing with logging
-   * Triggers Focus Mode (Phase 8)
-   */
-  private handleBlockSelect(blockId: string): void {
-    this.logger.info( 'Block select - entering Focus Mode', { blockId });
-    
-    const activeEditor = vscode.window.activeTextEditor;
-    if (!activeEditor) {
-      this.logger.warn( 'No active editor for block select');
-      return;
-    }
-
-    // Find the block by blockId
-    const blocks = this.stateManager.getResponsibilityBlocks();
-    if (!blocks) {
-      this.logger.warn( 'No responsibility blocks available');
-      return;
-    }
-
-    const block = blocks.find(b => b.blockId === blockId);
-    if (!block) {
-      this.logger.warn( 'Block not found', { blockId });
-      return;
-    }
-
-    // Store focus state in state manager
-    this.stateManager.setFocusedBlock(blockId);
-    
-    // Apply focus decorations
-    this.decorationManager.applyFocusMode(activeEditor, block, blocks);
   }
 
   /**
    * Handle BLOCK_CLEAR message
-   * Clears decorations and exits focus mode
+   * REQ-022: Deselects/unpins block and clears decorations
    */
   private handleBlockClear(): void {
     this.logger.info( 'Block clear');
@@ -359,222 +291,148 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * Handle FOCUS_CLEAR message
-   * Per TASK-0085: Exit Focus Mode
-   * Phase 5: Also clear fold state per TASK-037
-   * Phase 6: Update VS Code context for keybinding
+   * Handle BLOCK_DESELECTED message
+   * UI Refinement 2: Pin/unpin selection model
+   * REQ-043: Deselect block, clear highlighting, and hide segment navigator
    */
-  private handleFocusClear(): void {
-    this.logger.info( 'Focus clear - exiting Focus Mode');
+  private handleBlockDeselected(blockId: string): void {
+    this.logger.info('Block deselected - pin/unpin model', { blockId });
     
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor) {
       return;
     }
 
-    // Clear focus state in state manager
-    this.stateManager.clearFocus();
+    // REQ-043 (1): Clear selection state in state manager (also resets segment index to 0)
+    this.stateManager.deselectBlock();
     
-    // Clear fold state if active (TASK-037)
-    if (this.stateManager.isFoldActive()) {
-      this.unfoldRanges(activeEditor);
-      this.stateManager.clearFold();
-    }
+    // REQ-043 (2): Clear decorations for the block
+    this.decorationManager.clearCurrentHighlight(activeEditor);
     
-    // Clear focus decorations
-    this.decorationManager.clearFocusMode(activeEditor);
+    // REQ-043 (3): Hide segment navigator
+    this.segmentNavigator.hideNavigator();
     
-    // Update VS Code context for keybinding
-    vscode.commands.executeCommand('setContext', 'iris.focusModeActive', false);
+    // REQ-048: Update VS Code context for keybinding
+    vscode.commands.executeCommand('setContext', 'iris.blockSelected', false);
+    
+    this.logger.info('Block deselected - navigator hidden', { blockId });
   }
 
   /**
-   * Handle BLOCK_DOUBLE_CLICK message
-   * Per Phase 5, REQ-007, REQ-008: Fold gaps or toggle fold state
-   * TASK-034: Detect fold gaps
-   * TASK-036: Apply folds
-   * TASK-037: Unfold
-   * TASK-038: Toggle behavior
+   * Handle SEGMENT_NAVIGATED message
+   * UI Refinement 2: Navigate between scattered segments of a block
+   * REQ-044: Scroll editor to target segment and update navigator indicator
    */
-  private handleBlockDoubleClick(blockId: string): void {
-    this.logger.info('Block double-click - fold/unfold gaps', { blockId });
+  private handleSegmentNavigated(blockId: string, segmentIndex: number, totalSegments: number): void {
+    this.logger.info('Segment navigated', { blockId, segmentIndex, totalSegments });
     
     const activeEditor = vscode.window.activeTextEditor;
     if (!activeEditor) {
-      this.logger.warn('No active editor for block double-click');
+      this.logger.warn('No active editor for segment navigation');
       return;
     }
 
-    // Find the block by blockId
+    // REQ-044 (2): Get the selected block from state manager
     const blocks = this.stateManager.getResponsibilityBlocks();
     if (!blocks) {
-      this.logger.warn('No responsibility blocks available');
+      this.logger.error('No responsibility blocks available for segment navigation');
       return;
     }
-
+    
     const block = blocks.find(b => b.blockId === blockId);
-    if (!block) {
-      this.logger.warn('Block not found', { blockId });
-      return;
-    }
-
-    // Check if clicking on already focused and folded block (toggle behavior - REQ-008)
-    const isFocused = this.stateManager.getFocusedBlockId() === blockId;
-    const isFolded = this.stateManager.isBlockFolded(blockId);
     
-    if (isFocused && isFolded) {
-      // TASK-038: Toggle - unfold the block
-      this.logger.info('Toggling fold: unfolding block', { blockId });
-      this.unfoldRanges(activeEditor);
-      this.stateManager.clearFold();
+    if (!block || !block.ranges || segmentIndex >= block.ranges.length) {
+      this.logger.error('Invalid segment navigation', { blockId, segmentIndex });
       return;
     }
 
-    // Scroll to first line (REQ-007)
-    if (block.ranges.length === 0) {
-      this.logger.warn('Block has no ranges', { blockId });
-      return;
-    }
+    // REQ-044 (1): Update segment index in state manager
+    this.stateManager.setCurrentSegmentIndex(segmentIndex);
 
-    const firstLineOneBased = block.ranges[0][0];
-    const firstLineZeroBased = firstLineOneBased - 1;
+    // REQ-044 (2): Get the target segment (ranges are 1-based line numbers from API)
+    const [startLine, endLine] = block.ranges[segmentIndex];
     
-    this.logger.info('Scrolling to first line', { 
-      blockId, 
-      lineOneBased: firstLineOneBased,
-      lineZeroBased: firstLineZeroBased 
-    });
-
-    // Scroll to first line with InCenter reveal
-    const position = new vscode.Position(firstLineZeroBased, 0);
+    // Convert to 0-based for VS Code API
+    const position = new vscode.Position(startLine - 1, 0);
     const range = new vscode.Range(position, position);
+    
+    // REQ-044 (3): Scroll editor to segment and center it (REQ-083)
     activeEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
     
-    // Move cursor to first line
+    // REQ-084: Move cursor to segment start position
     activeEditor.selection = new vscode.Selection(position, position);
-
-    // Enter Focus Mode
-    this.stateManager.setFocusedBlock(blockId);
     
-    // Apply focus decorations
-    this.decorationManager.applyFocusMode(activeEditor, block, blocks);
+    // REQ-044 (4): Update navigator indicator to reflect new segment position
+    this.segmentNavigator.updateNavigator(segmentIndex, totalSegments);
     
-    // Update VS Code context for keybinding
-    vscode.commands.executeCommand('setContext', 'iris.focusModeActive', true);
-    
-    // TASK-034: Detect fold gaps between scattered ranges
-    const foldGaps = this.detectFoldGaps(block.ranges);
-    
-    if (foldGaps.length > 0) {
-      this.logger.info('Detected fold gaps', { 
-        blockId, 
-        gapCount: foldGaps.length,
-        gaps: foldGaps
-      });
-      
-      // TASK-036: Apply folds
-      this.foldRanges(activeEditor, foldGaps);
-      
-      // Store fold state
-      this.stateManager.setFoldedBlock(blockId, foldGaps);
-    } else {
-      this.logger.info('No fold gaps detected - block has contiguous ranges', { blockId });
-    }
-    
-    this.logger.info('Completed block double-click: scrolled, entered focus, and folded gaps', { blockId });
-  }
-
-  /**
-   * Detect gaps between scattered block ranges
-   * Per TASK-034: Implement fold gap detection algorithm
-   * 
-   * Algorithm:
-   * 1. Sort ranges by start line
-   * 2. For each consecutive pair of ranges, check if there's a gap
-   * 3. If end of range[i] + 1 < start of range[i+1], there's a gap
-   * 4. Gap range: [end of range[i] + 1, start of range[i+1] - 1]
-   * 
-   * @param ranges ONE-based ranges from API
-   * @returns ZERO-based fold gap ranges
-   */
-  private detectFoldGaps(ranges: Array<[number, number]>): Array<[number, number]> {
-    if (ranges.length <= 1) {
-      return []; // No gaps if single range or no ranges
-    }
-
-    // Sort ranges by start line (should already be sorted, but ensure it)
-    const sortedRanges = [...ranges].sort((a, b) => a[0] - b[0]);
-    
-    const gaps: Array<[number, number]> = [];
-    
-    for (let i = 0; i < sortedRanges.length - 1; i++) {
-      const currentEnd = sortedRanges[i][1];  // ONE-based
-      const nextStart = sortedRanges[i + 1][0]; // ONE-based
-      
-      // Check if there's a gap (at least 1 line between ranges)
-      if (currentEnd + 1 < nextStart) {
-        // Gap exists: lines between currentEnd and nextStart
-        // Gap range: [currentEnd + 1, nextStart - 1] in ONE-based
-        // Convert to ZERO-based: [currentEnd, nextStart - 2]
-        const gapStartZeroBased = currentEnd;      // currentEnd + 1 - 1
-        const gapEndZeroBased = nextStart - 2;      // nextStart - 1 - 1
-        
-        gaps.push([gapStartZeroBased, gapEndZeroBased]);
-      }
-    }
-    
-    return gaps;
-  }
-
-  /**
-   * Fold line ranges in the editor
-   * Per TASK-036: Implement fold logic using VS Code folding API
-   * 
-   * @param editor Active text editor
-   * @param ranges ZERO-based line ranges to fold
-   */
-  private async foldRanges(editor: vscode.TextEditor, ranges: Array<[number, number]>): Promise<void> {
-    // Create folding ranges
-    const foldingRanges = ranges.map(([start, end]) => 
-      new vscode.Range(
-        new vscode.Position(start, 0),
-        new vscode.Position(end, editor.document.lineAt(end).text.length)
-      )
-    );
-    
-    // Apply folds using VS Code command
-    await vscode.commands.executeCommand('editor.fold', {
-      selectionLines: ranges.map(([start]) => start)
-    });
-    
-    this.logger.info('Applied folds', { 
-      foldCount: ranges.length,
-      ranges: ranges
+    this.logger.info('Scrolled to segment and updated navigator', { 
+      blockId, 
+      segmentIndex: segmentIndex + 1, 
+      totalSegments,
+      startLine 
     });
   }
 
   /**
-   * Unfold previously folded ranges
-   * Per TASK-037: Implement unfold logic
-   * 
-   * @param editor Active text editor
+   * Handle ESCAPE_PRESSED message
+   * UI Refinement 2: Simplified escape handling for pin/unpin model
+   * REQ-045: Deselect current block via Escape key (same as BLOCK_DESELECTED)
    */
-  private async unfoldRanges(editor: vscode.TextEditor): Promise<void> {
-    const foldedRanges = this.stateManager.getFoldedRanges();
+  private handleEscapePressed(): void {
+    this.logger.info('Escape pressed - deselecting block');
     
-    if (!foldedRanges || foldedRanges.length === 0) {
+    const selectedBlockId = this.stateManager.getSelectedBlockId();
+    if (!selectedBlockId) {
+      this.logger.info('No block selected - ignoring Escape');
       return;
     }
     
-    // Unfold all previously folded ranges
-    await vscode.commands.executeCommand('editor.unfold', {
-      selectionLines: foldedRanges.map(([start]) => start)
-    });
+    const activeEditor = vscode.window.activeTextEditor;
+    if (!activeEditor) {
+      return;
+    }
+
+    // REQ-045 (1): Execute deselection behavior (same as BLOCK_DESELECTED)
+    this.stateManager.deselectBlock();
+    this.decorationManager.clearCurrentHighlight(activeEditor);
+    this.segmentNavigator.hideNavigator();
+    vscode.commands.executeCommand('setContext', 'iris.blockSelected', false);
     
-    this.logger.info('Unfolded ranges', { 
-      unfoldCount: foldedRanges.length,
-      ranges: foldedRanges
+    // REQ-045 (2): Notify webview of deselection via STATE_UPDATE message
+    this.sendStateUpdate();
+    
+    this.logger.info('Block deselected via Escape', { blockId: selectedBlockId });
+  }
+
+  /**
+   * Send state update message to webview
+   * Used for notifying webview of state changes
+   */
+  public sendStateUpdate(): void {
+    const currentState = this.stateManager.getCurrentState();
+    this.postMessageToWebview({
+      type: 'STATE_UPDATE',
+      state: currentState
     });
+  }
+
+  /**
+   * Send navigation command to webview for segment navigation
+   * REQ-079, REQ-080: Support keyboard shortcuts for segment navigation
+   * @param direction - 'prev' or 'next'
+   */
+  public sendNavigationCommand(direction: 'prev' | 'next'): void {
+    if (!this.view) {
+      this.logger.warn('Cannot send navigation command - webview not initialized');
+      return;
+    }
+
+    // Send command to webview, which will handle the navigation via handleSegmentNavigation
+    this.postMessageToWebview({
+      type: 'NAVIGATE_SEGMENT',
+      direction: direction
+    });
+    this.logger.info('Sent segment navigation command', { direction });
   }
 
   /**
@@ -737,9 +595,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
                 </div>
               </div>
             `).join('')}
-          </div>
-          <div class="focus-controls">
-            <button class="focus-clear-button" onclick="handleFocusClear()">Clear Focus</button>
           </div>
         </div>
       `
@@ -1051,7 +906,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       margin-top: var(--iris-spacing-xs);
     }
     
-    /* Phase 3: TASK-023 - Keep description visible when block is in focus mode */
+    /* UI Refinement 2: Keep description visible when block is selected (pinned) */
     .block-item.active .block-description-container {
       max-height: 200px;
       opacity: 1;
@@ -1075,36 +930,69 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       font-size: 13px;
     }
     
-    /* Focus Controls - TASK-011: Added transitions */
-    .focus-controls {
-      margin-top: var(--iris-spacing-md);
-      padding: var(--iris-spacing-sm) 0;
-      text-align: center;
-    }
-    
-    .focus-clear-button {
-      padding: var(--iris-spacing-sm) var(--iris-spacing-lg);
-      background: var(--vscode-button-background);
-      color: var(--vscode-button-foreground);
-      border: none;
+    /* UI Refinement 2 Phase 3: Floating Segment Navigator (REQ-062 to REQ-065) */
+    /* REQ-062: Floating navigator positioning at bottom-right of viewport */
+    .segment-navigator {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: none; /* Hidden by default, shown when block selected */
+      flex-direction: column;
+      gap: var(--iris-spacing-xs);
+      background: var(--vscode-sideBar-background);
+      border: 1px solid var(--vscode-widget-border);
       border-radius: var(--iris-border-radius);
+      padding: var(--iris-spacing-xs);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* REQ-065: Visibility toggle class */
+    .segment-navigator.navigator-visible {
+      display: flex;
+    }
+    
+    /* REQ-063: Up/down button styling - accessible, minimal visual weight */
+    .segment-nav-button {
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
+      border: none;
+      border-radius: 4px;
+      width: 32px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
+      font-size: 14px;
+      transition: all var(--iris-transition-fast);
+    }
+    
+    .segment-nav-button:hover:not(:disabled) {
+      background: var(--vscode-button-secondaryHoverBackground);
+      transform: translateY(-1px);
+    }
+    
+    .segment-nav-button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    
+    .segment-nav-button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    
+    /* REQ-064: Segment indicator text - centered, monospace, subtle background */
+    .segment-indicator {
       font-family: var(--vscode-editor-font-family);
-      font-size: 12px;
-      font-weight: 500;
-      transition: all var(--iris-transition-fast); /* TASK-011: Smooth transitions */
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .focus-clear-button:hover {
-      background: var(--vscode-button-hoverBackground);
-      transform: translateY(-1px); /* Subtle lift on hover */
-    }
-    
-    .focus-clear-button:active {
-      background: var(--vscode-button-activeBackground);
-      transform: translateY(0); /* Press down effect */
+      font-size: 11px;
+      text-align: center;
+      padding: 4px 8px;
+      background: var(--vscode-input-background);
+      border-radius: 3px;
+      color: var(--vscode-input-foreground);
+      user-select: none;
+      font-variant-numeric: tabular-nums;
     }
   </style>
 </head>
@@ -1114,23 +1002,58 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     // VS Code API for posting messages
     const vscode = acquireVsCodeApi();
     
-    // Track active focused block
-    let activeFocusedBlockId = null;
+    // UI Refinement 2: Pin/unpin selection model state
+    // REQ-009: Renamed from activeFocusedBlockId for semantic clarity
+    let selectedBlockId = null;
     
-    // Phase 5: TASK-032 - Double-click detection state
-    let lastClickTime = 0;
-    let lastClickedBlockId = null;
-    const DOUBLE_CLICK_THRESHOLD_MS = 300;
+    // REQ-012: Track which segment of selected block is currently visible
+    let currentSegmentIndex = 0;
+    
+    // REQ-013: Track total segment count of selected block
+    let segmentCount = 0;
+    
+    // Store analysis data for segment navigation (REQ-023)
+    let analysisData = null;
     
     // Send WEBVIEW_READY on initialization
     window.addEventListener('DOMContentLoaded', () => {
       vscode.postMessage({ type: 'WEBVIEW_READY' });
     });
     
+    // REQ-067 to REQ-071: Keyboard shortcuts for segment navigation
+    // Listen for Ctrl+ArrowUp, Ctrl+ArrowDown, and Escape key
+    window.addEventListener('keydown', (event) => {
+      // REQ-071: Only process shortcuts when a block is selected
+      if (!selectedBlockId) {
+        return;
+      }
+      
+      // REQ-068: Ctrl+Up navigates to previous segment
+      if (event.ctrlKey && event.key === 'ArrowUp') {
+        event.preventDefault();
+        handleSegmentNavigation('prev');
+        return;
+      }
+      
+      // REQ-069: Ctrl+Down navigates to next segment
+      if (event.ctrlKey && event.key === 'ArrowDown') {
+        event.preventDefault();
+        handleSegmentNavigation('next');
+        return;
+      }
+      
+      // REQ-070: Escape key deselects the block
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        executeDeselectBlock(selectedBlockId);
+        return;
+      }
+    });
+    
     // Handle block hover
     function handleBlockHover(blockId) {
-      // Don't send hover if in focus mode
-      if (activeFocusedBlockId !== null) {
+      // REQ-014: Don't send hover if block is selected/pinned
+      if (selectedBlockId !== null) {
         return;
       }
       vscode.postMessage({ type: 'BLOCK_HOVER', blockId: blockId });
@@ -1138,65 +1061,56 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     
     // Handle block clear (mouse leave)
     function handleBlockClear() {
-      // Don't send clear if in focus mode
-      if (activeFocusedBlockId !== null) {
+      // REQ-015: Don't send clear if block is selected/pinned
+      if (selectedBlockId !== null) {
         return;
       }
       vscode.postMessage({ type: 'BLOCK_CLEAR' });
     }
     
-    // Handle block click (single click or first click of double-click)
-    // Per Phase 4, TASK-025, TASK-027: Send BLOCK_CLICK message
-    // Per Phase 5, TASK-032: Detect double-click and send BLOCK_DOUBLE_CLICK
+    // Handle block click - UI Refinement 2: Pin/unpin toggle model
+    // REQ-016 to REQ-020: Simplified click handler without double-click detection
+    // Pin/Unpin toggle model:
+    // - First click on a block: selects it (pins it, applies persistent highlighting)
+    // - Second click on same block: deselects it (unpins it, clears highlighting)
+    // - Click on different block: deselects current, selects new one
+    // - No focus mode, no folding, no double-click - just simple toggle
     function handleBlockClick(blockId) {
-      const now = Date.now();
-      const timeSinceLastClick = now - lastClickTime;
-      
-      // Check if this is a double-click
-      if (timeSinceLastClick < DOUBLE_CLICK_THRESHOLD_MS && lastClickedBlockId === blockId) {
-        // Double-click detected
-        handleBlockDoubleClick(blockId);
-        // Reset click tracking
-        lastClickTime = 0;
-        lastClickedBlockId = null;
+      // REQ-016: Detect if block is already selected (pin/unpin toggle)
+      if (selectedBlockId === blockId) {
+        // REQ-017: Block already selected - unpin it
+        executeDeselectBlock(blockId);
+      } else {
+        // REQ-018: Block not selected - pin it
+        executeSelectBlock(blockId);
+      }
+    }
+    
+    // REQ-021: Execute block selection (pin block)
+    // UI Refinement 2: Select a block and apply persistent highlighting
+    function executeSelectBlock(blockId) {
+      // REQ-021 (1): Find block in analysis data
+      if (!analysisData || !analysisData.responsibilityBlocks) {
+        console.error('Cannot select block: no analysis data available');
         return;
       }
       
-      // Record this click for potential double-click detection
-      lastClickTime = now;
-      lastClickedBlockId = blockId;
-      
-      // Delay single-click action to allow double-click detection
-      setTimeout(() => {
-        // Check if a double-click occurred during the delay
-        if (lastClickedBlockId === blockId && lastClickTime === now) {
-          // No double-click occurred, execute single-click behavior
-          executeSingleClick(blockId);
-        }
-      }, DOUBLE_CLICK_THRESHOLD_MS);
-    }
-    
-    // Execute single-click behavior
-    // Per Phase 6, REQ-010: Clicking on currently selected block exits focus mode
-    function executeSingleClick(blockId) {
-      // Check if clicking on already-focused block (click-to-exit)
-      if (activeFocusedBlockId === blockId) {
-        // Exit focus mode
-        activeFocusedBlockId = null;
-        
-        // Remove active state from all blocks
-        document.querySelectorAll('.block-item').forEach(item => {
-          item.classList.remove('active');
-        });
-        
-        vscode.postMessage({ type: 'BLOCK_CLICK', blockId: blockId });
+      const block = analysisData.responsibilityBlocks.find(b => b.blockId === blockId);
+      if (!block) {
+        console.error('Cannot select block: block not found', blockId);
         return;
       }
       
-      // Enter focus mode for new block
-      activeFocusedBlockId = blockId;
+      // Update selection state
+      selectedBlockId = blockId;
       
-      // Update UI to show focused state
+      // REQ-021 (4): Reset segment index to 0 when selecting new block
+      currentSegmentIndex = 0;
+      
+      // Calculate segment count from block ranges
+      segmentCount = block.ranges ? block.ranges.length : 0;
+      
+      // REQ-021 (3): Update DOM - set active class on clicked block
       document.querySelectorAll('.block-item').forEach(item => {
         if (item.dataset.blockId === blockId) {
           item.classList.add('active');
@@ -1205,54 +1119,87 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
         }
       });
       
-      vscode.postMessage({ type: 'BLOCK_CLICK', blockId: blockId });
+      // REQ-021 (2): Send BLOCK_SELECTED message to extension with blockId
+      vscode.postMessage({ type: 'BLOCK_SELECTED', blockId: blockId });
+      
+      // REQ-021 (5): Note - navigation buttons will be shown in future implementation
+      console.log('Block selected:', blockId, 'segments:', segmentCount);
     }
     
-    // Handle block double-click
-    // Per Phase 5, TASK-032: Send BLOCK_DOUBLE_CLICK message
-    function handleBlockDoubleClick(blockId) {
-      // Enter focus mode
-      activeFocusedBlockId = blockId;
+    // REQ-022: Execute block deselection (unpin block)
+    // UI Refinement 2: Deselect a block and clear highlighting
+    function executeDeselectBlock(blockId) {
+      // REQ-022 (1): Send BLOCK_DESELECTED message to extension
+      vscode.postMessage({ type: 'BLOCK_DESELECTED', blockId: blockId });
       
-      // Update UI to show focused state
-      document.querySelectorAll('.block-item').forEach(item => {
-        if (item.dataset.blockId === blockId) {
-          item.classList.add('active');
-        } else {
-          item.classList.remove('active');
-        }
-      });
-      
-      vscode.postMessage({ type: 'BLOCK_DOUBLE_CLICK', blockId: blockId });
-    }
-    
-    // Handle block select (legacy - kept for compatibility)
-    function handleBlockSelect(blockId) {
-      // Enter focus mode
-      activeFocusedBlockId = blockId;
-      
-      // Update UI to show focused state
-      document.querySelectorAll('.block-item').forEach(item => {
-        if (item.dataset.blockId === blockId) {
-          item.classList.add('active');
-        } else {
-          item.classList.remove('active');
-        }
-      });
-      
-      vscode.postMessage({ type: 'BLOCK_SELECT', blockId: blockId });
-    }
-    
-    // Handle focus clear
-    function handleFocusClear() {
-      activeFocusedBlockId = null;
-      
-      // Remove active state from all blocks
+      // REQ-022 (2): Remove active class from all blocks
       document.querySelectorAll('.block-item').forEach(item => {
         item.classList.remove('active');
       });
       
-      vscode.postMessage({ type: 'FOCUS_CLEAR' });
+      // REQ-022 (3): Clear selection state
+      selectedBlockId = null;
+      currentSegmentIndex = 0;
+      segmentCount = 0;
+      
+      // REQ-022 (4): Note - navigation buttons will be hidden in future implementation
+    }
+    
+    // REQ-023: Handle segment navigation for blocks with scattered ranges
+    // UI Refinement 2: Navigate between non-contiguous code segments
+    // 
+    // Navigation flow:
+    // 1. User presses Ctrl+Up/Down or clicks navigation buttons in webview
+    // 2. Calculate new segment index (bounded by segment count)
+    // 3. Send SEGMENT_NAVIGATED message to extension with new index
+    // 4. Extension scrolls editor to target segment and updates state
+    // 5. Extension sends back updated segment count via navigator update
+    function handleSegmentNavigation(direction) {
+      // Validate that a block is selected
+      if (!selectedBlockId) {
+        console.warn('Cannot navigate segments: no block selected');
+        return;
+      }
+      
+      // Get the selected block from analysis data
+      if (!analysisData || !analysisData.responsibilityBlocks) {
+        console.error('Cannot navigate: no analysis data available');
+        return;
+      }
+      
+      const block = analysisData.responsibilityBlocks.find(b => b.blockId === selectedBlockId);
+      if (!block || !block.ranges || block.ranges.length === 0) {
+        console.error('Cannot navigate: block has no ranges');
+        return;
+      }
+      
+      // Calculate new segment index based on direction
+      let newIndex = currentSegmentIndex;
+      if (direction === 'next') {
+        newIndex = Math.min(currentSegmentIndex + 1, block.ranges.length - 1);
+      } else if (direction === 'prev') {
+        newIndex = Math.max(currentSegmentIndex - 1, 0);
+      }
+      
+      // Only proceed if index actually changed
+      if (newIndex === currentSegmentIndex) {
+        console.log('Already at', direction === 'next' ? 'last' : 'first', 'segment');
+        return;
+      }
+      
+      // REQ-023: Update current segment index
+      currentSegmentIndex = newIndex;
+      
+      // REQ-023: Send SEGMENT_NAVIGATED message with new index to extension
+      // Extension will handle scrolling editor to the segment
+      vscode.postMessage({ 
+        type: 'SEGMENT_NAVIGATED', 
+        blockId: selectedBlockId,
+        segmentIndex: currentSegmentIndex,
+        totalSegments: block.ranges.length
+      });
+      
+      console.log('Navigated to segment', currentSegmentIndex + 1, 'of', block.ranges.length);
     }
     
     // Listen for messages from extension
@@ -1260,23 +1207,46 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       const message = event.data;
       console.log('Received message from extension:', message);
       
+      // Store analysis data for segment navigation (REQ-023)
+      if (message.type === 'ANALYSIS_DATA') {
+        analysisData = message.payload;
+        console.log('Stored analysis data:', analysisData.responsibilityBlocks.length, 'blocks');
+      }
+      
       // Handle state changes
       if (message.type === 'STATE_UPDATE') {
-        // Clear focus mode on state changes to IDLE or STALE
+        // REQ-072: Clear selection on state transitions to IDLE or STALE
         if (message.state === 'IDLE' || message.state === 'STALE') {
-          activeFocusedBlockId = null;
-          document.querySelectorAll('.block-item').forEach(item => {
-            item.classList.remove('active');
-          });
+          if (selectedBlockId !== null) {
+            console.log('Clearing selection due to state transition to', message.state);
+            selectedBlockId = null;
+            currentSegmentIndex = 0;
+            segmentCount = 0;
+            document.querySelectorAll('.block-item').forEach(item => {
+              item.classList.remove('active');
+            });
+          }
         }
       }
       
-      // Phase 6: Handle focus cleared via Esc key
-      if (message.type === 'FOCUS_CLEARED_VIA_ESC') {
-        activeFocusedBlockId = null;
+      // REQ-032: Handle ESCAPE_PRESSED message (replaces FOCUS_CLEARED_VIA_ESC)
+      if (message.type === 'ESCAPE_PRESSED') {
+        selectedBlockId = null;
+        currentSegmentIndex = 0;
+        segmentCount = 0;
         document.querySelectorAll('.block-item').forEach(item => {
           item.classList.remove('active');
         });
+      }
+
+      // REQ-079, REQ-080: Handle NAVIGATE_SEGMENT message from keyboard shortcuts
+      if (message.type === 'NAVIGATE_SEGMENT') {
+        if (selectedBlockId !== null) {
+          console.log('Navigating segment via keyboard shortcut:', message.direction);
+          handleSegmentNavigation(message.direction);
+        } else {
+          console.log('No block selected, ignoring navigation command');
+        }
       }
     });
   </script>
@@ -1298,9 +1268,9 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * Notify webview that focus mode has been cleared
+   * REQ-094: Notify webview that block has been deselected (round-trip message verification)
    * Called by Esc key handler in extension.ts
-   * Per Phase 6: TASK-040
+   * UI Refinement 2: Updated to use ESCAPE_PRESSED message
    */
   public notifyFocusCleared(): void {
     if (!this.view) {
@@ -1313,10 +1283,10 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       state: this.stateManager.getCurrentState()
     });
     
-    // Also clear active class from blocks in webview
-    this.view.webview.postMessage({ type: 'FOCUS_CLEARED_VIA_ESC' });
+    // REQ-032: Use ESCAPE_PRESSED message type
+    this.view.webview.postMessage({ type: 'ESCAPE_PRESSED' });
     
-    this.logger.info('Notified webview of focus clear');
+    this.logger.info('Notified webview of escape pressed');
   }
 
   /**

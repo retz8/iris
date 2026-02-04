@@ -28,32 +28,35 @@ export interface BlockHoverMessage {
 }
 
 /**
- * Sent when user clicks on a responsibility block
- * Triggers scroll to first line and enters focus mode without folding
- * Per Phase 4, REQ-006, TASK-026
+ * Sent when user clicks on a responsibility block to select/pin it
+ * UI Refinement 2: Pin/unpin selection model
+ * Per REQ-029: Replaces BLOCK_CLICK
  */
-export interface BlockClickMessage {
-  type: 'BLOCK_CLICK';
+export interface BlockSelectedMessage {
+  type: 'BLOCK_SELECTED';
   blockId: string;
 }
 
 /**
- * Sent when user double-clicks on a responsibility block
- * Triggers scroll to first line, enters focus mode, and folds gaps between scattered ranges
- * Per Phase 5, REQ-007, TASK-033
+ * Sent when user clicks on an already-selected block to deselect/unpin it
+ * UI Refinement 2: Pin/unpin toggle model
+ * Per REQ-030: Block deselection/unpin on repeat click (replaces BLOCK_DOUBLE_CLICK)
  */
-export interface BlockDoubleClickMessage {
-  type: 'BLOCK_DOUBLE_CLICK';
+export interface BlockDeselectedMessage {
+  type: 'BLOCK_DESELECTED';
   blockId: string;
 }
 
 /**
- * Sent when user selects a responsibility block for Focus Mode
- * Triggers enhanced decoration and dims other blocks per Phase 8
+ * Sent when user navigates between segments of a scattered block
+ * UI Refinement 2: Segment navigation with keyboard or buttons
+ * Per REQ-031: Replaces BLOCK_SELECT
  */
-export interface BlockSelectMessage {
-  type: 'BLOCK_SELECT';
+export interface SegmentNavigatedMessage {
+  type: 'SEGMENT_NAVIGATED';
   blockId: string;
+  segmentIndex: number;
+  totalSegments: number;
 }
 
 /**
@@ -65,25 +68,27 @@ export interface BlockClearMessage {
 }
 
 /**
- * Sent when user explicitly exits Focus Mode
- * Phase 8: Focus Mode per TASK-0085
+ * Sent when user presses Escape key to deselect current block
+ * UI Refinement 2: Simplified escape handling for pin/unpin model
+ * Per REQ-032: Replaces FOCUS_CLEAR
  */
-export interface FocusClearMessage {
-  type: 'FOCUS_CLEAR';
+export interface EscapePressedMessage {
+  type: 'ESCAPE_PRESSED';
 }
 
 /**
  * Union type for all messages from Webview to Extension
  * Per TASK-0063: Strict TypeScript discriminated unions
+ * UI Refinement 2: Updated for pin/unpin selection model
  */
 export type WebviewMessage = 
   | WebviewReadyMessage
   | BlockHoverMessage
-  | BlockClickMessage
-  | BlockDoubleClickMessage
-  | BlockSelectMessage
+  | BlockSelectedMessage
+  | BlockDeselectedMessage
+  | SegmentNavigatedMessage
   | BlockClearMessage
-  | FocusClearMessage;
+  | EscapePressedMessage;
 
 // ========================================
 // EXTENSION → WEBVIEW MESSAGES
@@ -131,6 +136,15 @@ export interface ErrorMessage {
 }
 
 /**
+ * Sent from extension to webview to trigger segment navigation
+ * REQ-079, REQ-080: Keyboard shortcuts trigger navigation via extension commands
+ */
+export interface NavigateSegmentMessage {
+  type: 'NAVIGATE_SEGMENT';
+  direction: 'prev' | 'next';
+}
+
+/**
  * Union type for all messages from Extension to Webview
  * Per TASK-0063: Strict TypeScript discriminated unions
  */
@@ -138,7 +152,8 @@ export type ExtensionMessage =
   | StateUpdateMessage
   | AnalysisDataMessage
   | AnalysisStaleMessage
-  | ErrorMessage;
+  | ErrorMessage
+  | NavigateSegmentMessage;
 
 // ========================================
 // TYPE GUARDS
@@ -158,13 +173,17 @@ export function isWebviewMessage(message: any): message is WebviewMessage {
       return true;
     
     case 'BLOCK_HOVER':
-    case 'BLOCK_CLICK':
-    case 'BLOCK_DOUBLE_CLICK':
-    case 'BLOCK_SELECT':
+    case 'BLOCK_SELECTED':
+    case 'BLOCK_DESELECTED':
       return typeof message.blockId === 'string' && message.blockId.length > 0;
     
+    case 'SEGMENT_NAVIGATED':
+      return typeof message.blockId === 'string' && 
+             typeof message.segmentIndex === 'number' &&
+             typeof message.totalSegments === 'number';
+    
     case 'BLOCK_CLEAR':
-    case 'FOCUS_CLEAR':
+    case 'ESCAPE_PRESSED':
       return true;
     
     default:
@@ -192,6 +211,10 @@ export function isExtensionMessage(message: any): message is ExtensionMessage {
     case 'ANALYSIS_STALE':
     case 'ERROR':
       return true;
+    
+    case 'NAVIGATE_SEGMENT':
+      return typeof message.direction === 'string' &&
+             (message.direction === 'prev' || message.direction === 'next');
     
     default:
       return false;

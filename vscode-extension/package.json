@@ -19,13 +19,31 @@
       {
         "command": "iris.exitFocusMode",
         "title": "IRIS: Exit Focus Mode"
+      },
+      {
+        "command": "iris.navigatePreviousSegment",
+        "title": "IRIS: Previous Segment"
+      },
+      {
+        "command": "iris.navigateNextSegment",
+        "title": "IRIS: Next Segment"
       }
     ],
     "keybindings": [
       {
         "command": "iris.exitFocusMode",
         "key": "escape",
-        "when": "editorTextFocus && iris.focusModeActive"
+        "when": "editorTextFocus && iris.blockSelected"
+      },
+      {
+        "command": "iris.navigatePreviousSegment",
+        "key": "ctrl+up",
+        "when": "editorTextFocus && iris.blockSelected"
+      },
+      {
+        "command": "iris.navigateNextSegment",
+        "key": "ctrl+down",
+        "when": "editorTextFocus && iris.blockSelected"
       }
     ],
     "viewsContainers": {

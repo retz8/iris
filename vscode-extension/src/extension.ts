@@ -6,6 +6,7 @@ import { IRISStateManager, IRISAnalysisState } from './state/irisState';
 import { IRISSidePanelProvider } from './webview/sidePanel';
 import { generateBlockId } from './utils/blockId';
 import { DecorationManager } from './decorations/decorationManager';
+import { SegmentNavigator } from './decorations/segmentNavigator';
 import { createLogger } from './utils/logger';
 import { IRISAPIClient, APIError, APIErrorType } from './api/irisClient';
 
@@ -47,6 +48,10 @@ export function activate(context: vscode.ExtensionContext) {
 	const decorationManager = new DecorationManager(outputChannel);
 	context.subscriptions.push(decorationManager);
 
+	// Initialize segment navigator (UI Refinement 2: Phase 3)
+	const segmentNavigator = new SegmentNavigator(outputChannel);
+	context.subscriptions.push(segmentNavigator);
+
 	// TASK-0101: Initialize API client with error boundary
 	const apiClient = new IRISAPIClient(
 		{
@@ -61,7 +66,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const activeEditor = vscode.window.activeTextEditor;
 		
 		// Clear decorations on IDLE or STALE state per ED-003, TASK-0075
-		// Phase 8: Also exit Focus Mode per TASK-0086
+		// UI Refinement 2 (REQ-090): Also clear block selection state on IDLE/STALE transition
 		if (newState === IRISAnalysisState.IDLE || newState === IRISAnalysisState.STALE) {
 			if (activeEditor) {
 				decorationManager.clearAllDecorations(activeEditor);
@@ -76,6 +81,7 @@ export function activate(context: vscode.ExtensionContext) {
 		context.extensionUri,
 		stateManager,
 		decorationManager,
+		segmentNavigator,
 		outputChannel
 	);
 	context.subscriptions.push(
@@ -86,58 +92,99 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 	context.subscriptions.push(sidePanelProvider);
 
-	// TASK-040, TASK-041: Register Esc key command for exiting Focus Mode
-	// Per REQ-009: Esc key must exit focus mode and unfold any folded lines
+	// REQ-046, REQ-081, REQ-093: Register Esc key command for exiting block selection (UI Refinement 2)
+	// Pin/unpin selection model: Esc key deselects currently selected block
 	const exitFocusModeCommand = vscode.commands.registerCommand('iris.exitFocusMode', async () => {
 		try {
-			logger.info('Command executed: iris.exitFocusMode');
+			logger.info('Command executed: iris.exitFocusMode (deselect block)');
 
 			const activeEditor = vscode.window.activeTextEditor;
 			if (!activeEditor) {
-				logger.warn('No active editor for exit focus mode');
+				logger.warn('No active editor for deselect block');
 				return;
 			}
 
-			// TASK-042: Clear focus state in state manager
-			if (stateManager.isFocusModeActive()) {
-				logger.info('Exiting Focus Mode via Esc key');
+			// REQ-046: Check if block is selected
+			const selectedBlockId = stateManager.getSelectedBlockId();
+			if (selectedBlockId) {
+				logger.info('Deselecting block via Esc key', { blockId: selectedBlockId });
 				
-				// TASK-043: Unfold any previously folded ranges
-				if (stateManager.isFoldActive()) {
-					const foldedRanges = stateManager.getFoldedRanges();
-					if (foldedRanges && foldedRanges.length > 0) {
-						await vscode.commands.executeCommand('editor.unfold', {
-							selectionLines: foldedRanges.map(([start]) => start)
-						});
-						logger.info('Unfolded ranges via Esc key', { unfoldCount: foldedRanges.length });
-					}
-					stateManager.clearFold();
-				}
+				// REQ-045: Deselect block and clear state
+				stateManager.deselectBlock();
 
-				// Clear focus state
-				stateManager.clearFocus();
+				// Clear decorations
+				decorationManager.clearCurrentHighlight(activeEditor);
 
-				// TASK-044: Clear focus decorations
-				decorationManager.clearFocusMode(activeEditor);
+				// REQ-045, REQ-043: Hide segment navigator
+				segmentNavigator.hideNavigator();
 
-				// Notify webview to update UI
-				sidePanelProvider.notifyFocusCleared();
+				// REQ-048: Update VS Code context
+				vscode.commands.executeCommand('setContext', 'iris.blockSelected', false);
+
+				// REQ-045: Notify webview of deselection via STATE_UPDATE message
+				sidePanelProvider.sendStateUpdate();
+				logger.info('Block deselected via Esc key');
 			} else {
-				logger.info('No active focus mode to exit');
+				logger.info('No selected block to deselect');
 			}
 		} catch (error) {
-			logger.error('Failed to exit focus mode', { error: String(error) });
+			logger.error('Failed to deselect block', { error: String(error) });
 		}
 	});
 	context.subscriptions.push(exitFocusModeCommand);
 
-	// Update context when focus mode changes
-	const updateFocusModeContext = () => {
-		vscode.commands.executeCommand('setContext', 'iris.focusModeActive', stateManager.isFocusModeActive());
-	};
-	// Set initial context
-	updateFocusModeContext();
-	// Update context on state changes (simplified - would need event listener in production)
+	// REQ-079: Register command for navigating to previous segment
+	// Triggered by Ctrl+Up keyboard shortcut (REQ-075)
+	// Integration flow:
+	// 1. User presses Ctrl+Up while block is selected
+	// 2. VS Code triggers this command (if iris.blockSelected context is true)
+	// 3. Extension sends navigation command to webview
+	// 4. Webview calculates new segment index and sends SEGMENT_NAVIGATED message back
+	// 5. Extension scrolls editor to new segment position (REQ-082 to REQ-085)
+	const navigatePreviousSegmentCommand = vscode.commands.registerCommand('iris.navigatePreviousSegment', async () => {
+		try {
+			logger.info('Command executed: iris.navigatePreviousSegment');
+
+			const selectedBlockId = stateManager.getSelectedBlockId();
+			if (!selectedBlockId) {
+				logger.warn('No selected block for segment navigation');
+				return;
+			}
+
+			// Send message to webview to navigate to previous segment
+			// The webview handles the actual navigation logic per REQ-023
+			sidePanelProvider.sendNavigationCommand('prev');
+			logger.info('Sent navigate previous segment command to webview', { blockId: selectedBlockId });
+		} catch (error) {
+			logger.error('Failed to navigate to previous segment', { error: String(error) });
+		}
+	});
+	context.subscriptions.push(navigatePreviousSegmentCommand);
+
+	// REQ-080: Register command for navigating to next segment
+	const navigateNextSegmentCommand = vscode.commands.registerCommand('iris.navigateNextSegment', async () => {
+		try {
+			logger.info('Command executed: iris.navigateNextSegment');
+
+			const selectedBlockId = stateManager.getSelectedBlockId();
+			if (!selectedBlockId) {
+				logger.warn('No selected block for segment navigation');
+				return;
+			}
+
+			// Send message to webview to navigate to next segment
+			// The webview handles the actual navigation logic per REQ-023
+			sidePanelProvider.sendNavigationCommand('next');
+			logger.info('Sent navigate next segment command to webview', { blockId: selectedBlockId });
+		} catch (error) {
+			logger.error('Failed to navigate to next segment', { error: String(error) });
+		}
+	});
+	context.subscriptions.push(navigateNextSegmentCommand);
+
+	// REQ-048: Set initial context for block selection (replaces focus mode context)
+	// Context is updated dynamically when blocks are selected/deselected
+	vscode.commands.executeCommand('setContext', 'iris.blockSelected', false);
 	
 	const disposable = vscode.commands.registerCommand('iris.runAnalysis', async () => {
 		try {
@@ -319,29 +366,26 @@ export function activate(context: vscode.ExtensionContext) {
 			});
 			
 			// TASK-0092: Transition to STALE state per STATE-003
-			// This will trigger:
+			// REQ-090: This will trigger:
 			// 1. State transition to STALE (setStale() in state manager)
-			// 2. TASK-0093: Clear all decorations per ED-003 (via onStateChange listener)
-			// 3. TASK-0093: Exit Focus Mode (via setStale() calling clearFocus())
-			// 4. TASK-0094: Send ANALYSIS_STALE message to webview per UX-001 (via webview's handleStateChange)
+			// 2. Clear all decorations per ED-003 (via onStateChange listener)
+			// 3. Clear block selection state (via setStale() calling deselectBlock)
+			// 4. Send ANALYSIS_STALE message to webview per UX-001 (via webview's handleStateChange)
 			stateManager.setStale();
 			
 			logger.info('Analysis invalidated - state updated to STALE');
 		})
 	);
 
-	// Active editor change listener for Phase 8: Exit Focus Mode per TASK-0086
+	// Active editor change listener: Clear block selection when switching editors
+	// UI Refinement 2: Pin/unpin selection model automatically deselects on editor switch
 	context.subscriptions.push(
 		vscode.window.onDidChangeActiveTextEditor((editor) => {
-			// Exit Focus Mode when switching editors
-			if (stateManager.isFocusModeActive()) {
-				logger.info('Active editor changed - exiting Focus Mode');
-				stateManager.clearFocus();
-				
-				// Clear focus decorations if we have an editor
-				if (editor) {
-					decorationManager.clearFocusMode(editor);
-				}
+			const selectedBlockId = stateManager.getSelectedBlockId();
+			if (selectedBlockId && editor) {
+				logger.info('Active editor changed - clearing block selection');
+				stateManager.deselectBlock();
+				decorationManager.clearBlockSelection(editor);
 			}
 		})
 	);

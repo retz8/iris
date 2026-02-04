@@ -69,20 +69,12 @@ export interface AnalysisData {
 }
 
 /**
- * Focus state for Phase 8: Focus Mode
- * Per TASK-0081, GOAL-008
+ * Selection state for UI Refinement 2: Pin/Unpin Block Selection
+ * Per REQ-003
  */
-export interface FocusState {
-  activeBlockId: string | null;  // null = no focus mode active
-}
-
-/**
- * Fold state for Phase 5: Double-Click Fold Behavior
- * Per TASK-035
- */
-export interface FoldState {
-  foldedBlockId: string | null;         // null = no block currently folded
-  foldedRanges: Array<[number, number]> | null; // ZERO-based line ranges of folded gaps
+export interface SelectionState {
+  selectedBlockId: string | null;  // null = no block selected
+  currentSegmentIndex: number;      // Current segment being viewed (0-based)
 }
 
 /**
@@ -93,8 +85,7 @@ interface ExtensionState {
   currentState: IRISAnalysisState;
   analysisData: AnalysisData | null;
   activeFileUri: string | null;  // Currently active file being tracked
-  focusState: FocusState;         // Phase 8: Focus Mode state
-  foldState: FoldState;           // Phase 5: Fold state tracking
+  selectionState: SelectionState;  // UI Refinement 2: Pin/Unpin selection tracking
 }
 
 /**
@@ -129,8 +120,7 @@ export class IRISStateManager {
       currentState: IRISAnalysisState.IDLE,
       analysisData: null,
       activeFileUri: null,
-      focusState: { activeBlockId: null },
-      foldState: { foldedBlockId: null, foldedRanges: null }
+      selectionState: { selectedBlockId: null, currentSegmentIndex: 0 }
     };
     
     this.logger.info('State manager initialized', { initialState: IRISAnalysisState.IDLE });
@@ -191,12 +181,19 @@ export class IRISStateManager {
   /**
    * Transition to IDLE state on error or invalid schema
    * Per STATE-002, TASK-0047, API-002
+   * 
+   * REQ-007: Clear selection state when analysis fails
+   * Rationale: Selected block becomes invalid when analysis data is cleared
+   * This ensures UI doesn't show stale selection for non-existent blocks
    */
   public setError(error: string, fileUri?: string): void {
     const previousState = this.state.currentState;
     
     this.state.currentState = IRISAnalysisState.IDLE;
     this.state.analysisData = null;
+    
+    // Clear selection state per REQ-007
+    this.deselectBlock();
     
     this.logStateTransition(previousState, IRISAnalysisState.IDLE, fileUri, { error });
     this.stateChangeEmitter.fire(IRISAnalysisState.IDLE);
@@ -205,8 +202,10 @@ export class IRISStateManager {
   /**
    * Transition to STALE state when file is modified
    * Per STATE-003
-   * Phase 8: Exit Focus Mode per TASK-0086
-   * Phase 5: Clear Fold State per TASK-039
+   * 
+   * REQ-008: Clear selection state when analysis becomes stale
+   * Rationale: File modifications may invalidate block ranges, so deselect to prevent
+   * highlighting incorrect code regions. User must re-analyze to select blocks again.
    */
   public setStale(): void {
     const previousState = this.state.currentState;
@@ -219,11 +218,8 @@ export class IRISStateManager {
     const fileUri = this.state.analysisData?.analyzedFileUri;
     this.state.currentState = IRISAnalysisState.STALE;
     
-    // Exit Focus Mode per TASK-0086
-    this.clearFocus();
-    
-    // Clear Fold State per TASK-039
-    this.clearFold();
+    // Clear selection state per REQ-008
+    this.deselectBlock();
     
     this.logStateTransition(previousState, IRISAnalysisState.STALE, fileUri);
     this.stateChangeEmitter.fire(IRISAnalysisState.STALE);
@@ -231,8 +227,7 @@ export class IRISStateManager {
 
   /**
    * Reset to IDLE state (user-initiated or editor change)
-   * Phase 8: Exit Focus Mode per TASK-0086
-   * Phase 5: Clear Fold State per TASK-039
+   * Clear selection state on reset
    */
   public reset(): void {
     const previousState = this.state.currentState;
@@ -241,11 +236,8 @@ export class IRISStateManager {
     this.state.analysisData = null;
     this.state.activeFileUri = null;
     
-    // Exit Focus Mode per TASK-0086
-    this.clearFocus();
-    
-    // Clear Fold State per TASK-039
-    this.clearFold();
+    // Clear selection state
+    this.deselectBlock();
     
     this.logStateTransition(previousState, IRISAnalysisState.IDLE, undefined, { reason: 'reset' });
     this.stateChangeEmitter.fire(IRISAnalysisState.IDLE);
@@ -333,118 +325,86 @@ export class IRISStateManager {
   }
 
   // ========================================
-  // FOCUS STATE MANAGEMENT (Phase 8)
+  // SELECTION STATE MANAGEMENT (UI Refinement 2)
   // ========================================
 
   /**
-   * Enter Focus Mode for a specific block
-   * Per TASK-0081, GOAL-008
+   * Select a block (pin/unpin model)
+   * Per REQ-005
+   * CON-001: Log selection with structured logging
    */
-  public setFocusedBlock(blockId: string): void {
-    const previousBlockId = this.state.focusState.activeBlockId;
-    this.state.focusState.activeBlockId = blockId;
+  public selectBlock(blockId: string): void {
+    const previousBlockId = this.state.selectionState.selectedBlockId;
     
-    this.logger.info('Entered Focus Mode', { 
+    this.state.selectionState.selectedBlockId = blockId;
+    this.state.selectionState.currentSegmentIndex = 0;  // Reset to first segment
+    
+    this.logger.info('Block selected', { 
       blockId, 
-      previousBlockId 
+      previousBlockId,
+      segmentIndex: 0
     });
   }
 
   /**
-   * Exit Focus Mode
-   * Per TASK-0085
+   * Deselect current block (pin/unpin model)
+   * Per REQ-005
+   * CON-001: Log deselection with structured logging
    */
-  public clearFocus(): void {
-    const previousBlockId = this.state.focusState.activeBlockId;
+  public deselectBlock(): void {
+    const previousBlockId = this.state.selectionState.selectedBlockId;
     
     if (previousBlockId === null) {
-      return; // Already not focused
+      return; // Already deselected
     }
     
-    this.state.focusState.activeBlockId = null;
+    this.state.selectionState.selectedBlockId = null;
+    this.state.selectionState.currentSegmentIndex = 0;
     
-    this.logger.info('Exited Focus Mode', { 
+    this.logger.info('Block deselected', { 
       previousBlockId 
     });
   }
 
   /**
-   * Get current focused block ID
+   * Get current segment index for selected block
+   * Per REQ-005
    */
-  public getFocusedBlockId(): string | null {
-    return this.state.focusState.activeBlockId;
+  public getCurrentSegmentIndex(): number {
+    return this.state.selectionState.currentSegmentIndex;
   }
 
   /**
-   * Check if Focus Mode is active
+   * Set current segment index for navigation
+   * Per REQ-005
+   * CON-001: Log segment navigation with structured logging
    */
-  public isFocusModeActive(): boolean {
-    return this.state.focusState.activeBlockId !== null;
-  }
-
-  // ========================================
-  // FOLD STATE MANAGEMENT (Phase 5)
-  // ========================================
-
-  /**
-   * Set fold state for a block with folded ranges
-   * Per TASK-035, GOAL-005
-   */
-  public setFoldedBlock(blockId: string, foldedRanges: Array<[number, number]>): void {
-    this.state.foldState.foldedBlockId = blockId;
-    this.state.foldState.foldedRanges = foldedRanges;
+  public setCurrentSegmentIndex(index: number): void {
+    const previousIndex = this.state.selectionState.currentSegmentIndex;
+    const blockId = this.state.selectionState.selectedBlockId;
     
-    this.logger.info('Set fold state', { 
-      blockId, 
-      foldedRangeCount: foldedRanges.length 
+    this.state.selectionState.currentSegmentIndex = index;
+    
+    this.logger.info('Segment navigation', { 
+      blockId,
+      previousIndex,
+      currentIndex: index
     });
   }
 
   /**
-   * Clear fold state
-   * Per TASK-037, TASK-039
+   * Get currently selected block ID
+   * Per REQ-006
    */
-  public clearFold(): void {
-    const previousBlockId = this.state.foldState.foldedBlockId;
-    
-    if (previousBlockId === null) {
-      return; // Already not folded
-    }
-    
-    this.state.foldState.foldedBlockId = null;
-    this.state.foldState.foldedRanges = null;
-    
-    this.logger.info('Cleared fold state', { 
-      previousBlockId 
-    });
+  public getSelectedBlockId(): string | null {
+    return this.state.selectionState.selectedBlockId;
   }
 
   /**
-   * Get current folded block ID
+   * Check if a block is currently selected
    */
-  public getFoldedBlockId(): string | null {
-    return this.state.foldState.foldedBlockId;
-  }
-
-  /**
-   * Get current folded ranges (ZERO-based line numbers)
-   */
-  public getFoldedRanges(): Array<[number, number]> | null {
-    return this.state.foldState.foldedRanges;
-  }
-
-  /**
-   * Check if a specific block is currently folded
-   */
-  public isBlockFolded(blockId: string): boolean {
-    return this.state.foldState.foldedBlockId === blockId;
-  }
-
-  /**
-   * Check if any block is folded
-   */
-  public isFoldActive(): boolean {
-    return this.state.foldState.foldedBlockId !== null;
+  public isBlockSelected(): boolean {
+    return this.state.selectionState.selectedBlockId !== null;
   }
 
   // ========================================

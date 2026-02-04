@@ -23,7 +23,7 @@ interface BlockDecorationData {
 }
 
 /**
- * Decoration Manager implementing GOAL-007 and Phase 8: Focus Mode
+ * Decoration Manager implementing GOAL-007 and UI Refinement 2: Block Selection
  * 
  * Responsibilities:
  * - Create and cache decorations per blockId (TASK-0071)
@@ -33,7 +33,7 @@ interface BlockDecorationData {
  * - Clear decorations on BLOCK_CLEAR, IDLE, STALE (TASK-0075, ED-003)
  * - Dispose all decoration types (TASK-0076, ED-003)
  * - Log decoration lifecycle (TASK-0077, LOG-001)
- * - Phase 8: Implement Focus Mode with enhanced decorations (TASK-0082, TASK-0083)
+ * - UI Refinement 2: Pin/unpin block selection with persistent highlighting (REQ-053, REQ-054)
  * 
  * Constraints:
  * - ED-001: Use only TextEditorDecorationType (overlay-only)
@@ -42,10 +42,8 @@ interface BlockDecorationData {
  */
 export class DecorationManager implements vscode.Disposable {
   private decorationCache: Map<string, BlockDecorationData>;
-  private focusedDecorationCache: Map<string, vscode.TextEditorDecorationType>;
-  private dimmingDecorationType: vscode.TextEditorDecorationType | null;
   private currentlyHighlightedBlockId: string | null;
-  private currentlyFocusedBlockId: string | null;
+  private currentlyFocusedBlockId: string | null;  // UI Refinement 2: Tracks selected/pinned block
   private outputChannel: vscode.OutputChannel;
   private logger: Logger;
 
@@ -53,8 +51,6 @@ export class DecorationManager implements vscode.Disposable {
     this.outputChannel = outputChannel;
     this.logger = createLogger(outputChannel, 'DecorationManager');
     this.decorationCache = new Map();
-    this.focusedDecorationCache = new Map();
-    this.dimmingDecorationType = null;
     this.currentlyHighlightedBlockId = null;
     this.currentlyFocusedBlockId = null;
     
@@ -119,17 +115,18 @@ export class DecorationManager implements vscode.Disposable {
     const isDarkTheme = vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark ||
                         vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.HighContrast;
     
-    // Generate background color with 0.2 alpha for subtle hover (TASK-058)
+    // REQ-055: Use 0.25 alpha for all block highlighting (single alpha for hover and selection)
     const baseColor = generateBlockColor(blockId, isDarkTheme);
-    // Adjust alpha to 0.2 for hover state (highlights behind text)
-    const backgroundColor = baseColor.replace(/,\s*[\d.]+\)$/, ', 0.2)');
+    // Adjust alpha to 0.25 for consistent highlighting (same for hover and selection)
+    const backgroundColor = baseColor.replace(/,\s*[\d.]+\)$/, ', 0.25)');
     const opaqueColor = generateBlockColorOpaque(blockId, isDarkTheme);
     
     // Create decoration type per ED-001 (overlay-only)
     // TASK-055, TASK-056: Use backgroundColor only, no borders/before/after
     // TASK-057: Set rangeBehavior to ClosedClosed for precise highlighting
+    // CON-003: 0.25 alpha maintains WCAG AA contrast compliance for both light and dark themes
     const decorationType = vscode.window.createTextEditorDecorationType({
-      backgroundColor: backgroundColor,  // rgba with 0.2 alpha - renders behind text
+      backgroundColor: backgroundColor,  // rgba with 0.25 alpha - renders behind text
       isWholeLine: true,
       rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
       overviewRulerColor: opaqueColor,   // Opaque for ruler visibility only
@@ -140,62 +137,10 @@ export class DecorationManager implements vscode.Disposable {
     return decorationType;
   }
 
-  /**
-   * Create focused decoration type for a blockId
-   * Per TASK-0082: Implement focused decoration style distinct from hover
-   * Phase 7 (TASK-051): Uses smart color assignment with enhanced alpha
-   * 
-   * Focused decorations have enhanced emphasis compared to hover
-   */
-  private getOrCreateFocusedDecorationType(blockId: string): vscode.TextEditorDecorationType {
-    const cached = this.focusedDecorationCache.get(blockId);
-    if (cached) {
-      return cached;
-    }
-
-    // Detect current theme
-    const isDarkTheme = vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark ||
-                        vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.HighContrast;
-    
-    // Generate background color with 0.3 alpha for prominent focus (TASK-058)
-    const baseColor = generateBlockColor(blockId, isDarkTheme);
-    // Use 0.3 alpha for focus mode (more prominent than hover, still behind text)
-    const backgroundColor = baseColor.replace(/,\s*[\d.]+\)$/, ', 0.3)');
-    const opaqueColor = generateBlockColorOpaque(blockId, isDarkTheme);
-    
-    // Create enhanced decoration for focus mode
-    // TASK-055, TASK-056: Use backgroundColor only, no borders/before/after
-    // TASK-057: Set rangeBehavior to ClosedClosed for precise highlighting
-    const decorationType = vscode.window.createTextEditorDecorationType({
-      backgroundColor: backgroundColor,  // rgba with 0.3 alpha - renders behind text
-      isWholeLine: true,
-      rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
-      overviewRulerColor: opaqueColor,   // Opaque for ruler visibility only
-      overviewRulerLane: vscode.OverviewRulerLane.Center
-    });
-
-    this.focusedDecorationCache.set(blockId, decorationType);
-    this.logger.info( 'Created focused decoration type', { blockId, backgroundColor });
-    return decorationType;
-  }
-
-  /**
-   * Get or create dimming decoration type
-   * Per TASK-0083: Apply selective dimming to non-focused blocks
-   */
-  private getOrCreateDimmingDecorationType(): vscode.TextEditorDecorationType {
-    if (this.dimmingDecorationType) {
-      return this.dimmingDecorationType;
-    }
-
-    this.dimmingDecorationType = vscode.window.createTextEditorDecorationType({
-      opacity: '0.4',
-      isWholeLine: true
-    });
-
-    this.logger.info( 'Created dimming decoration type');
-    return this.dimmingDecorationType;
-  }
+  // ========================================
+  // BLOCK SELECTION (UI Refinement 2: Phase 4)
+  // REQ-049 to REQ-055: Replaced focus mode with pin/unpin selection model
+  // ========================================
 
   /**
    * Prepare decoration data for a responsibility block
@@ -231,7 +176,7 @@ export class DecorationManager implements vscode.Disposable {
   /**
    * Apply decorations for a specific block on BLOCK_HOVER
    * Per TASK-0074
-   * Per TASK-0084: Disable hover while in Focus Mode
+   * Per TASK-0084: Disable hover while block is selected (pin/unpin model)
    * 
    * @param editor - The text editor to apply decorations to
    * @param block - The responsibility block to highlight
@@ -240,11 +185,11 @@ export class DecorationManager implements vscode.Disposable {
     editor: vscode.TextEditor, 
     block: NormalizedResponsibilityBlock
   ): void {
-    // TASK-0084: Disable hover decorations while focused
+    // TASK-0084: Disable hover decorations while block is selected
     if (this.currentlyFocusedBlockId !== null) {
-      this.logger.info( 'Hover disabled while in Focus Mode', { 
+      this.logger.info('Hover disabled while block selected', { 
         blockId: block.blockId,
-        focusedBlockId: this.currentlyFocusedBlockId
+        selectedBlockId: this.currentlyFocusedBlockId
       });
       return;
     }
@@ -304,145 +249,91 @@ export class DecorationManager implements vscode.Disposable {
    */
   public clearAllDecorations(editor?: vscode.TextEditor): void {
     if (editor) {
-      // Clear hover decorations from specific editor
+      // Clear all decorations from specific editor
       for (const decorationData of this.decorationCache.values()) {
         editor.setDecorations(decorationData.decorationType, []);
       }
       
-      // Clear focused decorations
-      for (const decorationType of this.focusedDecorationCache.values()) {
-        editor.setDecorations(decorationType, []);
-      }
-      
-      // Clear dimming
-      if (this.dimmingDecorationType) {
-        editor.setDecorations(this.dimmingDecorationType, []);
-      }
-      
-      this.logger.info( 'Cleared all decorations from editor', { 
+      this.logger.info('Cleared all decorations from editor', { 
         editorUri: editor.document.uri.toString() 
       });
     }
 
     this.currentlyHighlightedBlockId = null;
     this.currentlyFocusedBlockId = null;
-    this.logger.info( 'Cleared all decoration state');
+    this.logger.info('Cleared all decoration state');
   }
 
   // ========================================
-  // FOCUS MODE (Phase 8: GOAL-008)
+  // BLOCK SELECTION (UI Refinement 2: Phase 4)
+  // REQ-053, REQ-054: Pin/Unpin selection model
   // ========================================
 
   /**
-   * Enter Focus Mode for a specific block
-   * Per TASK-0082, TASK-0083, GOAL-008
+   * Apply block selection highlighting
+   * REQ-053: Applies persistent highlighting to all segments with consistent color
    * 
-   * Visual behavior:
-   * - Active block: enhanced decoration emphasis
-   * - Inactive blocks: reduced opacity/dimming
-   * - Non-responsibility code: untouched
+   * Block selection (pin/unpin model):
+   * - Uses same 0.25 alpha decoration as hover for visual consistency (REQ-055)
+   * - Applies highlighting to ALL segments of the block simultaneously
+   * - Persists until block is deselected (unlike hover which clears on mouse out)
+   * - No dimming of other blocks (simplified from focus mode)
    * 
-   * @param editor - The text editor to apply focus decorations
-   * @param focusedBlock - The block to focus on
-   * @param allBlocks - All responsibility blocks for dimming calculation
+   * Replaces focus mode - no dimming, just persistent highlighting on selected block
+   * 
+   * @param editor - The text editor to apply selection decorations
+   * @param block - The selected responsibility block to highlight
    */
-  public applyFocusMode(
+  public applyBlockSelection(
     editor: vscode.TextEditor,
-    focusedBlock: NormalizedResponsibilityBlock,
-    allBlocks: readonly NormalizedResponsibilityBlock[]
+    block: NormalizedResponsibilityBlock
   ): void {
-    // Clear any existing decorations first
+    // Clear any existing hover first
     this.clearCurrentHighlight(editor);
-    this.clearFocusMode(editor);
 
-    // Create focused decoration for the active block
-    const focusedDecorationType = this.getOrCreateFocusedDecorationType(focusedBlock.blockId);
-    const focusedData = this.prepareBlockDecoration(focusedBlock);
+    // Prepare and apply decoration using same style as hover (0.25 alpha per REQ-055)
+    const decorationData = this.prepareBlockDecoration(block);
     
-    const focusedRanges = focusedData.ranges.map(range => 
+    const vscodeRanges = decorationData.ranges.map(range => 
       new vscode.Range(
         new vscode.Position(range.startLine, 0),
         new vscode.Position(range.endLine, Number.MAX_SAFE_INTEGER)
       )
     );
 
-    // Apply enhanced decoration to focused block
-    editor.setDecorations(focusedDecorationType, focusedRanges);
+    // Apply selection highlighting across all segments
+    editor.setDecorations(decorationData.decorationType, vscodeRanges);
+    
+    this.currentlyFocusedBlockId = block.blockId;  // Track selected block
 
-    // Apply dimming to all other blocks (TASK-0083)
-    const dimmingDecorationType = this.getOrCreateDimmingDecorationType();
-    const dimmingRanges: vscode.Range[] = [];
-
-    for (const block of allBlocks) {
-      if (block.blockId !== focusedBlock.blockId) {
-        const blockData = this.prepareBlockDecoration(block);
-        const blockRanges = blockData.ranges.map(range => 
-          new vscode.Range(
-            new vscode.Position(range.startLine, 0),
-            new vscode.Position(range.endLine, Number.MAX_SAFE_INTEGER)
-          )
-        );
-        dimmingRanges.push(...blockRanges);
-      }
-    }
-
-    if (dimmingRanges.length > 0) {
-      editor.setDecorations(dimmingDecorationType, dimmingRanges);
-    }
-
-    this.currentlyFocusedBlockId = focusedBlock.blockId;
-
-    this.logger.info( 'Applied Focus Mode', {
-      focusedBlockId: focusedBlock.blockId,
-      focusedRangeCount: focusedRanges.length,
-      dimmedBlockCount: allBlocks.length - 1,
-      dimmedRangeCount: dimmingRanges.length,
-      label: focusedBlock.label
+    this.logger.info('Applied block selection', {
+      blockId: block.blockId,
+      rangeCount: vscodeRanges.length,
+      label: block.label
     });
   }
 
   /**
-   * Exit Focus Mode and clear all focus decorations
-   * Per TASK-0085
+   * Clear block selection highlighting
+   * REQ-054: Clears selection highlights for a specific block
    * 
-   * @param editor - The text editor to clear focus decorations from
+   * @param editor - The text editor to clear selection decorations from
+   * @param blockId - The block ID to clear (optional, clears current if not provided)
    */
-  public clearFocusMode(editor: vscode.TextEditor): void {
-    if (this.currentlyFocusedBlockId === null) {
-      return; // Not in focus mode
+  public clearBlockSelection(editor: vscode.TextEditor, blockId?: string): void {
+    const targetBlockId = blockId || this.currentlyFocusedBlockId;
+    
+    if (!targetBlockId) {
+      return; // No block selected
     }
 
-    const previousFocusedBlockId = this.currentlyFocusedBlockId;
-
-    // Clear focused decorations
-    for (const decorationType of this.focusedDecorationCache.values()) {
-      editor.setDecorations(decorationType, []);
-    }
-
-    // Clear dimming
-    if (this.dimmingDecorationType) {
-      editor.setDecorations(this.dimmingDecorationType, []);
+    const decorationData = this.decorationCache.get(targetBlockId);
+    if (decorationData) {
+      editor.setDecorations(decorationData.decorationType, []);
+      this.logger.info('Cleared block selection', { blockId: targetBlockId });
     }
 
     this.currentlyFocusedBlockId = null;
-
-    this.logger.info( 'Cleared Focus Mode', {
-      previousFocusedBlockId
-    });
-  }
-
-  /**
-   * Check if currently in Focus Mode
-   */
-  public isFocusModeActive(): boolean {
-    return this.currentlyFocusedBlockId !== null;
-  }
-
-  /**
-   * Get currently focused block ID
-   */
-  public getFocusedBlockId(): string | null {
-    return this.currentlyFocusedBlockId;
   }
 
   /**
@@ -453,33 +344,19 @@ export class DecorationManager implements vscode.Disposable {
    * Prevents memory leaks by properly disposing TextEditorDecorationType instances
    */
   public disposeAllDecorations(): void {
-    const hoverCount = this.decorationCache.size;
-    const focusCount = this.focusedDecorationCache.size;
+    const decorationCount = this.decorationCache.size;
     
-    // Dispose hover decorations
+    // Dispose all decorations
     for (const decorationData of this.decorationCache.values()) {
       decorationData.decorationType.dispose();
     }
     
-    // Dispose focused decorations
-    for (const decorationType of this.focusedDecorationCache.values()) {
-      decorationType.dispose();
-    }
-    
-    // Dispose dimming decoration
-    if (this.dimmingDecorationType) {
-      this.dimmingDecorationType.dispose();
-      this.dimmingDecorationType = null;
-    }
-    
     this.decorationCache.clear();
-    this.focusedDecorationCache.clear();
     this.currentlyHighlightedBlockId = null;
     this.currentlyFocusedBlockId = null;
     
-    this.logger.info( 'Disposed all decoration types', { 
-      hoverCount, 
-      focusCount 
+    this.logger.info('Disposed all decoration types', { 
+      decorationCount
     });
   }
 
