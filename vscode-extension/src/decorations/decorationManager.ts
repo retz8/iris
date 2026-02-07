@@ -291,6 +291,9 @@ export class DecorationManager implements vscode.Disposable {
     // Clear any existing hover first
     this.clearCurrentHighlight(editor);
 
+    // Clear previous block selection before applying new one
+    this.clearBlockSelection(editor);
+
     // Prepare and apply decoration using same style as hover (0.25 alpha per REQ-055)
     const decorationData = this.prepareBlockDecoration(block);
     

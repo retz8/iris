@@ -251,9 +251,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    // Clear previous selection's decorations before applying new one
-    this.decorationManager.clearCurrentHighlight(activeEditor);
-
     // REQ-042 (1): Store selection state in state manager
     this.stateManager.selectBlock(blockId);
 
@@ -267,13 +264,15 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     // REQ-042 (5): Apply highlighting decoration to all block segments (REQ-053)
     this.decorationManager.applyBlockSelection(activeEditor, block);
 
-    // Scroll editor to first segment of the selected block
+    // Scroll editor to first segment of the selected block (near top with padding)
     if (block.ranges.length > 0) {
       const [startLine] = block.ranges[0];
-      const position = new vscode.Position(startLine - 1, 0);
-      const range = new vscode.Range(position, position);
-      activeEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-      activeEditor.selection = new vscode.Selection(position, position);
+      const padding = 3; // lines of context above the block
+      const revealLine = Math.max(startLine - 1 - padding, 0);
+      const revealPos = new vscode.Position(revealLine, 0);
+      activeEditor.revealRange(new vscode.Range(revealPos, revealPos), vscode.TextEditorRevealType.AtTop);
+      const cursorPos = new vscode.Position(startLine - 1, 0);
+      activeEditor.selection = new vscode.Selection(cursorPos, cursorPos);
     }
 
     // REQ-048: Update VS Code context for keybinding

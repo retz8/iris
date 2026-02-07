@@ -570,7 +570,6 @@ var IRISSidePanelProvider = class {
       this.logger.warn("Block not found", { blockId });
       return;
     }
-    this.decorationManager.clearCurrentHighlight(activeEditor);
     this.stateManager.selectBlock(blockId);
     const totalSegments = block.ranges.length;
     const currentSegment = 0;
@@ -578,10 +577,12 @@ var IRISSidePanelProvider = class {
     this.decorationManager.applyBlockSelection(activeEditor, block);
     if (block.ranges.length > 0) {
       const [startLine] = block.ranges[0];
-      const position = new vscode3.Position(startLine - 1, 0);
-      const range = new vscode3.Range(position, position);
-      activeEditor.revealRange(range, vscode3.TextEditorRevealType.InCenter);
-      activeEditor.selection = new vscode3.Selection(position, position);
+      const padding = 3;
+      const revealLine = Math.max(startLine - 1 - padding, 0);
+      const revealPos = new vscode3.Position(revealLine, 0);
+      activeEditor.revealRange(new vscode3.Range(revealPos, revealPos), vscode3.TextEditorRevealType.AtTop);
+      const cursorPos = new vscode3.Position(startLine - 1, 0);
+      activeEditor.selection = new vscode3.Selection(cursorPos, cursorPos);
     }
     vscode3.commands.executeCommand("setContext", "iris.blockSelected", true);
     this.logger.info("Block selected with segment navigator", {
@@ -1855,6 +1856,7 @@ var DecorationManager = class {
    */
   applyBlockSelection(editor, block) {
     this.clearCurrentHighlight(editor);
+    this.clearBlockSelection(editor);
     const decorationData = this.prepareBlockDecoration(block);
     const vscodeRanges = decorationData.ranges.map(
       (range) => new vscode4.Range(
