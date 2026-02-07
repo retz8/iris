@@ -31,6 +31,25 @@ from analysis_cache import AnalysisCache, compute_file_hash, AnalysisResult
 logger = logging.getLogger(__name__)
 
 
+def _merge_ranges(ranges: list[list[int]]) -> list[list[int]]:
+    """Merge overlapping or nested line ranges into non-overlapping ranges.
+
+    Example: [[16,25],[21,25],[24,25]] -> [[16,25]]
+             [[7,11],[8,11],[9,11]]    -> [[7,11]]
+             [[3,10],[15,20],[18,25]]  -> [[3,10],[15,25]]
+    """
+    if len(ranges) <= 1:
+        return ranges
+    sorted_ranges = sorted(ranges, key=lambda r: (r[0], -r[1]))
+    merged = [sorted_ranges[0][:]]
+    for start, end in sorted_ranges[1:]:
+        if start <= merged[-1][1]:
+            merged[-1][1] = max(merged[-1][1], end)
+        else:
+            merged.append([start, end])
+    return merged
+
+
 class IrisError(Exception):
     """Custom exception for IRIS agent errors."""
 
@@ -191,6 +210,10 @@ class IrisAgent:
             content = response.output_parsed
             if content is None:
                 raise ValueError("LLM returned empty response")
+
+            # Post-process: merge overlapping/nested ranges within each block
+            for block in content.responsibility_blocks:
+                block.ranges = _merge_ranges(block.ranges)
 
             # Cache the result for future use (with error handling)
             if self.analysis_cache:

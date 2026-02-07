@@ -79,8 +79,10 @@ The output must:
 - Write a clear label that captures the essence
 - Label should be specific enough to distinguish from other blocks, not generic or vague
 - Each line of code should belong to at most ONE block. Minimize inter-block overlap.
-- Within a single block, ranges must NOT overlap or nest (e.g., [305, 321] already covers [306, 312] — do not emit both)
-- Merge or remove redundant ranges so every line appears in at most one range per block
+- Ranges within a single block must be strictly non-overlapping. No two ranges may share any line.
+  WRONG: [[16,25], [21,25], [24,25]] — [21,25] and [24,25] are inside [16,25]. Emit [[16,25]] only.
+  WRONG: [[7,11], [8,11], [9,11]] — all overlap. Merge to [[7,11]].
+  RIGHT: [[7,11], [16,25], [30,42]] — no shared lines.
 - No need to cover every line of code, focus on major responsibilities
 
 <block_size_rules>
