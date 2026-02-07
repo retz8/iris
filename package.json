@@ -1,0 +1,5 @@
+{
+  "name": "iris-monorepo",
+  "private": true,
+  "workspaces": ["packages/*"]
+}
