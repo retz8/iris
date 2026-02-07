@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import type { Logger as ILogger } from '@iris/core';
 
 /**
  * Structured logging utility
@@ -16,7 +17,7 @@ export enum LogLevel {
   DEBUG = 'DEBUG'
 }
 
-export class Logger {
+export class Logger implements ILogger {
   private outputChannel: vscode.OutputChannel;
   private componentName: string;
 

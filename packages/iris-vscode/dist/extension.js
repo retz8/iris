@@ -5,6 +5,9 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __commonJS = (cb, mod) => function __require() {
+  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+};
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
@@ -27,6 +30,599 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
+// ../iris-core/dist/state/analysisState.js
+var require_analysisState = __commonJS({
+  "../iris-core/dist/state/analysisState.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.IRISCoreState = exports2.IRISAnalysisState = void 0;
+    var IRISAnalysisState5;
+    (function(IRISAnalysisState6) {
+      IRISAnalysisState6["IDLE"] = "IDLE";
+      IRISAnalysisState6["ANALYZING"] = "ANALYZING";
+      IRISAnalysisState6["ANALYZED"] = "ANALYZED";
+      IRISAnalysisState6["STALE"] = "STALE";
+    })(IRISAnalysisState5 || (exports2.IRISAnalysisState = IRISAnalysisState5 = {}));
+    var IRISCoreState2 = class {
+      state;
+      logger;
+      listeners = [];
+      constructor(logger) {
+        this.logger = logger;
+        this.state = {
+          currentState: IRISAnalysisState5.IDLE,
+          analysisData: null,
+          activeFileUri: null,
+          selectionState: { selectedBlockId: null, currentSegmentIndex: 0 }
+        };
+        this.logger.info("State manager initialized", { initialState: IRISAnalysisState5.IDLE });
+      }
+      onStateChange(listener) {
+        this.listeners.push(listener);
+        return () => {
+          this.listeners = this.listeners.filter((l) => l !== listener);
+        };
+      }
+      emit(state) {
+        this.listeners.forEach((l) => l(state));
+      }
+      /**
+       * Dispose resources
+       */
+      dispose() {
+        this.listeners = [];
+      }
+      // ========================================
+      // STATE TRANSITIONS
+      // ========================================
+      /**
+       * Transition to ANALYZING state when analysis request starts
+       */
+      startAnalysis(fileUri) {
+        const previousState = this.state.currentState;
+        if (previousState === IRISAnalysisState5.ANALYZING) {
+          this.logger.warn("Analysis already in progress, ignoring duplicate trigger", { fileUri });
+          return;
+        }
+        this.state.currentState = IRISAnalysisState5.ANALYZING;
+        this.state.activeFileUri = fileUri;
+        this.state.analysisData = null;
+        this.logStateTransition(previousState, IRISAnalysisState5.ANALYZING, fileUri);
+        this.emit(IRISAnalysisState5.ANALYZING);
+      }
+      /**
+       * Transition to ANALYZED state on successful analysis with valid schema
+       */
+      setAnalyzed(data) {
+        const previousState = this.state.currentState;
+        if (previousState !== IRISAnalysisState5.ANALYZING) {
+          this.logger.warn("Received analysis data without being in ANALYZING state", {
+            currentState: previousState,
+            fileUri: data.analyzedFileUri
+          });
+          return;
+        }
+        this.state.currentState = IRISAnalysisState5.ANALYZED;
+        this.state.analysisData = data;
+        this.logStateTransition(previousState, IRISAnalysisState5.ANALYZED, data.analyzedFileUri, {
+          blockCount: data.responsibilityBlocks.length,
+          fileIntent: data.fileIntent.substring(0, 50) + "..."
+          // Truncate for logging
+        });
+        this.emit(IRISAnalysisState5.ANALYZED);
+      }
+      /**
+       * Transition to IDLE state on error or invalid schema
+       * Clears selection state since selected block becomes invalid
+       */
+      setError(error, fileUri) {
+        const previousState = this.state.currentState;
+        this.state.currentState = IRISAnalysisState5.IDLE;
+        this.state.analysisData = null;
+        this.deselectBlock();
+        this.logStateTransition(previousState, IRISAnalysisState5.IDLE, fileUri, { error });
+        this.emit(IRISAnalysisState5.IDLE);
+      }
+      /**
+       * Transition to STALE state when file is modified
+       * Clears selection state since block ranges may be invalidated
+       */
+      setStale() {
+        const previousState = this.state.currentState;
+        if (previousState !== IRISAnalysisState5.ANALYZED) {
+          return;
+        }
+        const fileUri = this.state.analysisData?.analyzedFileUri;
+        this.state.currentState = IRISAnalysisState5.STALE;
+        this.deselectBlock();
+        this.logStateTransition(previousState, IRISAnalysisState5.STALE, fileUri);
+        this.emit(IRISAnalysisState5.STALE);
+      }
+      /**
+       * Reset to IDLE state (user-initiated or editor change)
+       * Clear selection state on reset
+       */
+      reset() {
+        const previousState = this.state.currentState;
+        this.state.currentState = IRISAnalysisState5.IDLE;
+        this.state.analysisData = null;
+        this.state.activeFileUri = null;
+        this.deselectBlock();
+        this.logStateTransition(previousState, IRISAnalysisState5.IDLE, void 0, { reason: "reset" });
+        this.emit(IRISAnalysisState5.IDLE);
+      }
+      // ========================================
+      // READ-ONLY SELECTORS
+      // ========================================
+      /**
+       * Get current state enum value
+       */
+      getCurrentState() {
+        return this.state.currentState;
+      }
+      /**
+       * Get complete analysis data (null if not in ANALYZED state)
+       */
+      getAnalysisData() {
+        return this.state.analysisData;
+      }
+      /**
+       * Get file intent only
+       */
+      getFileIntent() {
+        return this.state.analysisData?.fileIntent ?? null;
+      }
+      /**
+       * Get responsibility blocks only
+       */
+      getResponsibilityBlocks() {
+        return this.state.analysisData?.responsibilityBlocks ?? null;
+      }
+      /**
+       * Get metadata only
+       */
+      getMetadata() {
+        return this.state.analysisData?.metadata ?? null;
+      }
+      /**
+       * Get analyzed file URI
+       */
+      getAnalyzedFileUri() {
+        return this.state.analysisData?.analyzedFileUri ?? null;
+      }
+      /**
+       * Get active file URI being tracked
+       */
+      getActiveFileUri() {
+        return this.state.activeFileUri;
+      }
+      /**
+       * Check if analysis data is available
+       */
+      hasAnalysisData() {
+        return this.state.analysisData !== null;
+      }
+      /**
+       * Check if currently analyzing
+       */
+      isAnalyzing() {
+        return this.state.currentState === IRISAnalysisState5.ANALYZING;
+      }
+      /**
+       * Check if analysis is stale
+       */
+      isStale() {
+        return this.state.currentState === IRISAnalysisState5.STALE;
+      }
+      /**
+       * Get raw server response (for debugging or advanced use)
+       */
+      getRawResponse() {
+        return this.state.analysisData?.rawResponse ?? null;
+      }
+      // ========================================
+      // SELECTION STATE MANAGEMENT
+      // ========================================
+      /**
+       * Select a block (pin/unpin model)
+       */
+      selectBlock(blockId) {
+        const previousBlockId = this.state.selectionState.selectedBlockId;
+        this.state.selectionState.selectedBlockId = blockId;
+        this.state.selectionState.currentSegmentIndex = 0;
+        this.logger.info("Block selected", {
+          blockId,
+          previousBlockId,
+          segmentIndex: 0
+        });
+      }
+      /**
+       * Deselect current block (pin/unpin model)
+       */
+      deselectBlock() {
+        const previousBlockId = this.state.selectionState.selectedBlockId;
+        if (previousBlockId === null) {
+          return;
+        }
+        this.state.selectionState.selectedBlockId = null;
+        this.state.selectionState.currentSegmentIndex = 0;
+        this.logger.info("Block deselected", {
+          previousBlockId
+        });
+      }
+      /**
+       * Get current segment index for selected block
+       */
+      getCurrentSegmentIndex() {
+        return this.state.selectionState.currentSegmentIndex;
+      }
+      /**
+       * Set current segment index for navigation
+       */
+      setCurrentSegmentIndex(index) {
+        const previousIndex = this.state.selectionState.currentSegmentIndex;
+        const blockId = this.state.selectionState.selectedBlockId;
+        this.state.selectionState.currentSegmentIndex = index;
+        this.logger.info("Segment navigation", {
+          blockId,
+          previousIndex,
+          currentIndex: index
+        });
+      }
+      /**
+       * Get currently selected block ID
+       */
+      getSelectedBlockId() {
+        return this.state.selectionState.selectedBlockId;
+      }
+      /**
+       * Check if a block is currently selected
+       */
+      isBlockSelected() {
+        return this.state.selectionState.selectedBlockId !== null;
+      }
+      // ========================================
+      // LOGGING
+      // ========================================
+      /**
+       * Log state transition with structured metadata
+       */
+      logStateTransition(from, to, fileUri, metadata) {
+        const message = `State transition: ${from} \u2192 ${to}`;
+        const context = {
+          from,
+          to,
+          fileUri,
+          timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+          ...metadata
+        };
+        this.logger.info(message, context);
+      }
+    };
+    exports2.IRISCoreState = IRISCoreState2;
+  }
+});
+
+// ../iris-core/dist/api/irisClient.js
+var require_irisClient = __commonJS({
+  "../iris-core/dist/api/irisClient.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.IRISAPIClient = exports2.APIError = exports2.APIErrorType = void 0;
+    var APIErrorType2;
+    (function(APIErrorType3) {
+      APIErrorType3["NETWORK_ERROR"] = "NETWORK_ERROR";
+      APIErrorType3["TIMEOUT"] = "TIMEOUT";
+      APIErrorType3["HTTP_ERROR"] = "HTTP_ERROR";
+      APIErrorType3["INVALID_RESPONSE"] = "INVALID_RESPONSE";
+      APIErrorType3["PARSE_ERROR"] = "PARSE_ERROR";
+    })(APIErrorType2 || (exports2.APIErrorType = APIErrorType2 = {}));
+    var APIError2 = class extends Error {
+      type;
+      statusCode;
+      originalError;
+      constructor(type, message, statusCode, originalError) {
+        super(message);
+        this.type = type;
+        this.statusCode = statusCode;
+        this.originalError = originalError;
+        this.name = "APIError";
+      }
+    };
+    exports2.APIError = APIError2;
+    var IRISAPIClient2 = class {
+      config;
+      logger;
+      constructor(config, logger) {
+        this.config = config;
+        this.logger = logger;
+        this.logger.info("API Client initialized", {
+          endpoint: config.endpoint,
+          timeout: config.timeout
+        });
+      }
+      /**
+       * Send analysis request with comprehensive error handling
+       */
+      async analyze(request) {
+        this.logger.info("Starting analysis request", {
+          filename: request.filename,
+          language: request.language,
+          sourceLength: request.source_code.length
+        });
+        try {
+          const response = await this.executeRequest(request);
+          const validatedResponse = this.validateResponse(response);
+          this.logger.info("Analysis request completed successfully", {
+            filename: request.filename,
+            blockCount: validatedResponse.responsibility_blocks.length
+          });
+          return validatedResponse;
+        } catch (error) {
+          if (error instanceof APIError2) {
+            this.logger.error(`API Error: ${error.type}`, {
+              message: error.message,
+              statusCode: error.statusCode,
+              filename: request.filename
+            });
+            throw error;
+          }
+          this.logger.errorWithException("Unexpected error during analysis", error, {
+            filename: request.filename
+          });
+          throw new APIError2(APIErrorType2.NETWORK_ERROR, "Unexpected error during analysis request", void 0, error);
+        }
+      }
+      /**
+       * Execute HTTP request with timeout
+       */
+      async executeRequest(request) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, this.config.timeout);
+        try {
+          this.logger.debug("Sending POST request", {
+            endpoint: this.config.endpoint,
+            timeout: this.config.timeout
+          });
+          const response = await fetch(this.config.endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(request),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          this.logger.debug("Received response", {
+            status: response.status,
+            statusText: response.statusText,
+            contentType: response.headers.get("content-type")
+          });
+          if (!response.ok) {
+            const errorText = await response.text().catch(() => "Unable to read error response");
+            throw new APIError2(APIErrorType2.HTTP_ERROR, `Server returned ${response.status}: ${response.statusText}`, response.status);
+          }
+          try {
+            const json = await response.json();
+            return json;
+          } catch (parseError) {
+            throw new APIError2(APIErrorType2.PARSE_ERROR, "Failed to parse server response as JSON", response.status, parseError);
+          }
+        } catch (error) {
+          clearTimeout(timeoutId);
+          if (error instanceof Error && error.name === "AbortError") {
+            throw new APIError2(APIErrorType2.TIMEOUT, `Request timeout after ${this.config.timeout}ms`);
+          }
+          if (error instanceof TypeError) {
+            throw new APIError2(APIErrorType2.NETWORK_ERROR, `Network error: ${error.message}`, void 0, error);
+          }
+          if (error instanceof APIError2) {
+            throw error;
+          }
+          throw new APIError2(APIErrorType2.NETWORK_ERROR, "Unknown network error", void 0, error);
+        }
+      }
+      /**
+       * Validate response schema defensively
+       */
+      validateResponse(response) {
+        this.logger.debug("Validating response schema");
+        if (!response || typeof response !== "object") {
+          throw new APIError2(APIErrorType2.INVALID_RESPONSE, "Response is not an object");
+        }
+        const record = response;
+        if (typeof record.file_intent !== "string") {
+          throw new APIError2(APIErrorType2.INVALID_RESPONSE, 'Missing or invalid "file_intent" field (expected string)');
+        }
+        if (!Array.isArray(record.responsibility_blocks)) {
+          throw new APIError2(APIErrorType2.INVALID_RESPONSE, 'Missing or invalid "responsibility_blocks" field (expected array)');
+        }
+        const blocks = record.responsibility_blocks;
+        for (let i = 0; i < blocks.length; i++) {
+          this.validateResponsibilityBlock(blocks[i], i);
+        }
+        const metadata = record.metadata ?? {};
+        if (typeof metadata !== "object" || metadata === null || Array.isArray(metadata)) {
+          throw new APIError2(APIErrorType2.INVALID_RESPONSE, 'Invalid "metadata" field (expected object)');
+        }
+        this.logger.debug("Response validation successful", {
+          blockCount: blocks.length,
+          fileIntentLength: record.file_intent.length
+        });
+        return {
+          file_intent: record.file_intent,
+          metadata,
+          responsibility_blocks: blocks
+        };
+      }
+      /**
+       * Validate individual responsibility block
+       */
+      validateResponsibilityBlock(block, index) {
+        if (!block || typeof block !== "object") {
+          throw new APIError2(APIErrorType2.INVALID_RESPONSE, `Responsibility block at index ${index} is not an object`);
+        }
+        const record = block;
+        if (typeof record.description !== "string") {
+          throw new APIError2(APIErrorType2.INVALID_RESPONSE, `Block ${index}: missing or invalid "description" field (expected string)`);
+        }
+        if (typeof record.label !== "string") {
+          throw new APIError2(APIErrorType2.INVALID_RESPONSE, `Block ${index}: missing or invalid "label" field (expected string)`);
+        }
+        if (!Array.isArray(record.ranges)) {
+          throw new APIError2(APIErrorType2.INVALID_RESPONSE, `Block ${index}: missing or invalid "ranges" field (expected array)`);
+        }
+        const ranges = record.ranges;
+        for (let i = 0; i < ranges.length; i++) {
+          const range = ranges[i];
+          if (!Array.isArray(range) || range.length !== 2) {
+            throw new APIError2(APIErrorType2.INVALID_RESPONSE, `Block ${index}, range ${i}: invalid format (expected [number, number])`);
+          }
+          const [start, end] = range;
+          if (typeof start !== "number" || typeof end !== "number") {
+            throw new APIError2(APIErrorType2.INVALID_RESPONSE, `Block ${index}, range ${i}: invalid types (expected numbers)`);
+          }
+          if (start < 1 || end < 1 || start > end) {
+            throw new APIError2(APIErrorType2.INVALID_RESPONSE, `Block ${index}, range ${i}: invalid values (start=${start}, end=${end})`);
+          }
+        }
+      }
+      /**
+       * Get user-friendly error message from API error
+       */
+      static getUserMessage(error) {
+        switch (error.type) {
+          case APIErrorType2.NETWORK_ERROR:
+            return "Unable to connect to IRIS server. Please check your connection.";
+          case APIErrorType2.TIMEOUT:
+            return "Analysis request timed out. The file may be too large or the server is busy.";
+          case APIErrorType2.HTTP_ERROR:
+            if (error.statusCode === 429) {
+              return "Too many requests. Please wait a moment and try again.";
+            }
+            if (error.statusCode === 500) {
+              return "Server error. Please try again later.";
+            }
+            return `Server error (${error.statusCode}). Please try again.`;
+          case APIErrorType2.INVALID_RESPONSE:
+            return "Received invalid response from server. The analysis may have failed.";
+          case APIErrorType2.PARSE_ERROR:
+            return "Failed to parse server response. Please try again.";
+          default:
+            return "Analysis failed due to an unknown error.";
+        }
+      }
+    };
+    exports2.IRISAPIClient = IRISAPIClient2;
+  }
+});
+
+// ../iris-core/dist/utils/blockId.js
+var require_blockId = __commonJS({
+  "../iris-core/dist/utils/blockId.js"(exports2) {
+    "use strict";
+    var __createBinding = exports2 && exports2.__createBinding || (Object.create ? (function(o, m, k, k2) {
+      if (k2 === void 0) k2 = k;
+      var desc = Object.getOwnPropertyDescriptor(m, k);
+      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+        desc = { enumerable: true, get: function() {
+          return m[k];
+        } };
+      }
+      Object.defineProperty(o, k2, desc);
+    }) : (function(o, m, k, k2) {
+      if (k2 === void 0) k2 = k;
+      o[k2] = m[k];
+    }));
+    var __setModuleDefault = exports2 && exports2.__setModuleDefault || (Object.create ? (function(o, v) {
+      Object.defineProperty(o, "default", { enumerable: true, value: v });
+    }) : function(o, v) {
+      o["default"] = v;
+    });
+    var __importStar = exports2 && exports2.__importStar || /* @__PURE__ */ (function() {
+      var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function(o2) {
+          var ar = [];
+          for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
+          return ar;
+        };
+        return ownKeys(o);
+      };
+      return function(mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) {
+          for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        }
+        __setModuleDefault(result, mod);
+        return result;
+      };
+    })();
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.generateBlockId = generateBlockId2;
+    exports2.generateBlockIds = generateBlockIds;
+    var crypto2 = __importStar(require("crypto"));
+    function normalizeWhitespace(text) {
+      return text.trim().replace(/\s+/g, " ");
+    }
+    function generateBlockId2(block) {
+      const normalizedLabel = normalizeWhitespace(block.label);
+      const normalizedDescription = normalizeWhitespace(block.description);
+      const stringifiedRanges = JSON.stringify(block.ranges);
+      const signature = {
+        label: normalizedLabel,
+        description: normalizedDescription,
+        ranges: stringifiedRanges
+      };
+      const signatureString = JSON.stringify(signature);
+      const hash = crypto2.createHash("sha1").update(signatureString).digest("hex");
+      const blockId = `rb_${hash.slice(0, 12)}`;
+      return blockId;
+    }
+    function generateBlockIds(blocks) {
+      return blocks.map((block) => ({
+        ...block,
+        blockId: generateBlockId2(block)
+      }));
+    }
+  }
+});
+
+// ../iris-core/dist/index.js
+var require_dist = __commonJS({
+  "../iris-core/dist/index.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.generateBlockIds = exports2.generateBlockId = exports2.APIErrorType = exports2.APIError = exports2.IRISAPIClient = exports2.IRISCoreState = exports2.IRISAnalysisState = void 0;
+    var analysisState_1 = require_analysisState();
+    Object.defineProperty(exports2, "IRISAnalysisState", { enumerable: true, get: function() {
+      return analysisState_1.IRISAnalysisState;
+    } });
+    Object.defineProperty(exports2, "IRISCoreState", { enumerable: true, get: function() {
+      return analysisState_1.IRISCoreState;
+    } });
+    var irisClient_1 = require_irisClient();
+    Object.defineProperty(exports2, "IRISAPIClient", { enumerable: true, get: function() {
+      return irisClient_1.IRISAPIClient;
+    } });
+    Object.defineProperty(exports2, "APIError", { enumerable: true, get: function() {
+      return irisClient_1.APIError;
+    } });
+    Object.defineProperty(exports2, "APIErrorType", { enumerable: true, get: function() {
+      return irisClient_1.APIErrorType;
+    } });
+    var blockId_1 = require_blockId();
+    Object.defineProperty(exports2, "generateBlockId", { enumerable: true, get: function() {
+      return blockId_1.generateBlockId;
+    } });
+    Object.defineProperty(exports2, "generateBlockIds", { enumerable: true, get: function() {
+      return blockId_1.generateBlockIds;
+    } });
+  }
+});
+
 // src/extension.ts
 var extension_exports = {};
 __export(extension_exports, {
@@ -36,9 +632,11 @@ __export(extension_exports, {
 module.exports = __toCommonJS(extension_exports);
 var path = __toESM(require("path"));
 var vscode6 = __toESM(require("vscode"));
+var import_core4 = __toESM(require_dist());
 
 // src/state/irisState.ts
 var vscode2 = __toESM(require("vscode"));
+var import_core = __toESM(require_dist());
 
 // src/utils/logger.ts
 var vscode = __toESM(require("vscode"));
@@ -109,262 +707,99 @@ function createLogger(outputChannel, componentName) {
 }
 
 // src/state/irisState.ts
+var import_core2 = __toESM(require_dist());
 var IRISStateManager = class {
-  state;
-  outputChannel;
-  logger;
+  core;
   stateChangeEmitter;
-  /**
-   * Event fired when state changes
-   * Allows UI components to react to state transitions
-   */
   onStateChange;
   constructor(outputChannel) {
-    this.outputChannel = outputChannel;
-    this.logger = createLogger(outputChannel, "StateManager");
+    const logger = createLogger(outputChannel, "StateManager");
+    this.core = new import_core.IRISCoreState(logger);
     this.stateChangeEmitter = new vscode2.EventEmitter();
     this.onStateChange = this.stateChangeEmitter.event;
-    this.state = {
-      currentState: "IDLE" /* IDLE */,
-      analysisData: null,
-      activeFileUri: null,
-      selectionState: { selectedBlockId: null, currentSegmentIndex: 0 }
-    };
-    this.logger.info("State manager initialized", { initialState: "IDLE" /* IDLE */ });
+    this.core.onStateChange((state) => {
+      this.stateChangeEmitter.fire(state);
+    });
   }
-  /**
-   * Dispose resources
-   */
-  dispose() {
-    this.stateChangeEmitter.dispose();
-  }
-  /**
-   * Transition to ANALYZING state when analysis request starts
-   */
+  // State transitions
   startAnalysis(fileUri) {
-    const previousState = this.state.currentState;
-    if (previousState === "ANALYZING" /* ANALYZING */) {
-      this.logger.warn("Analysis already in progress, ignoring duplicate trigger", { fileUri });
-      return;
-    }
-    this.state.currentState = "ANALYZING" /* ANALYZING */;
-    this.state.activeFileUri = fileUri;
-    this.state.analysisData = null;
-    this.logStateTransition(previousState, "ANALYZING" /* ANALYZING */, fileUri);
-    this.stateChangeEmitter.fire("ANALYZING" /* ANALYZING */);
+    this.core.startAnalysis(fileUri);
   }
-  /**
-   * Transition to ANALYZED state on successful analysis with valid schema
-   */
   setAnalyzed(data) {
-    const previousState = this.state.currentState;
-    if (previousState !== "ANALYZING" /* ANALYZING */) {
-      this.logger.warn("Received analysis data without being in ANALYZING state", {
-        currentState: previousState,
-        fileUri: data.analyzedFileUri
-      });
-      return;
-    }
-    this.state.currentState = "ANALYZED" /* ANALYZED */;
-    this.state.analysisData = data;
-    this.logStateTransition(previousState, "ANALYZED" /* ANALYZED */, data.analyzedFileUri, {
-      blockCount: data.responsibilityBlocks.length,
-      fileIntent: data.fileIntent.substring(0, 50) + "..."
-      // Truncate for logging
-    });
-    this.stateChangeEmitter.fire("ANALYZED" /* ANALYZED */);
+    this.core.setAnalyzed(data);
   }
-  /**
-   * Transition to IDLE state on error or invalid schema
-   * Clears selection state since selected block becomes invalid
-   */
   setError(error, fileUri) {
-    const previousState = this.state.currentState;
-    this.state.currentState = "IDLE" /* IDLE */;
-    this.state.analysisData = null;
-    this.deselectBlock();
-    this.logStateTransition(previousState, "IDLE" /* IDLE */, fileUri, { error });
-    this.stateChangeEmitter.fire("IDLE" /* IDLE */);
+    this.core.setError(error, fileUri);
   }
-  /**
-   * Transition to STALE state when file is modified
-   * Clears selection state since block ranges may be invalidated
-   */
   setStale() {
-    const previousState = this.state.currentState;
-    if (previousState !== "ANALYZED" /* ANALYZED */) {
-      return;
-    }
-    const fileUri = this.state.analysisData?.analyzedFileUri;
-    this.state.currentState = "STALE" /* STALE */;
-    this.deselectBlock();
-    this.logStateTransition(previousState, "STALE" /* STALE */, fileUri);
-    this.stateChangeEmitter.fire("STALE" /* STALE */);
+    this.core.setStale();
   }
-  /**
-   * Reset to IDLE state (user-initiated or editor change)
-   * Clear selection state on reset
-   */
   reset() {
-    const previousState = this.state.currentState;
-    this.state.currentState = "IDLE" /* IDLE */;
-    this.state.analysisData = null;
-    this.state.activeFileUri = null;
-    this.deselectBlock();
-    this.logStateTransition(previousState, "IDLE" /* IDLE */, void 0, { reason: "reset" });
-    this.stateChangeEmitter.fire("IDLE" /* IDLE */);
+    this.core.reset();
   }
-  // ========================================
-  // READ-ONLY SELECTORS
-  // ========================================
-  /**
-   * Get current state enum value
-   */
+  // Selectors
   getCurrentState() {
-    return this.state.currentState;
+    return this.core.getCurrentState();
   }
-  /**
-   * Get complete analysis data (null if not in ANALYZED state)
-   */
   getAnalysisData() {
-    return this.state.analysisData;
+    return this.core.getAnalysisData();
   }
-  /**
-   * Get file intent only
-   */
   getFileIntent() {
-    return this.state.analysisData?.fileIntent ?? null;
+    return this.core.getFileIntent();
   }
-  /**
-   * Get responsibility blocks only
-   */
   getResponsibilityBlocks() {
-    return this.state.analysisData?.responsibilityBlocks ?? null;
+    return this.core.getResponsibilityBlocks();
   }
-  /**
-   * Get metadata only
-   */
   getMetadata() {
-    return this.state.analysisData?.metadata ?? null;
+    return this.core.getMetadata();
   }
-  /**
-   * Get analyzed file URI
-   */
   getAnalyzedFileUri() {
-    return this.state.analysisData?.analyzedFileUri ?? null;
+    return this.core.getAnalyzedFileUri();
   }
-  /**
-   * Get active file URI being tracked
-   */
   getActiveFileUri() {
-    return this.state.activeFileUri;
+    return this.core.getActiveFileUri();
   }
-  /**
-   * Check if analysis data is available
-   */
   hasAnalysisData() {
-    return this.state.analysisData !== null;
+    return this.core.hasAnalysisData();
   }
-  /**
-   * Check if currently analyzing
-   */
   isAnalyzing() {
-    return this.state.currentState === "ANALYZING" /* ANALYZING */;
+    return this.core.isAnalyzing();
   }
-  /**
-   * Check if analysis is stale
-   */
   isStale() {
-    return this.state.currentState === "STALE" /* STALE */;
+    return this.core.isStale();
   }
-  /**
-   * Get raw server response (for debugging or advanced use)
-   */
   getRawResponse() {
-    return this.state.analysisData?.rawResponse ?? null;
+    return this.core.getRawResponse();
   }
-  // ========================================
-  // SELECTION STATE MANAGEMENT (UI Refinement 2)
-  // ========================================
-  /**
-   * Select a block (pin/unpin model)
-   */
+  // Selection
   selectBlock(blockId) {
-    const previousBlockId = this.state.selectionState.selectedBlockId;
-    this.state.selectionState.selectedBlockId = blockId;
-    this.state.selectionState.currentSegmentIndex = 0;
-    this.logger.info("Block selected", {
-      blockId,
-      previousBlockId,
-      segmentIndex: 0
-    });
+    this.core.selectBlock(blockId);
   }
-  /**
-   * Deselect current block (pin/unpin model)
-   */
   deselectBlock() {
-    const previousBlockId = this.state.selectionState.selectedBlockId;
-    if (previousBlockId === null) {
-      return;
-    }
-    this.state.selectionState.selectedBlockId = null;
-    this.state.selectionState.currentSegmentIndex = 0;
-    this.logger.info("Block deselected", {
-      previousBlockId
-    });
+    this.core.deselectBlock();
   }
-  /**
-   * Get current segment index for selected block
-   */
   getCurrentSegmentIndex() {
-    return this.state.selectionState.currentSegmentIndex;
+    return this.core.getCurrentSegmentIndex();
   }
-  /**
-   * Set current segment index for navigation
-   */
   setCurrentSegmentIndex(index) {
-    const previousIndex = this.state.selectionState.currentSegmentIndex;
-    const blockId = this.state.selectionState.selectedBlockId;
-    this.state.selectionState.currentSegmentIndex = index;
-    this.logger.info("Segment navigation", {
-      blockId,
-      previousIndex,
-      currentIndex: index
-    });
+    this.core.setCurrentSegmentIndex(index);
   }
-  /**
-   * Get currently selected block ID
-   */
   getSelectedBlockId() {
-    return this.state.selectionState.selectedBlockId;
+    return this.core.getSelectedBlockId();
   }
-  /**
-   * Check if a block is currently selected
-   */
   isBlockSelected() {
-    return this.state.selectionState.selectedBlockId !== null;
+    return this.core.isBlockSelected();
   }
-  // ========================================
-  // LOGGING
-  // ========================================
-  /**
-   * Log state transition with structured metadata
-   */
-  logStateTransition(from, to, fileUri, metadata) {
-    const message = `State transition: ${from} \u2192 ${to}`;
-    const context = {
-      from,
-      to,
-      fileUri,
-      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-      ...metadata
-    };
-    this.logger.info(message, context);
+  // Lifecycle
+  dispose() {
+    this.core.dispose();
+    this.stateChangeEmitter.dispose();
   }
 };
 
 // src/webview/sidePanel.ts
 var vscode3 = __toESM(require("vscode"));
+var import_core3 = __toESM(require_dist());
 
 // src/utils/colorAssignment.ts
 var crypto = __toESM(require("crypto"));
@@ -614,7 +1049,7 @@ var IRISSidePanelProvider = class {
       type: "STATE_UPDATE",
       state: currentState
     });
-    if (currentState === "ANALYZED" /* ANALYZED */) {
+    if (currentState === import_core3.IRISAnalysisState.ANALYZED) {
       const data = this.stateManager.getAnalysisData();
       if (data) {
         this.sendAnalysisData(data);
@@ -835,16 +1270,16 @@ var IRISSidePanelProvider = class {
     }
     const currentState = this.stateManager.getCurrentState();
     switch (currentState) {
-      case "IDLE" /* IDLE */:
+      case import_core3.IRISAnalysisState.IDLE:
         this.renderIdleState();
         break;
-      case "ANALYZING" /* ANALYZING */:
+      case import_core3.IRISAnalysisState.ANALYZING:
         this.renderAnalyzingState();
         break;
-      case "ANALYZED" /* ANALYZED */:
+      case import_core3.IRISAnalysisState.ANALYZED:
         this.renderAnalyzedState();
         break;
-      case "STALE" /* STALE */:
+      case import_core3.IRISAnalysisState.STALE:
         this.renderStaleState();
         break;
     }
@@ -1491,26 +1926,6 @@ var IRISSidePanelProvider = class {
   }
 };
 
-// src/utils/blockId.ts
-var crypto2 = __toESM(require("crypto"));
-function normalizeWhitespace(text) {
-  return text.trim().replace(/\s+/g, " ");
-}
-function generateBlockId(block) {
-  const normalizedLabel = normalizeWhitespace(block.label);
-  const normalizedDescription = normalizeWhitespace(block.description);
-  const stringifiedRanges = JSON.stringify(block.ranges);
-  const signature = {
-    label: normalizedLabel,
-    description: normalizedDescription,
-    ranges: stringifiedRanges
-  };
-  const signatureString = JSON.stringify(signature);
-  const hash = crypto2.createHash("sha1").update(signatureString).digest("hex");
-  const blockId = `rb_${hash.slice(0, 12)}`;
-  return blockId;
-}
-
 // src/decorations/decorationManager.ts
 var vscode4 = __toESM(require("vscode"));
 var DecorationManager = class {
@@ -2024,262 +2439,6 @@ var SegmentNavigator = class {
   }
 };
 
-// src/api/irisClient.ts
-var APIError = class extends Error {
-  constructor(type, message, statusCode, originalError) {
-    super(message);
-    this.type = type;
-    this.statusCode = statusCode;
-    this.originalError = originalError;
-    this.name = "APIError";
-  }
-};
-var IRISAPIClient = class {
-  config;
-  logger;
-  constructor(config, logger) {
-    this.config = config;
-    this.logger = logger;
-    this.logger.info("API Client initialized", {
-      endpoint: config.endpoint,
-      timeout: config.timeout
-    });
-  }
-  /**
-   * Send analysis request with comprehensive error handling
-   */
-  async analyze(request) {
-    this.logger.info("Starting analysis request", {
-      filename: request.filename,
-      language: request.language,
-      sourceLength: request.source_code.length
-    });
-    try {
-      const response = await this.executeRequest(request);
-      const validatedResponse = this.validateResponse(response);
-      this.logger.info("Analysis request completed successfully", {
-        filename: request.filename,
-        blockCount: validatedResponse.responsibility_blocks.length
-      });
-      return validatedResponse;
-    } catch (error) {
-      if (error instanceof APIError) {
-        this.logger.error(`API Error: ${error.type}`, {
-          message: error.message,
-          statusCode: error.statusCode,
-          filename: request.filename
-        });
-        throw error;
-      }
-      this.logger.errorWithException("Unexpected error during analysis", error, {
-        filename: request.filename
-      });
-      throw new APIError(
-        "NETWORK_ERROR" /* NETWORK_ERROR */,
-        "Unexpected error during analysis request",
-        void 0,
-        error
-      );
-    }
-  }
-  /**
-   * Execute HTTP request with timeout
-   */
-  async executeRequest(request) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-    }, this.config.timeout);
-    try {
-      this.logger.debug("Sending POST request", {
-        endpoint: this.config.endpoint,
-        timeout: this.config.timeout
-      });
-      const response = await fetch(this.config.endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(request),
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-      this.logger.debug("Received response", {
-        status: response.status,
-        statusText: response.statusText,
-        contentType: response.headers.get("content-type")
-      });
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "Unable to read error response");
-        throw new APIError(
-          "HTTP_ERROR" /* HTTP_ERROR */,
-          `Server returned ${response.status}: ${response.statusText}`,
-          response.status
-        );
-      }
-      try {
-        const json = await response.json();
-        return json;
-      } catch (parseError) {
-        throw new APIError(
-          "PARSE_ERROR" /* PARSE_ERROR */,
-          "Failed to parse server response as JSON",
-          response.status,
-          parseError
-        );
-      }
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error instanceof Error && error.name === "AbortError") {
-        throw new APIError(
-          "TIMEOUT" /* TIMEOUT */,
-          `Request timeout after ${this.config.timeout}ms`
-        );
-      }
-      if (error instanceof TypeError) {
-        throw new APIError(
-          "NETWORK_ERROR" /* NETWORK_ERROR */,
-          `Network error: ${error.message}`,
-          void 0,
-          error
-        );
-      }
-      if (error instanceof APIError) {
-        throw error;
-      }
-      throw new APIError(
-        "NETWORK_ERROR" /* NETWORK_ERROR */,
-        "Unknown network error",
-        void 0,
-        error
-      );
-    }
-  }
-  /**
-   * Validate response schema defensively
-   */
-  validateResponse(response) {
-    this.logger.debug("Validating response schema");
-    if (!response || typeof response !== "object") {
-      throw new APIError(
-        "INVALID_RESPONSE" /* INVALID_RESPONSE */,
-        "Response is not an object"
-      );
-    }
-    const record = response;
-    if (typeof record.file_intent !== "string") {
-      throw new APIError(
-        "INVALID_RESPONSE" /* INVALID_RESPONSE */,
-        'Missing or invalid "file_intent" field (expected string)'
-      );
-    }
-    if (!Array.isArray(record.responsibility_blocks)) {
-      throw new APIError(
-        "INVALID_RESPONSE" /* INVALID_RESPONSE */,
-        'Missing or invalid "responsibility_blocks" field (expected array)'
-      );
-    }
-    const blocks = record.responsibility_blocks;
-    for (let i = 0; i < blocks.length; i++) {
-      this.validateResponsibilityBlock(blocks[i], i);
-    }
-    const metadata = record.metadata ?? {};
-    if (typeof metadata !== "object" || metadata === null || Array.isArray(metadata)) {
-      throw new APIError(
-        "INVALID_RESPONSE" /* INVALID_RESPONSE */,
-        'Invalid "metadata" field (expected object)'
-      );
-    }
-    this.logger.debug("Response validation successful", {
-      blockCount: blocks.length,
-      fileIntentLength: record.file_intent.length
-    });
-    return {
-      file_intent: record.file_intent,
-      metadata,
-      responsibility_blocks: blocks
-    };
-  }
-  /**
-   * Validate individual responsibility block
-   */
-  validateResponsibilityBlock(block, index) {
-    if (!block || typeof block !== "object") {
-      throw new APIError(
-        "INVALID_RESPONSE" /* INVALID_RESPONSE */,
-        `Responsibility block at index ${index} is not an object`
-      );
-    }
-    const record = block;
-    if (typeof record.description !== "string") {
-      throw new APIError(
-        "INVALID_RESPONSE" /* INVALID_RESPONSE */,
-        `Block ${index}: missing or invalid "description" field (expected string)`
-      );
-    }
-    if (typeof record.label !== "string") {
-      throw new APIError(
-        "INVALID_RESPONSE" /* INVALID_RESPONSE */,
-        `Block ${index}: missing or invalid "label" field (expected string)`
-      );
-    }
-    if (!Array.isArray(record.ranges)) {
-      throw new APIError(
-        "INVALID_RESPONSE" /* INVALID_RESPONSE */,
-        `Block ${index}: missing or invalid "ranges" field (expected array)`
-      );
-    }
-    const ranges = record.ranges;
-    for (let i = 0; i < ranges.length; i++) {
-      const range = ranges[i];
-      if (!Array.isArray(range) || range.length !== 2) {
-        throw new APIError(
-          "INVALID_RESPONSE" /* INVALID_RESPONSE */,
-          `Block ${index}, range ${i}: invalid format (expected [number, number])`
-        );
-      }
-      const [start, end] = range;
-      if (typeof start !== "number" || typeof end !== "number") {
-        throw new APIError(
-          "INVALID_RESPONSE" /* INVALID_RESPONSE */,
-          `Block ${index}, range ${i}: invalid types (expected numbers)`
-        );
-      }
-      if (start < 1 || end < 1 || start > end) {
-        throw new APIError(
-          "INVALID_RESPONSE" /* INVALID_RESPONSE */,
-          `Block ${index}, range ${i}: invalid values (start=${start}, end=${end})`
-        );
-      }
-    }
-  }
-  /**
-   * Get user-friendly error message from API error
-   */
-  static getUserMessage(error) {
-    switch (error.type) {
-      case "NETWORK_ERROR" /* NETWORK_ERROR */:
-        return "Unable to connect to IRIS server. Please check your connection.";
-      case "TIMEOUT" /* TIMEOUT */:
-        return "Analysis request timed out. The file may be too large or the server is busy.";
-      case "HTTP_ERROR" /* HTTP_ERROR */:
-        if (error.statusCode === 429) {
-          return "Too many requests. Please wait a moment and try again.";
-        }
-        if (error.statusCode === 500) {
-          return "Server error. Please try again later.";
-        }
-        return `Server error (${error.statusCode}). Please try again.`;
-      case "INVALID_RESPONSE" /* INVALID_RESPONSE */:
-        return "Received invalid response from server. The analysis may have failed.";
-      case "PARSE_ERROR" /* PARSE_ERROR */:
-        return "Failed to parse server response. Please try again.";
-      default:
-        return "Analysis failed due to an unknown error.";
-    }
-  }
-};
-
 // src/extension.ts
 var OUTPUT_CHANNEL_NAME = "IRIS";
 var SUPPORTED_LANGUAGES = /* @__PURE__ */ new Set([
@@ -2302,7 +2461,7 @@ function activate(context) {
   context.subscriptions.push(decorationManager);
   const segmentNavigator = new SegmentNavigator(outputChannel);
   context.subscriptions.push(segmentNavigator);
-  const apiClient = new IRISAPIClient(
+  const apiClient = new import_core4.IRISAPIClient(
     {
       endpoint: ANALYZE_ENDPOINT,
       timeout: REQUEST_TIMEOUT_MS
@@ -2311,7 +2470,7 @@ function activate(context) {
   );
   stateManager.onStateChange((newState) => {
     const activeEditor = vscode6.window.activeTextEditor;
-    if (newState === "IDLE" /* IDLE */ || newState === "STALE" /* STALE */) {
+    if (newState === import_core4.IRISAnalysisState.IDLE || newState === import_core4.IRISAnalysisState.STALE) {
       if (activeEditor) {
         decorationManager.clearAllDecorations(activeEditor);
       }
@@ -2455,7 +2614,7 @@ function activate(context) {
             }
             const normalizedBlocks = response.responsibility_blocks.map((block) => ({
               ...block,
-              blockId: generateBlockId(block)
+              blockId: (0, import_core4.generateBlockId)(block)
             }));
             stateManager.setAnalyzed({
               fileIntent: response.file_intent,
@@ -2475,8 +2634,8 @@ function activate(context) {
             });
             vscode6.window.showInformationMessage("IRIS: Analysis completed successfully.");
           } catch (error) {
-            if (error instanceof APIError) {
-              const userMessage = IRISAPIClient.getUserMessage(error);
+            if (error instanceof import_core4.APIError) {
+              const userMessage = import_core4.IRISAPIClient.getUserMessage(error);
               logger.error("API error during analysis", {
                 type: error.type,
                 statusCode: error.statusCode,
@@ -2504,7 +2663,7 @@ function activate(context) {
   context.subscriptions.push(
     vscode6.workspace.onDidChangeTextDocument((event) => {
       const currentState = stateManager.getCurrentState();
-      if (currentState !== "ANALYZED" /* ANALYZED */) {
+      if (currentState !== import_core4.IRISAnalysisState.ANALYZED) {
         return;
       }
       const analyzedFileUri = stateManager.getAnalyzedFileUri();

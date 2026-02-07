@@ -2,13 +2,12 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { IRISStateManager, IRISAnalysisState } from './state/irisState';
+import { IRISAnalysisState, generateBlockId, IRISAPIClient, APIError, APIErrorType } from '@iris/core';
+import { IRISStateManager } from './state/irisState';
 import { IRISSidePanelProvider } from './webview/sidePanel';
-import { generateBlockId } from './utils/blockId';
 import { DecorationManager } from './decorations/decorationManager';
 import { SegmentNavigator } from './decorations/segmentNavigator';
 import { createLogger } from './utils/logger';
-import { IRISAPIClient, APIError, APIErrorType } from './api/irisClient';
 
 
 const OUTPUT_CHANNEL_NAME = 'IRIS';

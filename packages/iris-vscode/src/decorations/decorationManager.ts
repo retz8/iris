@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
-import * as crypto from 'crypto';
-import type { NormalizedResponsibilityBlock } from '../state/irisState';
+import type { NormalizedResponsibilityBlock } from '@iris/core';
 import { createLogger, Logger } from '../utils/logger';
 import { generateBlockColor, generateBlockColorOpaque } from '../utils/colorAssignment';
 

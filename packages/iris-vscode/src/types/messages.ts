@@ -3,7 +3,8 @@
  * All interactions use blockId as sole identity
  */
 
-import { IRISAnalysisState, AnalysisMetadata, NormalizedResponsibilityBlock } from '../state/irisState';
+import { IRISAnalysisState } from '@iris/core';
+import type { AnalysisMetadata, NormalizedResponsibilityBlock } from '@iris/core';
 
 // ========================================
 // WEBVIEW → EXTENSION MESSAGES

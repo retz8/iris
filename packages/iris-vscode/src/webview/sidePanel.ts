@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
-import { IRISStateManager, IRISAnalysisState, AnalysisData } from '../state/irisState';
+import { IRISAnalysisState } from '@iris/core';
+import type { AnalysisData } from '@iris/core';
+import { IRISStateManager } from '../state/irisState';
 import { DecorationManager } from '../decorations/decorationManager';
 import { SegmentNavigator } from '../decorations/segmentNavigator';
 import { createLogger, Logger } from '../utils/logger';
