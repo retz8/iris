@@ -12,16 +12,16 @@ The backend runs a single-shot LLM analysis pipeline that produces File Intent a
 
 ```mermaid
 flowchart TD
-    A[User requests analysis<br/>(filename, language, source)] --> B[Compute SHA-256<br/>content hash]
-    B --> C{Cache system<br/>initialized?}
-    C -- No --> H[Call LLM<br/>(single-shot analysis)]
-    C -- Yes --> D{Memory LRU<br/>hit?}
-    D -- Yes --> E[Return cached result<br/>(memory hit)]
-    D -- No --> F{Disk cache<br/>hit?}
-    F -- Yes --> G[Promote to memory<br/>return cached result]
+    A[User requests analysis\n(filename, language, source)] --> B[Compute SHA-256\ncontent hash]
+    B --> C{Cache system\ninitialized?}
+    C -- No --> H[Call LLM\n(single-shot analysis)]
+    C -- Yes --> D{Memory LRU\nhit?}
+    D -- Yes --> E[Return cached result\n(memory hit)]
+    D -- No --> F{Disk cache\nhit?}
+    F -- Yes --> G[Promote to memory\nreturn cached result]
     F -- No --> H
-    H --> I[Store result<br/>memory + disk]
-    I --> J[Return result<br/>(cache miss)]
+    H --> I[Store result\nmemory + disk]
+    I --> J[Return result\n(cache miss)]
 ```
 
 Notes:
