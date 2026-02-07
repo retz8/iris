@@ -83,3 +83,15 @@ Key: API response line numbers are ONE-based; VS Code uses ZERO-based. The decor
 - **PEP 8** for Python style
 - **Test naming**: `test_should_<expected>_when_<condition>`
 - **Debugging**: determine root cause before fixing symptoms; remove debug code before committing
+
+## Documentation Updates on Request
+
+When the user explicitly asks after changes are made, update the following
+current-status documents based on the actual modifications in that session:
+- `backend/current-status.md`
+- `vscode-extension/current-status.md`
+
+Guidelines:
+- Reflect only the changes that actually occurred.
+- Keep updates concise and action-focused.
+- Include constraints/limitations if they changed.
