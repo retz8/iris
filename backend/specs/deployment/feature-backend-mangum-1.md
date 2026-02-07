@@ -4,13 +4,11 @@ version: 1.0
 date_created: 2026-02-07
 last_updated: 2026-02-07
 owner: IRIS Backend
-status: 'Planned'
+status: 'Implemented'
 tags: [feature, infrastructure, backend]
 ---
 
 # Introduction
-
-![Status: Planned](https://img.shields.io/badge/status-Planned-blue)
 
 This plan defines the minimal backend code changes required to expose the existing Flask app through a Mangum Lambda handler while keeping local development behavior unchanged.
 
