@@ -116,6 +116,12 @@ class IrisAgent:
                 cached_result = await self.analysis_cache.get(file_hash, file_size)
                 if cached_result is not None:
                     logger.info(f"Cache hit for {filename}")
+                    cached_result["metadata"] = {
+                        "input_tokens": 0,
+                        "output_tokens": 0,
+                        "estimated_cost_usd": 0.0,
+                        "cache_hit": 1,
+                    }
                     return cached_result
             except Exception as e:
                 logger.warning(
@@ -204,7 +210,30 @@ class IrisAgent:
                     logger.warning(f"Failed to cache analysis result: {e}")
                     # Continue - cache failure should not prevent returning the result
 
-            return content.model_dump()
+            result = content.model_dump()
+
+            # Build usage metadata for analytics (TASK-008)
+            input_tokens = 0
+            output_tokens = 0
+            estimated_cost_usd = 0.0
+            if response.usage:
+                input_tokens = response.usage.input_tokens or 0
+                output_tokens = response.usage.output_tokens or 0
+                cached_tokens = getattr(response.usage, "cached_input_tokens", 0) or 0
+                uncached_input = input_tokens - cached_tokens
+                estimated_cost_usd = (
+                    uncached_input * CacheMonitor.PROMPT_TOKEN_COST
+                    + cached_tokens * CacheMonitor.CACHED_TOKEN_COST
+                    + output_tokens * CacheMonitor.COMPLETION_TOKEN_COST
+                )
+
+            result["metadata"] = {
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "estimated_cost_usd": round(estimated_cost_usd, 6),
+                "cache_hit": 0,
+            }
+            return result
 
         except Exception as e:
             logger.error(f"LLM inference failed: {e}")

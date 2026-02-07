@@ -35,9 +35,9 @@ Implement structured JSON logging with CloudWatch Embedded Metrics Format (EMF) 
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-001 | Create [backend/src/utils/analytics_emf.py](backend/src/utils/analytics_emf.py) with helpers to build EMF payloads for `analysis_requested`, `analysis_started`, `analysis_completed`, `analysis_failed`, including `_aws` metadata, `Environment`, `Endpoint`, and optional `ErrorType`. | | |
-| TASK-002 | Implement `emit_emf_event(payload: dict) -> None` using ``logging` or `print(json.dumps(...))` to guarantee JSON-only output. | | |
-| TASK-003 | Add a small environment resolver (e.g., `IRIS_ENV` from `os.getenv`) so `Environment` is always present without hardcoding. | | |
+| TASK-001 | Create [backend/src/utils/analytics_emf.py](backend/src/utils/analytics_emf.py) with helpers to build EMF payloads for `analysis_requested`, `analysis_started`, `analysis_completed`, `analysis_failed`, including `_aws` metadata, `Environment`, `Endpoint`, and optional `ErrorType`. | Yes | 2026-02-07 |
+| TASK-002 | Implement `emit_emf_event(payload: dict) -> None` using ``logging` or `print(json.dumps(...))` to guarantee JSON-only output. | Yes | 2026-02-07 |
+| TASK-003 | Add a small environment resolver (e.g., `IRIS_ENV` from `os.getenv`) so `Environment` is always present without hardcoding. | Yes | 2026-02-07 |
 
 ### Implementation Phase 2
 
@@ -45,10 +45,10 @@ Implement structured JSON logging with CloudWatch Embedded Metrics Format (EMF) 
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-004 | Update [backend/src/routes.py](backend/src/routes.py) to emit `analysis_requested` after request parsing with `CodeLengthChars` and `EstimatedInputTokens` (e.g., simple chars-per-token heuristic). | | |
-| TASK-005 | Emit `analysis_started` before LLM execution with `TotalPromptTokens` and `CacheHit` (0/1). For cache hits, set `CacheHit=1` and `TotalPromptTokens=0` unless real prompt stats are available. | | |
-| TASK-006 | Emit `analysis_completed` on success with `TotalLatencyMs`, `InputTokens`, `OutputTokens`, `EstimatedCostUsd`, `ResponsibilityBlockCount` (derived from result). | | |
-| TASK-007 | Emit `analysis_failed` on any failure path with `ErrorType`, `FailureCount=1`, and `LatencyUntilFailureMs`. Ensure no high-cardinality dimensions are added. | | |
+| TASK-004 | Update [backend/src/routes.py](backend/src/routes.py) to emit `analysis_requested` after request parsing with `CodeLengthChars` and `EstimatedInputTokens` (e.g., simple chars-per-token heuristic). | Yes | 2026-02-07 |
+| TASK-005 | Emit `analysis_started` before LLM execution with `TotalPromptTokens` and `CacheHit` (0/1). For cache hits, set `CacheHit=1` and `TotalPromptTokens=0` unless real prompt stats are available. | Yes | 2026-02-07 |
+| TASK-006 | Emit `analysis_completed` on success with `TotalLatencyMs`, `InputTokens`, `OutputTokens`, `EstimatedCostUsd`, `ResponsibilityBlockCount` (derived from result). | Yes | 2026-02-07 |
+| TASK-007 | Emit `analysis_failed` on any failure path with `ErrorType`, `FailureCount=1`, and `LatencyUntilFailureMs`. Ensure no high-cardinality dimensions are added. | Yes | 2026-02-07 |
 
 ### Implementation Phase 3
 
@@ -56,8 +56,8 @@ Implement structured JSON logging with CloudWatch Embedded Metrics Format (EMF) 
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-008 | Update [backend/src/agent.py](backend/src/agent.py) to include LLM usage stats in the returned `metadata` (input/output tokens, prompt tokens, estimated cost if available). | | |
-| TASK-009 | Ensure cache-hit responses provide `cache_hit=1` metadata so `analysis_started` and `analysis_completed` can report cache-related metrics consistently. | | |
+| TASK-008 | Update [backend/src/agent.py](backend/src/agent.py) to include LLM usage stats in the returned `metadata` (input/output tokens, prompt tokens, estimated cost if available). | Yes | 2026-02-07 |
+| TASK-009 | Ensure cache-hit responses provide `cache_hit=1` metadata so `analysis_started` and `analysis_completed` can report cache-related metrics consistently. | Yes | 2026-02-07 |
 
 ## 3. Alternatives
 
