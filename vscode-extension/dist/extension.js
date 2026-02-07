@@ -570,11 +570,19 @@ var IRISSidePanelProvider = class {
       this.logger.warn("Block not found", { blockId });
       return;
     }
+    this.decorationManager.clearCurrentHighlight(activeEditor);
     this.stateManager.selectBlock(blockId);
     const totalSegments = block.ranges.length;
     const currentSegment = 0;
     this.segmentNavigator.showNavigator(blockId, currentSegment, totalSegments);
     this.decorationManager.applyBlockSelection(activeEditor, block);
+    if (block.ranges.length > 0) {
+      const [startLine] = block.ranges[0];
+      const position = new vscode3.Position(startLine - 1, 0);
+      const range = new vscode3.Range(position, position);
+      activeEditor.revealRange(range, vscode3.TextEditorRevealType.InCenter);
+      activeEditor.selection = new vscode3.Selection(position, position);
+    }
     vscode3.commands.executeCommand("setContext", "iris.blockSelected", true);
     this.logger.info("Block selected with segment navigator", {
       blockId,
@@ -930,6 +938,8 @@ var IRISSidePanelProvider = class {
       font-family: var(--vscode-editor-font-family); /* TASK-007: Use editor font per REQ-002 */
       font-size: 13px; /* TASK-007: Refined font size */
       line-height: 1.6; /* TASK-007: Improved line height for readability */
+      overflow-y: auto;
+      scrollbar-gutter: stable; /* Reserve scrollbar space to prevent layout shift on hover */
     }
     
     /* Phase 2: Removed h2 styling as section headers removed per REQ-013, REQ-014 */

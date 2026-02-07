@@ -251,19 +251,31 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       return;
     }
 
+    // Clear previous selection's decorations before applying new one
+    this.decorationManager.clearCurrentHighlight(activeEditor);
+
     // REQ-042 (1): Store selection state in state manager
     this.stateManager.selectBlock(blockId);
-    
+
     // REQ-042 (3): Count segments (distinct ranges)
     const totalSegments = block.ranges.length;
     const currentSegment = 0; // Always start at first segment
-    
+
     // REQ-042 (4): Show segment navigator with segment count
     this.segmentNavigator.showNavigator(blockId, currentSegment, totalSegments);
-    
+
     // REQ-042 (5): Apply highlighting decoration to all block segments (REQ-053)
     this.decorationManager.applyBlockSelection(activeEditor, block);
-    
+
+    // Scroll editor to first segment of the selected block
+    if (block.ranges.length > 0) {
+      const [startLine] = block.ranges[0];
+      const position = new vscode.Position(startLine - 1, 0);
+      const range = new vscode.Range(position, position);
+      activeEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+      activeEditor.selection = new vscode.Selection(position, position);
+    }
+
     // REQ-048: Update VS Code context for keybinding
     vscode.commands.executeCommand('setContext', 'iris.blockSelected', true);
     
@@ -714,6 +726,8 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       font-family: var(--vscode-editor-font-family); /* TASK-007: Use editor font per REQ-002 */
       font-size: 13px; /* TASK-007: Refined font size */
       line-height: 1.6; /* TASK-007: Improved line height for readability */
+      overflow-y: auto;
+      scrollbar-gutter: stable; /* Reserve scrollbar space to prevent layout shift on hover */
     }
     
     /* Phase 2: Removed h2 styling as section headers removed per REQ-013, REQ-014 */
