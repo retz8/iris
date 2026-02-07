@@ -115,11 +115,13 @@ async def analyze():
                 )
 
         except Exception as iris_error:
-            return jsonify(
-                {
-                    "success": False,
-                    "error": f"IRIS analysis failed: {iris_error}",
-                },
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": f"IRIS analysis failed: {iris_error}",
+                    }
+                ),
                 500,
             )
 

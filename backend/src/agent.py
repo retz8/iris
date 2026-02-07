@@ -194,7 +194,10 @@ class IrisAgent:
 
                     result_obj = AnalysisResult(
                         file_intent=content.file_intent,
-                        responsibility_blocks=content.responsibility_blocks,
+                        responsibility_blocks=[
+                            block.model_dump()
+                            for block in content.responsibility_blocks
+                        ],
                     )
                     await self.analysis_cache.set(file_hash, result_obj)
                 except Exception as e:
