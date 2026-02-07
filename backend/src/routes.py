@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from datetime import datetime
 
 from flask import Blueprint, jsonify, request
+
+logger = logging.getLogger(__name__)
 
 from config import SUPPORTED_LANGUAGES, SINGLE_SHOT_MODEL
 from agent import IrisAgent, IrisError
@@ -19,7 +22,8 @@ _agent_init_error = None
 try:
     _iris_agent = IrisAgent(model=SINGLE_SHOT_MODEL)
 except Exception as exc:  # pragma: no cover - initialization fallback
-    _agent_init_error = str(exc)
+    logger.error(f"IRIS agent initialization failed: {exc}", exc_info=True)
+    _agent_init_error = True
 
 
 @iris_bp.route("/analyze", methods=["POST"])
@@ -82,10 +86,10 @@ async def analyze():
             jsonify(
                 {
                     "success": False,
-                    "error": f"IRIS agent unavailable: {_agent_init_error}",
+                    "error": "IRIS agent is currently unavailable",
                 }
             ),
-            500,
+            503,
         )
 
     try:
@@ -115,11 +119,12 @@ async def analyze():
                 )
 
         except Exception as iris_error:
+            logger.error(f"IRIS analysis failed: {iris_error}", exc_info=True)
             return (
                 jsonify(
                     {
                         "success": False,
-                        "error": f"IRIS analysis failed: {iris_error}",
+                        "error": "IRIS analysis failed",
                     }
                 ),
                 500,
@@ -140,14 +145,12 @@ async def analyze():
         return jsonify(response), 200
 
     except Exception as exc:  # pragma: no cover - runtime protection
-        import traceback
-
-        traceback.print_exc()
+        logger.error(f"Unexpected error during IRIS analysis: {exc}", exc_info=True)
         return (
             jsonify(
                 {
                     "success": False,
-                    "error": f"Unexpected error during IRIS analysis: {exc}",
+                    "error": "An unexpected error occurred",
                 }
             ),
             500,
@@ -162,7 +165,7 @@ def health():
             {
                 "status": "ok",
                 "agent_ready": _iris_agent is not None,
-                "agent_error": _agent_init_error,
+                "agent_error": bool(_agent_init_error),
             }
         ),
         200,
