@@ -1,8 +1,6 @@
 /**
  * Message Protocol Type Definitions for IRIS Extension
- * Phase 6: Webview ↔ Extension Messaging per GOAL-006
- * 
- * All interactions use blockId as sole identity per REQ-005
+ * All interactions use blockId as sole identity
  */
 
 import { IRISAnalysisState, AnalysisMetadata, NormalizedResponsibilityBlock } from '../state/irisState';
@@ -29,8 +27,6 @@ export interface BlockHoverMessage {
 
 /**
  * Sent when user clicks on a responsibility block to select/pin it
- * UI Refinement 2: Pin/unpin selection model
- * Per REQ-029: Replaces BLOCK_CLICK
  */
 export interface BlockSelectedMessage {
   type: 'BLOCK_SELECTED';
@@ -39,8 +35,6 @@ export interface BlockSelectedMessage {
 
 /**
  * Sent when user clicks on an already-selected block to deselect/unpin it
- * UI Refinement 2: Pin/unpin toggle model
- * Per REQ-030: Block deselection/unpin on repeat click (replaces BLOCK_DOUBLE_CLICK)
  */
 export interface BlockDeselectedMessage {
   type: 'BLOCK_DESELECTED';
@@ -49,8 +43,6 @@ export interface BlockDeselectedMessage {
 
 /**
  * Sent when user navigates between segments of a scattered block
- * UI Refinement 2: Segment navigation with keyboard or buttons
- * Per REQ-031: Replaces BLOCK_SELECT
  */
 export interface SegmentNavigatedMessage {
   type: 'SEGMENT_NAVIGATED';
@@ -69,8 +61,6 @@ export interface BlockClearMessage {
 
 /**
  * Sent when user presses Escape key to deselect current block
- * UI Refinement 2: Simplified escape handling for pin/unpin model
- * Per REQ-032: Replaces FOCUS_CLEAR
  */
 export interface EscapePressedMessage {
   type: 'ESCAPE_PRESSED';
@@ -78,8 +68,6 @@ export interface EscapePressedMessage {
 
 /**
  * Union type for all messages from Webview to Extension
- * Per TASK-0063: Strict TypeScript discriminated unions
- * UI Refinement 2: Updated for pin/unpin selection model
  */
 export type WebviewMessage = 
   | WebviewReadyMessage
@@ -96,7 +84,6 @@ export type WebviewMessage =
 
 /**
  * Sent when extension state changes
- * Webview uses this to update UI state per UX-001
  */
 export interface StateUpdateMessage {
   type: 'STATE_UPDATE';
@@ -120,7 +107,6 @@ export interface AnalysisDataMessage {
 
 /**
  * Sent when analysis becomes stale due to file modification
- * Per STATE-003, UX-001: Webview displays "Outdated analysis" indicator
  */
 export interface AnalysisStaleMessage {
   type: 'ANALYSIS_STALE';
@@ -137,7 +123,6 @@ export interface ErrorMessage {
 
 /**
  * Sent from extension to webview to trigger segment navigation
- * REQ-079, REQ-080: Keyboard shortcuts trigger navigation via extension commands
  */
 export interface NavigateSegmentMessage {
   type: 'NAVIGATE_SEGMENT';
@@ -146,7 +131,6 @@ export interface NavigateSegmentMessage {
 
 /**
  * Union type for all messages from Extension to Webview
- * Per TASK-0063: Strict TypeScript discriminated unions
  */
 export type ExtensionMessage = 
   | StateUpdateMessage
@@ -161,7 +145,6 @@ export type ExtensionMessage =
 
 /**
  * Type guard for WebviewMessage validation
- * Per TASK-0067: Validate message types before processing
  */
 export function isWebviewMessage(message: any): message is WebviewMessage {
   if (!message || typeof message !== 'object' || typeof message.type !== 'string') {

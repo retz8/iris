@@ -10,13 +10,6 @@ import { SegmentNavigator } from './decorations/segmentNavigator';
 import { createLogger } from './utils/logger';
 import { IRISAPIClient, APIError, APIErrorType } from './api/irisClient';
 
-/**
- * Phase 10: UX Polish & Stability
- * TASK-0104: Structured logging per LOG-001, LOG-002
- * TASK-0101: Global error boundary for server calls
- * TASK-0102: Loading and disabled states
- * TASK-0105: Full cleanup on deactivation
- */
 
 const OUTPUT_CHANNEL_NAME = 'IRIS';
 const SUPPORTED_LANGUAGES = new Set([
@@ -36,15 +29,14 @@ export function activate(context: vscode.ExtensionContext) {
 	const outputChannel = vscode.window.createOutputChannel(OUTPUT_CHANNEL_NAME);
 	context.subscriptions.push(outputChannel);
 
-	// TASK-0104: Initialize structured logging per LOG-001, LOG-002
 	const logger = createLogger(outputChannel, 'Extension');
 	logger.info('Extension activated', { version: context.extension.packageJSON.version });
 
-	// Initialize state manager (TASK-0042, STATE-001)
+	// Initialize state manager
 	const stateManager = new IRISStateManager(outputChannel);
 	context.subscriptions.push(stateManager);
 
-	// Initialize decoration manager (Phase 7: GOAL-007)
+	// Initialize decoration manager
 	const decorationManager = new DecorationManager(outputChannel);
 	context.subscriptions.push(decorationManager);
 
@@ -52,7 +44,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const segmentNavigator = new SegmentNavigator(outputChannel);
 	context.subscriptions.push(segmentNavigator);
 
-	// TASK-0101: Initialize API client with error boundary
+	// Initialize API client with error boundary
 	const apiClient = new IRISAPIClient(
 		{
 			endpoint: ANALYZE_ENDPOINT,
@@ -61,12 +53,11 @@ export function activate(context: vscode.ExtensionContext) {
 		createLogger(outputChannel, 'APIClient')
 	);
 
-	// Listen to state changes to manage decorations (ED-003)
+	// Listen to state changes to manage decorations
 	stateManager.onStateChange((newState) => {
 		const activeEditor = vscode.window.activeTextEditor;
 		
-		// Clear decorations on IDLE or STALE state per ED-003, TASK-0075
-		// UI Refinement 2 (REQ-090): Also clear block selection state on IDLE/STALE transition
+		// Clear decorations on IDLE or STALE state
 		if (newState === IRISAnalysisState.IDLE || newState === IRISAnalysisState.STALE) {
 			if (activeEditor) {
 				decorationManager.clearAllDecorations(activeEditor);
@@ -76,7 +67,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	// Register webview side panel provider (TASK-0052)
+	// Register webview side panel provider
 	const sidePanelProvider = new IRISSidePanelProvider(
 		context.extensionUri,
 		stateManager,
@@ -92,8 +83,8 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 	context.subscriptions.push(sidePanelProvider);
 
-	// REQ-046, REQ-081, REQ-093: Register Esc key command for exiting block selection (UI Refinement 2)
-	// Pin/unpin selection model: Esc key deselects currently selected block
+	// Register Esc key command for exiting block selection
+	// Esc key deselects currently selected block
 	const exitFocusModeCommand = vscode.commands.registerCommand('iris.exitFocusMode', async () => {
 		try {
 			logger.info('Command executed: iris.exitFocusMode (deselect block)');
@@ -104,24 +95,24 @@ export function activate(context: vscode.ExtensionContext) {
 				return;
 			}
 
-			// REQ-046: Check if block is selected
+			// Check if block is selected
 			const selectedBlockId = stateManager.getSelectedBlockId();
 			if (selectedBlockId) {
 				logger.info('Deselecting block via Esc key', { blockId: selectedBlockId });
 				
-				// REQ-045: Deselect block and clear state
+				// Deselect block and clear state
 				stateManager.deselectBlock();
 
 				// Clear decorations
 				decorationManager.clearCurrentHighlight(activeEditor);
 
-				// REQ-045, REQ-043: Hide segment navigator
+				// Hide segment navigator
 				segmentNavigator.hideNavigator();
 
-				// REQ-048: Update VS Code context
+				// Update VS Code context
 				vscode.commands.executeCommand('setContext', 'iris.blockSelected', false);
 
-				// REQ-045: Notify webview of deselection via STATE_UPDATE message
+				// Notify webview of deselection via STATE_UPDATE message
 				sidePanelProvider.sendStateUpdate();
 				logger.info('Block deselected via Esc key');
 			} else {
@@ -133,14 +124,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(exitFocusModeCommand);
 
-	// REQ-079: Register command for navigating to previous segment
-	// Triggered by Ctrl+Up keyboard shortcut (REQ-075)
-	// Integration flow:
-	// 1. User presses Ctrl+Up while block is selected
-	// 2. VS Code triggers this command (if iris.blockSelected context is true)
-	// 3. Extension sends navigation command to webview
-	// 4. Webview calculates new segment index and sends SEGMENT_NAVIGATED message back
-	// 5. Extension scrolls editor to new segment position (REQ-082 to REQ-085)
+	// Register command for navigating to previous segment (Ctrl+Up)
 	const navigatePreviousSegmentCommand = vscode.commands.registerCommand('iris.navigatePreviousSegment', async () => {
 		try {
 			logger.info('Command executed: iris.navigatePreviousSegment');
@@ -152,7 +136,6 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 
 			// Send message to webview to navigate to previous segment
-			// The webview handles the actual navigation logic per REQ-023
 			sidePanelProvider.sendNavigationCommand('prev');
 			logger.info('Sent navigate previous segment command to webview', { blockId: selectedBlockId });
 		} catch (error) {
@@ -161,7 +144,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(navigatePreviousSegmentCommand);
 
-	// REQ-080: Register command for navigating to next segment
+	// Register command for navigating to next segment (Ctrl+Down)
 	const navigateNextSegmentCommand = vscode.commands.registerCommand('iris.navigateNextSegment', async () => {
 		try {
 			logger.info('Command executed: iris.navigateNextSegment');
@@ -173,7 +156,6 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 
 			// Send message to webview to navigate to next segment
-			// The webview handles the actual navigation logic per REQ-023
 			sidePanelProvider.sendNavigationCommand('next');
 			logger.info('Sent navigate next segment command to webview', { blockId: selectedBlockId });
 		} catch (error) {
@@ -182,8 +164,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(navigateNextSegmentCommand);
 
-	// REQ-048: Set initial context for block selection (replaces focus mode context)
-	// Context is updated dynamically when blocks are selected/deselected
+	// Set initial context for block selection
 	vscode.commands.executeCommand('setContext', 'iris.blockSelected', false);
 	
 	const disposable = vscode.commands.registerCommand('iris.runAnalysis', async () => {
@@ -191,7 +172,7 @@ export function activate(context: vscode.ExtensionContext) {
 			outputChannel.show(true);
 			logger.info('Command executed: iris.runAnalysis');
 
-			// TASK-0102: Check if already analyzing (prevent duplicate triggers)
+			// Check if already analyzing (prevent duplicate triggers)
 			if (stateManager.isAnalyzing()) {
 				logger.warn('Analysis already in progress, ignoring duplicate trigger');
 				vscode.window.showWarningMessage('IRIS: Analysis already in progress.');
@@ -231,7 +212,7 @@ export function activate(context: vscode.ExtensionContext) {
 				return;
 			}
 
-			// Add line numbers to source code per API contract (TASK-0034)
+			// Add line numbers to source code per API contract
 			const sourceWithLineNumbers = sourceCode
 				.split('\n')
 				.map((line, idx) => `${idx + 1} | ${line}`)
@@ -247,8 +228,7 @@ export function activate(context: vscode.ExtensionContext) {
 				},
 			};
 
-			// Transition to ANALYZING state (TASK-0045)
-			// TASK-0102: This sets loading state for UI
+			// Transition to ANALYZING state
 			stateManager.startAnalysis(fileUri);
 			
 			// Show progress notification
@@ -262,7 +242,6 @@ export function activate(context: vscode.ExtensionContext) {
 					progress.report({ message: 'Analyzing file...' });
 
 					try {
-						// TASK-0101: Use API client with error boundary
 						logger.info('Sending analysis request');
 						const response = await apiClient.analyze(payload);
 
@@ -274,11 +253,10 @@ export function activate(context: vscode.ExtensionContext) {
 							return;
 						}
 
-						// Normalize and store analysis data (TASK-0046)
-						// Generate blockId for each block per TASK-0062, REQ-005
+						// Normalize and store analysis data with deterministic blockIds
 						const normalizedBlocks = response.responsibility_blocks.map((block) => ({
 							...block,
-							blockId: generateBlockId(block)  // Deterministic blockId generation per Phase 6
+							blockId: generateBlockId(block)
 						}));
 
 						stateManager.setAnalyzed({
@@ -302,7 +280,7 @@ export function activate(context: vscode.ExtensionContext) {
 						vscode.window.showInformationMessage('IRIS: Analysis completed successfully.');
 
 					} catch (error) {
-						// TASK-0101: Handle API errors with proper user messaging
+						// Handle API errors with proper user messaging
 						if (error instanceof APIError) {
 							const userMessage = IRISAPIClient.getUserMessage(error);
 							logger.error('API error during analysis', {
@@ -324,7 +302,7 @@ export function activate(context: vscode.ExtensionContext) {
 			);
 
 		} catch (error) {
-			// Top-level error boundary per LOG-003
+			// Top-level error boundary
 			const message = error instanceof Error ? error.message : 'Unknown error';
 			logger.errorWithException('Command execution failed', error);
 			stateManager.setError(message);
@@ -334,14 +312,13 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(disposable);
 
-	// Document change listener for STALE state transition (Phase 9: GOAL-009)
-	// Per STATE-003: Any edit invalidates analysis immediately (no diffing, no heuristics)
-	// TASK-0091: Register document change listeners scoped to active file
+	// Document change listener for STALE state transition
+	// Any edit invalidates analysis immediately (no diffing, no heuristics)
 	context.subscriptions.push(
 		vscode.workspace.onDidChangeTextDocument((event) => {
 			const currentState = stateManager.getCurrentState();
 			
-			// TASK-0095: Prevent redundant STALE transitions
+			// Prevent redundant STALE transitions
 			// Only transition to STALE if currently ANALYZED (single-shot)
 			if (currentState !== IRISAnalysisState.ANALYZED) {
 				return;
@@ -358,19 +335,13 @@ export function activate(context: vscode.ExtensionContext) {
 				return;
 			}
 
-			// TASK-0096: Log file invalidation per LOG-001
 			logger.info('File modification detected - invalidating analysis', {
 				changedFile: event.document.uri.toString(),
 				changeCount: event.contentChanges.length,
 				transition: 'ANALYZED → STALE'
 			});
 			
-			// TASK-0092: Transition to STALE state per STATE-003
-			// REQ-090: This will trigger:
-			// 1. State transition to STALE (setStale() in state manager)
-			// 2. Clear all decorations per ED-003 (via onStateChange listener)
-			// 3. Clear block selection state (via setStale() calling deselectBlock)
-			// 4. Send ANALYSIS_STALE message to webview per UX-001 (via webview's handleStateChange)
+			// Transition to STALE state
 			stateManager.setStale();
 			
 			logger.info('Analysis invalidated - state updated to STALE');
@@ -396,16 +367,15 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // This method is called when your extension is deactivated
-// TASK-0105: Ensure full cleanup on extension deactivation per ED-003
 export function deactivate() {
 	// Cleanup is handled automatically through context.subscriptions
 	// All disposables registered via context.subscriptions.push() will be disposed
 	// This includes:
 	// - Output channel
 	// - State manager (disposes event emitters)
-	// - Decoration manager (disposes all decoration types per ED-003)
+	// - Decoration manager (disposes all decoration types)
 	// - Webview provider (clears state, removes listeners)
 	// - Event listeners (document changes, editor changes)
 	// 
-	// No explicit cleanup needed here per VS Code extension lifecycle
+	// No explicit cleanup needed here
 }

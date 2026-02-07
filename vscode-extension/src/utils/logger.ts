@@ -1,15 +1,12 @@
 import * as vscode from 'vscode';
 
 /**
- * Structured logging utility implementing LOG-001, LOG-002, LOG-003
- * 
+ * Structured logging utility
+ *
  * Features:
- * - LOG-001: Centralized Output Channel routing
- * - LOG-002: Explicit severity levels (INFO, WARN, ERROR)
- * - LOG-003: No silent failures
+ * - Centralized Output Channel routing
+ * - Explicit severity levels (INFO, WARN, ERROR, DEBUG)
  * - Timestamps and structured context
- * 
- * Per TASK-0104: Implement structured logging
  */
 
 export enum LogLevel {
@@ -72,7 +69,6 @@ export class Logger {
 
   /**
    * Core logging function with structured format
-   * Per LOG-001, LOG-002
    */
   private log(level: LogLevel, message: string, context?: Record<string, any>): void {
     const timestamp = new Date().toISOString();
@@ -81,7 +77,7 @@ export class Logger {
     
     this.outputChannel.appendLine(logLine);
     
-    // For ERROR level, also show to user per LOG-003
+    // For ERROR level, also show to user
     if (level === LogLevel.ERROR) {
       // Don't block on user interaction
       void vscode.window.showErrorMessage(`IRIS: ${message}`);

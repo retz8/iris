@@ -6,7 +6,7 @@ import { generateBlockColor, generateBlockColorOpaque } from '../utils/colorAssi
 
 /**
  * Decoration range in ZERO-based VS Code format
- * Converted from ONE-based API ranges per TASK-0073
+ * Converted from ONE-based API ranges
  */
 interface DecorationRange {
   startLine: number;  // ZERO-based
@@ -23,22 +23,16 @@ interface BlockDecorationData {
 }
 
 /**
- * Decoration Manager implementing GOAL-007 and UI Refinement 2: Block Selection
- * 
+ * Decoration Manager for block highlighting and selection
+ *
  * Responsibilities:
- * - Create and cache decorations per blockId (TASK-0071)
- * - Generate deterministic colors from blockId (ED-002, TASK-0072)
- * - Convert ONE-based API ranges to ZERO-based VS Code ranges (TASK-0073)
- * - Apply decorations on BLOCK_HOVER (TASK-0074)
- * - Clear decorations on BLOCK_CLEAR, IDLE, STALE (TASK-0075, ED-003)
- * - Dispose all decoration types (TASK-0076, ED-003)
- * - Log decoration lifecycle (TASK-0077, LOG-001)
- * - UI Refinement 2: Pin/unpin block selection with persistent highlighting (REQ-053, REQ-054)
- * 
- * Constraints:
- * - ED-001: Use only TextEditorDecorationType (overlay-only)
- * - ED-002: Deterministic color generation from blockId
- * - ED-003: Immediate disposal to prevent memory leaks
+ * - Create and cache decorations per blockId
+ * - Generate deterministic colors from blockId
+ * - Convert ONE-based API ranges to ZERO-based VS Code ranges
+ * - Apply decorations on BLOCK_HOVER
+ * - Clear decorations on BLOCK_CLEAR, IDLE, STALE
+ * - Dispose all decoration types
+ * - Pin/unpin block selection with persistent highlighting
  */
 export class DecorationManager implements vscode.Disposable {
   private decorationCache: Map<string, BlockDecorationData>;
@@ -59,10 +53,7 @@ export class DecorationManager implements vscode.Disposable {
 
   /**
    * Generate deterministic color from blockId using smart color assignment
-   * Phase 7: Smart Color Assignment (TASK-051)
-   * 
    * Uses golden ratio distribution for visual distinctiveness and WCAG AA compliance
-   * Delegates to colorAssignment utility for intelligent color generation
    */
   private generateColorFromBlockId(blockId: string): string {
     // Detect current theme (dark vs light)
@@ -78,13 +69,6 @@ export class DecorationManager implements vscode.Disposable {
 
   /**
    * Convert ONE-based API ranges to ZERO-based VS Code ranges
-   * Per TASK-0073
-   * 
-   * API returns: [[start, end], ...] where lines are ONE-based
-   * VS Code expects: ZERO-based line numbers
-   * 
-   * Formula: vscodeRange = backendRange.map(([start, end]) => 
-   *            ({ startLine: start - 1, endLine: end - 1 }))
    */
   private convertRangesToVSCode(apiRanges: Array<[number, number]>): DecorationRange[] {
     const vscodeRanges = apiRanges.map(([start, end]) => ({
@@ -98,11 +82,6 @@ export class DecorationManager implements vscode.Disposable {
 
   /**
    * Create or retrieve cached decoration type for a blockId
-   * Per TASK-0071, ED-001, Phase 7 (TASK-051)
-   * 
-   * Uses TextEditorDecorationType for overlay-only highlighting
-   * Caches decoration types to prevent redundant creation
-   * Phase 7: Uses smart color assignment with alpha transparency
    */
   private getOrCreateDecorationType(blockId: string): vscode.TextEditorDecorationType {
     const cached = this.decorationCache.get(blockId);
@@ -115,16 +94,13 @@ export class DecorationManager implements vscode.Disposable {
     const isDarkTheme = vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark ||
                         vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.HighContrast;
     
-    // REQ-055: Use 0.25 alpha for all block highlighting (single alpha for hover and selection)
+    // Use 0.25 alpha for all block highlighting (single alpha for hover and selection)
     const baseColor = generateBlockColor(blockId, isDarkTheme);
     // Adjust alpha to 0.25 for consistent highlighting (same for hover and selection)
     const backgroundColor = baseColor.replace(/,\s*[\d.]+\)$/, ', 0.25)');
     const opaqueColor = generateBlockColorOpaque(blockId, isDarkTheme);
     
-    // Create decoration type per ED-001 (overlay-only)
-    // TASK-055, TASK-056: Use backgroundColor only, no borders/before/after
-    // TASK-057: Set rangeBehavior to ClosedClosed for precise highlighting
-    // CON-003: 0.25 alpha maintains WCAG AA contrast compliance for both light and dark themes
+    // Use backgroundColor only (overlay-only), no borders/before/after
     const decorationType = vscode.window.createTextEditorDecorationType({
       backgroundColor: backgroundColor,  // rgba with 0.25 alpha - renders behind text
       isWholeLine: true,
@@ -138,14 +114,12 @@ export class DecorationManager implements vscode.Disposable {
   }
 
   // ========================================
-  // BLOCK SELECTION (UI Refinement 2: Phase 4)
-  // REQ-049 to REQ-055: Replaced focus mode with pin/unpin selection model
+  // BLOCK SELECTION
   // ========================================
 
   /**
    * Prepare decoration data for a responsibility block
    * Converts ranges and creates/caches decoration type
-   * Per TASK-0071, TASK-0073
    */
   private prepareBlockDecoration(block: NormalizedResponsibilityBlock): BlockDecorationData {
     const cached = this.decorationCache.get(block.blockId);
@@ -175,17 +149,13 @@ export class DecorationManager implements vscode.Disposable {
 
   /**
    * Apply decorations for a specific block on BLOCK_HOVER
-   * Per TASK-0074
-   * Per TASK-0084: Disable hover while block is selected (pin/unpin model)
-   * 
-   * @param editor - The text editor to apply decorations to
-   * @param block - The responsibility block to highlight
+   * Hover is disabled while a block is selected (pin/unpin model)
    */
   public applyBlockHover(
     editor: vscode.TextEditor, 
     block: NormalizedResponsibilityBlock
   ): void {
-    // TASK-0084: Disable hover decorations while block is selected
+    // Disable hover decorations while block is selected
     if (this.currentlyFocusedBlockId !== null) {
       this.logger.info('Hover disabled while block selected', { 
         blockId: block.blockId,
@@ -221,9 +191,6 @@ export class DecorationManager implements vscode.Disposable {
 
   /**
    * Clear currently highlighted block decorations
-   * Per TASK-0075
-   * 
-   * @param editor - The text editor to clear decorations from
    */
   public clearCurrentHighlight(editor: vscode.TextEditor): void {
     if (!this.currentlyHighlightedBlockId) {
@@ -243,9 +210,6 @@ export class DecorationManager implements vscode.Disposable {
 
   /**
    * Clear all decorations on BLOCK_CLEAR, IDLE, STALE
-   * Per TASK-0075, ED-003
-   * 
-   * @param editor - The text editor to clear decorations from (optional)
    */
   public clearAllDecorations(editor?: vscode.TextEditor): void {
     if (editor) {
@@ -265,24 +229,12 @@ export class DecorationManager implements vscode.Disposable {
   }
 
   // ========================================
-  // BLOCK SELECTION (UI Refinement 2: Phase 4)
-  // REQ-053, REQ-054: Pin/Unpin selection model
+  // BLOCK SELECTION - Pin/Unpin model
   // ========================================
 
   /**
    * Apply block selection highlighting
-   * REQ-053: Applies persistent highlighting to all segments with consistent color
-   * 
-   * Block selection (pin/unpin model):
-   * - Uses same 0.25 alpha decoration as hover for visual consistency (REQ-055)
-   * - Applies highlighting to ALL segments of the block simultaneously
-   * - Persists until block is deselected (unlike hover which clears on mouse out)
-   * - No dimming of other blocks (simplified from focus mode)
-   * 
-   * Replaces focus mode - no dimming, just persistent highlighting on selected block
-   * 
-   * @param editor - The text editor to apply selection decorations
-   * @param block - The selected responsibility block to highlight
+   * Applies persistent highlighting to all segments with consistent color
    */
   public applyBlockSelection(
     editor: vscode.TextEditor,
@@ -294,7 +246,7 @@ export class DecorationManager implements vscode.Disposable {
     // Clear previous block selection before applying new one
     this.clearBlockSelection(editor);
 
-    // Prepare and apply decoration using same style as hover (0.25 alpha per REQ-055)
+    // Prepare and apply decoration using same style as hover (0.25 alpha)
     const decorationData = this.prepareBlockDecoration(block);
     
     const vscodeRanges = decorationData.ranges.map(range => 
@@ -318,10 +270,6 @@ export class DecorationManager implements vscode.Disposable {
 
   /**
    * Clear block selection highlighting
-   * REQ-054: Clears selection highlights for a specific block
-   * 
-   * @param editor - The text editor to clear selection decorations from
-   * @param blockId - The block ID to clear (optional, clears current if not provided)
    */
   public clearBlockSelection(editor: vscode.TextEditor, blockId?: string): void {
     const targetBlockId = blockId || this.currentlyFocusedBlockId;
@@ -341,10 +289,7 @@ export class DecorationManager implements vscode.Disposable {
 
   /**
    * Dispose all decoration types
-   * Per TASK-0076, ED-003
-   * 
    * Called on state transitions (STALE, IDLE) or extension deactivation
-   * Prevents memory leaks by properly disposing TextEditorDecorationType instances
    */
   public disposeAllDecorations(): void {
     const decorationCount = this.decorationCache.size;
@@ -386,7 +331,6 @@ export class DecorationManager implements vscode.Disposable {
 
   /**
    * Dispose manager and all resources
-   * Per ED-003, TASK-0105
    */
   public dispose(): void {
     this.disposeAllDecorations();

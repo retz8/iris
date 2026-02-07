@@ -2,16 +2,8 @@ import { Logger } from '../utils/logger';
 
 /**
  * API Client for IRIS Analysis Server
- * 
- * Implements:
- * - TASK-0101: Global error boundary for server calls
- * - TASK-0103: Defensive API response validation per API-002
- * - API-000: Backend contract adherence
- * - LOG-003: No silent failures
- * 
- * Backend contract per Phase 3:
+ *
  * POST /api/iris/analyze
- * 
  * Request: { filename, language, source_code, metadata }
  * Response: { file_intent, metadata, responsibility_blocks }
  */
@@ -97,7 +89,6 @@ export class IRISAPIClient {
 
   /**
    * Send analysis request with comprehensive error handling
-   * Per TASK-0101: Global error boundary for server calls
    */
   async analyze(request: AnalysisRequest): Promise<AnalysisResponse> {
     this.logger.info('Starting analysis request', {
@@ -118,7 +109,7 @@ export class IRISAPIClient {
       return validatedResponse;
       
     } catch (error) {
-      // Per LOG-003: No silent failures
+      // No silent failures
       if (error instanceof APIError) {
         this.logger.error(`API Error: ${error.type}`, {
           message: error.message,
@@ -144,7 +135,6 @@ export class IRISAPIClient {
 
   /**
    * Execute HTTP request with timeout
-   * Per TASK-0101: Error boundary implementation
    */
   private async executeRequest(request: AnalysisRequest): Promise<unknown> {
     const controller = new AbortController();
@@ -175,7 +165,7 @@ export class IRISAPIClient {
         contentType: response.headers.get('content-type')
       });
 
-      // Handle HTTP errors per API-002
+      // Handle HTTP errors
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unable to read error response');
         
@@ -237,14 +227,6 @@ export class IRISAPIClient {
 
   /**
    * Validate response schema defensively
-   * Per TASK-0103, API-002
-   * 
-   * Required fields:
-   * - file_intent (string)
-   * - responsibility_blocks (array)
-   * 
-   * Optional fields:
-   * - metadata (object)
    */
   private validateResponse(response: unknown): AnalysisResponse {
     this.logger.debug('Validating response schema');
@@ -304,7 +286,6 @@ export class IRISAPIClient {
 
   /**
    * Validate individual responsibility block
-   * Per TASK-0103
    */
   private validateResponsibilityBlock(block: unknown, index: number): void {
     if (!block || typeof block !== 'object') {

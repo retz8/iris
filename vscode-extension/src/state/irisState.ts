@@ -2,8 +2,7 @@ import * as vscode from 'vscode';
 import { createLogger, Logger } from '../utils/logger';
 
 /**
- * Extension state machine enum per STATE-001
- * Defines all possible analysis states
+ * Extension state machine enum
  */
 export enum IRISAnalysisState {
   IDLE = 'IDLE',                 // No analysis in progress or completed
@@ -13,14 +12,12 @@ export enum IRISAnalysisState {
 }
 
 /**
- * File Intent is a simple string describing file purpose (not an object)
- * Per TASK-0043
+ * File Intent is a simple string describing file purpose
  */
 export type FileIntent = string;
 
 /**
  * Responsibility Block structure matching API response format
- * Per TASK-0043
  */
 export interface ResponsibilityBlock {
   description: string;
@@ -30,7 +27,6 @@ export interface ResponsibilityBlock {
 
 /**
  * Analysis metadata with optional standard fields and extensibility
- * Per TASK-0043
  */
 export interface AnalysisMetadata {
   filepath?: string;
@@ -43,7 +39,7 @@ export interface AnalysisMetadata {
  * Used internally after API response normalization
  */
 export interface NormalizedResponsibilityBlock extends ResponsibilityBlock {
-  blockId: string;  // Added during Phase 6 normalization
+  blockId: string;
 }
 
 /**
@@ -57,7 +53,6 @@ export interface IRISAnalysisResponse {
 
 /**
  * Internal analysis data structure storing both raw and normalized data
- * Per TASK-0044
  */
 export interface AnalysisData {
   fileIntent: FileIntent;
@@ -69,8 +64,7 @@ export interface AnalysisData {
 }
 
 /**
- * Selection state for UI Refinement 2: Pin/Unpin Block Selection
- * Per REQ-003
+ * Selection state for pin/unpin block selection
  */
 export interface SelectionState {
   selectedBlockId: string | null;  // null = no block selected
@@ -78,25 +72,18 @@ export interface SelectionState {
 }
 
 /**
- * Complete extension state container
- * Per STATE-001: Single source of truth
+ * Complete extension state container (single source of truth)
  */
 interface ExtensionState {
   currentState: IRISAnalysisState;
   analysisData: AnalysisData | null;
   activeFileUri: string | null;  // Currently active file being tracked
-  selectionState: SelectionState;  // UI Refinement 2: Pin/Unpin selection tracking
+  selectionState: SelectionState;
 }
 
 /**
- * Centralized state manager implementing STATE-001 (single source of truth)
- * Manages all state transitions and enforces STATE-002 (explicit transitions)
- * 
- * Responsibilities:
- * - Maintain single in-memory state container
- * - Enforce explicit state transitions with validation
- * - Log all transitions per LOG-001, LOG-002
- * - Provide read-only access per REQ-004
+ * Centralized state manager (single source of truth)
+ * Manages all state transitions with validation and logging
  */
 export class IRISStateManager {
   private state: ExtensionState;
@@ -135,7 +122,6 @@ export class IRISStateManager {
 
   /**
    * Transition to ANALYZING state when analysis request starts
-   * Per STATE-002, TASK-0045
    */
   public startAnalysis(fileUri: string): void {
     const previousState = this.state.currentState;
@@ -155,7 +141,6 @@ export class IRISStateManager {
 
   /**
    * Transition to ANALYZED state on successful analysis with valid schema
-   * Per STATE-002, TASK-0046
    */
   public setAnalyzed(data: AnalysisData): void {
     const previousState = this.state.currentState;
@@ -180,11 +165,7 @@ export class IRISStateManager {
 
   /**
    * Transition to IDLE state on error or invalid schema
-   * Per STATE-002, TASK-0047, API-002
-   * 
-   * REQ-007: Clear selection state when analysis fails
-   * Rationale: Selected block becomes invalid when analysis data is cleared
-   * This ensures UI doesn't show stale selection for non-existent blocks
+   * Clears selection state since selected block becomes invalid
    */
   public setError(error: string, fileUri?: string): void {
     const previousState = this.state.currentState;
@@ -192,7 +173,7 @@ export class IRISStateManager {
     this.state.currentState = IRISAnalysisState.IDLE;
     this.state.analysisData = null;
     
-    // Clear selection state per REQ-007
+    // Clear selection state
     this.deselectBlock();
     
     this.logStateTransition(previousState, IRISAnalysisState.IDLE, fileUri, { error });
@@ -201,11 +182,7 @@ export class IRISStateManager {
 
   /**
    * Transition to STALE state when file is modified
-   * Per STATE-003
-   * 
-   * REQ-008: Clear selection state when analysis becomes stale
-   * Rationale: File modifications may invalidate block ranges, so deselect to prevent
-   * highlighting incorrect code regions. User must re-analyze to select blocks again.
+   * Clears selection state since block ranges may be invalidated
    */
   public setStale(): void {
     const previousState = this.state.currentState;
@@ -218,7 +195,7 @@ export class IRISStateManager {
     const fileUri = this.state.analysisData?.analyzedFileUri;
     this.state.currentState = IRISAnalysisState.STALE;
     
-    // Clear selection state per REQ-008
+    // Clear selection state
     this.deselectBlock();
     
     this.logStateTransition(previousState, IRISAnalysisState.STALE, fileUri);
@@ -244,7 +221,7 @@ export class IRISStateManager {
   }
 
   // ========================================
-  // READ-ONLY SELECTORS per REQ-004
+  // READ-ONLY SELECTORS
   // ========================================
 
   /**
@@ -330,8 +307,6 @@ export class IRISStateManager {
 
   /**
    * Select a block (pin/unpin model)
-   * Per REQ-005
-   * CON-001: Log selection with structured logging
    */
   public selectBlock(blockId: string): void {
     const previousBlockId = this.state.selectionState.selectedBlockId;
@@ -348,8 +323,6 @@ export class IRISStateManager {
 
   /**
    * Deselect current block (pin/unpin model)
-   * Per REQ-005
-   * CON-001: Log deselection with structured logging
    */
   public deselectBlock(): void {
     const previousBlockId = this.state.selectionState.selectedBlockId;
@@ -368,7 +341,6 @@ export class IRISStateManager {
 
   /**
    * Get current segment index for selected block
-   * Per REQ-005
    */
   public getCurrentSegmentIndex(): number {
     return this.state.selectionState.currentSegmentIndex;
@@ -376,8 +348,6 @@ export class IRISStateManager {
 
   /**
    * Set current segment index for navigation
-   * Per REQ-005
-   * CON-001: Log segment navigation with structured logging
    */
   public setCurrentSegmentIndex(index: number): void {
     const previousIndex = this.state.selectionState.currentSegmentIndex;
@@ -394,7 +364,6 @@ export class IRISStateManager {
 
   /**
    * Get currently selected block ID
-   * Per REQ-006
    */
   public getSelectedBlockId(): string | null {
     return this.state.selectionState.selectedBlockId;
@@ -408,12 +377,11 @@ export class IRISStateManager {
   }
 
   // ========================================
-  // LOGGING per LOG-001, LOG-002
+  // LOGGING
   // ========================================
 
   /**
    * Log state transition with structured metadata
-   * Per STATE-002, LOG-001, LOG-002
    */
   private logStateTransition(
     from: IRISAnalysisState, 

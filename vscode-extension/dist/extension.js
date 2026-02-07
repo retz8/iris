@@ -87,7 +87,6 @@ var Logger = class {
   }
   /**
    * Core logging function with structured format
-   * Per LOG-001, LOG-002
    */
   log(level, message, context) {
     const timestamp = (/* @__PURE__ */ new Date()).toISOString();
@@ -141,7 +140,6 @@ var IRISStateManager = class {
   }
   /**
    * Transition to ANALYZING state when analysis request starts
-   * Per STATE-002, TASK-0045
    */
   startAnalysis(fileUri) {
     const previousState = this.state.currentState;
@@ -157,7 +155,6 @@ var IRISStateManager = class {
   }
   /**
    * Transition to ANALYZED state on successful analysis with valid schema
-   * Per STATE-002, TASK-0046
    */
   setAnalyzed(data) {
     const previousState = this.state.currentState;
@@ -179,11 +176,7 @@ var IRISStateManager = class {
   }
   /**
    * Transition to IDLE state on error or invalid schema
-   * Per STATE-002, TASK-0047, API-002
-   * 
-   * REQ-007: Clear selection state when analysis fails
-   * Rationale: Selected block becomes invalid when analysis data is cleared
-   * This ensures UI doesn't show stale selection for non-existent blocks
+   * Clears selection state since selected block becomes invalid
    */
   setError(error, fileUri) {
     const previousState = this.state.currentState;
@@ -195,11 +188,7 @@ var IRISStateManager = class {
   }
   /**
    * Transition to STALE state when file is modified
-   * Per STATE-003
-   * 
-   * REQ-008: Clear selection state when analysis becomes stale
-   * Rationale: File modifications may invalidate block ranges, so deselect to prevent
-   * highlighting incorrect code regions. User must re-analyze to select blocks again.
+   * Clears selection state since block ranges may be invalidated
    */
   setStale() {
     const previousState = this.state.currentState;
@@ -226,7 +215,7 @@ var IRISStateManager = class {
     this.stateChangeEmitter.fire("IDLE" /* IDLE */);
   }
   // ========================================
-  // READ-ONLY SELECTORS per REQ-004
+  // READ-ONLY SELECTORS
   // ========================================
   /**
    * Get current state enum value
@@ -299,8 +288,6 @@ var IRISStateManager = class {
   // ========================================
   /**
    * Select a block (pin/unpin model)
-   * Per REQ-005
-   * CON-001: Log selection with structured logging
    */
   selectBlock(blockId) {
     const previousBlockId = this.state.selectionState.selectedBlockId;
@@ -314,8 +301,6 @@ var IRISStateManager = class {
   }
   /**
    * Deselect current block (pin/unpin model)
-   * Per REQ-005
-   * CON-001: Log deselection with structured logging
    */
   deselectBlock() {
     const previousBlockId = this.state.selectionState.selectedBlockId;
@@ -330,15 +315,12 @@ var IRISStateManager = class {
   }
   /**
    * Get current segment index for selected block
-   * Per REQ-005
    */
   getCurrentSegmentIndex() {
     return this.state.selectionState.currentSegmentIndex;
   }
   /**
    * Set current segment index for navigation
-   * Per REQ-005
-   * CON-001: Log segment navigation with structured logging
    */
   setCurrentSegmentIndex(index) {
     const previousIndex = this.state.selectionState.currentSegmentIndex;
@@ -352,7 +334,6 @@ var IRISStateManager = class {
   }
   /**
    * Get currently selected block ID
-   * Per REQ-006
    */
   getSelectedBlockId() {
     return this.state.selectionState.selectedBlockId;
@@ -364,11 +345,10 @@ var IRISStateManager = class {
     return this.state.selectionState.selectedBlockId !== null;
   }
   // ========================================
-  // LOGGING per LOG-001, LOG-002
+  // LOGGING
   // ========================================
   /**
    * Log state transition with structured metadata
-   * Per STATE-002, LOG-001, LOG-002
    */
   logStateTransition(from, to, fileUri, metadata) {
     const message = `State transition: ${from} \u2192 ${to}`;
@@ -554,8 +534,6 @@ var IRISSidePanelProvider = class {
   logger;
   /**
    * Called when the view is first resolved
-   * Per TASK-0052: Manage lifecycle without owning semantic state
-   * Per TASK-0064: Implement message listeners
    */
   resolveWebviewView(webviewView, context, token) {
     this.view = webviewView;
@@ -577,7 +555,6 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Handle state change events from state manager
-   * Per REQ-004: React to state changes, never own data
    */
   handleStateChange(state) {
     this.logger.info(`State changed to: ${state}`);
@@ -589,8 +566,6 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Handle messages from webview
-   * Per TASK-0064, TASK-0066, TASK-0067
-   * Enforces blockId-based routing per REQ-005
    */
   handleWebviewMessage(message) {
     if (!isWebviewMessage(message)) {
@@ -648,8 +623,7 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Handle BLOCK_HOVER message
-   * Per TASK-0066, TASK-0068: blockId-based routing with logging
-   * Triggers editor decorations (Phase 7)
+   * Triggers editor decorations
    */
   handleBlockHover(blockId) {
     this.logger.info("Block hover", { blockId });
@@ -672,8 +646,7 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Handle BLOCK_SELECTED message
-   * UI Refinement 2: Pin/unpin selection model
-   * REQ-042: Select block and apply persistent highlighting with segment navigation
+   * Select block and apply persistent highlighting with segment navigation
    */
   handleBlockSelected(blockId) {
     this.logger.info("Block selected - pin/unpin model", { blockId });
@@ -715,7 +688,6 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Handle BLOCK_CLEAR message
-   * REQ-022: Deselects/unpins block and clears decorations
    */
   handleBlockClear() {
     this.logger.info("Block clear");
@@ -727,8 +699,7 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Handle BLOCK_DESELECTED message
-   * UI Refinement 2: Pin/unpin selection model
-   * REQ-043: Deselect block, clear highlighting, and hide segment navigator
+   * Deselect block, clear highlighting, and hide segment navigator
    */
   handleBlockDeselected(blockId) {
     this.logger.info("Block deselected - pin/unpin model", { blockId });
@@ -744,8 +715,7 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Handle SEGMENT_NAVIGATED message
-   * UI Refinement 2: Navigate between scattered segments of a block
-   * REQ-044: Scroll editor to target segment and update navigator indicator
+   * Scroll editor to target segment and update navigator indicator
    */
   handleSegmentNavigated(blockId, segmentIndex, totalSegments) {
     this.logger.info("Segment navigated", { blockId, segmentIndex, totalSegments });
@@ -782,8 +752,7 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Handle ESCAPE_PRESSED message
-   * UI Refinement 2: Simplified escape handling for pin/unpin model
-   * REQ-045: Deselect current block via Escape key (same as BLOCK_DESELECTED)
+   * Deselect current block via Escape key
    */
   handleEscapePressed() {
     this.logger.info("Escape pressed - deselecting block");
@@ -816,8 +785,6 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Send navigation command to webview for segment navigation
-   * REQ-079, REQ-080: Support keyboard shortcuts for segment navigation
-   * @param direction - 'prev' or 'next'
    */
   sendNavigationCommand(direction) {
     if (!this.view) {
@@ -832,7 +799,6 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Post message to webview
-   * Per TASK-0065: Implement dispatch from extension to webview
    */
   postMessageToWebview(message) {
     if (!this.view) {
@@ -843,7 +809,6 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Send analysis data to webview
-   * Per Phase 6: ANALYSIS_DATA message with blockId + metadata
    */
   sendAnalysisData(data) {
     const message = {
@@ -863,7 +828,6 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Render webview content based on current state
-   * Per UX-001: Handle all states appropriately
    */
   renderCurrentState() {
     if (!this.view) {
@@ -887,7 +851,6 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Render IDLE state: empty state message
-   * Per UX-001, TASK-0057
    */
   renderIdleState() {
     if (!this.view) {
@@ -908,7 +871,6 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Render ANALYZING state: loading indicator
-   * Per UX-001, TASK-0057
    */
   renderAnalyzingState() {
     if (!this.view) {
@@ -928,7 +890,6 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Render ANALYZED state: display File Intent and Responsibility Blocks
-   * Per GOAL-005, TASK-0054, TASK-0055, TASK-0056
    */
   renderAnalyzedState() {
     if (!this.view) {
@@ -987,7 +948,6 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Render STALE state: outdated analysis warning
-   * Per UX-001, TASK-0057
    */
   renderStaleState() {
     if (!this.view) {
@@ -1047,8 +1007,6 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Generate HTML template with consistent structure
-   * Per TASK-0053: Minimal, static HTML structure
-   * Per TASK-0065: Include JavaScript for webview message posting
    */
   getHtmlTemplate(title, bodyContent) {
     return `<!DOCTYPE html>
@@ -1058,7 +1016,7 @@ var IRISSidePanelProvider = class {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${this.escapeHtml(title)}</title>
   <style>
-    /* Phase 1 UI Refinement: CSS custom properties for reusable values (PAT-002) */
+    /* CSS custom properties for reusable values */
     :root {
       --iris-spacing-xs: 4px;
       --iris-spacing-sm: 8px;
@@ -1075,12 +1033,11 @@ var IRISSidePanelProvider = class {
       padding: var(--iris-spacing-lg);
       color: var(--vscode-foreground);
       font-family: var(--vscode-font-family);
-      font-size: 13px; /* TASK-007: Refined font size */
-      line-height: 1.6; /* TASK-007: Improved line height for readability */
+      font-size: 13px;
+      line-height: 1.6;
       overflow-y: overlay; /* Overlay scrollbar so it doesn't consume layout width */
     }
     
-    /* Phase 2: Removed h2 styling as section headers removed per REQ-013, REQ-014 */
     
     h3 {
       margin: 0 0 var(--iris-spacing-sm) 0;
@@ -1137,7 +1094,7 @@ var IRISSidePanelProvider = class {
       to { transform: rotate(360deg); }
     }
     
-    /* Stale Banner - TASK-010: Updated styling for new design language */
+    /* Stale Banner */
     .stale-banner {
       display: flex;
       gap: var(--iris-spacing-md);
@@ -1146,7 +1103,7 @@ var IRISSidePanelProvider = class {
       background: var(--vscode-inputValidation-warningBackground);
       border: 1px solid var(--vscode-inputValidation-warningBorder);
       border-radius: var(--iris-border-radius);
-      transition: all var(--iris-transition-normal); /* TASK-011: Smooth transitions */
+      transition: all var(--iris-transition-normal);
     }
     
     .stale-icon {
@@ -1166,7 +1123,6 @@ var IRISSidePanelProvider = class {
     }
     
     /* File Intent */
-    /* Phase 2: Adjusted spacing after header removal (TASK-017) */
     .file-intent-section {
       margin-bottom: var(--iris-spacing-sm); 
     }
@@ -1282,17 +1238,11 @@ var IRISSidePanelProvider = class {
     // VS Code API for posting messages
     const vscode = acquireVsCodeApi();
     
-    // UI Refinement 2: Pin/unpin selection model state
-    // REQ-009: Renamed from activeFocusedBlockId for semantic clarity
+    // Pin/unpin selection model state
     let selectedBlockId = null;
     
-    // REQ-012: Track which segment of selected block is currently visible
     let currentSegmentIndex = 0;
-    
-    // REQ-013: Track total segment count of selected block
     let segmentCount = 0;
-    
-    // Store analysis data for segment navigation (REQ-023)
     let analysisData = null;
     
     // Send WEBVIEW_READY on initialization
@@ -1300,29 +1250,28 @@ var IRISSidePanelProvider = class {
       vscode.postMessage({ type: 'WEBVIEW_READY' });
     });
     
-    // REQ-067 to REQ-071: Keyboard shortcuts for segment navigation
-    // Listen for Ctrl+ArrowUp, Ctrl+ArrowDown, and Escape key
+    // Keyboard shortcuts for segment navigation
     window.addEventListener('keydown', (event) => {
-      // REQ-071: Only process shortcuts when a block is selected
+      // Only process shortcuts when a block is selected
       if (!selectedBlockId) {
         return;
       }
       
-      // REQ-068: Ctrl+Up navigates to previous segment
+      // Ctrl+Up navigates to previous segment
       if (event.ctrlKey && event.key === 'ArrowUp') {
         event.preventDefault();
         handleSegmentNavigation('prev');
         return;
       }
       
-      // REQ-069: Ctrl+Down navigates to next segment
+      // Ctrl+Down navigates to next segment
       if (event.ctrlKey && event.key === 'ArrowDown') {
         event.preventDefault();
         handleSegmentNavigation('next');
         return;
       }
       
-      // REQ-070: Escape key deselects the block
+      // Escape key deselects the block
       if (event.key === 'Escape') {
         event.preventDefault();
         executeDeselectBlock(selectedBlockId);
@@ -1332,7 +1281,7 @@ var IRISSidePanelProvider = class {
     
     // Handle block hover
     function handleBlockHover(blockId) {
-      // REQ-014: Don't send hover if block is selected/pinned
+      // Don't send hover if block is selected/pinned
       if (selectedBlockId !== null) {
         return;
       }
@@ -1341,35 +1290,26 @@ var IRISSidePanelProvider = class {
 
     // Handle block clear (mouse leave)
     function handleBlockClear() {
-      // REQ-015: Don't send clear if block is selected/pinned
+      // Don't send clear if block is selected/pinned
       if (selectedBlockId !== null) {
         return;
       }
       vscode.postMessage({ type: 'BLOCK_CLEAR' });
     }
     
-    // Handle block click - UI Refinement 2: Pin/unpin toggle model
-    // REQ-016 to REQ-020: Simplified click handler without double-click detection
-    // Pin/Unpin toggle model:
-    // - First click on a block: selects it (pins it, applies persistent highlighting)
-    // - Second click on same block: deselects it (unpins it, clears highlighting)
-    // - Click on different block: deselects current, selects new one
-    // - No focus mode, no folding, no double-click - just simple toggle
+    // Handle block click - pin/unpin toggle
     function handleBlockClick(blockId) {
-      // REQ-016: Detect if block is already selected (pin/unpin toggle)
       if (selectedBlockId === blockId) {
-        // REQ-017: Block already selected - unpin it
+        // Block already selected - unpin it
         executeDeselectBlock(blockId);
       } else {
-        // REQ-018: Block not selected - pin it
+        // Block not selected - pin it
         executeSelectBlock(blockId);
       }
     }
     
-    // REQ-021: Execute block selection (pin block)
-    // UI Refinement 2: Select a block and apply persistent highlighting
+    // Execute block selection (pin block)
     function executeSelectBlock(blockId) {
-      // REQ-021 (1): Find block in analysis data
       if (!analysisData || !analysisData.responsibilityBlocks) {
         console.error('Cannot select block: no analysis data available');
         return;
@@ -1384,13 +1324,13 @@ var IRISSidePanelProvider = class {
       // Update selection state
       selectedBlockId = blockId;
       
-      // REQ-021 (4): Reset segment index to 0 when selecting new block
+      // Reset segment index to 0 when selecting new block
       currentSegmentIndex = 0;
       
       // Calculate segment count from block ranges
       segmentCount = block.ranges ? block.ranges.length : 0;
       
-      // REQ-021 (3): Update DOM - set active class on clicked block
+      // Update DOM - set active class on clicked block
       document.querySelectorAll('.block-item').forEach(item => {
         if (item.dataset.blockId === blockId) {
           item.classList.add('active');
@@ -1399,41 +1339,30 @@ var IRISSidePanelProvider = class {
         }
       });
       
-      // REQ-021 (2): Send BLOCK_SELECTED message to extension with blockId
+      // Send BLOCK_SELECTED message to extension with blockId
       vscode.postMessage({ type: 'BLOCK_SELECTED', blockId: blockId });
       
-      // REQ-021 (5): Note - navigation buttons will be shown in future implementation
       console.log('Block selected:', blockId, 'segments:', segmentCount);
     }
     
-    // REQ-022: Execute block deselection (unpin block)
-    // UI Refinement 2: Deselect a block and clear highlighting
+    // Execute block deselection (unpin block)
     function executeDeselectBlock(blockId) {
-      // REQ-022 (1): Send BLOCK_DESELECTED message to extension
+      // Send BLOCK_DESELECTED message to extension
       vscode.postMessage({ type: 'BLOCK_DESELECTED', blockId: blockId });
       
-      // REQ-022 (2): Remove active class from all blocks
+      // Remove active class from all blocks
       document.querySelectorAll('.block-item').forEach(item => {
         item.classList.remove('active');
       });
       
-      // REQ-022 (3): Clear selection state
+      // Clear selection state
       selectedBlockId = null;
       currentSegmentIndex = 0;
       segmentCount = 0;
       
-      // REQ-022 (4): Note - navigation buttons will be hidden in future implementation
     }
     
-    // REQ-023: Handle segment navigation for blocks with scattered ranges
-    // UI Refinement 2: Navigate between non-contiguous code segments
-    // 
-    // Navigation flow:
-    // 1. User presses Ctrl+Up/Down or clicks navigation buttons in webview
-    // 2. Calculate new segment index (bounded by segment count)
-    // 3. Send SEGMENT_NAVIGATED message to extension with new index
-    // 4. Extension scrolls editor to target segment and updates state
-    // 5. Extension sends back updated segment count via navigator update
+    // Handle segment navigation for blocks with scattered ranges
     function handleSegmentNavigation(direction) {
       // Validate that a block is selected
       if (!selectedBlockId) {
@@ -1467,11 +1396,10 @@ var IRISSidePanelProvider = class {
         return;
       }
       
-      // REQ-023: Update current segment index
+      // Update current segment index
       currentSegmentIndex = newIndex;
       
-      // REQ-023: Send SEGMENT_NAVIGATED message with new index to extension
-      // Extension will handle scrolling editor to the segment
+      // Send SEGMENT_NAVIGATED message with new index to extension
       vscode.postMessage({ 
         type: 'SEGMENT_NAVIGATED', 
         blockId: selectedBlockId,
@@ -1487,7 +1415,7 @@ var IRISSidePanelProvider = class {
       const message = event.data;
       console.log('Received message from extension:', message);
       
-      // Store analysis data for segment navigation (REQ-023)
+      // Store analysis data for segment navigation
       if (message.type === 'ANALYSIS_DATA') {
         analysisData = message.payload;
         console.log('Stored analysis data:', analysisData.responsibilityBlocks.length, 'blocks');
@@ -1495,7 +1423,7 @@ var IRISSidePanelProvider = class {
       
       // Handle state changes
       if (message.type === 'STATE_UPDATE') {
-        // REQ-072: Clear selection on state transitions to IDLE or STALE
+        // Clear selection on state transitions to IDLE or STALE
         if (message.state === 'IDLE' || message.state === 'STALE') {
           if (selectedBlockId !== null) {
             console.log('Clearing selection due to state transition to', message.state);
@@ -1509,7 +1437,7 @@ var IRISSidePanelProvider = class {
         }
       }
       
-      // REQ-032: Handle ESCAPE_PRESSED message (replaces FOCUS_CLEARED_VIA_ESC)
+      // Handle ESCAPE_PRESSED message
       if (message.type === 'ESCAPE_PRESSED') {
         selectedBlockId = null;
         currentSegmentIndex = 0;
@@ -1519,7 +1447,7 @@ var IRISSidePanelProvider = class {
         });
       }
 
-      // REQ-079, REQ-080: Handle NAVIGATE_SEGMENT message from keyboard shortcuts
+      // Handle NAVIGATE_SEGMENT message from keyboard shortcuts
       if (message.type === 'NAVIGATE_SEGMENT') {
         if (selectedBlockId !== null) {
           console.log('Navigating segment via keyboard shortcut:', message.direction);
@@ -1535,15 +1463,13 @@ var IRISSidePanelProvider = class {
   }
   /**
    * Escape HTML to prevent XSS
-   * Per TASK-0058: Ensure webview never persists or mutates data
    */
   escapeHtml(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
   /**
-   * REQ-094: Notify webview that block has been deselected (round-trip message verification)
+   * Notify webview that block has been deselected
    * Called by Esc key handler in extension.ts
-   * UI Refinement 2: Updated to use ESCAPE_PRESSED message
    */
   notifyFocusCleared() {
     if (!this.view) {
@@ -1557,7 +1483,7 @@ var IRISSidePanelProvider = class {
     this.logger.info("Notified webview of escape pressed");
   }
   /**
-   * Dispose resources per TASK-0105
+   * Dispose resources
    */
   dispose() {
     this.disposables.forEach((d) => d.dispose());
@@ -1604,10 +1530,7 @@ var DecorationManager = class {
   }
   /**
    * Generate deterministic color from blockId using smart color assignment
-   * Phase 7: Smart Color Assignment (TASK-051)
-   * 
    * Uses golden ratio distribution for visual distinctiveness and WCAG AA compliance
-   * Delegates to colorAssignment utility for intelligent color generation
    */
   generateColorFromBlockId(blockId) {
     const isDarkTheme = vscode4.window.activeColorTheme.kind === vscode4.ColorThemeKind.Dark || vscode4.window.activeColorTheme.kind === vscode4.ColorThemeKind.HighContrast;
@@ -1617,13 +1540,6 @@ var DecorationManager = class {
   }
   /**
    * Convert ONE-based API ranges to ZERO-based VS Code ranges
-   * Per TASK-0073
-   * 
-   * API returns: [[start, end], ...] where lines are ONE-based
-   * VS Code expects: ZERO-based line numbers
-   * 
-   * Formula: vscodeRange = backendRange.map(([start, end]) => 
-   *            ({ startLine: start - 1, endLine: end - 1 }))
    */
   convertRangesToVSCode(apiRanges) {
     const vscodeRanges = apiRanges.map(([start, end]) => ({
@@ -1637,11 +1553,6 @@ var DecorationManager = class {
   }
   /**
    * Create or retrieve cached decoration type for a blockId
-   * Per TASK-0071, ED-001, Phase 7 (TASK-051)
-   * 
-   * Uses TextEditorDecorationType for overlay-only highlighting
-   * Caches decoration types to prevent redundant creation
-   * Phase 7: Uses smart color assignment with alpha transparency
    */
   getOrCreateDecorationType(blockId) {
     const cached = this.decorationCache.get(blockId);
@@ -1666,13 +1577,11 @@ var DecorationManager = class {
     return decorationType;
   }
   // ========================================
-  // BLOCK SELECTION (UI Refinement 2: Phase 4)
-  // REQ-049 to REQ-055: Replaced focus mode with pin/unpin selection model
+  // BLOCK SELECTION
   // ========================================
   /**
    * Prepare decoration data for a responsibility block
    * Converts ranges and creates/caches decoration type
-   * Per TASK-0071, TASK-0073
    */
   prepareBlockDecoration(block) {
     const cached = this.decorationCache.get(block.blockId);
@@ -1696,11 +1605,7 @@ var DecorationManager = class {
   }
   /**
    * Apply decorations for a specific block on BLOCK_HOVER
-   * Per TASK-0074
-   * Per TASK-0084: Disable hover while block is selected (pin/unpin model)
-   * 
-   * @param editor - The text editor to apply decorations to
-   * @param block - The responsibility block to highlight
+   * Hover is disabled while a block is selected (pin/unpin model)
    */
   applyBlockHover(editor, block) {
     if (this.currentlyFocusedBlockId !== null) {
@@ -1728,9 +1633,6 @@ var DecorationManager = class {
   }
   /**
    * Clear currently highlighted block decorations
-   * Per TASK-0075
-   * 
-   * @param editor - The text editor to clear decorations from
    */
   clearCurrentHighlight(editor) {
     if (!this.currentlyHighlightedBlockId) {
@@ -1747,9 +1649,6 @@ var DecorationManager = class {
   }
   /**
    * Clear all decorations on BLOCK_CLEAR, IDLE, STALE
-   * Per TASK-0075, ED-003
-   * 
-   * @param editor - The text editor to clear decorations from (optional)
    */
   clearAllDecorations(editor) {
     if (editor) {
@@ -1765,23 +1664,11 @@ var DecorationManager = class {
     this.logger.info("Cleared all decoration state");
   }
   // ========================================
-  // BLOCK SELECTION (UI Refinement 2: Phase 4)
-  // REQ-053, REQ-054: Pin/Unpin selection model
+  // BLOCK SELECTION - Pin/Unpin model
   // ========================================
   /**
    * Apply block selection highlighting
-   * REQ-053: Applies persistent highlighting to all segments with consistent color
-   * 
-   * Block selection (pin/unpin model):
-   * - Uses same 0.25 alpha decoration as hover for visual consistency (REQ-055)
-   * - Applies highlighting to ALL segments of the block simultaneously
-   * - Persists until block is deselected (unlike hover which clears on mouse out)
-   * - No dimming of other blocks (simplified from focus mode)
-   * 
-   * Replaces focus mode - no dimming, just persistent highlighting on selected block
-   * 
-   * @param editor - The text editor to apply selection decorations
-   * @param block - The selected responsibility block to highlight
+   * Applies persistent highlighting to all segments with consistent color
    */
   applyBlockSelection(editor, block) {
     this.clearCurrentHighlight(editor);
@@ -1803,10 +1690,6 @@ var DecorationManager = class {
   }
   /**
    * Clear block selection highlighting
-   * REQ-054: Clears selection highlights for a specific block
-   * 
-   * @param editor - The text editor to clear selection decorations from
-   * @param blockId - The block ID to clear (optional, clears current if not provided)
    */
   clearBlockSelection(editor, blockId) {
     const targetBlockId = blockId || this.currentlyFocusedBlockId;
@@ -1822,10 +1705,7 @@ var DecorationManager = class {
   }
   /**
    * Dispose all decoration types
-   * Per TASK-0076, ED-003
-   * 
    * Called on state transitions (STALE, IDLE) or extension deactivation
-   * Prevents memory leaks by properly disposing TextEditorDecorationType instances
    */
   disposeAllDecorations() {
     const decorationCount = this.decorationCache.size;
@@ -1859,7 +1739,6 @@ var DecorationManager = class {
   }
   /**
    * Dispose manager and all resources
-   * Per ED-003, TASK-0105
    */
   dispose() {
     this.disposeAllDecorations();
@@ -1890,11 +1769,6 @@ var SegmentNavigator = class {
   }
   /**
    * Show segment navigator with current position indicator
-   * REQ-037: Display floating navigation UI when block is selected
-   * 
-   * @param blockId - ID of selected block
-   * @param currentSegment - Current segment index (0-based)
-   * @param totalSegments - Total number of segments in block
    */
   showNavigator(blockId, currentSegment, totalSegments) {
     const editor = vscode5.window.activeTextEditor;
@@ -1911,13 +1785,6 @@ var SegmentNavigator = class {
   }
   /**
    * Update navigator with new segment position
-   * REQ-038: Refresh indicator when user navigates between segments
-   * 
-   * Called when user presses Ctrl+Up/Down or clicks navigation buttons
-   * Updates the displayed segment indicator ("X/Y") without changing visibility
-   * 
-   * @param currentSegment - New current segment index (0-based)
-   * @param totalSegments - Total number of segments (may change if block updated)
    */
   updateNavigator(currentSegment, totalSegments) {
     if (!this.isVisible) {
@@ -1936,7 +1803,6 @@ var SegmentNavigator = class {
   }
   /**
    * Hide navigator and clear all decorations
-   * REQ-039: Remove floating UI when block is deselected
    */
   hideNavigator() {
     if (!this.isVisible) {
@@ -1955,8 +1821,6 @@ var SegmentNavigator = class {
   }
   /**
    * Render navigator UI in editor using decorations
-   * REQ-035, REQ-036, REQ-040: Create floating buttons with proper styling and state
-   * CON-002: Non-intrusive positioning, does not interfere with editing
    */
   renderNavigator(editor) {
     this.clearDecorations(editor);
@@ -1974,7 +1838,7 @@ var SegmentNavigator = class {
   }
   /**
    * Create up arrow button decoration
-   * REQ-040: Disabled when currentSegment === 0
+   * Disabled when at first segment
    */
   createUpButtonDecoration(editor) {
     const isDisabled = this.currentSegment === 0;
@@ -2056,7 +1920,7 @@ var SegmentNavigator = class {
   }
   /**
    * Create down arrow button decoration
-   * REQ-040: Disabled when currentSegment === totalSegments - 1 (last segment)
+   * Disabled when at last segment
    */
   createDownButtonDecoration(editor) {
     const isDisabled = this.currentSegment >= this.totalSegments - 1;
@@ -2183,7 +2047,6 @@ var IRISAPIClient = class {
   }
   /**
    * Send analysis request with comprehensive error handling
-   * Per TASK-0101: Global error boundary for server calls
    */
   async analyze(request) {
     this.logger.info("Starting analysis request", {
@@ -2221,7 +2084,6 @@ var IRISAPIClient = class {
   }
   /**
    * Execute HTTP request with timeout
-   * Per TASK-0101: Error boundary implementation
    */
   async executeRequest(request) {
     const controller = new AbortController();
@@ -2295,14 +2157,6 @@ var IRISAPIClient = class {
   }
   /**
    * Validate response schema defensively
-   * Per TASK-0103, API-002
-   * 
-   * Required fields:
-   * - file_intent (string)
-   * - responsibility_blocks (array)
-   * 
-   * Optional fields:
-   * - metadata (object)
    */
   validateResponse(response) {
     this.logger.debug("Validating response schema");
@@ -2348,7 +2202,6 @@ var IRISAPIClient = class {
   }
   /**
    * Validate individual responsibility block
-   * Per TASK-0103
    */
   validateResponsibilityBlock(block, index) {
     if (!block || typeof block !== "object") {
@@ -2603,7 +2456,6 @@ function activate(context) {
             const normalizedBlocks = response.responsibility_blocks.map((block) => ({
               ...block,
               blockId: generateBlockId(block)
-              // Deterministic blockId generation per Phase 6
             }));
             stateManager.setAnalyzed({
               fileIntent: response.file_intent,

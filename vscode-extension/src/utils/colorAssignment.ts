@@ -2,11 +2,8 @@ import * as crypto from 'crypto';
 
 /**
  * Color assignment utility for IRIS responsibility blocks
- * Phase 7: Smart Color Assignment (TASK-047 through TASK-053)
- * 
- * Key Requirements:
- * - REQ-003: Colors must be visually distinct
- * - GUD-002: Maintain WCAG AA accessibility standards (4.5:1 for normal text, 3:1 for large text)
+ *
+ * Colors must be visually distinct and maintain WCAG AA accessibility standards.
  * 
  * Algorithm Design:
  * - Uses HSL color space for perceptual uniformity

@@ -22,8 +22,7 @@ function normalizeWhitespace(text: string): string {
 
 /**
  * Generate deterministic blockId from ResponsibilityBlock using SHA-1 hash
- * Per TASK-0061, Phase 6 specification
- * 
+ *
  * Algorithm:
  * 1. Normalize label: trim, collapse whitespace
  * 2. Normalize description: trim, collapse whitespace

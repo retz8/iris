@@ -14,25 +14,11 @@ import {
 
 /**
  * Webview View Provider for IRIS Side Panel
- * 
- * Per REQ-004 (State-Driven UI):
- * - Webview is stateless and derives all content from IRISStateManager
- * - Never persists or mutates data
- * - Reacts to state changes via event subscription
- * 
- * Per GOAL-005 (Read-only Webview):
- * - Renders File Intent prominently at top
- * - Displays vertical list of Responsibility Blocks (label + description)
- * - Interactive block selection with pin/unpin toggle (UI Refinement 2)
- * 
- * Per UX-001 (Honest State):
- * - IDLE: empty state message
- * - ANALYZING: loading indicator
- * - ANALYZED: display results
- * - STALE: outdated analysis warning
- * 
- * Phase 10: UX Polish & Stability
- * - TASK-0104: Structured logging
+ *
+ * Stateless webview that derives all content from IRISStateManager.
+ * Renders File Intent, Responsibility Blocks, and handles block selection.
+ *
+ * States: IDLE | ANALYZING | ANALYZED | STALE
  */
 export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'iris.sidePanel';
@@ -68,8 +54,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Called when the view is first resolved
-   * Per TASK-0052: Manage lifecycle without owning semantic state
-   * Per TASK-0064: Implement message listeners
    */
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
@@ -86,7 +70,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     
     this.logger.info( 'Webview view resolved');
     
-    // Set up message listener per TASK-0064
+    // Set up message listener
     this.disposables.push(
       webviewView.webview.onDidReceiveMessage((message: any) => {
         this.handleWebviewMessage(message);
@@ -105,13 +89,12 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Handle state change events from state manager
-   * Per REQ-004: React to state changes, never own data
    */
   private handleStateChange(state: IRISAnalysisState): void {
     this.logger.info( `State changed to: ${state}`);
     this.renderCurrentState();
     
-    // Send state update message to webview per Phase 6
+    // Send state update message to webview
     this.postMessageToWebview({
       type: 'STATE_UPDATE',
       state: state
@@ -120,11 +103,9 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Handle messages from webview
-   * Per TASK-0064, TASK-0066, TASK-0067
-   * Enforces blockId-based routing per REQ-005
    */
   private handleWebviewMessage(message: any): void {
-    // Validate message type per TASK-0067
+    // Validate message type
     if (!isWebviewMessage(message)) {
       this.logger.warn( 'Received malformed message from webview', { 
         messageType: message?.type,
@@ -196,8 +177,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Handle BLOCK_HOVER message
-   * Per TASK-0066, TASK-0068: blockId-based routing with logging
-   * Triggers editor decorations (Phase 7)
+   * Triggers editor decorations
    */
   private handleBlockHover(blockId: string): void {
     this.logger.info( 'Block hover', { blockId });
@@ -227,8 +207,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Handle BLOCK_SELECTED message
-   * UI Refinement 2: Pin/unpin selection model
-   * REQ-042: Select block and apply persistent highlighting with segment navigation
+   * Select block and apply persistent highlighting with segment navigation
    */
   private handleBlockSelected(blockId: string): void {
     this.logger.info('Block selected - pin/unpin model', { blockId });
@@ -239,7 +218,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    // REQ-042 (1): Find the block by blockId
+    // Find the block by blockId
     const blocks = this.stateManager.getResponsibilityBlocks();
     if (!blocks) {
       this.logger.warn('No responsibility blocks available');
@@ -252,17 +231,17 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    // REQ-042 (1): Store selection state in state manager
+    // Store selection state in state manager
     this.stateManager.selectBlock(blockId);
 
-    // REQ-042 (3): Count segments (distinct ranges)
+    // Count segments (distinct ranges)
     const totalSegments = block.ranges.length;
     const currentSegment = 0; // Always start at first segment
 
-    // REQ-042 (4): Show segment navigator with segment count
+    // Show segment navigator with segment count
     this.segmentNavigator.showNavigator(blockId, currentSegment, totalSegments);
 
-    // REQ-042 (5): Apply highlighting decoration to all block segments (REQ-053)
+    // Apply highlighting decoration to all block segments
     this.decorationManager.applyBlockSelection(activeEditor, block);
 
     // Scroll editor to first segment of the selected block (near top with padding)
@@ -276,7 +255,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       activeEditor.selection = new vscode.Selection(cursorPos, cursorPos);
     }
 
-    // REQ-048: Update VS Code context for keybinding
+    // Update VS Code context for keybinding
     vscode.commands.executeCommand('setContext', 'iris.blockSelected', true);
     
     this.logger.info('Block selected with segment navigator', { 
@@ -288,7 +267,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Handle BLOCK_CLEAR message
-   * REQ-022: Deselects/unpins block and clears decorations
    */
   private handleBlockClear(): void {
     this.logger.info( 'Block clear');
@@ -304,8 +282,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Handle BLOCK_DESELECTED message
-   * UI Refinement 2: Pin/unpin selection model
-   * REQ-043: Deselect block, clear highlighting, and hide segment navigator
+   * Deselect block, clear highlighting, and hide segment navigator
    */
   private handleBlockDeselected(blockId: string): void {
     this.logger.info('Block deselected - pin/unpin model', { blockId });
@@ -315,16 +292,16 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    // REQ-043 (1): Clear selection state in state manager (also resets segment index to 0)
+    // Clear selection state in state manager (also resets segment index to 0)
     this.stateManager.deselectBlock();
     
-    // REQ-043 (2): Clear decorations for the block
+    // Clear decorations for the block
     this.decorationManager.clearCurrentHighlight(activeEditor);
     
-    // REQ-043 (3): Hide segment navigator
+    // Hide segment navigator
     this.segmentNavigator.hideNavigator();
     
-    // REQ-048: Update VS Code context for keybinding
+    // Update VS Code context for keybinding
     vscode.commands.executeCommand('setContext', 'iris.blockSelected', false);
     
     this.logger.info('Block deselected - navigator hidden', { blockId });
@@ -332,8 +309,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Handle SEGMENT_NAVIGATED message
-   * UI Refinement 2: Navigate between scattered segments of a block
-   * REQ-044: Scroll editor to target segment and update navigator indicator
+   * Scroll editor to target segment and update navigator indicator
    */
   private handleSegmentNavigated(blockId: string, segmentIndex: number, totalSegments: number): void {
     this.logger.info('Segment navigated', { blockId, segmentIndex, totalSegments });
@@ -344,7 +320,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    // REQ-044 (2): Get the selected block from state manager
+    // Get the selected block from state manager
     const blocks = this.stateManager.getResponsibilityBlocks();
     if (!blocks) {
       this.logger.error('No responsibility blocks available for segment navigation');
@@ -358,23 +334,23 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    // REQ-044 (1): Update segment index in state manager
+    // Update segment index in state manager
     this.stateManager.setCurrentSegmentIndex(segmentIndex);
 
-    // REQ-044 (2): Get the target segment (ranges are 1-based line numbers from API)
+    // Get the target segment (ranges are 1-based line numbers from API)
     const [startLine, endLine] = block.ranges[segmentIndex];
 
-    // REQ-044 (3): Scroll editor to segment at top with padding (consistent with block selection)
+    // Scroll editor to segment at top with padding
     const padding = 3;
     const revealLine = Math.max(startLine - 1 - padding, 0);
     const revealPos = new vscode.Position(revealLine, 0);
     activeEditor.revealRange(new vscode.Range(revealPos, revealPos), vscode.TextEditorRevealType.AtTop);
 
-    // REQ-084: Move cursor to segment start position
+    // Move cursor to segment start position
     const cursorPos = new vscode.Position(startLine - 1, 0);
     activeEditor.selection = new vscode.Selection(cursorPos, cursorPos);
     
-    // REQ-044 (4): Update navigator indicator to reflect new segment position
+    // Update navigator indicator to reflect new segment position
     this.segmentNavigator.updateNavigator(segmentIndex, totalSegments);
     
     this.logger.info('Scrolled to segment and updated navigator', { 
@@ -387,8 +363,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Handle ESCAPE_PRESSED message
-   * UI Refinement 2: Simplified escape handling for pin/unpin model
-   * REQ-045: Deselect current block via Escape key (same as BLOCK_DESELECTED)
+   * Deselect current block via Escape key
    */
   private handleEscapePressed(): void {
     this.logger.info('Escape pressed - deselecting block');
@@ -404,13 +379,13 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    // REQ-045 (1): Execute deselection behavior (same as BLOCK_DESELECTED)
+    // Execute deselection behavior
     this.stateManager.deselectBlock();
     this.decorationManager.clearCurrentHighlight(activeEditor);
     this.segmentNavigator.hideNavigator();
     vscode.commands.executeCommand('setContext', 'iris.blockSelected', false);
     
-    // REQ-045 (2): Notify webview of deselection via STATE_UPDATE message
+    // Notify webview of deselection via STATE_UPDATE message
     this.sendStateUpdate();
     
     this.logger.info('Block deselected via Escape', { blockId: selectedBlockId });
@@ -430,8 +405,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Send navigation command to webview for segment navigation
-   * REQ-079, REQ-080: Support keyboard shortcuts for segment navigation
-   * @param direction - 'prev' or 'next'
    */
   public sendNavigationCommand(direction: 'prev' | 'next'): void {
     if (!this.view) {
@@ -449,7 +422,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Post message to webview
-   * Per TASK-0065: Implement dispatch from extension to webview
    */
   private postMessageToWebview(message: ExtensionMessage): void {
     if (!this.view) {
@@ -462,7 +434,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Send analysis data to webview
-   * Per Phase 6: ANALYSIS_DATA message with blockId + metadata
    */
   private sendAnalysisData(data: AnalysisData): void {
     const message: AnalysisDataMessage = {
@@ -484,7 +455,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Render webview content based on current state
-   * Per UX-001: Handle all states appropriately
    */
   private renderCurrentState(): void {
     if (!this.view) {
@@ -511,7 +481,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Render IDLE state: empty state message
-   * Per UX-001, TASK-0057
    */
   private renderIdleState(): void {
     if (!this.view) {
@@ -535,7 +504,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Render ANALYZING state: loading indicator
-   * Per UX-001, TASK-0057
    */
   private renderAnalyzingState(): void {
     if (!this.view) {
@@ -558,7 +526,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Render ANALYZED state: display File Intent and Responsibility Blocks
-   * Per GOAL-005, TASK-0054, TASK-0055, TASK-0056
    */
   private renderAnalyzedState(): void {
     if (!this.view) {
@@ -572,12 +539,10 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       return;
     }
     
-    // Send analysis data to webview per Phase 6
+    // Send analysis data to webview
     this.sendAnalysisData(data);
     
-    // Render File Intent prominently at top (TASK-0055)
-    // Phase 1 UI Refinement: Removed "File Intent" header per TASK-003 / REQ-014
-    // Phase 2: Clean header-free implementation (TASK-014, REQ-014)
+    // Render File Intent prominently at top
     const fileIntentHtml = `
       <div class="file-intent-section">
         <div class="file-intent-content">
@@ -586,11 +551,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       </div>
     `;
     
-    // Render vertical list of Responsibility Blocks (TASK-0056)
-    // Phase 8: Add interactive elements for hover and focus
-    // Phase 1 UI Refinement: Removed "Responsibility Blocks" header per TASK-015 / REQ-013
-    // Phase 2: Clean implementation without section headers (TASK-015, REQ-013)
-    // Phase 3: TASK-019 - Wrap description in collapsible container for animated reveal
+    // Render vertical list of Responsibility Blocks
     const isDarkTheme = vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark
       || vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.HighContrast;
 
@@ -636,7 +597,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Render STALE state: outdated analysis warning
-   * Per UX-001, TASK-0057
    */
   private renderStaleState(): void {
     if (!this.view) {
@@ -645,7 +605,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     
     const data = this.stateManager.getAnalysisData();
     
-    // Send ANALYSIS_STALE message to webview per Phase 6
+    // Send ANALYSIS_STALE message to webview
     this.postMessageToWebview({
       type: 'ANALYSIS_STALE'
     });
@@ -663,7 +623,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     `;
     
     // Still show the data but with stale indicator
-    // Phase 2: Removed section headers per REQ-013, REQ-014 (TASK-014, TASK-015)
+    // Show stale data without interactive elements
     if (data) {
       const fileIntentHtml = `
         <div class="file-intent-section stale">
@@ -712,8 +672,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Generate HTML template with consistent structure
-   * Per TASK-0053: Minimal, static HTML structure
-   * Per TASK-0065: Include JavaScript for webview message posting
    */
   private getHtmlTemplate(title: string, bodyContent: string): string {
     return `<!DOCTYPE html>
@@ -723,7 +681,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${this.escapeHtml(title)}</title>
   <style>
-    /* Phase 1 UI Refinement: CSS custom properties for reusable values (PAT-002) */
+    /* CSS custom properties for reusable values */
     :root {
       --iris-spacing-xs: 4px;
       --iris-spacing-sm: 8px;
@@ -740,12 +698,11 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       padding: var(--iris-spacing-lg);
       color: var(--vscode-foreground);
       font-family: var(--vscode-font-family);
-      font-size: 13px; /* TASK-007: Refined font size */
-      line-height: 1.6; /* TASK-007: Improved line height for readability */
+      font-size: 13px;
+      line-height: 1.6;
       overflow-y: overlay; /* Overlay scrollbar so it doesn't consume layout width */
     }
     
-    /* Phase 2: Removed h2 styling as section headers removed per REQ-013, REQ-014 */
     
     h3 {
       margin: 0 0 var(--iris-spacing-sm) 0;
@@ -802,7 +759,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       to { transform: rotate(360deg); }
     }
     
-    /* Stale Banner - TASK-010: Updated styling for new design language */
+    /* Stale Banner */
     .stale-banner {
       display: flex;
       gap: var(--iris-spacing-md);
@@ -811,7 +768,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       background: var(--vscode-inputValidation-warningBackground);
       border: 1px solid var(--vscode-inputValidation-warningBorder);
       border-radius: var(--iris-border-radius);
-      transition: all var(--iris-transition-normal); /* TASK-011: Smooth transitions */
+      transition: all var(--iris-transition-normal);
     }
     
     .stale-icon {
@@ -831,7 +788,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     }
     
     /* File Intent */
-    /* Phase 2: Adjusted spacing after header removal (TASK-017) */
     .file-intent-section {
       margin-bottom: var(--iris-spacing-sm); 
     }
@@ -947,17 +903,11 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     // VS Code API for posting messages
     const vscode = acquireVsCodeApi();
     
-    // UI Refinement 2: Pin/unpin selection model state
-    // REQ-009: Renamed from activeFocusedBlockId for semantic clarity
+    // Pin/unpin selection model state
     let selectedBlockId = null;
     
-    // REQ-012: Track which segment of selected block is currently visible
     let currentSegmentIndex = 0;
-    
-    // REQ-013: Track total segment count of selected block
     let segmentCount = 0;
-    
-    // Store analysis data for segment navigation (REQ-023)
     let analysisData = null;
     
     // Send WEBVIEW_READY on initialization
@@ -965,29 +915,28 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       vscode.postMessage({ type: 'WEBVIEW_READY' });
     });
     
-    // REQ-067 to REQ-071: Keyboard shortcuts for segment navigation
-    // Listen for Ctrl+ArrowUp, Ctrl+ArrowDown, and Escape key
+    // Keyboard shortcuts for segment navigation
     window.addEventListener('keydown', (event) => {
-      // REQ-071: Only process shortcuts when a block is selected
+      // Only process shortcuts when a block is selected
       if (!selectedBlockId) {
         return;
       }
       
-      // REQ-068: Ctrl+Up navigates to previous segment
+      // Ctrl+Up navigates to previous segment
       if (event.ctrlKey && event.key === 'ArrowUp') {
         event.preventDefault();
         handleSegmentNavigation('prev');
         return;
       }
       
-      // REQ-069: Ctrl+Down navigates to next segment
+      // Ctrl+Down navigates to next segment
       if (event.ctrlKey && event.key === 'ArrowDown') {
         event.preventDefault();
         handleSegmentNavigation('next');
         return;
       }
       
-      // REQ-070: Escape key deselects the block
+      // Escape key deselects the block
       if (event.key === 'Escape') {
         event.preventDefault();
         executeDeselectBlock(selectedBlockId);
@@ -997,7 +946,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     
     // Handle block hover
     function handleBlockHover(blockId) {
-      // REQ-014: Don't send hover if block is selected/pinned
+      // Don't send hover if block is selected/pinned
       if (selectedBlockId !== null) {
         return;
       }
@@ -1006,35 +955,26 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
     // Handle block clear (mouse leave)
     function handleBlockClear() {
-      // REQ-015: Don't send clear if block is selected/pinned
+      // Don't send clear if block is selected/pinned
       if (selectedBlockId !== null) {
         return;
       }
       vscode.postMessage({ type: 'BLOCK_CLEAR' });
     }
     
-    // Handle block click - UI Refinement 2: Pin/unpin toggle model
-    // REQ-016 to REQ-020: Simplified click handler without double-click detection
-    // Pin/Unpin toggle model:
-    // - First click on a block: selects it (pins it, applies persistent highlighting)
-    // - Second click on same block: deselects it (unpins it, clears highlighting)
-    // - Click on different block: deselects current, selects new one
-    // - No focus mode, no folding, no double-click - just simple toggle
+    // Handle block click - pin/unpin toggle
     function handleBlockClick(blockId) {
-      // REQ-016: Detect if block is already selected (pin/unpin toggle)
       if (selectedBlockId === blockId) {
-        // REQ-017: Block already selected - unpin it
+        // Block already selected - unpin it
         executeDeselectBlock(blockId);
       } else {
-        // REQ-018: Block not selected - pin it
+        // Block not selected - pin it
         executeSelectBlock(blockId);
       }
     }
     
-    // REQ-021: Execute block selection (pin block)
-    // UI Refinement 2: Select a block and apply persistent highlighting
+    // Execute block selection (pin block)
     function executeSelectBlock(blockId) {
-      // REQ-021 (1): Find block in analysis data
       if (!analysisData || !analysisData.responsibilityBlocks) {
         console.error('Cannot select block: no analysis data available');
         return;
@@ -1049,13 +989,13 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       // Update selection state
       selectedBlockId = blockId;
       
-      // REQ-021 (4): Reset segment index to 0 when selecting new block
+      // Reset segment index to 0 when selecting new block
       currentSegmentIndex = 0;
       
       // Calculate segment count from block ranges
       segmentCount = block.ranges ? block.ranges.length : 0;
       
-      // REQ-021 (3): Update DOM - set active class on clicked block
+      // Update DOM - set active class on clicked block
       document.querySelectorAll('.block-item').forEach(item => {
         if (item.dataset.blockId === blockId) {
           item.classList.add('active');
@@ -1064,41 +1004,30 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
         }
       });
       
-      // REQ-021 (2): Send BLOCK_SELECTED message to extension with blockId
+      // Send BLOCK_SELECTED message to extension with blockId
       vscode.postMessage({ type: 'BLOCK_SELECTED', blockId: blockId });
       
-      // REQ-021 (5): Note - navigation buttons will be shown in future implementation
       console.log('Block selected:', blockId, 'segments:', segmentCount);
     }
     
-    // REQ-022: Execute block deselection (unpin block)
-    // UI Refinement 2: Deselect a block and clear highlighting
+    // Execute block deselection (unpin block)
     function executeDeselectBlock(blockId) {
-      // REQ-022 (1): Send BLOCK_DESELECTED message to extension
+      // Send BLOCK_DESELECTED message to extension
       vscode.postMessage({ type: 'BLOCK_DESELECTED', blockId: blockId });
       
-      // REQ-022 (2): Remove active class from all blocks
+      // Remove active class from all blocks
       document.querySelectorAll('.block-item').forEach(item => {
         item.classList.remove('active');
       });
       
-      // REQ-022 (3): Clear selection state
+      // Clear selection state
       selectedBlockId = null;
       currentSegmentIndex = 0;
       segmentCount = 0;
       
-      // REQ-022 (4): Note - navigation buttons will be hidden in future implementation
     }
     
-    // REQ-023: Handle segment navigation for blocks with scattered ranges
-    // UI Refinement 2: Navigate between non-contiguous code segments
-    // 
-    // Navigation flow:
-    // 1. User presses Ctrl+Up/Down or clicks navigation buttons in webview
-    // 2. Calculate new segment index (bounded by segment count)
-    // 3. Send SEGMENT_NAVIGATED message to extension with new index
-    // 4. Extension scrolls editor to target segment and updates state
-    // 5. Extension sends back updated segment count via navigator update
+    // Handle segment navigation for blocks with scattered ranges
     function handleSegmentNavigation(direction) {
       // Validate that a block is selected
       if (!selectedBlockId) {
@@ -1132,11 +1061,10 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
         return;
       }
       
-      // REQ-023: Update current segment index
+      // Update current segment index
       currentSegmentIndex = newIndex;
       
-      // REQ-023: Send SEGMENT_NAVIGATED message with new index to extension
-      // Extension will handle scrolling editor to the segment
+      // Send SEGMENT_NAVIGATED message with new index to extension
       vscode.postMessage({ 
         type: 'SEGMENT_NAVIGATED', 
         blockId: selectedBlockId,
@@ -1152,7 +1080,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       const message = event.data;
       console.log('Received message from extension:', message);
       
-      // Store analysis data for segment navigation (REQ-023)
+      // Store analysis data for segment navigation
       if (message.type === 'ANALYSIS_DATA') {
         analysisData = message.payload;
         console.log('Stored analysis data:', analysisData.responsibilityBlocks.length, 'blocks');
@@ -1160,7 +1088,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       
       // Handle state changes
       if (message.type === 'STATE_UPDATE') {
-        // REQ-072: Clear selection on state transitions to IDLE or STALE
+        // Clear selection on state transitions to IDLE or STALE
         if (message.state === 'IDLE' || message.state === 'STALE') {
           if (selectedBlockId !== null) {
             console.log('Clearing selection due to state transition to', message.state);
@@ -1174,7 +1102,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
         }
       }
       
-      // REQ-032: Handle ESCAPE_PRESSED message (replaces FOCUS_CLEARED_VIA_ESC)
+      // Handle ESCAPE_PRESSED message
       if (message.type === 'ESCAPE_PRESSED') {
         selectedBlockId = null;
         currentSegmentIndex = 0;
@@ -1184,7 +1112,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
         });
       }
 
-      // REQ-079, REQ-080: Handle NAVIGATE_SEGMENT message from keyboard shortcuts
+      // Handle NAVIGATE_SEGMENT message from keyboard shortcuts
       if (message.type === 'NAVIGATE_SEGMENT') {
         if (selectedBlockId !== null) {
           console.log('Navigating segment via keyboard shortcut:', message.direction);
@@ -1201,7 +1129,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
   /**
    * Escape HTML to prevent XSS
-   * Per TASK-0058: Ensure webview never persists or mutates data
    */
   private escapeHtml(text: string): string {
     return text
@@ -1213,9 +1140,8 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * REQ-094: Notify webview that block has been deselected (round-trip message verification)
+   * Notify webview that block has been deselected
    * Called by Esc key handler in extension.ts
-   * UI Refinement 2: Updated to use ESCAPE_PRESSED message
    */
   public notifyFocusCleared(): void {
     if (!this.view) {
@@ -1228,14 +1154,14 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       state: this.stateManager.getCurrentState()
     });
     
-    // REQ-032: Use ESCAPE_PRESSED message type
+    // Send ESCAPE_PRESSED to webview
     this.view.webview.postMessage({ type: 'ESCAPE_PRESSED' });
     
     this.logger.info('Notified webview of escape pressed');
   }
 
   /**
-   * Dispose resources per TASK-0105
+   * Dispose resources
    */
   public dispose(): void {
     this.disposables.forEach(d => d.dispose());

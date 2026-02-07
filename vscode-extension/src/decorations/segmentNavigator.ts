@@ -2,23 +2,11 @@ import * as vscode from 'vscode';
 import { createLogger, Logger } from '../utils/logger';
 
 /**
- * Segment Navigator Component (UI Refinement Phase 2: Phase 3)
- * 
- * Responsibilities:
- * - Display floating navigation controls in editor when block is selected (REQ-034)
- * - Show segment indicator ("X/Y") and up/down navigation buttons (REQ-035)
- * - Update navigator state as user navigates segments (REQ-038)
- * - Hide navigator when block is deselected (REQ-039)
- * - Handle disabled states for navigation buttons at segment boundaries (REQ-040)
- * 
- * Constraints:
- * - CON-002: Must not interfere with text editing (non-intrusive positioning)
- * - REQ-036: Uses VS Code DecorationRenderOptions for styling
- * 
- * Architecture:
- * - Uses after-contentText decorations to render UI elements
- * - Positioned at bottom-right of editor viewport
- * - Vertical stack: [↑] [X/Y] [↓]
+ * Segment Navigator Component
+ *
+ * Floating navigation controls for navigating between scattered segments of a block.
+ * Uses after-contentText decorations to render UI elements.
+ * Vertical stack: [up] [X/Y] [down]
  */
 export class SegmentNavigator implements vscode.Disposable {
   private outputChannel: vscode.OutputChannel;
@@ -46,11 +34,6 @@ export class SegmentNavigator implements vscode.Disposable {
 
   /**
    * Show segment navigator with current position indicator
-   * REQ-037: Display floating navigation UI when block is selected
-   * 
-   * @param blockId - ID of selected block
-   * @param currentSegment - Current segment index (0-based)
-   * @param totalSegments - Total number of segments in block
    */
   showNavigator(blockId: string, currentSegment: number, totalSegments: number): void {
     const editor = vscode.window.activeTextEditor;
@@ -71,13 +54,6 @@ export class SegmentNavigator implements vscode.Disposable {
 
   /**
    * Update navigator with new segment position
-   * REQ-038: Refresh indicator when user navigates between segments
-   * 
-   * Called when user presses Ctrl+Up/Down or clicks navigation buttons
-   * Updates the displayed segment indicator ("X/Y") without changing visibility
-   * 
-   * @param currentSegment - New current segment index (0-based)
-   * @param totalSegments - Total number of segments (may change if block updated)
    */
   updateNavigator(currentSegment: number, totalSegments: number): void {
     if (!this.isVisible) {
@@ -101,7 +77,6 @@ export class SegmentNavigator implements vscode.Disposable {
 
   /**
    * Hide navigator and clear all decorations
-   * REQ-039: Remove floating UI when block is deselected
    */
   hideNavigator(): void {
     if (!this.isVisible) {
@@ -125,8 +100,6 @@ export class SegmentNavigator implements vscode.Disposable {
 
   /**
    * Render navigator UI in editor using decorations
-   * REQ-035, REQ-036, REQ-040: Create floating buttons with proper styling and state
-   * CON-002: Non-intrusive positioning, does not interfere with editing
    */
   private renderNavigator(editor: vscode.TextEditor): void {
     // Clear existing decorations before re-rendering
@@ -151,7 +124,7 @@ export class SegmentNavigator implements vscode.Disposable {
 
   /**
    * Create up arrow button decoration
-   * REQ-040: Disabled when currentSegment === 0
+   * Disabled when at first segment
    */
   private createUpButtonDecoration(editor: vscode.TextEditor): void {
     const isDisabled = this.currentSegment === 0;
@@ -245,7 +218,7 @@ export class SegmentNavigator implements vscode.Disposable {
 
   /**
    * Create down arrow button decoration
-   * REQ-040: Disabled when currentSegment === totalSegments - 1 (last segment)
+   * Disabled when at last segment
    */
   private createDownButtonDecoration(editor: vscode.TextEditor): void {
     const isDisabled = this.currentSegment >= this.totalSegments - 1;
