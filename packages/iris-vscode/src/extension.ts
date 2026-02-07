@@ -218,6 +218,9 @@ export function activate(context: vscode.ExtensionContext) {
 				},
 			};
 
+			// Reveal the IRIS side panel so the user can see results
+			vscode.commands.executeCommand('iris.sidePanel.focus');
+
 			// Transition to ANALYZING state
 			stateManager.startAnalysis(fileUri);
 			
