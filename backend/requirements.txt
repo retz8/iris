@@ -5,6 +5,9 @@ flask-cors
 # OpenAI API
 openai
 
+# Mangum WSGI adapter for AWS Lambda
+mangum>=0.17.0
+
 # Tree-sitter for AST parsing
 tree-sitter
 tree-sitter-javascript
