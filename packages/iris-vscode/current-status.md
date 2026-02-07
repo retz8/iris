@@ -1,45 +1,52 @@
 # VS Code Extension Current Status
 
 ## Summary
-The VS Code extension provides a command-driven analysis workflow with a state-driven UI and editor overlays. It visualizes File Intent and Responsibility Blocks, supports interactive navigation, and maintains clear analysis freshness states.
+The VS Code extension is a thin adapter layer over `@iris/core`. It provides the VS Code-specific UI — sidebar webview, editor decorations, commands, and keybindings — while delegating all domain logic (state machine, API client, types, block IDs) to the core package.
+
+## Architecture
+
+The extension follows an **adapter pattern**: `@iris/core` owns all platform-agnostic logic, and iris-vscode bridges it to VS Code APIs.
+
+```
+src/
+  extension.ts                  # Entry point, command registration, lifecycle
+  state/irisState.ts            # Adapter: wraps IRISCoreState → vscode.EventEmitter
+  webview/sidePanel.ts          # Sidebar webview provider, renders state
+  decorations/decorationManager.ts  # Editor text decorations, theme-aware colors
+  decorations/segmentNavigator.ts   # Ctrl+Up/Down navigation between segments
+  types/messages.ts             # Webview ↔ extension message protocol
+  utils/logger.ts               # Logger implementation (OutputChannel-backed)
+  utils/colorAssignment.ts      # WCAG AA compliant color generation
+```
+
+Key dependency flow:
+- `extension.ts` imports `IRISAnalysisState`, `generateBlockId`, `IRISAPIClient` from `@iris/core`
+- `irisState.ts` wraps `IRISCoreState` from `@iris/core`, bridges callbacks to `vscode.EventEmitter`
+- All domain types (`AnalysisData`, `NormalizedResponsibilityBlock`, etc.) come from `@iris/core`
+- Deleted from this package (now in core): `api/irisClient.ts`, `utils/blockId.ts`
 
 ## Current functionality
-- **Manual analysis trigger** via command palette.
-- **State model**: IDLE → ANALYZING → ANALYZED → STALE.
-- **Sidebar webview**: File Intent (prominent, bold heading) and Responsibility Block list with color-coded dots.
-- **Hover interaction**: Hovering a block reveals its description and highlights related lines in the editor; both collapse on hover-out.
-- **Block selection**: Click to pin/unpin a block with persistent highlights; auto-scrolls editor to the block.
-- **Segment navigation**: Keyboard shortcuts (Ctrl+Up/Down) to move between scattered ranges of a selected block.
-- **Stale detection**: Any edit marks analysis as stale.
-
-## User interactions
-- Hover a block to reveal description and highlight related lines; both clear on hover-out.
-- Click to select/unselect a block (persistent highlight, auto-scrolls editor to first segment).
-- Navigate segments with keyboard shortcuts when a block is selected.
-- Escape to deselect the current block.
-- Refresh to re-run analysis.
+- **Manual analysis trigger** via command palette (`iris.runAnalysis`).
+- **State model**: IDLE → ANALYZING → ANALYZED → STALE (driven by `@iris/core`).
+- **Sidebar webview**: File Intent heading and Responsibility Block list with color-coded dots.
+- **Hover interaction**: Hovering a block reveals its description and highlights related lines in the editor.
+- **Block selection**: Click to pin/unpin a block with persistent highlights; auto-scrolls to block.
+- **Segment navigation**: Ctrl+Up/Down to move between scattered ranges of a selected block.
+- **Stale detection**: Any edit to the analyzed file transitions to STALE.
+- **Escape key**: Deselects the currently pinned block.
 
 ## Supported languages
 - Python
-- JavaScript
-- TypeScript
-- React JSX/TSX
+- JavaScript / TypeScript
+- React JSX / TSX
 
-## Key components
-- `extension.ts`: Command registration and lifecycle.
-- `irisState.ts`: Single source of truth for analysis and selection state.
-- `sidePanel.ts`: Webview rendering and message handling.
-- `decorationManager.ts`: Editor decorations and color assignment.
-- `segmentNavigator.ts`: Segment navigation state (UI indicator removed from webview).
-- `irisClient.ts`: Backend API client.
+## Build
+- `npm run compile` — type-check + lint + esbuild bundle to `dist/extension.js`
+- Requires `@iris/core` to be built first (root `npm run build` enforces order)
+- `npm run watch` — watch mode for development
 
 ## Known constraints
-- No automatic analysis on file open.
+- No automatic analysis on file open — user must trigger manually.
 - Single-file analysis only.
 - Analysis does not persist across extension restarts.
-- Best experience with moderate block counts (not extremely large files).
-
-## Next likely work
-- Further UI refinement for block selection and navigation.
-- Improve resilience for very large files or many blocks.
-- Add optional settings for user preferences.
+- Backend must be running at `localhost:8080`.
