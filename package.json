@@ -1,0 +1,8 @@
+{
+  "name": "iris-monorepo",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "build": "npm -w @iris/core run build && npm -w iris run compile"
+  }
+}

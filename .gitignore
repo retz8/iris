@@ -9,6 +9,9 @@ __pycache__/
 .env
 node_modules/
 
+# build output
+dist/
+
 # .github
 .github/agents
 .github/instructions

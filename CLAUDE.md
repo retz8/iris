@@ -23,8 +23,8 @@ pytest backend/tests/test_foo.py::test_bar  # Run single test
 
 ### VS Code Extension (TypeScript)
 ```bash
-cd vscode-extension
-npm install              # Install dependencies
+cd packages/iris-vscode
+npm install              # Install dependencies (run from repo root for workspaces)
 npm run compile          # Type check + lint + build
 npm run watch            # Watch mode for development
 npm run package          # Production build (minified)
@@ -56,7 +56,7 @@ Uses a **single-shot inference** pattern: one LLM API call with full source code
 
 Cache flow: Check memory → check disk (promote hit to memory) → LLM inference → cache result.
 
-### VS Code Extension (`vscode-extension/src/`)
+### VS Code Extension (`packages/iris-vscode/src/`)
 
 Uses a **state-driven architecture** with explicit state transitions: `IDLE → ANALYZING → ANALYZED → STALE`.
 
@@ -89,7 +89,7 @@ Key: API response line numbers are ONE-based; VS Code uses ZERO-based. The decor
 When the user explicitly asks after changes are made, update the following
 current-status documents based on the actual modifications in that session:
 - `backend/current-status.md`
-- `vscode-extension/current-status.md`
+- `packages/iris-vscode/current-status.md`
 
 Guidelines:
 - Reflect only the changes that actually occurred.
