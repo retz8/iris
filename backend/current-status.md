@@ -45,6 +45,14 @@ Notes:
 - `analysis_cache.py`: LRU + disk cache, TTL cleanup.
 - `cache_monitor.py`: Local cache metrics and OpenAI cost tracking.
 - `routes.py`: Flask API endpoints.
+- `lambda_handler.py`: Mangum WSGI adapter exposing the Flask app as an AWS Lambda handler.
+
+## AWS Lambda deployment
+- **Adapter**: Mangum wraps the Flask WSGI app to translate API Gateway events.
+- **Handler entry point**: `lambda_handler.handler` (for container CMD / Lambda config).
+- **Runtime**: Container image based on AWS Lambda Python base image.
+- **Local dev unchanged**: `app.run()` remains guarded under `__main__`; Mangum is only invoked by Lambda.
+- **Specs**: `backend/specs/deployment/` contains the deployment plan and implementation details.
 
 ## Known constraints
 - Analysis is file-scoped (single file per request).
@@ -52,6 +60,8 @@ Notes:
 - No multi-file or project-wide reasoning.
 
 ## Next likely work
+- Build Lambda-compatible Dockerfile and deploy to ECR (see `specs/deployment/infrastructure-backend-lambda-deploy-1.md`).
+- Attach API Gateway HTTP API to the Lambda function.
 - Tighten prompt or schema if responsibility block quality regresses.
 - Expand supported languages as parser coverage grows.
 - Add automated tests for cache and API validation paths.
