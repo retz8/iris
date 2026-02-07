@@ -8,6 +8,26 @@ The backend runs a single-shot LLM analysis pipeline that produces File Intent a
 - **Structured output**: JSON schema with `file_intent` and `responsibility_blocks`.
 - **Caching**: Memory LRU + disk cache, content-addressed by SHA-256.
 
+## Cache flow visualization (user request scenarios)
+
+```mermaid
+flowchart TD
+    A[User requests analysis\n(filename, language, source)] --> B[Compute SHA-256\ncontent hash]
+    B --> C{Cache system\ninitialized?}
+    C -- No --> H[Call LLM\n(single-shot analysis)]
+    C -- Yes --> D{Memory LRU\nhit?}
+    D -- Yes --> E[Return cached result\n(memory hit)]
+    D -- No --> F{Disk cache\nhit?}
+    F -- Yes --> G[Promote to memory\nreturn cached result]
+    F -- No --> H
+    H --> I[Store result\nmemory + disk]
+    I --> J[Return result\n(cache miss)]
+```
+
+Notes:
+- Disk entries expire after TTL (default 30 days); expired entries are deleted on read and during startup cleanup.
+- Local cache hits/misses and OpenAI usage are tracked by `CacheMonitor`.
+
 ## API surface
 - **POST /api/iris/analyze**
   - Input: `filename`, `language`, `source_code` (with line numbers), optional `metadata`.
