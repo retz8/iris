@@ -154,12 +154,9 @@ export class DecorationManager implements vscode.Disposable {
     editor: vscode.TextEditor, 
     block: NormalizedResponsibilityBlock
   ): void {
-    // Disable hover decorations while block is selected
-    if (this.currentlyFocusedBlockId !== null) {
-      this.logger.info('Hover disabled while block selected', { 
-        blockId: block.blockId,
-        selectedBlockId: this.currentlyFocusedBlockId
-      });
+    // Skip hover on the currently selected block to avoid clearing its highlight
+    if (this.currentlyFocusedBlockId === block.blockId) {
+      this.logger.debug('Hover ignored on selected block', { blockId: block.blockId });
       return;
     }
 

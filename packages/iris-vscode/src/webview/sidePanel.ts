@@ -933,8 +933,8 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     
     // Handle block hover
     function handleBlockHover(blockId) {
-      // Don't send hover if block is selected/pinned
-      if (selectedBlockId !== null) {
+      // Don't send hover for the selected/pinned block
+      if (selectedBlockId !== null && blockId === selectedBlockId) {
         return;
       }
       vscode.postMessage({ type: 'BLOCK_HOVER', blockId: blockId });
@@ -942,10 +942,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
     // Handle block clear (mouse leave)
     function handleBlockClear() {
-      // Don't send clear if block is selected/pinned
-      if (selectedBlockId !== null) {
-        return;
-      }
       vscode.postMessage({ type: 'BLOCK_CLEAR' });
     }
     
