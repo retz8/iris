@@ -386,6 +386,128 @@ var IRISStateManager = class {
 // src/webview/sidePanel.ts
 var vscode3 = __toESM(require("vscode"));
 
+// src/utils/colorAssignment.ts
+var crypto = __toESM(require("crypto"));
+var GOLDEN_RATIO = 0.618033988749895;
+function getThemeConfig(isDarkTheme) {
+  if (isDarkTheme) {
+    return {
+      baseLightness: 55,
+      // Lighter colors for dark theme
+      saturation: 65,
+      // Moderate saturation
+      contrastBackground: { r: 30, g: 30, b: 30 }
+      // Dark background
+    };
+  } else {
+    return {
+      baseLightness: 70,
+      // Softer colors for light theme
+      saturation: 55,
+      // Slightly lower saturation
+      contrastBackground: { r: 255, g: 255, b: 255 }
+      // Light background
+    };
+  }
+}
+function hslToRgb(hsl) {
+  const h = hsl.h / 360;
+  const s = hsl.s / 100;
+  const l = hsl.l / 100;
+  let r, g, b;
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p2, q2, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p2 + (q2 - p2) * 6 * t;
+      if (t < 1 / 2) return q2;
+      if (t < 2 / 3) return p2 + (q2 - p2) * (2 / 3 - t) * 6;
+      return p2;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+  return {
+    r: Math.round(r * 255),
+    g: Math.round(g * 255),
+    b: Math.round(b * 255)
+  };
+}
+function getRelativeLuminance(rgb) {
+  const rsRGB = rgb.r / 255;
+  const gsRGB = rgb.g / 255;
+  const bsRGB = rgb.b / 255;
+  const r = rsRGB <= 0.03928 ? rsRGB / 12.92 : Math.pow((rsRGB + 0.055) / 1.055, 2.4);
+  const g = gsRGB <= 0.03928 ? gsRGB / 12.92 : Math.pow((gsRGB + 0.055) / 1.055, 2.4);
+  const b = bsRGB <= 0.03928 ? bsRGB / 12.92 : Math.pow((bsRGB + 0.055) / 1.055, 2.4);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function getContrastRatio(color1, color2) {
+  const l1 = getRelativeLuminance(color1);
+  const l2 = getRelativeLuminance(color2);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+function ensureContrast(hsl, background, minContrast = 3) {
+  let adjustedHsl = { ...hsl };
+  let rgb = hslToRgb(adjustedHsl);
+  let contrast = getContrastRatio(rgb, background);
+  const maxIterations = 20;
+  let iterations = 0;
+  const lightnessStep = 3;
+  const isBackgroundDark = getRelativeLuminance(background) < 0.5;
+  const direction = isBackgroundDark ? 1 : -1;
+  while (contrast < minContrast && iterations < maxIterations) {
+    adjustedHsl.l += direction * lightnessStep;
+    adjustedHsl.l = Math.max(20, Math.min(85, adjustedHsl.l));
+    rgb = hslToRgb(adjustedHsl);
+    contrast = getContrastRatio(rgb, background);
+    iterations++;
+  }
+  return adjustedHsl;
+}
+function generateHueFromBlockId(blockId) {
+  const hash = crypto.createHash("sha256").update(blockId).digest();
+  const primarySeed = hash.readUInt32BE(0) / 4294967295;
+  const secondarySeed = hash.readUInt32BE(8) / 4294967295;
+  const hue = (primarySeed * 360 + secondarySeed * GOLDEN_RATIO * 120) % 360;
+  return hue;
+}
+function generateColorVariation(blockId, config) {
+  const hash = crypto.createHash("sha256").update(blockId).digest();
+  const saturationSeed = hash.readUInt8(4) / 255;
+  const saturationVariation = (saturationSeed - 0.5) * 20;
+  const lightnessSeed = hash.readUInt8(6) / 255;
+  const lightnessVariation = (lightnessSeed - 0.5) * 15;
+  return {
+    s: Math.max(40, Math.min(80, config.saturation + saturationVariation)),
+    l: Math.max(40, Math.min(80, config.baseLightness + lightnessVariation))
+  };
+}
+function generateBlockColor(blockId, isDarkTheme) {
+  const config = getThemeConfig(isDarkTheme);
+  const hue = generateHueFromBlockId(blockId);
+  const variation = generateColorVariation(blockId, config);
+  let hslColor = {
+    h: hue,
+    s: variation.s,
+    l: variation.l
+  };
+  hslColor = ensureContrast(hslColor, config.contrastBackground, 3);
+  const rgb = hslToRgb(hslColor);
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.25)`;
+}
+function generateBlockColorOpaque(blockId, isDarkTheme) {
+  const rgbaColor = generateBlockColor(blockId, isDarkTheme);
+  return rgbaColor.replace(/,\s*[\d.]+\)$/, ", 1.0)");
+}
+
 // src/types/messages.ts
 function isWebviewMessage(message) {
   if (!message || typeof message !== "object" || typeof message.type !== "string") {
@@ -644,10 +766,12 @@ var IRISSidePanelProvider = class {
     }
     this.stateManager.setCurrentSegmentIndex(segmentIndex);
     const [startLine, endLine] = block.ranges[segmentIndex];
-    const position = new vscode3.Position(startLine - 1, 0);
-    const range = new vscode3.Range(position, position);
-    activeEditor.revealRange(range, vscode3.TextEditorRevealType.InCenter);
-    activeEditor.selection = new vscode3.Selection(position, position);
+    const padding = 3;
+    const revealLine = Math.max(startLine - 1 - padding, 0);
+    const revealPos = new vscode3.Position(revealLine, 0);
+    activeEditor.revealRange(new vscode3.Range(revealPos, revealPos), vscode3.TextEditorRevealType.AtTop);
+    const cursorPos = new vscode3.Position(startLine - 1, 0);
+    activeEditor.selection = new vscode3.Selection(cursorPos, cursorPos);
     this.segmentNavigator.updateNavigator(segmentIndex, totalSegments);
     this.logger.info("Scrolled to segment and updated navigator", {
       blockId,
@@ -824,21 +948,28 @@ var IRISSidePanelProvider = class {
         </div>
       </div>
     `;
+    const isDarkTheme = vscode3.window.activeColorTheme.kind === vscode3.ColorThemeKind.Dark || vscode3.window.activeColorTheme.kind === vscode3.ColorThemeKind.HighContrast;
     const blocksHtml = data.responsibilityBlocks.length > 0 ? `
         <div class="responsibility-blocks-section">
           <div class="blocks-list">
-            ${data.responsibilityBlocks.map((block) => `
-              <div class="block-item" 
+            ${data.responsibilityBlocks.map((block) => {
+      const dotColor = generateBlockColorOpaque(block.blockId, isDarkTheme);
+      return `
+              <div class="block-item"
                    data-block-id="${block.blockId}"
                    onmouseenter="handleBlockHover('${block.blockId}')"
                    onmouseleave="handleBlockClear()"
                    onclick="handleBlockClick('${block.blockId}')">
-                <div class="block-label">${this.escapeHtml(block.label)}</div>
+                <div class="block-header">
+                  <span class="block-dot" style="background: ${dotColor};"></span>
+                  <span class="block-label">${this.escapeHtml(block.label)}</span>
+                </div>
                 <div class="block-description-container">
                   <div class="block-description">${this.escapeHtml(block.description)}</div>
                 </div>
               </div>
-            `).join("")}
+            `;
+    }).join("")}
           </div>
         </div>
       ` : `
@@ -884,17 +1015,24 @@ var IRISSidePanelProvider = class {
           </div>
         </div>
       `;
+      const isDarkThemeStale = vscode3.window.activeColorTheme.kind === vscode3.ColorThemeKind.Dark || vscode3.window.activeColorTheme.kind === vscode3.ColorThemeKind.HighContrast;
       const blocksHtml = data.responsibilityBlocks.length > 0 ? `
           <div class="responsibility-blocks-section stale">
             <div class="blocks-list">
-              ${data.responsibilityBlocks.map((block) => `
+              ${data.responsibilityBlocks.map((block) => {
+        const dotColor = generateBlockColorOpaque(block.blockId, isDarkThemeStale);
+        return `
                 <div class="block-item" data-block-id="${block.blockId}">
-                  <div class="block-label">${this.escapeHtml(block.label)}</div>
+                  <div class="block-header">
+                    <span class="block-dot" style="background: ${dotColor};"></span>
+                    <span class="block-label">${this.escapeHtml(block.label)}</span>
+                  </div>
                   <div class="block-description-container">
                     <div class="block-description">${this.escapeHtml(block.description)}</div>
                   </div>
                 </div>
-              `).join("")}
+              `;
+      }).join("")}
             </div>
           </div>
         ` : "";
@@ -936,11 +1074,10 @@ var IRISSidePanelProvider = class {
     body {
       padding: var(--iris-spacing-lg);
       color: var(--vscode-foreground);
-      font-family: var(--vscode-editor-font-family); /* TASK-007: Use editor font per REQ-002 */
+      font-family: var(--vscode-font-family);
       font-size: 13px; /* TASK-007: Refined font size */
       line-height: 1.6; /* TASK-007: Improved line height for readability */
-      overflow-y: auto;
-      scrollbar-gutter: stable; /* Reserve scrollbar space to prevent layout shift on hover */
+      overflow-y: overlay; /* Overlay scrollbar so it doesn't consume layout width */
     }
     
     /* Phase 2: Removed h2 styling as section headers removed per REQ-013, REQ-014 */
@@ -1028,31 +1165,28 @@ var IRISSidePanelProvider = class {
       font-weight: 600;
     }
     
-    /* File Intent Section - TASK-003, TASK-007, TASK-009: Refined styling */
+    /* File Intent */
     /* Phase 2: Adjusted spacing after header removal (TASK-017) */
     .file-intent-section {
-      margin-bottom: calc(var(--iris-spacing-xl) + var(--iris-spacing-sm)); /* TASK-017: Increased spacing to compensate for removed header */
+      margin-bottom: var(--iris-spacing-sm); 
     }
     
     .file-intent-content {
-      padding: var(--iris-spacing-lg); /* TASK-009: Better padding */
-      background: transparent; /* TASK-004: Cleaner appearance */
-      border: none; /* TASK-004: Remove border for minimal look */
-      border-left: 3px solid var(--vscode-textLink-foreground); /* TASK-004: Accent border */
-      border-radius: 0; /* Clean edge */
-      font-size: 13px; /* TASK-007: Consistent font size */
-      line-height: 1.7; /* TASK-007: Improved readability */
-      color: var(--vscode-editor-foreground); /* TASK-008: Clear color */
-      font-style: italic; /* Distinguish from regular text */
-      opacity: 0.95;
-      transition: all var(--iris-transition-normal); /* TASK-011 */
+      padding: 0 0 var(--iris-spacing-lg) 0;
+      background: transparent;
+      border: none;
+      font-size: 16px;
+      line-height: 1.6;
+      font-weight: 600;
+      color: var(--vscode-foreground);
+      transition: all var(--iris-transition-normal);
     }
     
     .file-intent-section.stale .file-intent-content {
       opacity: 0.6;
     }
     
-    /* Responsibility Blocks Section - TASK-004 through TASK-011: Complete styling upgrade */
+    /* Responsibility Blocks Section */
     .responsibility-blocks-section {
       margin-bottom: var(--iris-spacing-lg);
     }
@@ -1060,93 +1194,76 @@ var IRISSidePanelProvider = class {
     .blocks-list {
       display: flex;
       flex-direction: column;
-      gap: var(--iris-spacing-sm); /* TASK-009: Tighter gap for clean look */
+      gap: 2px;
     }
-    
-    /* TASK-004: Updated block styling with refined appearance */
+
     .block-item {
-      padding: var(--iris-spacing-md) var(--iris-spacing-lg); /* TASK-009: Refined padding */
-      background: transparent; /* TASK-004: Clean background */
-      border: 1px solid var(--vscode-widget-border); /* TASK-004: Subtle border */
-      border-radius: var(--iris-border-radius); /* TASK-004: Rounded corners */
+      padding: 6px 8px;
+      background: transparent;
       cursor: pointer;
-      transition: all var(--iris-transition-normal); /* TASK-011: Smooth transitions */
-      position: relative;
+      transition: background var(--iris-transition-fast);
+      border-radius: 3px;
     }
-    
-    /* TASK-005: Hover state with background change and subtle elevation */
+
     .block-item:hover {
-      border-color: var(--vscode-focusBorder); /* TASK-005: Highlight border on hover */
-      background: var(--vscode-list-hoverBackground); /* TASK-005: Background change */
-      transform: translateY(-1px); /* TASK-005: Subtle elevation */
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* TASK-005: Subtle shadow */
+      background: var(--vscode-list-hoverBackground);
     }
-    
-    /* TASK-006: Selected/focus state with stronger highlight */
+
     .block-item.active {
-      border-color: var(--vscode-textLink-activeForeground); /* TASK-006: Strong border */
-      background: var(--vscode-list-activeSelectionBackground); /* TASK-006: Distinct background */
-      transform: translateY(0); /* No elevation for selected */
-      box-shadow: 0 0 0 2px var(--vscode-focusBorder); /* TASK-006: Focus ring */
+      background: var(--vscode-list-activeSelectionBackground);
     }
-    
-    /* TASK-010: Stale state styling */
+
     .responsibility-blocks-section.stale .block-item {
       opacity: 0.6;
       cursor: not-allowed;
     }
-    
+
     .responsibility-blocks-section.stale .block-item:hover {
-      border-color: var(--vscode-widget-border);
       background: transparent;
-      transform: none;
-      box-shadow: none;
     }
-    
-    /* TASK-007, TASK-008: Typography updates for block label */
+
+    .block-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .block-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+
     .block-label {
-      font-weight: 600;
-      margin-bottom: var(--iris-spacing-xs); /* TASK-009: Refined spacing */
-      color: var(--vscode-editor-foreground); /* TASK-008: Use foreground color */
-      font-size: 13px; /* TASK-007: Consistent sizing */
-      line-height: 1.5;
+      font-weight: 500;
+      font-size: 13px;
+      line-height: 1.4;
+      color: var(--vscode-foreground);
     }
-    
-    /* Phase 3: TASK-020 - Description container with smooth transitions */
+
     .block-description-container {
       max-height: 0;
       opacity: 0;
       overflow: hidden;
-      transition: max-height var(--iris-transition-slow) ease,
-                  opacity var(--iris-transition-normal) ease,
-                  padding var(--iris-transition-normal) ease,
-                  margin var(--iris-transition-normal) ease;
-      padding: 0;
-      margin: 0;
+      transition: max-height var(--iris-transition-slow),
+                  opacity var(--iris-transition-normal),
+                  padding var(--iris-transition-normal);
+      padding-left: 14px;
     }
-    
-    /* Phase 3: TASK-022 - Reveal description on hover with smooth animation */
-    .block-item:hover .block-description-container {
-      max-height: 200px; /* Generous max-height for smooth reveal */
-      opacity: 1;
-      padding-top: var(--iris-spacing-xs);
-      margin-top: var(--iris-spacing-xs);
-    }
-    
-    /* UI Refinement 2: Keep description visible when block is selected (pinned) */
+
+    .block-item:hover .block-description-container,
     .block-item.active .block-description-container {
       max-height: 200px;
       opacity: 1;
       padding-top: var(--iris-spacing-xs);
-      margin-top: var(--iris-spacing-xs);
     }
-    
-    /* TASK-007, TASK-008: Typography updates for block description */
+
     .block-description {
-      font-size: 12px; /* TASK-007: Slightly smaller for hierarchy */
-      color: var(--vscode-descriptionForeground); /* TASK-008: Muted description color */
-      line-height: 1.6; /* TASK-007: Better readability */
-      opacity: 0.9;
+      font-size: 12px;
+      color: var(--vscode-descriptionForeground);
+      line-height: 1.5;
     }
     
     .no-blocks {
@@ -1157,70 +1274,6 @@ var IRISSidePanelProvider = class {
       font-size: 13px;
     }
     
-    /* UI Refinement 2 Phase 3: Floating Segment Navigator (REQ-062 to REQ-065) */
-    /* REQ-062: Floating navigator positioning at bottom-right of viewport */
-    .segment-navigator {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 1000;
-      display: none; /* Hidden by default, shown when block selected */
-      flex-direction: column;
-      gap: var(--iris-spacing-xs);
-      background: var(--vscode-sideBar-background);
-      border: 1px solid var(--vscode-widget-border);
-      border-radius: var(--iris-border-radius);
-      padding: var(--iris-spacing-xs);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-    
-    /* REQ-065: Visibility toggle class */
-    .segment-navigator.navigator-visible {
-      display: flex;
-    }
-    
-    /* REQ-063: Up/down button styling - accessible, minimal visual weight */
-    .segment-nav-button {
-      background: var(--vscode-button-secondaryBackground);
-      color: var(--vscode-button-secondaryForeground);
-      border: none;
-      border-radius: 4px;
-      width: 32px;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 14px;
-      transition: all var(--iris-transition-fast);
-    }
-    
-    .segment-nav-button:hover:not(:disabled) {
-      background: var(--vscode-button-secondaryHoverBackground);
-      transform: translateY(-1px);
-    }
-    
-    .segment-nav-button:active:not(:disabled) {
-      transform: translateY(0);
-    }
-    
-    .segment-nav-button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-    
-    /* REQ-064: Segment indicator text - centered, monospace, subtle background */
-    .segment-indicator {
-      font-family: var(--vscode-editor-font-family);
-      font-size: 11px;
-      text-align: center;
-      padding: 4px 8px;
-      background: var(--vscode-input-background);
-      border-radius: 3px;
-      color: var(--vscode-input-foreground);
-      user-select: none;
-      font-variant-numeric: tabular-nums;
-    }
   </style>
 </head>
 <body>
@@ -1285,7 +1338,7 @@ var IRISSidePanelProvider = class {
       }
       vscode.postMessage({ type: 'BLOCK_HOVER', blockId: blockId });
     }
-    
+
     // Handle block clear (mouse leave)
     function handleBlockClear() {
       // REQ-015: Don't send clear if block is selected/pinned
@@ -1513,7 +1566,7 @@ var IRISSidePanelProvider = class {
 };
 
 // src/utils/blockId.ts
-var crypto = __toESM(require("crypto"));
+var crypto2 = __toESM(require("crypto"));
 function normalizeWhitespace(text) {
   return text.trim().replace(/\s+/g, " ");
 }
@@ -1527,137 +1580,13 @@ function generateBlockId(block) {
     ranges: stringifiedRanges
   };
   const signatureString = JSON.stringify(signature);
-  const hash = crypto.createHash("sha1").update(signatureString).digest("hex");
+  const hash = crypto2.createHash("sha1").update(signatureString).digest("hex");
   const blockId = `rb_${hash.slice(0, 12)}`;
   return blockId;
 }
 
 // src/decorations/decorationManager.ts
 var vscode4 = __toESM(require("vscode"));
-
-// src/utils/colorAssignment.ts
-var crypto2 = __toESM(require("crypto"));
-var GOLDEN_RATIO = 0.618033988749895;
-function getThemeConfig(isDarkTheme) {
-  if (isDarkTheme) {
-    return {
-      baseLightness: 55,
-      // Lighter colors for dark theme
-      saturation: 65,
-      // Moderate saturation
-      contrastBackground: { r: 30, g: 30, b: 30 }
-      // Dark background
-    };
-  } else {
-    return {
-      baseLightness: 70,
-      // Softer colors for light theme
-      saturation: 55,
-      // Slightly lower saturation
-      contrastBackground: { r: 255, g: 255, b: 255 }
-      // Light background
-    };
-  }
-}
-function hslToRgb(hsl) {
-  const h = hsl.h / 360;
-  const s = hsl.s / 100;
-  const l = hsl.l / 100;
-  let r, g, b;
-  if (s === 0) {
-    r = g = b = l;
-  } else {
-    const hue2rgb = (p2, q2, t) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1 / 6) return p2 + (q2 - p2) * 6 * t;
-      if (t < 1 / 2) return q2;
-      if (t < 2 / 3) return p2 + (q2 - p2) * (2 / 3 - t) * 6;
-      return p2;
-    };
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    r = hue2rgb(p, q, h + 1 / 3);
-    g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1 / 3);
-  }
-  return {
-    r: Math.round(r * 255),
-    g: Math.round(g * 255),
-    b: Math.round(b * 255)
-  };
-}
-function getRelativeLuminance(rgb) {
-  const rsRGB = rgb.r / 255;
-  const gsRGB = rgb.g / 255;
-  const bsRGB = rgb.b / 255;
-  const r = rsRGB <= 0.03928 ? rsRGB / 12.92 : Math.pow((rsRGB + 0.055) / 1.055, 2.4);
-  const g = gsRGB <= 0.03928 ? gsRGB / 12.92 : Math.pow((gsRGB + 0.055) / 1.055, 2.4);
-  const b = bsRGB <= 0.03928 ? bsRGB / 12.92 : Math.pow((bsRGB + 0.055) / 1.055, 2.4);
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-function getContrastRatio(color1, color2) {
-  const l1 = getRelativeLuminance(color1);
-  const l2 = getRelativeLuminance(color2);
-  const lighter = Math.max(l1, l2);
-  const darker = Math.min(l1, l2);
-  return (lighter + 0.05) / (darker + 0.05);
-}
-function ensureContrast(hsl, background, minContrast = 3) {
-  let adjustedHsl = { ...hsl };
-  let rgb = hslToRgb(adjustedHsl);
-  let contrast = getContrastRatio(rgb, background);
-  const maxIterations = 20;
-  let iterations = 0;
-  const lightnessStep = 3;
-  const isBackgroundDark = getRelativeLuminance(background) < 0.5;
-  const direction = isBackgroundDark ? 1 : -1;
-  while (contrast < minContrast && iterations < maxIterations) {
-    adjustedHsl.l += direction * lightnessStep;
-    adjustedHsl.l = Math.max(20, Math.min(85, adjustedHsl.l));
-    rgb = hslToRgb(adjustedHsl);
-    contrast = getContrastRatio(rgb, background);
-    iterations++;
-  }
-  return adjustedHsl;
-}
-function generateHueFromBlockId(blockId) {
-  const hash = crypto2.createHash("sha256").update(blockId).digest();
-  const primarySeed = hash.readUInt32BE(0) / 4294967295;
-  const secondarySeed = hash.readUInt32BE(8) / 4294967295;
-  const hue = (primarySeed * 360 + secondarySeed * GOLDEN_RATIO * 120) % 360;
-  return hue;
-}
-function generateColorVariation(blockId, config) {
-  const hash = crypto2.createHash("sha256").update(blockId).digest();
-  const saturationSeed = hash.readUInt8(4) / 255;
-  const saturationVariation = (saturationSeed - 0.5) * 20;
-  const lightnessSeed = hash.readUInt8(6) / 255;
-  const lightnessVariation = (lightnessSeed - 0.5) * 15;
-  return {
-    s: Math.max(40, Math.min(80, config.saturation + saturationVariation)),
-    l: Math.max(40, Math.min(80, config.baseLightness + lightnessVariation))
-  };
-}
-function generateBlockColor(blockId, isDarkTheme) {
-  const config = getThemeConfig(isDarkTheme);
-  const hue = generateHueFromBlockId(blockId);
-  const variation = generateColorVariation(blockId, config);
-  let hslColor = {
-    h: hue,
-    s: variation.s,
-    l: variation.l
-  };
-  hslColor = ensureContrast(hslColor, config.contrastBackground, 3);
-  const rgb = hslToRgb(hslColor);
-  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.25)`;
-}
-function generateBlockColorOpaque(blockId, isDarkTheme) {
-  const rgbaColor = generateBlockColor(blockId, isDarkTheme);
-  return rgbaColor.replace(/,\s*[\d.]+\)$/, ", 1.0)");
-}
-
-// src/decorations/decorationManager.ts
 var DecorationManager = class {
   decorationCache;
   currentlyHighlightedBlockId;

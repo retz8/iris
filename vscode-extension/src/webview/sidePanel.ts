@@ -3,6 +3,7 @@ import { IRISStateManager, IRISAnalysisState, AnalysisData } from '../state/iris
 import { DecorationManager } from '../decorations/decorationManager';
 import { SegmentNavigator } from '../decorations/segmentNavigator';
 import { createLogger, Logger } from '../utils/logger';
+import { generateBlockColorOpaque } from '../utils/colorAssignment';
 import { 
   WebviewMessage, 
   ExtensionMessage, 
@@ -590,22 +591,30 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     // Phase 1 UI Refinement: Removed "Responsibility Blocks" header per TASK-015 / REQ-013
     // Phase 2: Clean implementation without section headers (TASK-015, REQ-013)
     // Phase 3: TASK-019 - Wrap description in collapsible container for animated reveal
+    const isDarkTheme = vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark
+      || vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.HighContrast;
+
     const blocksHtml = data.responsibilityBlocks.length > 0
       ? `
         <div class="responsibility-blocks-section">
           <div class="blocks-list">
-            ${data.responsibilityBlocks.map(block => `
-              <div class="block-item" 
+            ${data.responsibilityBlocks.map(block => {
+              const dotColor = generateBlockColorOpaque(block.blockId, isDarkTheme);
+              return `
+              <div class="block-item"
                    data-block-id="${block.blockId}"
                    onmouseenter="handleBlockHover('${block.blockId}')"
                    onmouseleave="handleBlockClear()"
                    onclick="handleBlockClick('${block.blockId}')">
-                <div class="block-label">${this.escapeHtml(block.label)}</div>
+                <div class="block-header">
+                  <span class="block-dot" style="background: ${dotColor};"></span>
+                  <span class="block-label">${this.escapeHtml(block.label)}</span>
+                </div>
                 <div class="block-description-container">
                   <div class="block-description">${this.escapeHtml(block.description)}</div>
                 </div>
               </div>
-            `).join('')}
+            `;}).join('')}
           </div>
         </div>
       `
@@ -664,18 +673,26 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
         </div>
       `;
       
+      const isDarkThemeStale = vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark
+        || vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.HighContrast;
+
       const blocksHtml = data.responsibilityBlocks.length > 0
         ? `
           <div class="responsibility-blocks-section stale">
             <div class="blocks-list">
-              ${data.responsibilityBlocks.map(block => `
+              ${data.responsibilityBlocks.map(block => {
+                const dotColor = generateBlockColorOpaque(block.blockId, isDarkThemeStale);
+                return `
                 <div class="block-item" data-block-id="${block.blockId}">
-                  <div class="block-label">${this.escapeHtml(block.label)}</div>
+                  <div class="block-header">
+                    <span class="block-dot" style="background: ${dotColor};"></span>
+                    <span class="block-label">${this.escapeHtml(block.label)}</span>
+                  </div>
                   <div class="block-description-container">
                     <div class="block-description">${this.escapeHtml(block.description)}</div>
                   </div>
                 </div>
-              `).join('')}
+              `;}).join('')}
             </div>
           </div>
         `
@@ -722,11 +739,10 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     body {
       padding: var(--iris-spacing-lg);
       color: var(--vscode-foreground);
-      font-family: var(--vscode-editor-font-family); /* TASK-007: Use editor font per REQ-002 */
+      font-family: var(--vscode-font-family);
       font-size: 13px; /* TASK-007: Refined font size */
       line-height: 1.6; /* TASK-007: Improved line height for readability */
-      overflow-y: auto;
-      scrollbar-gutter: stable; /* Reserve scrollbar space to prevent layout shift on hover */
+      overflow-y: overlay; /* Overlay scrollbar so it doesn't consume layout width */
     }
     
     /* Phase 2: Removed h2 styling as section headers removed per REQ-013, REQ-014 */
@@ -814,31 +830,28 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       font-weight: 600;
     }
     
-    /* File Intent Section - TASK-003, TASK-007, TASK-009: Refined styling */
+    /* File Intent */
     /* Phase 2: Adjusted spacing after header removal (TASK-017) */
     .file-intent-section {
-      margin-bottom: calc(var(--iris-spacing-xl) + var(--iris-spacing-sm)); /* TASK-017: Increased spacing to compensate for removed header */
+      margin-bottom: var(--iris-spacing-sm); 
     }
     
     .file-intent-content {
-      padding: var(--iris-spacing-lg); /* TASK-009: Better padding */
-      background: transparent; /* TASK-004: Cleaner appearance */
-      border: none; /* TASK-004: Remove border for minimal look */
-      border-left: 3px solid var(--vscode-textLink-foreground); /* TASK-004: Accent border */
-      border-radius: 0; /* Clean edge */
-      font-size: 13px; /* TASK-007: Consistent font size */
-      line-height: 1.7; /* TASK-007: Improved readability */
-      color: var(--vscode-editor-foreground); /* TASK-008: Clear color */
-      font-style: italic; /* Distinguish from regular text */
-      opacity: 0.95;
-      transition: all var(--iris-transition-normal); /* TASK-011 */
+      padding: 0 0 var(--iris-spacing-lg) 0;
+      background: transparent;
+      border: none;
+      font-size: 16px;
+      line-height: 1.6;
+      font-weight: 600;
+      color: var(--vscode-foreground);
+      transition: all var(--iris-transition-normal);
     }
     
     .file-intent-section.stale .file-intent-content {
       opacity: 0.6;
     }
     
-    /* Responsibility Blocks Section - TASK-004 through TASK-011: Complete styling upgrade */
+    /* Responsibility Blocks Section */
     .responsibility-blocks-section {
       margin-bottom: var(--iris-spacing-lg);
     }
@@ -846,93 +859,76 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     .blocks-list {
       display: flex;
       flex-direction: column;
-      gap: var(--iris-spacing-sm); /* TASK-009: Tighter gap for clean look */
+      gap: 2px;
     }
-    
-    /* TASK-004: Updated block styling with refined appearance */
+
     .block-item {
-      padding: var(--iris-spacing-md) var(--iris-spacing-lg); /* TASK-009: Refined padding */
-      background: transparent; /* TASK-004: Clean background */
-      border: 1px solid var(--vscode-widget-border); /* TASK-004: Subtle border */
-      border-radius: var(--iris-border-radius); /* TASK-004: Rounded corners */
+      padding: 6px 8px;
+      background: transparent;
       cursor: pointer;
-      transition: all var(--iris-transition-normal); /* TASK-011: Smooth transitions */
-      position: relative;
+      transition: background var(--iris-transition-fast);
+      border-radius: 3px;
     }
-    
-    /* TASK-005: Hover state with background change and subtle elevation */
+
     .block-item:hover {
-      border-color: var(--vscode-focusBorder); /* TASK-005: Highlight border on hover */
-      background: var(--vscode-list-hoverBackground); /* TASK-005: Background change */
-      transform: translateY(-1px); /* TASK-005: Subtle elevation */
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* TASK-005: Subtle shadow */
+      background: var(--vscode-list-hoverBackground);
     }
-    
-    /* TASK-006: Selected/focus state with stronger highlight */
+
     .block-item.active {
-      border-color: var(--vscode-textLink-activeForeground); /* TASK-006: Strong border */
-      background: var(--vscode-list-activeSelectionBackground); /* TASK-006: Distinct background */
-      transform: translateY(0); /* No elevation for selected */
-      box-shadow: 0 0 0 2px var(--vscode-focusBorder); /* TASK-006: Focus ring */
+      background: var(--vscode-list-activeSelectionBackground);
     }
-    
-    /* TASK-010: Stale state styling */
+
     .responsibility-blocks-section.stale .block-item {
       opacity: 0.6;
       cursor: not-allowed;
     }
-    
+
     .responsibility-blocks-section.stale .block-item:hover {
-      border-color: var(--vscode-widget-border);
       background: transparent;
-      transform: none;
-      box-shadow: none;
     }
-    
-    /* TASK-007, TASK-008: Typography updates for block label */
+
+    .block-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .block-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+
     .block-label {
-      font-weight: 600;
-      margin-bottom: var(--iris-spacing-xs); /* TASK-009: Refined spacing */
-      color: var(--vscode-editor-foreground); /* TASK-008: Use foreground color */
-      font-size: 13px; /* TASK-007: Consistent sizing */
-      line-height: 1.5;
+      font-weight: 500;
+      font-size: 13px;
+      line-height: 1.4;
+      color: var(--vscode-foreground);
     }
-    
-    /* Phase 3: TASK-020 - Description container with smooth transitions */
+
     .block-description-container {
       max-height: 0;
       opacity: 0;
       overflow: hidden;
-      transition: max-height var(--iris-transition-slow) ease,
-                  opacity var(--iris-transition-normal) ease,
-                  padding var(--iris-transition-normal) ease,
-                  margin var(--iris-transition-normal) ease;
-      padding: 0;
-      margin: 0;
+      transition: max-height var(--iris-transition-slow),
+                  opacity var(--iris-transition-normal),
+                  padding var(--iris-transition-normal);
+      padding-left: 14px;
     }
-    
-    /* Phase 3: TASK-022 - Reveal description on hover with smooth animation */
-    .block-item:hover .block-description-container {
-      max-height: 200px; /* Generous max-height for smooth reveal */
-      opacity: 1;
-      padding-top: var(--iris-spacing-xs);
-      margin-top: var(--iris-spacing-xs);
-    }
-    
-    /* UI Refinement 2: Keep description visible when block is selected (pinned) */
+
+    .block-item:hover .block-description-container,
     .block-item.active .block-description-container {
       max-height: 200px;
       opacity: 1;
       padding-top: var(--iris-spacing-xs);
-      margin-top: var(--iris-spacing-xs);
     }
-    
-    /* TASK-007, TASK-008: Typography updates for block description */
+
     .block-description {
-      font-size: 12px; /* TASK-007: Slightly smaller for hierarchy */
-      color: var(--vscode-descriptionForeground); /* TASK-008: Muted description color */
-      line-height: 1.6; /* TASK-007: Better readability */
-      opacity: 0.9;
+      font-size: 12px;
+      color: var(--vscode-descriptionForeground);
+      line-height: 1.5;
     }
     
     .no-blocks {
@@ -943,70 +939,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       font-size: 13px;
     }
     
-    /* UI Refinement 2 Phase 3: Floating Segment Navigator (REQ-062 to REQ-065) */
-    /* REQ-062: Floating navigator positioning at bottom-right of viewport */
-    .segment-navigator {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 1000;
-      display: none; /* Hidden by default, shown when block selected */
-      flex-direction: column;
-      gap: var(--iris-spacing-xs);
-      background: var(--vscode-sideBar-background);
-      border: 1px solid var(--vscode-widget-border);
-      border-radius: var(--iris-border-radius);
-      padding: var(--iris-spacing-xs);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-    
-    /* REQ-065: Visibility toggle class */
-    .segment-navigator.navigator-visible {
-      display: flex;
-    }
-    
-    /* REQ-063: Up/down button styling - accessible, minimal visual weight */
-    .segment-nav-button {
-      background: var(--vscode-button-secondaryBackground);
-      color: var(--vscode-button-secondaryForeground);
-      border: none;
-      border-radius: 4px;
-      width: 32px;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 14px;
-      transition: all var(--iris-transition-fast);
-    }
-    
-    .segment-nav-button:hover:not(:disabled) {
-      background: var(--vscode-button-secondaryHoverBackground);
-      transform: translateY(-1px);
-    }
-    
-    .segment-nav-button:active:not(:disabled) {
-      transform: translateY(0);
-    }
-    
-    .segment-nav-button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-    
-    /* REQ-064: Segment indicator text - centered, monospace, subtle background */
-    .segment-indicator {
-      font-family: var(--vscode-editor-font-family);
-      font-size: 11px;
-      text-align: center;
-      padding: 4px 8px;
-      background: var(--vscode-input-background);
-      border-radius: 3px;
-      color: var(--vscode-input-foreground);
-      user-select: none;
-      font-variant-numeric: tabular-nums;
-    }
   </style>
 </head>
 <body>
@@ -1071,7 +1003,7 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       }
       vscode.postMessage({ type: 'BLOCK_HOVER', blockId: blockId });
     }
-    
+
     // Handle block clear (mouse leave)
     function handleBlockClear() {
       // REQ-015: Don't send clear if block is selected/pinned
