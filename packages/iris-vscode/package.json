@@ -14,7 +14,13 @@
     "commands": [
       {
         "command": "iris.runAnalysis",
-        "title": "IRIS: Run Analysis"
+        "title": "IRIS: Run Analysis",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "iris.openSettings",
+        "title": "IRIS: Open Settings",
+        "icon": "$(gear)"
       },
       {
         "command": "iris.exitFocusMode",
@@ -64,6 +70,30 @@
           "icon": "$(lightbulb)"
         }
       ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "iris.runAnalysis",
+          "when": "view == iris.sidePanel",
+          "group": "navigation"
+        },
+        {
+          "command": "iris.openSettings",
+          "when": "view == iris.sidePanel",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "IRIS",
+      "properties": {
+        "iris.autoAnalyze": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically analyze files when switching editors"
+        }
+      }
     }
   },
   "scripts": {

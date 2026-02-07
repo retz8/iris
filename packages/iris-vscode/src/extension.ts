@@ -167,16 +167,24 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Set initial context for block selection
 	vscode.commands.executeCommand('setContext', 'iris.blockSelected', false);
-	
-	const disposable = vscode.commands.registerCommand('iris.runAnalysis', async () => {
+
+	// Shared analysis function used by both manual command and auto-analysis
+	// When silent=true (auto-analysis): skip output channel, panel focus, and success toasts
+	async function runAnalysisOnActiveFile(options: { silent?: boolean } = {}): Promise<void> {
+		const silent = options.silent ?? false;
+
 		try {
-			outputChannel.show(true);
-			logger.info('Command executed: iris.runAnalysis');
+			if (!silent) {
+				outputChannel.show(true);
+			}
+			logger.info(silent ? 'Auto-analysis triggered' : 'Command executed: iris.runAnalysis');
 
 			// Check if already analyzing (prevent duplicate triggers)
 			if (stateManager.isAnalyzing()) {
 				logger.warn('Analysis already in progress, ignoring duplicate trigger');
-				vscode.window.showWarningMessage('IRIS: Analysis already in progress.');
+				if (!silent) {
+					vscode.window.showWarningMessage('IRIS: Analysis already in progress.');
+				}
 				return;
 			}
 
@@ -184,7 +192,9 @@ export function activate(context: vscode.ExtensionContext) {
 			const activeEditor = vscode.window.activeTextEditor;
 			if (!activeEditor) {
 				logger.warn('No active editor found');
-				vscode.window.showInformationMessage('IRIS: No active editor to analyze.');
+				if (!silent) {
+					vscode.window.showInformationMessage('IRIS: No active editor to analyze.');
+				}
 				return;
 			}
 
@@ -207,9 +217,11 @@ export function activate(context: vscode.ExtensionContext) {
 			// Edge case: Unsupported language
 			if (!SUPPORTED_LANGUAGES.has(languageId)) {
 				logger.warn('Unsupported language detected', { languageId });
-				vscode.window.showWarningMessage(
-					`IRIS: Unsupported language "${languageId}". Supported: ${Array.from(SUPPORTED_LANGUAGES).join(', ')}`
-				);
+				if (!silent) {
+					vscode.window.showWarningMessage(
+						`IRIS: Unsupported language "${languageId}". Supported: ${Array.from(SUPPORTED_LANGUAGES).join(', ')}`
+					);
+				}
 				return;
 			}
 
@@ -229,12 +241,14 @@ export function activate(context: vscode.ExtensionContext) {
 				},
 			};
 
-			// Reveal the IRIS side panel so the user can see results
-			vscode.commands.executeCommand('iris.sidePanel.focus');
+			// Reveal the IRIS side panel so the user can see results (manual only)
+			if (!silent) {
+				vscode.commands.executeCommand('iris.sidePanel.focus');
+			}
 
 			// Transition to ANALYZING state
 			stateManager.startAnalysis(fileUri);
-			
+
 			// Show progress notification
 			await vscode.window.withProgress(
 				{
@@ -252,7 +266,9 @@ export function activate(context: vscode.ExtensionContext) {
 						// Edge case: Empty response (no blocks)
 						if (response.responsibility_blocks.length === 0) {
 							logger.warn('Server returned empty responsibility blocks');
-							vscode.window.showWarningMessage('IRIS: No responsibility blocks found in file.');
+							if (!silent) {
+								vscode.window.showWarningMessage('IRIS: No responsibility blocks found in file.');
+							}
 							stateManager.setError('No responsibility blocks found', fileUri);
 							return;
 						}
@@ -280,8 +296,10 @@ export function activate(context: vscode.ExtensionContext) {
 							blockCount: normalizedBlocks.length,
 							fileIntent: response.file_intent.substring(0, 50)
 						});
-						
-						vscode.window.showInformationMessage('IRIS: Analysis completed successfully.');
+
+						if (!silent) {
+							vscode.window.showInformationMessage('IRIS: Analysis completed successfully.');
+						}
 
 					} catch (error) {
 						// Handle API errors with proper user messaging
@@ -312,9 +330,16 @@ export function activate(context: vscode.ExtensionContext) {
 			stateManager.setError(message);
 			vscode.window.showErrorMessage('IRIS: Analysis failed.');
 		}
-	});
+	}
 
+	const disposable = vscode.commands.registerCommand('iris.runAnalysis', () => runAnalysisOnActiveFile({ silent: false }));
 	context.subscriptions.push(disposable);
+
+	// Register settings command - opens VS Code settings filtered to IRIS
+	const openSettingsCommand = vscode.commands.registerCommand('iris.openSettings', () => {
+		vscode.commands.executeCommand('workbench.action.openSettings', 'iris');
+	});
+	context.subscriptions.push(openSettingsCommand);
 
 	// Document change listener for STALE state transition
 	// Any edit invalidates analysis immediately (no diffing, no heuristics)
@@ -352,18 +377,56 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
-	// Active editor change listener: Clear block selection when switching editors
-	// UI Refinement 2: Pin/unpin selection model automatically deselects on editor switch
+	// Active editor change listener: Clear block selection and trigger auto-analysis
+	let autoAnalyzeTimer: ReturnType<typeof setTimeout> | undefined;
+
 	context.subscriptions.push(
 		vscode.window.onDidChangeActiveTextEditor((editor) => {
+			// Clear block selection on editor switch
 			const selectedBlockId = stateManager.getSelectedBlockId();
 			if (selectedBlockId && editor) {
 				logger.info('Active editor changed - clearing block selection');
 				stateManager.deselectBlock();
 				decorationManager.clearBlockSelection(editor);
 			}
+
+			// Clear any pending auto-analysis timer
+			if (autoAnalyzeTimer) {
+				clearTimeout(autoAnalyzeTimer);
+				autoAnalyzeTimer = undefined;
+			}
+
+			if (!editor) {
+				return;
+			}
+
+			// Auto-analysis: debounced trigger on file switch
+			const autoAnalyze = vscode.workspace.getConfiguration('iris').get<boolean>('autoAnalyze', true);
+			if (!autoAnalyze) {
+				return;
+			}
+			if (!SUPPORTED_LANGUAGES.has(editor.document.languageId)) {
+				return;
+			}
+			if (stateManager.isAnalyzing()) {
+				return;
+			}
+
+			// Skip if this file is already analyzed and not stale
+			const analyzedUri = stateManager.getAnalyzedFileUri();
+			const currentState = stateManager.getCurrentState();
+			if (analyzedUri === editor.document.uri.toString() && currentState === IRISAnalysisState.ANALYZED) {
+				return;
+			}
+
+			autoAnalyzeTimer = setTimeout(() => {
+				runAnalysisOnActiveFile({ silent: true });
+			}, 1000);
 		})
 	);
+
+	// Clean up auto-analysis timer on dispose
+	context.subscriptions.push({ dispose: () => { if (autoAnalyzeTimer) { clearTimeout(autoAnalyzeTimer); } } });
 
 	logger.info('Extension activation complete', {
 		supportedLanguages: Array.from(SUPPORTED_LANGUAGES)
