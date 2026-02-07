@@ -362,16 +362,16 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
     // REQ-044 (2): Get the target segment (ranges are 1-based line numbers from API)
     const [startLine, endLine] = block.ranges[segmentIndex];
-    
-    // Convert to 0-based for VS Code API
-    const position = new vscode.Position(startLine - 1, 0);
-    const range = new vscode.Range(position, position);
-    
-    // REQ-044 (3): Scroll editor to segment and center it (REQ-083)
-    activeEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-    
+
+    // REQ-044 (3): Scroll editor to segment at top with padding (consistent with block selection)
+    const padding = 3;
+    const revealLine = Math.max(startLine - 1 - padding, 0);
+    const revealPos = new vscode.Position(revealLine, 0);
+    activeEditor.revealRange(new vscode.Range(revealPos, revealPos), vscode.TextEditorRevealType.AtTop);
+
     // REQ-084: Move cursor to segment start position
-    activeEditor.selection = new vscode.Selection(position, position);
+    const cursorPos = new vscode.Position(startLine - 1, 0);
+    activeEditor.selection = new vscode.Selection(cursorPos, cursorPos);
     
     // REQ-044 (4): Update navigator indicator to reflect new segment position
     this.segmentNavigator.updateNavigator(segmentIndex, totalSegments);
