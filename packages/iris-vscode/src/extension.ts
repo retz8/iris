@@ -6,7 +6,6 @@ import { IRISAnalysisState, generateBlockId, IRISAPIClient, APIError, APIErrorTy
 import { IRISStateManager } from './state/irisState';
 import { IRISSidePanelProvider } from './webview/sidePanel';
 import { DecorationManager } from './decorations/decorationManager';
-import { SegmentNavigator } from './decorations/segmentNavigator';
 import { createLogger } from './utils/logger';
 
 
@@ -39,10 +38,6 @@ export function activate(context: vscode.ExtensionContext) {
 	const decorationManager = new DecorationManager(outputChannel);
 	context.subscriptions.push(decorationManager);
 
-	// Initialize segment navigator (UI Refinement 2: Phase 3)
-	const segmentNavigator = new SegmentNavigator(outputChannel);
-	context.subscriptions.push(segmentNavigator);
-
 	// Initialize API client with error boundary
 	const apiClient = new IRISAPIClient(
 		{
@@ -71,7 +66,6 @@ export function activate(context: vscode.ExtensionContext) {
 		context.extensionUri,
 		stateManager,
 		decorationManager,
-		segmentNavigator,
 		outputChannel
 	);
 	context.subscriptions.push(
@@ -104,9 +98,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 				// Clear decorations
 				decorationManager.clearCurrentHighlight(activeEditor);
-
-				// Hide segment navigator
-				segmentNavigator.hideNavigator();
 
 				// Update VS Code context
 				vscode.commands.executeCommand('setContext', 'iris.blockSelected', false);

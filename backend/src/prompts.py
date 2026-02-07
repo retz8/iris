@@ -78,7 +78,7 @@ The output must:
 - Determine what capability this block provides
 - Write a clear label that captures the essence
 - Label should be specific enough to distinguish from other blocks, not generic or vague
-- Different blocks may overlap in line ranges if necessary
+- Each line of code should belong to at most ONE block. Minimize inter-block overlap.
 - Within a single block, ranges must NOT overlap or nest (e.g., [305, 321] already covers [306, 312] — do not emit both)
 - Merge or remove redundant ranges so every line appears in at most one range per block
 - No need to cover every line of code, focus on major responsibilities

@@ -42,7 +42,7 @@ async def analyze():
     {
       "filename": "example.ts",
       "source_code": "..." or "lines": [{"line": 1, "text": "..."}],
-      "language": "typescript"  // optional, defaults 
+      "language": "typescript"  // optional, defaults
       to "javascript"
     }
 
@@ -65,6 +65,7 @@ async def analyze():
     # Handle both source_code and lines format
     source_code = data.get("source_code")
     # Validation
+
     if not filename:
         return (
             jsonify({"success": False, "error": "Missing required field: filename"}),
@@ -100,13 +101,9 @@ async def analyze():
             ),
             503,
         )
-
-    # -- TASK-004: analysis_requested --------------------------------------
     code_length = len(source_code)
     estimated_tokens = code_length // 4
-    emit_emf_event(
-        build_analysis_requested(code_length, estimated_tokens)
-    )
+    emit_emf_event(build_analysis_requested(code_length, estimated_tokens))
 
     t_start = time.monotonic()
 

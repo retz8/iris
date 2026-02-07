@@ -3,7 +3,6 @@ import { IRISAnalysisState } from '@iris/core';
 import type { AnalysisData } from '@iris/core';
 import { IRISStateManager } from '../state/irisState';
 import { DecorationManager } from '../decorations/decorationManager';
-import { SegmentNavigator } from '../decorations/segmentNavigator';
 import { createLogger, Logger } from '../utils/logger';
 import { generateBlockColorOpaque } from '../utils/colorAssignment';
 import { 
@@ -28,7 +27,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private stateManager: IRISStateManager;
   private decorationManager: DecorationManager;
-  private segmentNavigator: SegmentNavigator;
   private disposables: vscode.Disposable[] = [];
   private logger: Logger;
 
@@ -36,12 +34,10 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     private readonly extensionUri: vscode.Uri,
     stateManager: IRISStateManager,
     decorationManager: DecorationManager,
-    segmentNavigator: SegmentNavigator,
     outputChannel: vscode.OutputChannel
   ) {
     this.stateManager = stateManager;
     this.decorationManager = decorationManager;
-    this.segmentNavigator = segmentNavigator;
     this.logger = createLogger(outputChannel, 'SidePanel');
     
     // Subscribe to state changes
@@ -238,11 +234,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
     // Count segments (distinct ranges)
     const totalSegments = block.ranges.length;
-    const currentSegment = 0; // Always start at first segment
-
-    // Show segment navigator with segment count
-    this.segmentNavigator.showNavigator(blockId, currentSegment, totalSegments);
-
     // Apply highlighting decoration to all block segments
     this.decorationManager.applyBlockSelection(activeEditor, block);
 
@@ -300,9 +291,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     // Clear decorations for the block
     this.decorationManager.clearCurrentHighlight(activeEditor);
     
-    // Hide segment navigator
-    this.segmentNavigator.hideNavigator();
-    
     // Update VS Code context for keybinding
     vscode.commands.executeCommand('setContext', 'iris.blockSelected', false);
     
@@ -352,8 +340,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     const cursorPos = new vscode.Position(startLine - 1, 0);
     activeEditor.selection = new vscode.Selection(cursorPos, cursorPos);
     
-    // Update navigator indicator to reflect new segment position
-    this.segmentNavigator.updateNavigator(segmentIndex, totalSegments);
     
     this.logger.info('Scrolled to segment and updated navigator', { 
       blockId, 
@@ -384,7 +370,6 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     // Execute deselection behavior
     this.stateManager.deselectBlock();
     this.decorationManager.clearCurrentHighlight(activeEditor);
-    this.segmentNavigator.hideNavigator();
     vscode.commands.executeCommand('setContext', 'iris.blockSelected', false);
     
     // Notify webview of deselection via STATE_UPDATE message
