@@ -50,7 +50,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// Listen to state changes to manage decorations
 	stateManager.onStateChange((newState) => {
 		const activeEditor = vscode.window.activeTextEditor;
-		
+
 		// Clear decorations on IDLE or STALE state
 		if (newState === IRISAnalysisState.IDLE || newState === IRISAnalysisState.STALE) {
 			if (activeEditor) {
@@ -58,6 +58,17 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			decorationManager.disposeAllDecorations();
 			logger.info('Cleared decorations', { state: newState });
+		}
+
+		// Clear selected block highlights when starting a new analysis
+		if (newState === IRISAnalysisState.ANALYZING) {
+			if (activeEditor) {
+				decorationManager.clearAllDecorations(activeEditor);
+			}
+			decorationManager.disposeAllDecorations();
+			stateManager.deselectBlock();
+			vscode.commands.executeCommand('setContext', 'iris.blockSelected', false);
+			logger.info('Cleared selections for new analysis');
 		}
 	});
 
