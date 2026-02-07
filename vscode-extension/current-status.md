@@ -8,13 +8,13 @@ The VS Code extension provides a command-driven analysis workflow with a state-d
 - **State model**: IDLE → ANALYZING → ANALYZED → STALE.
 - **Sidebar webview**: File Intent and Responsibility Block list.
 - **Hover highlighting**: Preview block coverage in the editor.
-- **Block selection**: Pin a block to keep highlights active.
+- **Block selection**: Pin a block to keep highlights active; clears previous selection and scrolls editor to the block.
 - **Segment navigation**: Move between scattered ranges via controls/shortcuts.
 - **Stale detection**: Any edit marks analysis as stale.
 
 ## User interactions
 - Hover a block to highlight related lines.
-- Click to select/unselect a block (persistent highlight).
+- Click to select/unselect a block (persistent highlight, auto-scrolls editor to first segment).
 - Navigate segments with keyboard shortcuts when a block is selected.
 - Refresh to re-run analysis.
 
@@ -39,6 +39,6 @@ The VS Code extension provides a command-driven analysis workflow with a state-d
 - Best experience with moderate block counts (not extremely large files).
 
 ## Next likely work
-- Continue UI refinement for block selection and navigation.
+- Further UI refinement for block selection and navigation.
 - Improve resilience for very large files or many blocks.
 - Add optional settings for user preferences.
