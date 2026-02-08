@@ -47,7 +47,12 @@ Key dependency flow:
 - Requires `@iris/core` to be built first (root `npm run build` enforces order)
 - `npm run watch` — watch mode for development
 
+## Authentication & endpoint
+- **Production endpoint**: `https://api.iris-codes.com/api/iris/analyze` (configured in `@iris/core` — `endpoints.ts`).
+- **API key setting**: `iris.apiKey` in VS Code settings. The extension reads the key and passes it to `IRISAPIClient`, which sends it as the `x-api-key` header on every request.
+- **Hot-reload**: Changing `iris.apiKey` in settings recreates the API client immediately — no restart needed.
+- If no API key is configured, the client still sends the request but logs a warning (backend will return 401 in production).
+
 ## Known constraints
 - Single-file analysis only — no multi-file caching (switching back to a previously analyzed file re-triggers analysis).
 - Analysis does not persist across extension restarts.
-- Backend must be running at `localhost:8080`.
