@@ -7,4 +7,4 @@ from src.server import app
 
 # Wrap Flask (WSGI) with ASGI adapter, disable lifespan events (not supported by WsgiToAsgi)
 asgi_app = WsgiToAsgi(app)
-handler = Mangum(asgi_app, lifespan="   off")
+handler = Mangum(asgi_app, lifespan="off")
