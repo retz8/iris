@@ -59,9 +59,9 @@ Notes:
 - Cache invalidation is content-based only.
 - No multi-file or project-wide reasoning.
 
-## Next likely work
-- Build Lambda-compatible Dockerfile and deploy to ECR (see `specs/deployment/infrastructure-backend-lambda-deploy-1.md`).
-- Attach API Gateway HTTP API to the Lambda function.
-- Tighten prompt or schema if responsibility block quality regresses.
-- Expand supported languages as parser coverage grows.
-- Add automated tests for cache and API validation paths.
+## Deployment
+- AWS Lambda
+- AWS GateWay
+- CloudStore
+- Temporary API Key authorization (will change to github OAuth)
+
