@@ -60,8 +60,44 @@ Notes:
 - No multi-file or project-wide reasoning.
 
 ## Deployment
-- AWS Lambda
-- AWS GateWay
-- CloudStore
-- Temporary API Key authorization (will change to github OAuth)
+
+### Current Setup (AWS Lambda)
+
+**Infrastructure:**
+- **AWS Lambda** (containerized): Python runtime deployed as Docker container image to ECR (Elastic Container Registry)
+- **API Gateway** (HTTP API): Public endpoint routing requests to Lambda function
+- **Authentication**: Temporary API key validation via custom header (`X-API-Key`)
+  - Planned migration: GitHub OAuth
+
+**Container Image:**
+- Base: AWS Lambda Python 3.11 base image (`public.ecr.aws/lambda/python:3.11`)
+- Build: Multi-stage Docker build
+  - Stage 1: Install dependencies from `requirements.txt`
+  - Stage 2: Copy source code, set Lambda handler entry point
+- Entry point: `lambda_handler.handler` (Mangum WSGI adapter wrapping Flask app)
+- Pushed to: AWS ECR (private repository)
+
+**Deployment Flow:**
+```
+1. Build Docker image locally (or CI/CD)
+2. Tag image with ECR repository URI
+3. Push to ECR: aws ecr get-login-password | docker push
+4. Update Lambda function: aws lambda update-function-code --image-uri
+5. API Gateway invokes Lambda on HTTP requests
+```
+
+**Environment Variables:**
+- `OPENAI_API_KEY`: LLM inference (stored in Lambda env config)
+- `API_KEY`: Temporary authorization secret
+- Cache paths: Lambda uses `/tmp` (ephemeral, not persistent across invocations)
+
+**Known Limitations:**
+- **Cache does not persist**: Lambda's ephemeral `/tmp` and isolated containers mean cache is lost between invocations or across instances
+- **Cold starts**: First request after idle period incurs 1-3s initialization latency
+- **Cost inefficiency**: ElastiCache Redis (~$15/month) required for persistent caching, negating Lambda's pay-per-use advantage at low traffic
+
+**Future Migration Planned:**
+- **Target**: EC2 t3.micro instance (free tier eligible, 10 months remaining)
+- **Rationale**: Persistent local cache, lower cost (~$0 with free tier vs. ~$15/month Lambda + Redis), faster cache access, simpler architecture
+- **Auth upgrade**: GitHub OAuth replacing API key
 

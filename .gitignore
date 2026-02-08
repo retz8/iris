@@ -20,3 +20,6 @@ dist/
 
 # .claude
 .claude/
+
+# secrets
+backend/secrets.txt
