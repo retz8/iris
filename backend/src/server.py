@@ -1,8 +1,7 @@
 import os
 import sys
 
-
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 from dotenv import load_dotenv
 
@@ -11,8 +10,8 @@ load_dotenv()
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from src.parser.ast_parser import ASTParser
 from src.routes import iris_bp
+
 
 app = Flask(__name__, static_folder="static")
 
@@ -25,7 +24,7 @@ CORS(
             "origins": [
                 "https://github.com/*",
             ],
-            "allow_headers": ["Content-Type"],
+            "allow_headers": ["Content-Type", "x-api-key"],
             "methods": ["GET", "POST", "OPTIONS"],
         }
     },
@@ -35,8 +34,6 @@ CORS(
 # Register IRIS blueprint /api/iris
 # from `src/iris_agent.routes`
 app.register_blueprint(iris_bp)
-
-ast_parser = ASTParser()
 
 
 @app.route("/")

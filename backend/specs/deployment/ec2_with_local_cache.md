@@ -182,7 +182,7 @@ User=ec2-user
 Group=ec2-user
 WorkingDirectory=/opt/iris/backend
 Environment="PATH=/opt/iris/backend/venv/bin"
-EnvironmentFile=/opt/iris/backend/.env  # Load env variables
+EnvironmentFile=/opt/iris/backend/.env
 
 ExecStart=/opt/iris/backend/venv/bin/gunicorn \
     --config /opt/iris/backend/gunicorn_config.py \
@@ -286,15 +286,15 @@ curl http://<ELASTIC_IP>/api/iris/health
 
 ---
 
-## Phase 5: SSL/HTTPS Setup (Optional but Recommended)
+## Phase 5: SSL/HTTPS Setup (Required for Published Extension)
 
-### 5.1 Domain Configuration (if using custom domain)
+### 5.1 Domain Configuration
 ```bash
 # Point your domain's A record to EC2 Elastic IP
-# Example: api.iris.example.com -> <ELASTIC_IP>
+# api.iris-codes.com -> <ELASTIC_IP>
 
 # Wait for DNS propagation (use dig or nslookup to verify)
-dig api.iris.example.com
+dig api.iris-codes.com
 ```
 
 ### 5.2 Install Certbot (Let's Encrypt)
@@ -310,13 +310,13 @@ sudo apt install -y certbot python3-certbot-nginx
 ```bash
 # Update Nginx config with your domain
 sudo nano /etc/nginx/conf.d/iris.conf
-# Change: server_name _; -> server_name api.iris.example.com;
+# Change: server_name _; -> server_name api.iris-codes.com;
 
 # Reload Nginx
 sudo systemctl reload nginx
 
 # Run Certbot (interactive setup)
-sudo certbot --nginx -d api.iris.example.com
+sudo certbot --nginx -d api.iris-codes.com
 
 # Certbot will:
 # 1. Verify domain ownership
@@ -341,27 +341,92 @@ sudo certbot renew --dry-run
 
 ### 6.1 Update API Endpoint
 ```typescript
-// packages/iris-vscode/src/api/irisClient.ts
-// Change API endpoint from Lambda URL to EC2 domain
+// packages/iris-core/src/config/endpoints.ts
+// API endpoint is now centralized in iris-core package
+// Already updated to: https://api.iris-codes.com/api/iris/analyze
 
-const API_BASE_URL = process.env.IRIS_API_URL || 'https://api.iris.example.com';
-// OR for testing: 'http://<ELASTIC_IP>'
+export const DEFAULT_IRIS_API_ENDPOINT = 'https://api.iris-codes.com/api/iris/analyze';
+export const DEFAULT_IRIS_API_TIMEOUT = 15000;
+
+// VS Code extension automatically uses this centralized config
+// No manual changes needed in extension code
 ```
 
-### 6.2 Remove API Key Header (temporary)
-```typescript
-// Since we're skipping auth for MVP, remove x-api-key header
-// In irisClient.ts analyze() method:
+### 6.2 Add API Key Authentication to EC2 Backend
 
-const response = await fetch(`${API_BASE_URL}/api/iris/analyze`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    // Remove: 'x-api-key': API_KEY
-  },
-  body: JSON.stringify(payload),
-  signal: timeoutSignal,
-});
+The VS Code extension already sends `x-api-key` header. Implement simple API key validation in Flask.
+
+#### Add Middleware to `backend/src/server.py`
+```python
+import os
+from functools import wraps
+from flask import request, jsonify
+
+# Load API key from environment
+IRIS_API_KEY = os.environ.get('IRIS_API_KEY')
+
+def require_api_key(f):
+    """Middleware to validate API key from x-api-key header"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Skip auth check if no API key is configured (development mode)
+        if not IRIS_API_KEY:
+            return f(*args, **kwargs)
+
+        # Check header
+        provided_key = request.headers.get('x-api-key')
+
+        if not provided_key:
+            return jsonify({'error': 'Missing x-api-key header'}), 401
+
+        if provided_key != IRIS_API_KEY:
+            return jsonify({'error': 'Invalid API key'}), 401
+
+        return f(*args, **kwargs)
+
+    return decorated_function
+```
+
+#### Apply to Protected Routes in `backend/src/routes.py`
+```python
+from server import require_api_key
+
+@bp.route('/analyze', methods=['POST'])
+@require_api_key  # Add this decorator
+def analyze():
+    # ... existing code
+```
+
+#### Set API Key on EC2 Instance
+```bash
+# Generate a secure API key
+API_KEY=$(openssl rand -base64 32)
+echo "Your API Key: $API_KEY"
+
+# Add to systemd service environment
+sudo nano /etc/systemd/system/iris-backend.service
+
+# Add under [Service] section:
+Environment="IRIS_API_KEY=<your-generated-key>"
+
+# Reload and restart service
+sudo systemctl daemon-reload
+sudo systemctl restart iris-api
+
+# Verify service is running
+sudo systemctl status iris-api
+```
+
+#### Configure API Key in VS Code
+```bash
+# Users will set this in VS Code settings:
+# File > Preferences > Settings > Search "IRIS"
+# iris.apiKey: "<your-generated-key>"
+
+# Or in settings.json:
+{
+  "iris.apiKey": "<your-generated-key>"
+}
 ```
 
 ### 6.3 Test Extension
@@ -384,6 +449,8 @@ npm run compile
 - [ ] Gunicorn service healthy (`systemctl status iris-backend`)
 - [ ] Nginx proxying correctly (`curl http://<ELASTIC_IP>/api/iris/health`)
 - [ ] SSL configured (if using custom domain)
+- [ ] API key authentication configured (`IRIS_API_KEY` environment variable set)
+- [ ] VS Code extension API key configured in settings (`iris.apiKey`)
 - [ ] VS Code extension updated and tested against EC2
 - [ ] Cache directory exists at `/var/iris/cache`
 - [ ] Environment variables loaded (check `sudo systemctl status iris-backend`)
@@ -553,13 +620,13 @@ curl http://127.0.0.1:8080/api/iris/health
 ### SSL certificate issues
 ```bash
 # Verify domain resolves to EC2 IP
-dig api.iris.example.com
+dig api.iris-codes.com
 
 # Check Nginx config
 sudo nginx -t
 
 # Re-run Certbot
-sudo certbot --nginx -d api.iris.example.com --force-renewal
+sudo certbot --nginx -d api.iris-codes.com --force-renewal
 ```
 
 ### Cache not persisting

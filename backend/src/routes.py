@@ -6,8 +6,13 @@ import logging
 import os
 import time
 from datetime import datetime
+from functools import wraps
 
 from flask import Blueprint, jsonify, request
+from dotenv import load_dotenv
+
+# Load environment variables before reading them
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +26,11 @@ from src.utils.analytics_emf import (
     build_analysis_failed,
 )
 
+# Load API key from environment for authentication
+IRIS_API_KEY = os.environ.get("IRIS_API_KEY")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+
+
 iris_bp = Blueprint("iris", __name__, url_prefix="/api/iris")
 
 # Global instances
@@ -28,13 +38,45 @@ _iris_agent = None
 _agent_init_error = None
 
 try:
-    _iris_agent = IrisAgent(model=SINGLE_SHOT_MODEL)
+    _iris_agent = IrisAgent(model=SINGLE_SHOT_MODEL, api_key=OPENAI_API_KEY)
 except Exception as exc:  # pragma: no cover - initialization fallback
     logger.error(f"IRIS agent initialization failed: {exc}", exc_info=True)
     _agent_init_error = True
 
 
+def require_api_key(f):
+    """
+    Middleware decorator to validate API key from x-api-key header.
+
+    If IRIS_API_KEY environment variable is not set, authentication is skipped
+    (useful for development). In production, always set IRIS_API_KEY.
+
+    Returns:
+        401 Unauthorized if API key is missing or invalid
+    """
+
+    @wraps(f)
+    async def decorated_function(*args, **kwargs):
+        # Skip auth check if no API key is configured (development mode)
+        if not IRIS_API_KEY:
+            return await f(*args, **kwargs)
+
+        # Check x-api-key header
+        provided_key = request.headers.get("x-api-key")
+
+        if not provided_key:
+            return jsonify({"error": "Missing x-api-key header"}), 401
+
+        if provided_key != IRIS_API_KEY:
+            return jsonify({"error": "Invalid API key"}), 401
+
+        return await f(*args, **kwargs)
+
+    return decorated_function
+
+
 @iris_bp.route("/analyze", methods=["POST"])
+@require_api_key
 async def analyze():
     """Analyze a source file to extract File Intent + Responsibility Blocks.
 
