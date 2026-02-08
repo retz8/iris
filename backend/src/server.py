@@ -11,8 +11,8 @@ load_dotenv()
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from parser.ast_parser import ASTParser
-from routes import iris_bp
+from src.parser.ast_parser import ASTParser
+from src.routes import iris_bp
 
 app = Flask(__name__, static_folder="static")
 

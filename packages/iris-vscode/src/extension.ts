@@ -18,7 +18,7 @@ const SUPPORTED_LANGUAGES = new Set([
 	'typescriptreact',
 ]);
 
-const ANALYZE_ENDPOINT = 'http://localhost:8080/api/iris/analyze';
+const ANALYZE_ENDPOINT = 'https://ejg9mydfzi.execute-api.us-east-2.amazonaws.com/api/iris/analyze';
 const REQUEST_TIMEOUT_MS = 15000;
 
 // This method is called when your extension is activated
@@ -38,13 +38,39 @@ export function activate(context: vscode.ExtensionContext) {
 	const decorationManager = new DecorationManager(outputChannel);
 	context.subscriptions.push(decorationManager);
 
-	// Initialize API client with error boundary
-	const apiClient = new IRISAPIClient(
+	// Initialize API client with error boundary (mutable for config updates)
+	let apiKey = vscode.workspace.getConfiguration('iris').get<string>('apiKey', '');
+	let apiClient = new IRISAPIClient(
 		{
 			endpoint: ANALYZE_ENDPOINT,
-			timeout: REQUEST_TIMEOUT_MS
+			timeout: REQUEST_TIMEOUT_MS,
+			apiKey: apiKey || undefined
 		},
 		createLogger(outputChannel, 'APIClient')
+	);
+
+	// Listen for API key configuration changes and recreate client
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeConfiguration((event) => {
+			if (event.affectsConfiguration('iris.apiKey')) {
+				const newApiKey = vscode.workspace.getConfiguration('iris').get<string>('apiKey', '');
+				logger.info('API key configuration changed', {
+					hadKey: !!apiKey,
+					hasNewKey: !!newApiKey,
+					keyLength: newApiKey?.length || 0
+				});
+
+				apiKey = newApiKey;
+				apiClient = new IRISAPIClient(
+					{
+						endpoint: ANALYZE_ENDPOINT,
+						timeout: REQUEST_TIMEOUT_MS,
+						apiKey: apiKey || undefined
+					},
+					createLogger(outputChannel, 'APIClient')
+				);
+			}
+		})
 	);
 
 	// Listen to state changes to manage decorations

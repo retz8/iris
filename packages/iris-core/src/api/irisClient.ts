@@ -68,6 +68,7 @@ export class APIError extends Error {
 export interface APIClientConfig {
   endpoint: string;
   timeout: number;
+  apiKey?: string;
 }
 
 /**
@@ -80,10 +81,11 @@ export class IRISAPIClient {
   constructor(config: APIClientConfig, logger: Logger) {
     this.config = config;
     this.logger = logger;
-    
+
     this.logger.info('API Client initialized', {
       endpoint: config.endpoint,
-      timeout: config.timeout
+      timeout: config.timeout,
+      hasApiKey: !!config.apiKey
     });
   }
 
@@ -148,11 +150,21 @@ export class IRISAPIClient {
         timeout: this.config.timeout
       });
 
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add API key if configured
+      if (this.config.apiKey) {
+        headers['x-api-key'] = this.config.apiKey;
+        this.logger.debug('Sending request with API key');
+      } else {
+        this.logger.warn('No API key configured - request may be rejected');
+      }
+
       const response = await fetch(this.config.endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(request),
         signal: controller.signal,
       });

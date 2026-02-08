@@ -11,9 +11,9 @@ from flask import Blueprint, jsonify, request
 
 logger = logging.getLogger(__name__)
 
-from config import SUPPORTED_LANGUAGES, SINGLE_SHOT_MODEL
-from agent import IrisAgent, IrisError
-from utils.analytics_emf import (
+from src.config import SUPPORTED_LANGUAGES, SINGLE_SHOT_MODEL
+from src.agent import IrisAgent, IrisError
+from src.utils.analytics_emf import (
     emit_emf_event,
     build_analysis_requested,
     build_analysis_started,

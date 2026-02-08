@@ -92,6 +92,11 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically analyze files when switching editors"
+        },
+        "iris.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API key for authenticating with the IRIS backend"
         }
       }
     }

@@ -2,8 +2,14 @@
 Flask[async]>=2.0.0
 flask-cors
 
+# Environment variables
+python-dotenv
+
 # OpenAI API
 openai
+
+# ASGI adapter for Flask (needed for Mangum)
+asgiref
 
 # Mangum WSGI adapter for AWS Lambda
 mangum>=0.17.0

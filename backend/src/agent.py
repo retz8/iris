@@ -12,7 +12,7 @@ from typing import Any, Dict
 from openai import OpenAI
 
 # Single-shot inference imports
-from config import (
+from src.config import (
     SINGLE_SHOT_MODEL,
     SINGLE_SHOT_REASONING_EFFORT,
     CACHE_DIR,
@@ -20,13 +20,13 @@ from config import (
     CACHE_DISK_TTL_DAYS,
     CACHE_METRICS_PATH,
 )
-from prompts import (
+from src.prompts import (
     SINGLE_SHOT_SYSTEM_PROMPT,
     build_single_shot_user_prompt,
     LLMOutputSchema,
 )
-from cache_monitor import CacheMonitor
-from analysis_cache import AnalysisCache, compute_file_hash, AnalysisResult
+from src.cache_monitor import CacheMonitor
+from src.analysis_cache import AnalysisCache, compute_file_hash, AnalysisResult
 
 logger = logging.getLogger(__name__)
 
