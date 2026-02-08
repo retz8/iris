@@ -411,10 +411,10 @@ Environment="IRIS_API_KEY=<your-generated-key>"
 
 # Reload and restart service
 sudo systemctl daemon-reload
-sudo systemctl restart iris-api
+sudo systemctl restart iris-backend
 
 # Verify service is running
-sudo systemctl status iris-api
+sudo systemctl status iris-backend
 ```
 
 #### Configure API Key in VS Code

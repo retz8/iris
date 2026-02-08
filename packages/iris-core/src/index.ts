@@ -26,3 +26,10 @@ export { generateBlockId, generateBlockIds } from './utils/blockId';
 
 // Types
 export type { Logger } from './types/logger';
+
+// Configuration
+export {
+  DEFAULT_IRIS_API_ENDPOINT,
+  DEFAULT_IRIS_API_TIMEOUT,
+  LEGACY_LAMBDA_ENDPOINT
+} from './config/endpoints';

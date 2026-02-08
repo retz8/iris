@@ -2,7 +2,15 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { IRISAnalysisState, generateBlockId, IRISAPIClient, APIError, APIErrorType } from '@iris/core';
+import {
+	IRISAnalysisState,
+	generateBlockId,
+	IRISAPIClient,
+	APIError,
+	APIErrorType,
+	DEFAULT_IRIS_API_ENDPOINT,
+	DEFAULT_IRIS_API_TIMEOUT
+} from '@iris/core';
 import { IRISStateManager } from './state/irisState';
 import { IRISSidePanelProvider } from './webview/sidePanel';
 import { DecorationManager } from './decorations/decorationManager';
@@ -17,9 +25,6 @@ const SUPPORTED_LANGUAGES = new Set([
 	'typescript',
 	'typescriptreact',
 ]);
-
-const ANALYZE_ENDPOINT = 'https://ejg9mydfzi.execute-api.us-east-2.amazonaws.com/api/iris/analyze';
-const REQUEST_TIMEOUT_MS = 15000;
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -42,8 +47,8 @@ export function activate(context: vscode.ExtensionContext) {
 	let apiKey = vscode.workspace.getConfiguration('iris').get<string>('apiKey', '');
 	let apiClient = new IRISAPIClient(
 		{
-			endpoint: ANALYZE_ENDPOINT,
-			timeout: REQUEST_TIMEOUT_MS,
+			endpoint: DEFAULT_IRIS_API_ENDPOINT,
+			timeout: DEFAULT_IRIS_API_TIMEOUT,
 			apiKey: apiKey || undefined
 		},
 		createLogger(outputChannel, 'APIClient')
@@ -63,8 +68,8 @@ export function activate(context: vscode.ExtensionContext) {
 				apiKey = newApiKey;
 				apiClient = new IRISAPIClient(
 					{
-						endpoint: ANALYZE_ENDPOINT,
-						timeout: REQUEST_TIMEOUT_MS,
+						endpoint: DEFAULT_IRIS_API_ENDPOINT,
+						timeout: DEFAULT_IRIS_API_TIMEOUT,
 						apiKey: apiKey || undefined
 					},
 					createLogger(outputChannel, 'APIClient')
