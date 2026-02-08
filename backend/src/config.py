@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 # NOTE: will be added more in the future
@@ -14,7 +15,9 @@ SINGLE_SHOT_MODEL = "gpt-5-nano-2025-08-07"
 SINGLE_SHOT_REASONING_EFFORT = "minimal"  # Options: minimal, low, medium, high
 
 # Cache configuration
-CACHE_DIR = Path(__file__).parent.parent / ".iris" / "cache"
+# Use /var/iris/cache for production (EC2), fall back to local .iris/ for development
+_cache_base = Path(os.getenv("IRIS_CACHE_DIR", Path(__file__).parent.parent / ".iris"))
+CACHE_DIR = _cache_base / "cache"
 CACHE_MAX_MEMORY_ENTRIES = 500
 CACHE_DISK_TTL_DAYS = 30
-CACHE_METRICS_PATH = Path(__file__).parent.parent / ".iris" / "metrics.json"
+CACHE_METRICS_PATH = _cache_base / "metrics.json"
