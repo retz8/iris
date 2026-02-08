@@ -110,17 +110,45 @@ Requires `@iris/core` to be built before `iris-vscode` compiles. The root build 
 
 ---
 
-## Deployment Plan
+## Deployment
 
-The backend is designed as a stateless analysis function. Planned production deployment:
+Production backend at `https://api.iris-codes.com`:
 
 ```
-Client → API Gateway (HTTP API) → AWS Lambda (Container) → Mangum → Flask
+Client → Nginx (SSL) → Gunicorn → Flask
 ```
 
-- Flask app wrapped with Mangum (WSGI adapter) in a Lambda container image
-- Pay-per-request pricing, no always-on server
-- Environment variables for API keys and model config
+- AWS EC2 (`t3.micro`, free tier) with persistent local disk cache
+- Let's Encrypt SSL via Certbot
+- Authentication via `x-api-key` header
+
+## Local Development
+
+The API client in `@iris/core` points to production by default (`https://api.iris-codes.com`). To develop against a local backend:
+
+1. Start the backend locally:
+   ```bash
+   cd backend && source venv/bin/activate
+   python -m src.server          # localhost:8080
+   ```
+
+   or 
+
+   ```bash
+    /scripts/start-server.sh
+  ```
+
+2. Change the endpoint in `packages/iris-core/src/config/endpoints.ts`:
+   ```ts
+   export const DEFAULT_IRIS_API_ENDPOINT = 'http://localhost:8080/api/iris/analyze';
+   ```
+
+3. Rebuild core and the extension:
+   ```bash
+   npm run build
+   ```
+
+No API key is needed locally — the backend skips auth when `IRIS_API_KEY` is not set.
 
 ---
 
