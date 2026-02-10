@@ -1,6 +1,6 @@
 # IRIS Backend — Deployment State
 
-> Last updated: 2026-02-08
+> Last updated: 2026-02-10
 
 ## Overview
 
@@ -252,8 +252,232 @@ or just run scripts
 | Date       | Change                     | Reason                                                |
 |------------|----------------------------|-------------------------------------------------------|
 | 2026-02-08 | **Lambda (Mangum + API Gateway + ECR container + Docker) → EC2 migration** | Lambda's ephemeral `/tmp` broke cache persistence; cold starts added latency; ElastiCache Redis (~$15/mo) was needed to work around it. EC2 gives persistent local cache at $0 (free tier). |
+| 2026-02-10 | **EC2 instance terminated** (dev pause) | VPC charges ~$0.15/day during idle dev period. Reconstruction guide added to this doc. |
 
 The deprecated Lambda setup is preserved for reference in [deprecated-lambda-setup.md](./deprecated-lambda-setup.md).
+
+## EC2 Instance Recreation Guide
+
+> Use this checklist when spinning up a fresh EC2 instance after terminating the previous one.
+> The OpenAI secret in AWS Secrets Manager (`iris/openai-api-key`) and the Squarespace domain (`api.iris-codes.com`) survive instance termination — you only need to wire them back up.
+
+### Before you terminate
+
+- **Release the Elastic IP** (or keep it — an unassociated EIP costs ~$0.005/hr).
+- Note your current `IRIS_API_KEY` value if you want to reuse it (or generate a new one later).
+
+### 1. Create the EC2 instance
+
+| Setting          | Value                                              |
+|------------------|----------------------------------------------------|
+| Region           | `us-east-2` (Ohio)                                 |
+| AMI              | Amazon Linux 2023 (`amazon/al2023-ami-2023`)       |
+| Instance type    | `t3.micro` (free-tier eligible)                    |
+| Storage          | 30 GB gp3 (free-tier eligible)                     |
+| Key pair         | Create or reuse an SSH key pair                    |
+| Security group   | See rules below                                    |
+| IAM instance profile | Attach a role with `AmazonSSMManagedInstanceCore` + `CloudWatchAgentServerPolicy` |
+
+**Security group rules:**
+
+| Port | Source    | Purpose               |
+|------|-----------|------------------------|
+| 22   | My IP     | SSH                    |
+| 80   | 0.0.0.0/0 | HTTP → HTTPS redirect |
+| 443  | 0.0.0.0/0 | HTTPS (public)        |
+
+### 2. Elastic IP + DNS
+
+```bash
+# Allocate a new Elastic IP and associate it to the instance (or do this in the console)
+aws ec2 allocate-address --region us-east-2
+aws ec2 associate-address --instance-id <INSTANCE_ID> --allocation-id <ALLOC_ID> --region us-east-2
+```
+
+Then go to **Squarespace DNS** and update the **A record** for `api.iris-codes.com` to the new Elastic IP.
+
+### 3. SSH in and install system packages
+
+```bash
+ssh -i ~/.ssh/<key>.pem ec2-user@<ELASTIC_IP>
+
+# System packages
+sudo dnf update -y
+sudo dnf install -y python3 python3-pip git nginx
+
+# Create application directories
+sudo mkdir -p /opt/iris /var/iris/cache /var/log/iris
+sudo chown ec2-user:ec2-user /opt/iris /var/iris /var/iris/cache /var/log/iris
+```
+
+### 4. Clone the repo and set up Python
+
+```bash
+cd /opt/iris
+git clone https://github.com/<your-org>/iris.git .    # or your actual repo URL
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+pip install gunicorn
+```
+
+### 5. Create the `.env` file
+
+Retrieve the OpenAI key from Secrets Manager:
+
+```bash
+OPENAI_KEY=$(aws secretsmanager get-secret-value \
+  --secret-id iris/openai-api-key \
+  --region us-east-2 \
+  --query SecretString --output text)
+```
+
+Write the env file:
+
+```bash
+cat > /opt/iris/backend/.env << 'EOF'
+OPENAI_API_KEY=<paste or use $OPENAI_KEY>
+IRIS_API_KEY=<your-api-key>
+IRIS_CACHE_DIR=/var/iris
+IRIS_ENV=prod
+EOF
+```
+
+### 6. Create `gunicorn_config.py`
+
+```bash
+cat > /opt/iris/backend/gunicorn_config.py << 'EOF'
+bind = "127.0.0.1:8080"
+workers = 2
+timeout = 120
+accesslog = "/var/log/iris/access.log"
+errorlog = "/var/log/iris/error.log"
+EOF
+```
+
+### 7. Create the systemd service
+
+```bash
+sudo tee /etc/systemd/system/iris-backend.service > /dev/null << 'EOF'
+[Unit]
+Description=IRIS Backend (Gunicorn)
+After=network.target
+
+[Service]
+User=ec2-user
+WorkingDirectory=/opt/iris/backend
+EnvironmentFile=/opt/iris/backend/.env
+ExecStart=/opt/iris/backend/venv/bin/gunicorn -c gunicorn_config.py "src.server:create_app()"
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable iris-backend
+sudo systemctl start iris-backend
+```
+
+> **Note:** Verify the `ExecStart` `create_app()` entry point matches your `server.py`. Check with `grep "def create_app\|app = Flask" /opt/iris/backend/src/server.py`.
+
+### 8. Configure Nginx
+
+```bash
+sudo tee /etc/nginx/conf.d/iris.conf > /dev/null << 'EOF'
+server {
+    listen 80;
+    server_name api.iris-codes.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name api.iris-codes.com;
+
+    # Certbot will fill these in (step 9)
+    # ssl_certificate     /etc/letsencrypt/live/api.iris-codes.com/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/api.iris-codes.com/privkey.pem;
+
+    client_max_body_size 10M;
+
+    location /api/iris/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 120s;
+        proxy_read_timeout 120s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+EOF
+
+sudo nginx -t
+sudo systemctl enable nginx
+sudo systemctl start nginx
+```
+
+### 9. SSL with Certbot
+
+```bash
+sudo dnf install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d api.iris-codes.com
+# Follow prompts — Certbot auto-edits the nginx config with cert paths
+
+# Verify auto-renewal timer
+sudo systemctl status certbot-renew.timer
+```
+
+### 10. Install CloudWatch Agent (optional)
+
+```bash
+sudo dnf install -y amazon-cloudwatch-agent
+
+# Create or copy the CloudWatch agent config
+# (configure it to forward /var/log/iris/*.log to CloudWatch Logs)
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config -m ec2 -s \
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+```
+
+> SSM Agent comes pre-installed on Amazon Linux 2023 — no action needed.
+
+### 11. Verify everything
+
+```bash
+# Service running?
+sudo systemctl status iris-backend
+sudo systemctl status nginx
+
+# Health check (local)
+curl http://127.0.0.1:8080/api/iris/health
+
+# Health check (public, after DNS propagates)
+curl https://api.iris-codes.com/api/iris/health
+
+# Tail logs
+sudo journalctl -u iris-backend -f
+```
+
+### Quick-reference: things that survive termination
+
+| Resource                  | Survives? | Notes                                         |
+|---------------------------|-----------|-----------------------------------------------|
+| Secrets Manager secret    | Yes       | `iris/openai-api-key` — account-level         |
+| Squarespace domain        | Yes       | Just update the A record IP                   |
+| IAM role / policies       | Yes       | Reattach as instance profile                  |
+| Security group            | Yes       | Reuse by name/ID (same VPC)                   |
+| Elastic IP                | No*       | Released on termination unless you keep it     |
+| EBS volume                | No*       | Deleted by default (unless "Delete on Termination" is off) |
+| Disk cache (`/var/iris/`) | No        | Lost — cache rebuilds organically             |
+| CloudWatch log groups     | Yes       | Historical logs remain in CloudWatch           |
+
+---
 
 ## Notes for Dev
 - custom domain is bought from Squarespace (~$5 per year, maybe only for the first year, bought at 26.02.08)

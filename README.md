@@ -135,8 +135,8 @@ The API client in `@iris/core` points to production by default (`https://api.iri
    or 
 
    ```bash
-    /scripts/start-server.sh
-  ```
+   /scripts/start-server.sh
+   ```
 
 2. Change the endpoint in `packages/iris-core/src/config/endpoints.ts`:
    ```ts
