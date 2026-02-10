@@ -43,3 +43,5 @@ LLM Output Schema
     }
   ]
 }
+
+private vs public code?
