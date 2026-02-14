@@ -108,3 +108,119 @@ IRIS는 바로 “사람이 신뢰할 수 있는 신호(signal)”를 자동으�
 2. VSCode Extension
 3. PR Bot (Resp block + Risk, Business Logic, more)
 4. Desktop App (platform agnostic)
+
+---
+
+## Newsletter Examples (English / C++)
+
+### Monday — "A lock that unlocks itself"
+
+**Subject: Can you read this? #001 — A lock that unlocks itself**
+
+```cpp
+template <typename Mutex>
+class unique_lock {
+public:
+    explicit unique_lock(Mutex& m) : mutex_(m) {
+        mutex_.lock();
+    }
+    ~unique_lock() {
+        mutex_.unlock();
+    }
+    unique_lock(const unique_lock&) = delete;
+    unique_lock& operator=(const unique_lock&) = delete;`
+private:
+    Mutex& mutex_;`
+};
+````
+
+**Before scrolling — what does this code do?**
+
+**The Breakdown**
+- **What it does**: Wraps a mutex so it locks on creation and unlocks on destruction — the RAII pattern.
+- **Key responsibility**: Guarantees the mutex is released even if an exception is thrown between lock and unlock.
+- **The clever part**: Deleting the copy constructor and assignment operator prevents two `unique_lock` objects from trying to unlock the same mutex — a subtle double-free equivalent for concurrency.
+
+**Project Context**: This pattern is the basis of `std::unique_lock` in the C++ Standard Library. Virtually every modern C++ codebase relies on RAII locks to prevent deadlocks in exception-heavy code.
+
+---
+
+### Wednesday — "Compile-time string length"
+
+**Subject: Can you read this? #002 — Compile-time string length**
+
+```cpp
+consteval size_t ct_strlen(const char* s) {
+    size_t len = 0;
+    while (s[len] != '\0') {
+        ++len;
+    }
+    return len;
+}
+
+static_assert(ct_strlen("hello") == 5);
+static_assert(ct_strlen("") == 0);
+```
+
+**Before scrolling — what does this code do?**
+
+**The Breakdown**
+- **What it does**: Computes string length entirely at compile time — the binary never runs this loop.
+- **Key responsibility**: Provides a `strlen` that is guaranteed to be evaluated during compilation, not at runtime.
+- **The clever part**: `consteval` (C++20) is stricter than `constexpr` — it *forces* compile-time evaluation. If you pass a runtime string, the compiler rejects it outright. The `static_assert` lines prove the computation happens before the program even exists.
+
+**Project Context**: From the LLVM project's support utilities. Compile-time string operations eliminate runtime overhead in parsers and diagnostic systems that work with fixed string tables.
+
+---
+
+### Friday — "The smallest hash map trick"
+
+**Subject: Can you read this? #003 — The smallest hash map trick**
+
+```cpp
+template <typename K, typename V, size_t N>
+struct flat_map {
+    std::array<std::pair<K, V>, N> data;
+
+    constexpr V at(const K& key) const {
+        for (auto& [k, v] : data) {
+            if (k == key) return v;
+        }
+        throw std::out_of_range("key not found");
+    }
+};
+```
+
+**Before scrolling — what does this code do?**
+
+**The Breakdown**
+- **What it does**: A fixed-size key-value map stored in a plain array — no heap allocation, no hashing.
+- **Key responsibility**: Provides O(N) lookup for *very small* collections where the overhead of `std::unordered_map` (hashing, bucketing, heap allocation) costs more than a linear scan.
+- **The clever part**: Because everything is `constexpr` and stack-allocated, the compiler can often unroll the loop and inline the entire lookup. For N < ~16, this consistently beats hash maps in benchmarks. Structured bindings (`auto& [k, v]`) make the linear scan read like pseudocode.
+
+**Project Context**: This pattern appears in Meta's Folly library and Google's Abseil. Performance-critical systems use flat maps for small config lookups, enum-to-string tables, and compile-time registries.
+
+---
+
+## Newsletter: Category System
+
+Each snippet naturally falls into a category (RAII, compile-time, data structures, concurrency, etc.). Users could pick categories they care about, not just a programming language.
+
+Possible categories:
+- Concurrency & Synchronization
+- Memory Management
+- Data Structures
+- Metaprogramming / Templates / Generics
+- Error Handling
+- Performance Tricks
+- API Design / Patterns
+- Algorithms
+
+This affects:
+- **Subscriber sheet**: add a `categories` column (comma-separated or multi-select)
+- **Drafts sheet**: add a `category` column per snippet
+- **Matching logic in Workflow 2**: match by `programming_language` AND `written_language` AND `category`
+- **Signup form**: let users pick categories during subscription (or default to "all")
+
+Open question: start with categories from day one, or add after proving the format works?
+
