@@ -23,16 +23,6 @@ All task execution is now organized under **`docs/tasks/`**. Start there.
 - **Track F:** Subscriber Management (n8n Workflow 3)
 - **Track G:** Content Pipeline (n8n Workflow 1)
 
-## Execution Order
-
-```
-Phase 1:  H, A, B, C  (parallel)
-            ↓     ↓
-Phase 2:  E, F    D   (parallel after dependencies)
-            ↓ ↓
-Phase 4:    G
-```
-
 See `docs/tasks/README.md` for full dependency graph and coordination rules.
 
 ## Post-MVP Growth
