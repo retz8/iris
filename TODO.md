@@ -1,90 +1,129 @@
-# IRIS — Before MVP Release
+# IRIS — Task Execution Plan
 
-Difficulty: 1 (trivial) → 5 (major effort).
+This document provides a high-level overview of parallel task execution. For detailed execution plans, see **`docs/tasks/`**.
 
-Tasks are grouped by workstream. Streams 1, 3, 4 can run in parallel. Stream 2 starts after Stream 3 finishes (shared `backend/` scope).
+## Parallel Execution Framework
+
+Tasks are organized into 8 tracks (A-H) that run across 4 phases. See `docs/tasks/README.md` for workflow coordination rules.
+
+### Phase Structure
+
+**Phase 1: Launch simultaneously**
+- Track H: Newsletter Design Discussion
+- Track A: Extension UX Improvements
+- Track B: Analysis Quality Testing
+- Track C: Marketplace Preparation
+
+**Phase 2: After Track H completes**
+- Track E: Newsletter Landing Page
+- Track F: Newsletter Subscriber Management
+
+**Phase 3: After Track B completes**
+- Track D: Backend Hardening
+
+**Phase 4: After Tracks E and F complete**
+- Track G: Newsletter Content Pipeline
+
+### Dependency Graph
 
 ```
-Time →
-Stream 1 (Extension UX)      ████████████████
-Stream 3 (Analysis Quality)   ████████████████
-Stream 4 (Distribution)       ████████████████
-Stream 2 (Backend Hardening)          ████████████
+Phase 1:  H, A, B, C  (parallel)
+            ↓     ↓
+Phase 2:  E, F    D   (parallel after dependencies)
+            ↓ ↓
+Phase 4:    G
 ```
 
----
+## Track Details
 
-## Stream 1 — Extension UX
+### IRIS Product Tracks
 
-Scope: `packages/iris-vscode/`, `packages/iris-core/src/state/`
-Agent: VS Code extension specialist. Reads current state machine in iris-core and decoration/webview code in iris-vscode. Builds on adapter pattern.
+**Track A: Extension UX** → `docs/tasks/track-a-extension-ux.md`
+- Error handling UX (timeout, 401, network errors)
+- Multi-file caching (instant tab-switching)
+- Analysis persistence across restarts
+- Scope: `packages/iris-vscode/`, `packages/iris-core/src/state/`
+- Dependencies: None
 
-- [ ] **Error handling UX in extension** `[difficulty: 2]`
-  What the user sees on: analysis failure, timeout, 401 (bad/missing key), network error. Currently no clear feedback.
+**Track B: Analysis Quality** → `docs/tasks/track-b-analysis-quality.md`
+- Prompt quality evaluation and tuning
+- Edge case handling (large files, empty files, minified code)
+- Test coverage (backend unit + integration tests)
+- Scope: `backend/src/prompts.py`, `backend/tests/`
+- Dependencies: None
+- Blocks: Track D (both modify backend/)
 
-- [ ] **Multi-file caching (client-side)** `[difficulty: 3]`
-  Switching files re-triggers analysis every time. Cache recent results in extension memory so tab-switching is instant.
+**Track C: Marketplace Preparation** → `docs/tasks/track-c-marketplace-prep.md`
+- Publisher account and marketplace config
+- Extension icon, screenshots, branding assets
+- First-run experience (welcome, API key prompt)
+- Language expansion (Go, Rust, Java, C#, C/C++)
+- License selection and addition
+- Scope: `packages/iris-vscode/package.json`, assets, license
+- Dependencies: None
 
-- [ ] **Analysis persistence across restarts** `[difficulty: 3]`
-  Analysis results lost on extension reload. Persist to workspace storage so reopening VS Code doesn't lose everything.
+**Track D: Backend Hardening** → `docs/tasks/track-d-backend-hardening.md`
+- Rate limiting middleware (per-key throttling)
+- Fix CloudWatch EMF ingestion
+- Delete legacy Lambda code (authorizer.py, lambda_handler.py)
+- Scope: `backend/src/` (routes, middleware, infra config)
+- Dependencies: Track B must complete first
+- Blocks: None
 
----
+### Newsletter Tracks
 
-## Stream 2 — Backend Hardening
+**Track H: Newsletter Design Discussion** → `docs/tasks/track-h-newsletter-design.md`
+- Newsletter name, branding, visual identity
+- Language support strategy (written + programming)
+- Category system decision
+- Content format, email structure, welcome email
+- Landing page and signup form design
+- Scope: Decision-making session (no code)
+- Dependencies: None
+- Blocks: Tracks E and F
 
-Scope: `backend/src/` (routes, middleware, infra config)
-Agent: Backend/DevOps engineer. Reads routes.py, server.py, deployment docs. Should not touch prompts.py. Run after Stream 3 to avoid merge conflicts.
+**Track E: Newsletter Landing Page** → `docs/tasks/track-e-distribution-landing.md`
+- Landing page design and implementation
+- Subscription form UX
+- Unsubscription flow
+- Conversion optimization for mid-level engineers
+- Scope: Landing page (iris-codes.com or subdomain)
+- Dependencies: Track H must complete first
+- Blocks: Track F
 
-- [ ] **Rate limiting** `[difficulty: 2]`
-  Backend middleware to prevent abuse before going public. Per-key throttling.
+**Track F: Newsletter Subscriber Management** → `docs/tasks/track-f-newsletter-subscribers.md`
+- n8n Workflow 3: webhook, validation, Google Sheets, welcome email
+- Signup form integration
+- Duplicate handling
+- Welcome email template
+- Scope: n8n workflow, Google Sheets, Gmail
+- Dependencies: Track H must complete first
+- Blocks: Track G
 
-- [ ] **Fix CloudWatch EMF ingestion** `[difficulty: 2]`
-  EMF events emitted but not ingesting into CloudWatch metrics. Needed for production monitoring.
+**Track G: Newsletter Content Pipeline** → `docs/tasks/track-g-newsletter-content-pipeline.md`
+- n8n Workflow 1: GitHub trending, snippet extraction, Claude API, code images, Gmail drafts
+- Automation of weekly content creation (3 issues per week)
+- Human review workflow (approve drafts in Gmail)
+- Scope: n8n workflow, GitHub API, Claude API, Carbon/ray.so, Gmail
+- Dependencies: Tracks E and F must complete first
+- Blocks: None
 
-- [ ] **Delete legacy Lambda code** `[difficulty: 1]`
-  Remove `authorizer.py`, `lambda_handler.py`, and related dead code. Update `backend/current-status.md`.
+## Coordination
 
----
+**Before starting a track:**
+1. Read `docs/tasks/README.md` for workflow overview
+2. Check `docs/tasks/UPDATES.md` for progress on other tracks
+3. Verify dependencies are complete
+4. Read your track plan: `docs/tasks/track-{letter}-{name}.md`
 
-## Stream 3 — Analysis Quality
+**After completing a track:**
+1. Append summary to `docs/tasks/UPDATES.md`
+2. Include: what was done, files modified, design decisions, blockers
 
-Scope: `backend/src/prompts.py`, `backend/tests/`
-Agent: QA/prompt engineer. Reads prompts.py and output schema. Runs the backend locally to test analysis against sample files. Writes tests.
+## Post-MVP Growth
 
-- [ ] **Prompt quality evaluation & tuning** `[difficulty: 3]`
-  Systematically test analysis output across diverse real-world files. Tune prompt until consistently useful.
-
-- [ ] **Edge case handling** `[difficulty: 2]`
-  Very large files, empty files, minified code, generated code. Graceful behavior instead of silent failure.
-
-- [ ] **Test coverage** `[difficulty: 3]`
-  Backend unit tests, extension integration tests. Enough coverage to refactor with confidence.
-
----
-
-## Stream 4 — Distribution & Marketing
-
-Scope: marketplace config, new site files, `backend/src/` (auth)
-Agent: Product/fullstack generalist. Handles marketplace packaging, landing page, API key system. Mostly new files — low conflict risk.
-
-- [ ] **Publish extension to VS Code Marketplace** `[difficulty: 2]`
-  Package, configure publisher account, publish. Gate for everything else.
-
-- [ ] **API key distribution** `[difficulty: 4]`
-  How do users get a key? Self-serve signup, waitlist, or manual? Needs a minimal auth system (generate, validate, revoke keys).
-
-- [ ] **Landing page at iris-codes.com** `[difficulty: 2]`
-  Simple marketing site — what IRIS is, demo/screenshots, install link. Domain already owned.
-
-- [ ] **License** `[difficulty: 1]`
-  Pick and add a license before public release.
-
----
-
-## Post-MVP growth
-
-- [ ] **Expand language support** `[difficulty: 2 per language]`
+- [ ] **Expand language support**
   Go, Rust, Java, C#, C/C++. Mainly tree-sitter grammars + prompt tuning per language.
 
-- [ ] **Scaling plan** `[difficulty: 4]`
+- [ ] **Scaling plan**
   `t3.micro` (1 GB RAM) won't hold under real load. Plan for vertical scaling or horizontal (load balancer, multiple instances).
