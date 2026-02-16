@@ -9,6 +9,8 @@ docs/tasks/
 ├── README.md              ← You are here (workflow overview)
 ├── UPDATES.md             ← Single source of truth for all session progress
 ├── track-a-extension-ux.md
+├── track-a/
+│   └── extension-ux-implementation-plan.md
 ├── track-b-analysis-quality.md
 ├── track-c-marketplace-prep.md
 ├── track-d-backend-hardening.md
@@ -64,6 +66,7 @@ Each task session follows this structure:
 - Based on Phase 1, create detailed steps
 - Identify files to modify
 - Define acceptance criteria
+- **Document plan in `docs/tasks/track-{letter}/{name}-implementation-plan.md`**
 
 ### 3. Execution
 - Implement the plan

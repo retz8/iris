@@ -46,6 +46,15 @@ npm run watch            # Watch mode (from packages/iris-vscode/)
 - **Test naming**: `test_should_<expected>_when_<condition>`
 - **Debugging**: determine root cause before fixing symptoms; remove debug code before committing
 
+## Implementation Plan Requirements
+
+- **ALWAYS use the `create-implementation-plan` skill** when asked to write an implementation plan
+- Implementation plans must follow the structured template format defined in the skill
+- Plans must be machine-readable, deterministic, and executable by AI agents or humans
+- Use standardized prefixes (REQ-, TASK-, GOAL-, etc.) for all identifiers
+- Include specific file paths, function names, and exact implementation details
+- No placeholder text or ambiguous language in final plans
+
 ## Documentation Updates on Request
 
 When explicitly asked, update these current-status docs based on actual session changes:
