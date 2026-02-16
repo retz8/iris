@@ -1,0 +1,109 @@
+{
+  "file_intent": "Order state machine to manage lifecycle of an order from draft to refund",
+  "responsibility_blocks": [
+    {
+      "description": "Defines statuses and transitions between them with guards and side effects",
+      "label": "State machine core: Order lifecycle states",
+      "ranges": [
+        [
+          1,
+          10
+        ],
+        [
+          12,
+          16
+        ],
+        [
+          18,
+          24
+        ]
+      ]
+    },
+    {
+      "description": "Defines OrderEvent, OrderContext shapes and how events are recorded",
+      "label": "Event and context modeling",
+      "ranges": [
+        [
+          11,
+          11
+        ],
+        [
+          25,
+          34
+        ],
+        [
+          41,
+          47
+        ]
+      ]
+    },
+    {
+      "description": "Central TRANSITIONS map detailing from- to- states, guards, and actions per event",
+      "label": "Transition table configuration",
+      "ranges": [
+        [
+          36,
+          40
+        ],
+        [
+          49,
+          60
+        ],
+        [
+          61,
+          76
+        ],
+        [
+          77,
+          100
+        ]
+      ]
+    },
+    {
+      "description": "Public methods to query status, context, and history, and to mutate order (addItem, setPayment, etc.)",
+      "label": "State machine API and state accessors",
+      "ranges": [
+        [
+          102,
+          109
+        ],
+        [
+          110,
+          123
+        ],
+        [
+          124,
+          133
+        ],
+        [
+          135,
+          146
+        ],
+        [
+          147,
+          169
+        ]
+      ]
+    },
+    {
+      "description": "Get available transitions and historical data for external use",
+      "label": "Utility and helpers for inspection",
+      "ranges": [
+        [
+          171,
+          179
+        ],
+        [
+          180,
+          180
+        ]
+      ]
+    }
+  ],
+  "metadata": {
+    "cache_hit": 0,
+    "estimated_cost_usd": 0.000686,
+    "input_tokens": 3159,
+    "output_tokens": 353
+  }
+}

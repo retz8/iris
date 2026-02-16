@@ -68,16 +68,33 @@ export interface EscapePressedMessage {
 }
 
 /**
+ * Sent when user clicks "Retry Analysis" button in error state
+ */
+export interface RetryAnalysisMessage {
+  type: 'RETRY_ANALYSIS';
+}
+
+/**
+ * Sent when user clicks "Configure API Key" button in error state
+ * TODO: Replace with GitHub OAuth flow (future work) - This API key configuration is temporary
+ */
+export interface ConfigureApiKeyMessage {
+  type: 'CONFIGURE_API_KEY';
+}
+
+/**
  * Union type for all messages from Webview to Extension
  */
-export type WebviewMessage = 
+export type WebviewMessage =
   | WebviewReadyMessage
   | BlockHoverMessage
   | BlockSelectedMessage
   | BlockDeselectedMessage
   | SegmentNavigatedMessage
   | BlockClearMessage
-  | EscapePressedMessage;
+  | EscapePressedMessage
+  | RetryAnalysisMessage
+  | ConfigureApiKeyMessage;
 
 // ========================================
 // EXTENSION → WEBVIEW MESSAGES
@@ -114,12 +131,14 @@ export interface AnalysisStaleMessage {
 }
 
 /**
- * Sent when analysis or operation fails
- * Webview displays error state
+ * Sent when analysis fails with structured error details
+ * Webview renders error state with actionable buttons
  */
-export interface ErrorMessage {
-  type: 'ERROR';
-  message: string;
+export interface ErrorDetailsMessage {
+  type: 'ERROR_DETAILS';
+  errorType: string;     // Matches APIErrorType values (e.g., 'NETWORK_ERROR', 'TIMEOUT', 'HTTP_ERROR')
+  message: string;       // User-friendly error message
+  statusCode?: number;   // HTTP status code (if applicable)
 }
 
 /**
@@ -133,11 +152,11 @@ export interface NavigateSegmentMessage {
 /**
  * Union type for all messages from Extension to Webview
  */
-export type ExtensionMessage = 
+export type ExtensionMessage =
   | StateUpdateMessage
   | AnalysisDataMessage
   | AnalysisStaleMessage
-  | ErrorMessage
+  | ErrorDetailsMessage
   | NavigateSegmentMessage;
 
 // ========================================
@@ -168,8 +187,10 @@ export function isWebviewMessage(message: any): message is WebviewMessage {
     
     case 'BLOCK_CLEAR':
     case 'ESCAPE_PRESSED':
+    case 'RETRY_ANALYSIS':
+    case 'CONFIGURE_API_KEY':
       return true;
-    
+
     default:
       return false;
   }
@@ -193,8 +214,11 @@ export function isExtensionMessage(message: any): message is ExtensionMessage {
              Array.isArray(message.payload.responsibilityBlocks);
     
     case 'ANALYSIS_STALE':
-    case 'ERROR':
       return true;
+
+    case 'ERROR_DETAILS':
+      return typeof message.errorType === 'string' &&
+             typeof message.message === 'string';
     
     case 'NAVIGATE_SEGMENT':
       return typeof message.direction === 'string' &&

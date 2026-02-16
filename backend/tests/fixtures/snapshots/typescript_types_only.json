@@ -1,0 +1,67 @@
+{
+  "file_intent": "Type definitions for user/auth/response/pagination models used across the app",
+  "responsibility_blocks": [
+    {
+      "description": "User, UserProfile, AuthToken, Notification, ApiError definitions and their fields",
+      "label": "Core domain entities",
+      "ranges": [
+        [
+          1,
+          8
+        ],
+        [
+          10,
+          16
+        ],
+        [
+          18,
+          23
+        ],
+        [
+          57,
+          64
+        ],
+        [
+          66,
+          71
+        ]
+      ]
+    },
+    {
+      "description": "Interfaces for login flow and tokens (LoginRequest, LoginResponse, AuthToken)",
+      "label": "Authentication and login data shapes",
+      "ranges": [
+        [
+          25,
+          34
+        ]
+      ]
+    },
+    {
+      "description": "PaginationParams and PaginatedResponse to standardize list endpoints",
+      "label": "Pagination and generic API responses",
+      "ranges": [
+        [
+          36,
+          51
+        ]
+      ]
+    },
+    {
+      "description": "UserRole and NotificationType string unions",
+      "label": "Identity and role/type unions",
+      "ranges": [
+        [
+          53,
+          55
+        ]
+      ]
+    }
+  ],
+  "metadata": {
+    "cache_hit": 0,
+    "estimated_cost_usd": 0.000417,
+    "input_tokens": 2018,
+    "output_tokens": 190
+  }
+}

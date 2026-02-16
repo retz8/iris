@@ -1,0 +1,69 @@
+{
+  "file_intent": "Centralized application configuration and environment-aware defaults",
+  "responsibility_blocks": [
+    {
+      "description": "Loads environment, sets environment-based defaults and exposes core config constants (ENV, LOG_LEVEL, LOG_FORMAT, SESSION_TTL_SECONDS, MAX_UPLOAD_SIZE_MB)",
+      "label": "Environment and general configuration",
+      "ranges": [
+        [
+          6,
+          6
+        ],
+        [
+          35,
+          35
+        ],
+        [
+          37,
+          38
+        ]
+      ]
+    },
+    {
+      "description": "Defines default connection parameters for the PostgreSQL database with host, port, name, user, password and pooling settings",
+      "label": "Database configuration",
+      "ranges": [
+        [
+          8,
+          16
+        ]
+      ]
+    },
+    {
+      "description": "Defines default Redis connection parameters (host, port, db)",
+      "label": "Redis configuration",
+      "ranges": [
+        [
+          18,
+          22
+        ]
+      ]
+    },
+    {
+      "description": "Specifies allowed origins for Cross-Origin Resource Sharing",
+      "label": "CORS configuration",
+      "ranges": [
+        [
+          24,
+          27
+        ]
+      ]
+    },
+    {
+      "description": "Maintains a whitelist of file extensions considered as supported for uploads/processes",
+      "label": "Supported file types",
+      "ranges": [
+        [
+          29,
+          32
+        ]
+      ]
+    }
+  ],
+  "metadata": {
+    "cache_hit": 0,
+    "estimated_cost_usd": 0.00041,
+    "input_tokens": 1838,
+    "output_tokens": 224
+  }
+}

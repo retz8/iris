@@ -14,10 +14,15 @@ import {
 import { IRISStateManager } from './state/irisState';
 import { IRISSidePanelProvider } from './webview/sidePanel';
 import { DecorationManager } from './decorations/decorationManager';
+import { AnalysisCache, type SerializedCacheEntry } from './cache/analysisCache';
+import { computeContentHash } from './utils/contentHash';
 import { createLogger } from './utils/logger';
 
 
 const OUTPUT_CHANNEL_NAME = 'IRIS';
+
+// Module-level reference for deactivate() to persist cache
+let onDeactivate: (() => void) | undefined;
 const SUPPORTED_LANGUAGES = new Set([
 	'python',
 	'javascript',
@@ -42,6 +47,47 @@ export function activate(context: vscode.ExtensionContext) {
 	// Initialize decoration manager
 	const decorationManager = new DecorationManager(outputChannel);
 	context.subscriptions.push(decorationManager);
+
+	// Initialize analysis cache for instant file switching
+	const analysisCache = new AnalysisCache(createLogger(outputChannel, 'AnalysisCache'));
+	context.subscriptions.push(analysisCache);
+
+	// Restore cache from workspaceState (non-blocking, runs in background)
+	const serializedCache = context.workspaceState.get<SerializedCacheEntry[]>('iris.analysisCache', []);
+	if (serializedCache.length > 0) {
+		// Validate content hashes asynchronously to avoid blocking activation
+		(async () => {
+			const validEntries: SerializedCacheEntry[] = [];
+			for (const entry of serializedCache) {
+				try {
+					const fileUri = vscode.Uri.parse(entry.fileUri);
+					const fileContent = await vscode.workspace.fs.readFile(fileUri);
+					const currentHash = computeContentHash(Buffer.from(fileContent).toString('utf-8'));
+					if (currentHash === entry.contentHash) {
+						validEntries.push(entry);
+					} else {
+						logger.info('Discarded stale cache entry (hash mismatch)', { fileUri: entry.fileUri });
+					}
+				} catch {
+					logger.info('Discarded cache entry (file not found)', { fileUri: entry.fileUri });
+				}
+			}
+			if (validEntries.length > 0) {
+				analysisCache.deserialize(validEntries);
+				logger.info('Cache restored from workspaceState', {
+					restored: validEntries.length,
+					discarded: serializedCache.length - validEntries.length
+				});
+			}
+		})();
+	}
+
+	// Helper: persist cache to workspaceState
+	function persistCache(): void {
+		const serialized = analysisCache.serialize();
+		context.workspaceState.update('iris.analysisCache', serialized);
+		logger.info('Cache persisted to workspaceState', { entryCount: serialized.length });
+	}
 
 	// Initialize API client with error boundary (mutable for config updates)
 	let apiKey = vscode.workspace.getConfiguration('iris').get<string>('apiKey', '');
@@ -237,12 +283,16 @@ export function activate(context: vscode.ExtensionContext) {
 			const sourceCode = document.getText();
 			const lineCount = document.lineCount;
 
+			// Compute content hash for cache lookup
+			const contentHash = computeContentHash(sourceCode);
+
 			logger.info('Analyzing file', {
 				fileName,
 				languageId,
 				filePath,
 				lineCount,
-				sourceLength: sourceCode.length
+				sourceLength: sourceCode.length,
+				contentHash: contentHash.substring(0, 8)
 			});
 
 			// Edge case: Unsupported language
@@ -254,6 +304,17 @@ export function activate(context: vscode.ExtensionContext) {
 					);
 				}
 				return;
+			}
+
+			// Cache check: auto-analysis uses cache, manual analysis bypasses it
+			if (silent) {
+				const cachedData = analysisCache.get(fileUri, contentHash);
+				if (cachedData) {
+					logger.info('Cache hit - using cached analysis', { fileUri });
+					stateManager.startAnalysis(fileUri);
+					stateManager.setAnalyzed(cachedData);
+					return;
+				}
 			}
 
 			// Add line numbers to source code per API contract
@@ -300,7 +361,10 @@ export function activate(context: vscode.ExtensionContext) {
 							if (!silent) {
 								vscode.window.showWarningMessage('IRIS: No responsibility blocks found in file.');
 							}
-							stateManager.setError('No responsibility blocks found', fileUri);
+							stateManager.setError({
+								type: 'INVALID_RESPONSE',
+								message: 'No responsibility blocks found'
+							}, fileUri);
 							return;
 						}
 
@@ -310,7 +374,7 @@ export function activate(context: vscode.ExtensionContext) {
 							blockId: generateBlockId(block)
 						}));
 
-						stateManager.setAnalyzed({
+						const analysisData = {
 							fileIntent: response.file_intent,
 							metadata: response.metadata,
 							responsibilityBlocks: normalizedBlocks,
@@ -321,7 +385,13 @@ export function activate(context: vscode.ExtensionContext) {
 							},
 							analyzedFileUri: fileUri,
 							analyzedAt: new Date()
-						});
+						};
+
+						stateManager.setAnalyzed(analysisData);
+
+						// Store in cache for instant retrieval on file switch
+						analysisCache.set(fileUri, contentHash, analysisData);
+						persistCache();
 
 						logger.info('Analysis completed successfully', {
 							blockCount: normalizedBlocks.length,
@@ -341,13 +411,20 @@ export function activate(context: vscode.ExtensionContext) {
 								statusCode: error.statusCode,
 								message: error.message
 							});
-							stateManager.setError(error.message, fileUri);
+							stateManager.setError({
+								type: error.type,
+								message: userMessage,
+								statusCode: error.statusCode
+							}, fileUri);
 							vscode.window.showErrorMessage(`IRIS: ${userMessage}`);
 						} else {
 							// Unexpected error
 							const message = error instanceof Error ? error.message : 'Unknown error';
 							logger.errorWithException('Unexpected error during analysis', error);
-							stateManager.setError(message, fileUri);
+							stateManager.setError({
+								type: 'NETWORK_ERROR',
+								message: 'Analysis failed due to an unexpected error.'
+							}, fileUri);
 							vscode.window.showErrorMessage('IRIS: Analysis failed due to an unexpected error.');
 						}
 					}
@@ -358,7 +435,10 @@ export function activate(context: vscode.ExtensionContext) {
 			// Top-level error boundary
 			const message = error instanceof Error ? error.message : 'Unknown error';
 			logger.errorWithException('Command execution failed', error);
-			stateManager.setError(message);
+			stateManager.setError({
+				type: 'NETWORK_ERROR',
+				message: 'Analysis failed due to an unexpected error.'
+			});
 			vscode.window.showErrorMessage('IRIS: Analysis failed.');
 		}
 	}
@@ -401,9 +481,10 @@ export function activate(context: vscode.ExtensionContext) {
 				transition: 'ANALYZED → STALE'
 			});
 			
-			// Transition to STALE state
+			// Transition to STALE state and invalidate cache
 			stateManager.setStale();
-			
+			analysisCache.invalidate(analyzedFileUri);
+
 			logger.info('Analysis invalidated - state updated to STALE');
 		})
 	);
@@ -459,6 +540,9 @@ export function activate(context: vscode.ExtensionContext) {
 	// Clean up auto-analysis timer on dispose
 	context.subscriptions.push({ dispose: () => { if (autoAnalyzeTimer) { clearTimeout(autoAnalyzeTimer); } } });
 
+	// Set module-level deactivation hook for cache persistence
+	onDeactivate = persistCache;
+
 	logger.info('Extension activation complete', {
 		supportedLanguages: Array.from(SUPPORTED_LANGUAGES)
 	});
@@ -466,14 +550,10 @@ export function activate(context: vscode.ExtensionContext) {
 
 // This method is called when your extension is deactivated
 export function deactivate() {
-	// Cleanup is handled automatically through context.subscriptions
-	// All disposables registered via context.subscriptions.push() will be disposed
-	// This includes:
-	// - Output channel
-	// - State manager (disposes event emitters)
-	// - Decoration manager (disposes all decoration types)
-	// - Webview provider (clears state, removes listeners)
-	// - Event listeners (document changes, editor changes)
-	// 
-	// No explicit cleanup needed here
+	// Persist cache before shutdown
+	if (onDeactivate) {
+		onDeactivate();
+		onDeactivate = undefined;
+	}
+	// Remaining cleanup is handled automatically through context.subscriptions
 }

@@ -1,0 +1,71 @@
+{
+  "file_intent": "Centralized configuration constants and feature flags for the application",
+  "responsibility_blocks": [
+    {
+      "description": "Define core constants for retries, timeouts, base API URL, and DB pool settings",
+      "label": "Global configuration constants",
+      "ranges": [
+        [
+          8,
+          11
+        ],
+        [
+          13,
+          15
+        ],
+        [
+          17,
+          19
+        ],
+        [
+          38,
+          47
+        ]
+      ]
+    },
+    {
+      "description": "Flag-based toggles for UI, real-time features, and experimental components",
+      "label": "Feature flag definitions",
+      "ranges": [
+        [
+          21,
+          29
+        ],
+        [
+          30,
+          33
+        ],
+        [
+          34,
+          37
+        ]
+      ]
+    },
+    {
+      "description": "Module-specific logging levels that influence runtime verbosity",
+      "label": "Logging configuration",
+      "ranges": [
+        [
+          48,
+          56
+        ]
+      ]
+    },
+    {
+      "description": "Default rate limits per user types controlling request throughput",
+      "label": "Rate limiting configuration",
+      "ranges": [
+        [
+          58,
+          63
+        ]
+      ]
+    }
+  ],
+  "metadata": {
+    "cache_hit": 0,
+    "estimated_cost_usd": 0.000419,
+    "input_tokens": 2067,
+    "output_tokens": 181
+  }
+}

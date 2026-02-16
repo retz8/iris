@@ -50,6 +50,56 @@ def _merge_ranges(ranges: list[list[int]]) -> list[list[int]]:
     return merged
 
 
+def _deduplicate_cross_block_ranges(
+    blocks: list,
+) -> list:
+    """Remove cross-block range overlaps using first-block-wins strategy.
+
+    Iterates blocks in order (comprehension-ordered), tracking which lines
+    have been claimed. Later blocks have overlapping lines trimmed or
+    removed entirely.
+
+    Args:
+        blocks: List of responsibility block objects with a .ranges attribute.
+
+    Returns:
+        The same list with ranges mutated in-place. Blocks whose ranges
+        become empty are removed.
+
+    Example:
+        Block 1 ranges: [[1,10]]
+        Block 2 ranges: [[5,15]]
+        Result: Block 1 [[1,10]], Block 2 [[11,15]]
+    """
+    claimed: set[int] = set()
+
+    for block in blocks:
+        new_ranges = []
+        for r in block.ranges:
+            start, end = r[0], r[1]
+            # Find unclaimed sub-ranges within [start, end]
+            seg_start = None
+            for line in range(start, end + 1):
+                if line not in claimed:
+                    if seg_start is None:
+                        seg_start = line
+                else:
+                    if seg_start is not None:
+                        new_ranges.append([seg_start, line - 1])
+                        seg_start = None
+            if seg_start is not None:
+                new_ranges.append([seg_start, end])
+
+        # Claim all lines in the final ranges
+        for r in new_ranges:
+            claimed.update(range(r[0], r[1] + 1))
+
+        block.ranges = new_ranges
+
+    # Remove blocks that ended up with no ranges
+    return [b for b in blocks if b.ranges]
+
+
 class IrisError(Exception):
     """Custom exception for IRIS agent errors."""
 
@@ -214,6 +264,11 @@ class IrisAgent:
             # Post-process: merge overlapping/nested ranges within each block
             for block in content.responsibility_blocks:
                 block.ranges = _merge_ranges(block.ranges)
+
+            # Post-process: remove cross-block overlaps (first block wins)
+            content.responsibility_blocks = _deduplicate_cross_block_ranges(
+                content.responsibility_blocks
+            )
 
             # Cache the result for future use (with error handling)
             if self.analysis_cache:

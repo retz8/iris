@@ -9,6 +9,8 @@ docs/tasks/
 ├── README.md              ← You are here (workflow overview)
 ├── UPDATES.md             ← Single source of truth for all session progress
 ├── track-a-extension-ux.md
+├── track-a/
+│   └── extension-ux-implementation-plan.md
 ├── track-b-analysis-quality.md
 ├── track-c-marketplace-prep.md
 ├── track-d-backend-hardening.md
@@ -54,16 +56,23 @@ Phase 4:             G
 Each session is run by independent Claude Code session.
 Each task session follows this structure:
 
+### 0. Exploration Phase (reference: @track-a-extension-ux.md)
+- Understand current state of codebase or documentation
+- Read relevant files, search for patterns
+- Build context before discussions or planning
+- Document findings for next phase
+
 ### 1. Discovery/Discussion Phase with human engineer
-- Read current state (code, docs, UPDATES.md)
+- Review exploration findings
 - Identify requirements and pain points
 - Make design decisions
-- Document findings
+- Document decisions and rationale
 
 ### 2. Implementation Planning
 - Based on Phase 1, create detailed steps
 - Identify files to modify
 - Define acceptance criteria
+- **Document plan in `docs/tasks/track-{letter}/{name}-implementation-plan.md`**
 
 ### 3. Execution
 - Implement the plan

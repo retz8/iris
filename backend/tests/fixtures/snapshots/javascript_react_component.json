@@ -1,0 +1,95 @@
+{
+  "file_intent": "Interactive, searchable, sortable list UI component in React",
+  "responsibility_blocks": [
+    {
+      "description": "Debounce user input to minimize filtering recalculations and API calls",
+      "label": "Debounced search query handling",
+      "ranges": [
+        [
+          10,
+          19
+        ],
+        [
+          28,
+          38
+        ]
+      ]
+    },
+    {
+      "description": "Sort filtered results based on predefined SORT_OPTIONS",
+      "label": "Sorting of filtered items",
+      "ranges": [
+        [
+          40,
+          48
+        ]
+      ]
+    },
+    {
+      "description": "Track selected item and notify parent via onSelect callback",
+      "label": "Item selection management",
+      "ranges": [
+        [
+          50,
+          56
+        ]
+      ]
+    },
+    {
+      "description": "Clear search input and selection without unmounting component",
+      "label": "Search reset and state clearing",
+      "ranges": [
+        [
+          58,
+          61
+        ]
+      ]
+    },
+    {
+      "description": "Render error banner and dismiss action when error state is set",
+      "label": "Error rendering path",
+      "ranges": [
+        [
+          63,
+          70
+        ]
+      ]
+    },
+    {
+      "description": "Render search input, clear button, and sort select",
+      "label": "UI render: search controls",
+      "ranges": [
+        [
+          72,
+          99
+        ]
+      ]
+    },
+    {
+      "description": "Show result count when there is an active query",
+      "label": "UI render: result messaging",
+      "ranges": [
+        [
+          100,
+          106
+        ]
+      ]
+    },
+    {
+      "description": "Render list of items with selection state and accessibility attributes",
+      "label": "UI render: results listing",
+      "ranges": [
+        [
+          108,
+          131
+        ]
+      ]
+    }
+  ],
+  "metadata": {
+    "cache_hit": 0,
+    "estimated_cost_usd": 0.000629,
+    "input_tokens": 2953,
+    "output_tokens": 310
+  }
+}

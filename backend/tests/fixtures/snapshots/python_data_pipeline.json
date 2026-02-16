@@ -1,0 +1,93 @@
+{
+  "file_intent": "ETL pipeline for CSV transactions into aggregated reports",
+  "responsibility_blocks": [
+    {
+      "description": "Define in-memory data models for transactions and aggregated reports and provide CSV reading/line counting utilities",
+      "label": "CSV ingestion and transaction model",
+      "ranges": [
+        [
+          16,
+          16
+        ],
+        [
+          17,
+          25
+        ],
+        [
+          27,
+          35
+        ],
+        [
+          37,
+          58
+        ]
+      ]
+    },
+    {
+      "description": "Read a CSV file and yield strongly-typed Transaction objects; count input lines",
+      "label": "CSV reading and parsing",
+      "ranges": [
+        [
+          59,
+          61
+        ]
+      ]
+    },
+    {
+      "description": "Apply configurable filters to the transaction stream to narrow the dataset",
+      "label": "Transaction filtering",
+      "ranges": [
+        [
+          64,
+          88
+        ]
+      ]
+    },
+    {
+      "description": "Aggregate filtered transactions into totals, counts, and per-key breakdowns",
+      "label": "Aggregation of transactions",
+      "ranges": [
+        [
+          90,
+          116
+        ]
+      ]
+    },
+    {
+      "description": "Serialize the aggregated report to JSON and generate a human-readable summary file",
+      "label": "Report writing",
+      "ranges": [
+        [
+          118,
+          156
+        ]
+      ]
+    },
+    {
+      "description": "Coordinate reading, filtering, aggregating, and writing to produce final reports",
+      "label": "Pipeline orchestration",
+      "ranges": [
+        [
+          158,
+          177
+        ]
+      ]
+    },
+    {
+      "description": "Command-line interface to configure input, output, and filter options and run the pipeline",
+      "label": "CLI entrypoint and configuration",
+      "ranges": [
+        [
+          179,
+          196
+        ]
+      ]
+    }
+  ],
+  "metadata": {
+    "cache_hit": 0,
+    "estimated_cost_usd": 0.000687,
+    "input_tokens": 3449,
+    "output_tokens": 283
+  }
+}

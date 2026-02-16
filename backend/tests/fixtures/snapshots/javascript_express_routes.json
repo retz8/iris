@@ -1,0 +1,85 @@
+{
+  "file_intent": "Express router for user management API (CRUD) with validation and auth",
+  "responsibility_blocks": [
+    {
+      "description": "GET /api/users - fetch paginated user list with admin auth",
+      "label": "List users with pagination",
+      "ranges": [
+        [
+          9,
+          9
+        ],
+        [
+          11,
+          18
+        ],
+        [
+          20,
+          20
+        ],
+        [
+          22,
+          30
+        ]
+      ]
+    },
+    {
+      "description": "GET /api/users/:id - fetch a user by id with validation and auth",
+      "label": "Get single user",
+      "ranges": [
+        [
+          37,
+          39
+        ],
+        [
+          44,
+          55
+        ]
+      ]
+    },
+    {
+      "description": "POST /api/users - validate input, enforce uniqueness, hash password, create user",
+      "label": "Create new user",
+      "ranges": [
+        [
+          61,
+          69
+        ],
+        [
+          70,
+          95
+        ]
+      ]
+    },
+    {
+      "description": "PUT /api/users/:id - update allowed user fields with validation and authorization",
+      "label": "Update user",
+      "ranges": [
+        [
+          102,
+          111
+        ],
+        [
+          112,
+          153
+        ]
+      ]
+    },
+    {
+      "description": "DELETE /api/users/:id - admin-only delete with validation",
+      "label": "Delete user",
+      "ranges": [
+        [
+          157,
+          177
+        ]
+      ]
+    }
+  ],
+  "metadata": {
+    "cache_hit": 0,
+    "estimated_cost_usd": 0.00065,
+    "input_tokens": 3415,
+    "output_tokens": 229
+  }
+}

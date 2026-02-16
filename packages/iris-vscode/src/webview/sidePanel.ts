@@ -5,11 +5,12 @@ import { IRISStateManager } from '../state/irisState';
 import { DecorationManager } from '../decorations/decorationManager';
 import { createLogger, Logger } from '../utils/logger';
 import { generateBlockColorOpaque } from '../utils/colorAssignment';
-import { 
-  WebviewMessage, 
-  ExtensionMessage, 
+import {
+  WebviewMessage,
+  ExtensionMessage,
   isWebviewMessage,
   AnalysisDataMessage,
+  ErrorDetailsMessage,
   StateUpdateMessage
 } from '../types/messages';
 
@@ -91,12 +92,24 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
   private handleStateChange(state: IRISAnalysisState): void {
     this.logger.info( `State changed to: ${state}`);
     this.renderCurrentState();
-    
+
     // Send state update message to webview
     this.postMessageToWebview({
       type: 'STATE_UPDATE',
       state: state
     });
+
+    // Send error details to webview if error occurred
+    const errorDetails = this.stateManager.getErrorDetails();
+    if (state === IRISAnalysisState.IDLE && errorDetails) {
+      const errorMessage: ErrorDetailsMessage = {
+        type: 'ERROR_DETAILS',
+        errorType: errorDetails.type,
+        message: errorDetails.message,
+        statusCode: errorDetails.statusCode
+      };
+      this.postMessageToWebview(errorMessage);
+    }
   }
 
   /**
@@ -142,7 +155,16 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       case 'BLOCK_CLEAR':
         this.handleBlockClear();
         break;
-      
+
+      case 'RETRY_ANALYSIS':
+        this.handleRetryAnalysis();
+        break;
+
+      // TODO: Replace with GitHub OAuth flow (future work) - This API key configuration is temporary
+      case 'CONFIGURE_API_KEY':
+        this.handleConfigureApiKey();
+        break;
+
       default:
         // TypeScript exhaustiveness check
         const _exhaustive: never = message;
@@ -271,6 +293,25 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
     // Clear hover decorations
     this.decorationManager.clearCurrentHighlight(activeEditor);
+  }
+
+  /**
+   * Handle RETRY_ANALYSIS message
+   * Re-triggers analysis on the active file
+   */
+  private handleRetryAnalysis(): void {
+    this.logger.info('Retry analysis requested from sidebar');
+    vscode.commands.executeCommand('iris.runAnalysis');
+  }
+
+  /**
+   * Handle CONFIGURE_API_KEY message
+   * Opens VS Code settings filtered to iris.apiKey
+   * TODO: Replace with GitHub OAuth flow (future work) - This API key configuration is temporary
+   */
+  private handleConfigureApiKey(): void {
+    this.logger.info('Configure API key requested from sidebar');
+    vscode.commands.executeCommand('workbench.action.openSettings', 'iris.apiKey');
   }
 
   /**
@@ -450,6 +491,12 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
 
     const currentState = this.stateManager.getCurrentState();
     
+    // Check for error details first (error state renders instead of IDLE)
+    if (currentState === IRISAnalysisState.IDLE && this.stateManager.hasError()) {
+      this.renderErrorState();
+      return;
+    }
+
     switch (currentState) {
       case IRISAnalysisState.IDLE:
         this.renderIdleState();
@@ -655,6 +702,67 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     }
     
     this.logger.info( 'Rendered STALE state');
+  }
+
+  /**
+   * Render ERROR state: persistent error display with actionable buttons
+   */
+  private renderErrorState(): void {
+    if (!this.view) {
+      return;
+    }
+
+    const errorDetails = this.stateManager.getErrorDetails();
+    if (!errorDetails) {
+      this.renderIdleState();
+      return;
+    }
+
+    // Determine error category for styling and UI
+    const isAuthError = errorDetails.statusCode === 401 || errorDetails.statusCode === 403;
+    const isTimeoutError = errorDetails.type === 'TIMEOUT';
+    const isNetworkError = errorDetails.type === 'NETWORK_ERROR';
+
+    // Error type badge text
+    let badgeText = 'Error';
+    if (isAuthError) { badgeText = 'Auth'; }
+    else if (isTimeoutError) { badgeText = 'Timeout'; }
+    else if (isNetworkError) { badgeText = 'Network'; }
+    else if (errorDetails.type === 'PARSE_ERROR') { badgeText = 'Parse'; }
+    else if (errorDetails.type === 'INVALID_RESPONSE') { badgeText = 'Response'; }
+    else if (errorDetails.type === 'HTTP_ERROR') { badgeText = 'Server'; }
+
+    // Error banner class for color styling
+    const bannerClass = isAuthError ? 'error-banner error-auth' : 'error-banner';
+
+    // TODO: Replace with GitHub OAuth flow (future work) - This API key configuration is temporary
+    const configureKeyButton = isAuthError
+      ? `<button class="error-action-button configure-key-button" onclick="handleConfigureApiKey()">Configure API Key</button>`
+      : '';
+
+    const errorHtml = `
+      <div class="${bannerClass}">
+        <div class="error-header">
+          <span class="error-type-badge">${this.escapeHtml(badgeText)}</span>
+          <span class="error-title">Analysis Failed</span>
+        </div>
+        <p class="error-message">${this.escapeHtml(errorDetails.message)}</p>
+        <div class="error-actions">
+          <button class="error-action-button retry-button" onclick="handleRetryAnalysis()">Retry Analysis</button>
+          ${configureKeyButton}
+        </div>
+      </div>
+    `;
+
+    this.view.webview.html = this.getHtmlTemplate(
+      'Analysis Error',
+      errorHtml
+    );
+
+    this.logger.info('Rendered ERROR state', {
+      errorType: errorDetails.type,
+      statusCode: errorDetails.statusCode
+    });
   }
 
   /**
@@ -881,7 +989,94 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
       font-style: italic;
       font-size: 13px;
     }
-    
+
+    /* Error State */
+    .error-banner {
+      padding: var(--iris-spacing-lg);
+      margin-top: var(--iris-spacing-xl);
+      background: var(--vscode-inputValidation-errorBackground);
+      border: 1px solid var(--vscode-inputValidation-errorBorder);
+      border-radius: var(--iris-border-radius);
+    }
+
+    .error-banner.error-auth {
+      background: var(--vscode-inputValidation-warningBackground);
+      border-color: var(--vscode-inputValidation-warningBorder);
+    }
+
+    .error-header {
+      display: flex;
+      align-items: center;
+      gap: var(--iris-spacing-sm);
+      margin-bottom: var(--iris-spacing-sm);
+    }
+
+    .error-type-badge {
+      display: inline-block;
+      padding: 1px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 3px;
+      background: var(--vscode-badge-background);
+      color: var(--vscode-badge-foreground);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .error-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--vscode-foreground);
+    }
+
+    .error-message {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--vscode-descriptionForeground);
+      margin: 0 0 var(--iris-spacing-md) 0;
+    }
+
+    .error-actions {
+      display: flex;
+      flex-direction: column;
+      gap: var(--iris-spacing-sm);
+    }
+
+    .error-action-button {
+      display: block;
+      width: 100%;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-family: var(--vscode-font-family);
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      text-align: center;
+      transition: opacity var(--iris-transition-fast);
+    }
+
+    .error-action-button:hover {
+      opacity: 0.9;
+    }
+
+    .retry-button {
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+    }
+
+    .retry-button:hover {
+      background: var(--vscode-button-hoverBackground);
+    }
+
+    .configure-key-button {
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
+    }
+
+    .configure-key-button:hover {
+      background: var(--vscode-button-secondaryHoverBackground);
+    }
+
   </style>
 </head>
 <body>
@@ -944,7 +1139,18 @@ export class IRISSidePanelProvider implements vscode.WebviewViewProvider {
     function handleBlockClear() {
       vscode.postMessage({ type: 'BLOCK_CLEAR' });
     }
-    
+
+    // Handle retry analysis button click
+    function handleRetryAnalysis() {
+      vscode.postMessage({ type: 'RETRY_ANALYSIS' });
+    }
+
+    // Handle configure API key button click
+    // TODO: Replace with GitHub OAuth flow (future work) - This API key configuration is temporary
+    function handleConfigureApiKey() {
+      vscode.postMessage({ type: 'CONFIGURE_API_KEY' });
+    }
+
     // Handle block click - pin/unpin toggle
     function handleBlockClick(blockId) {
       if (selectedBlockId === blockId) {

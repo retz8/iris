@@ -1,0 +1,21 @@
+{
+  "file_intent": "Define a small, module-level constant configuration for retry behavior",
+  "responsibility_blocks": [
+    {
+      "description": "Declares a single numeric constant controlling the maximum retry attempts for an operation",
+      "label": "Retry configuration constant",
+      "ranges": [
+        [
+          1,
+          1
+        ]
+      ]
+    }
+  ],
+  "metadata": {
+    "cache_hit": 0,
+    "estimated_cost_usd": 0.000261,
+    "input_tokens": 1430,
+    "output_tokens": 78
+  }
+}
