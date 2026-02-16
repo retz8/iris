@@ -6,7 +6,8 @@ export type {
   NormalizedResponsibilityBlock,
   IRISAnalysisResponse,
   AnalysisData,
-  SelectionState
+  SelectionState,
+  ErrorDetails
 } from './models/types';
 
 // State

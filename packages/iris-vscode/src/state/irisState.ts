@@ -7,7 +7,8 @@ import {
   type AnalysisMetadata,
   type NormalizedResponsibilityBlock,
   type IRISAnalysisResponse,
-  type SelectionState
+  type SelectionState,
+  type ErrorDetails
 } from '@iris/core';
 import { createLogger } from '../utils/logger';
 
@@ -20,7 +21,8 @@ export type {
   NormalizedResponsibilityBlock,
   IRISAnalysisResponse,
   AnalysisData,
-  SelectionState
+  SelectionState,
+  ErrorDetails
 } from '@iris/core';
 
 /**
@@ -49,7 +51,7 @@ export class IRISStateManager {
   // State transitions
   startAnalysis(fileUri: string): void { this.core.startAnalysis(fileUri); }
   setAnalyzed(data: AnalysisData): void { this.core.setAnalyzed(data); }
-  setError(error: string, fileUri?: string): void { this.core.setError(error, fileUri); }
+  setError(errorDetails: ErrorDetails, fileUri?: string): void { this.core.setError(errorDetails, fileUri); }
   setStale(): void { this.core.setStale(); }
   reset(): void { this.core.reset(); }
 
@@ -64,6 +66,8 @@ export class IRISStateManager {
   hasAnalysisData(): boolean { return this.core.hasAnalysisData(); }
   isAnalyzing(): boolean { return this.core.isAnalyzing(); }
   isStale(): boolean { return this.core.isStale(); }
+  getErrorDetails(): Readonly<ErrorDetails> | null { return this.core.getErrorDetails(); }
+  hasError(): boolean { return this.core.hasError(); }
   getRawResponse(): Readonly<IRISAnalysisResponse> | null { return this.core.getRawResponse(); }
 
   // Selection

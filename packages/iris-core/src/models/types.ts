@@ -57,3 +57,13 @@ export interface SelectionState {
   selectedBlockId: string | null;  // null = no block selected
   currentSegmentIndex: number;      // Current segment being viewed (0-based)
 }
+
+/**
+ * Structured error details for display in UI
+ * Uses string type field to stay decoupled from API module (values match APIErrorType enum)
+ */
+export interface ErrorDetails {
+  type: string;           // Error category (e.g., 'NETWORK_ERROR', 'TIMEOUT', 'HTTP_ERROR')
+  message: string;        // User-friendly error message
+  statusCode?: number;    // HTTP status code (if applicable)
+}

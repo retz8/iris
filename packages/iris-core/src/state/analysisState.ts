@@ -1,6 +1,6 @@
 import type { Logger } from '../types/logger';
 import type { AnalysisData, FileIntent, NormalizedResponsibilityBlock,
-  AnalysisMetadata, IRISAnalysisResponse, SelectionState } from '../models/types';
+  AnalysisMetadata, IRISAnalysisResponse, SelectionState, ErrorDetails } from '../models/types';
 
 /**
  * Extension state machine enum
@@ -22,6 +22,7 @@ interface CoreState {
   analysisData: AnalysisData | null;
   activeFileUri: string | null;  // Currently active file being tracked
   selectionState: SelectionState;
+  errorDetails: ErrorDetails | null;  // Structured error info for UI display
 }
 
 /**
@@ -40,7 +41,8 @@ export class IRISCoreState {
       currentState: IRISAnalysisState.IDLE,
       analysisData: null,
       activeFileUri: null,
-      selectionState: { selectedBlockId: null, currentSegmentIndex: 0 }
+      selectionState: { selectedBlockId: null, currentSegmentIndex: 0 },
+      errorDetails: null
     };
 
     this.logger.info('State manager initialized', { initialState: IRISAnalysisState.IDLE });
@@ -82,6 +84,7 @@ export class IRISCoreState {
     this.state.currentState = IRISAnalysisState.ANALYZING;
     this.state.activeFileUri = fileUri;
     this.state.analysisData = null;  // Clear previous data
+    this.state.errorDetails = null;  // Clear previous error
 
     this.logStateTransition(previousState, IRISAnalysisState.ANALYZING, fileUri);
     this.emit(IRISAnalysisState.ANALYZING);
@@ -103,6 +106,7 @@ export class IRISCoreState {
 
     this.state.currentState = IRISAnalysisState.ANALYZED;
     this.state.analysisData = data;
+    this.state.errorDetails = null;  // Clear error on success
 
     this.logStateTransition(previousState, IRISAnalysisState.ANALYZED, data.analyzedFileUri, {
       blockCount: data.responsibilityBlocks.length,
@@ -113,18 +117,24 @@ export class IRISCoreState {
 
   /**
    * Transition to IDLE state on error or invalid schema
+   * Stores structured error details for UI display
    * Clears selection state since selected block becomes invalid
    */
-  public setError(error: string, fileUri?: string): void {
+  public setError(errorDetails: ErrorDetails, fileUri?: string): void {
     const previousState = this.state.currentState;
 
     this.state.currentState = IRISAnalysisState.IDLE;
     this.state.analysisData = null;
+    this.state.errorDetails = errorDetails;
 
     // Clear selection state
     this.deselectBlock();
 
-    this.logStateTransition(previousState, IRISAnalysisState.IDLE, fileUri, { error });
+    this.logStateTransition(previousState, IRISAnalysisState.IDLE, fileUri, {
+      errorType: errorDetails.type,
+      errorMessage: errorDetails.message,
+      statusCode: errorDetails.statusCode
+    });
     this.emit(IRISAnalysisState.IDLE);
   }
 
@@ -160,6 +170,7 @@ export class IRISCoreState {
     this.state.currentState = IRISAnalysisState.IDLE;
     this.state.analysisData = null;
     this.state.activeFileUri = null;
+    this.state.errorDetails = null;
 
     // Clear selection state
     this.deselectBlock();
@@ -240,6 +251,20 @@ export class IRISCoreState {
    */
   public isStale(): boolean {
     return this.state.currentState === IRISAnalysisState.STALE;
+  }
+
+  /**
+   * Get structured error details (null if no error)
+   */
+  public getErrorDetails(): Readonly<ErrorDetails> | null {
+    return this.state.errorDetails;
+  }
+
+  /**
+   * Check if error details are present
+   */
+  public hasError(): boolean {
+    return this.state.errorDetails !== null;
   }
 
   /**

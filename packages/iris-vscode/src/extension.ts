@@ -300,7 +300,10 @@ export function activate(context: vscode.ExtensionContext) {
 							if (!silent) {
 								vscode.window.showWarningMessage('IRIS: No responsibility blocks found in file.');
 							}
-							stateManager.setError('No responsibility blocks found', fileUri);
+							stateManager.setError({
+								type: 'INVALID_RESPONSE',
+								message: 'No responsibility blocks found'
+							}, fileUri);
 							return;
 						}
 
@@ -341,13 +344,20 @@ export function activate(context: vscode.ExtensionContext) {
 								statusCode: error.statusCode,
 								message: error.message
 							});
-							stateManager.setError(error.message, fileUri);
+							stateManager.setError({
+								type: error.type,
+								message: userMessage,
+								statusCode: error.statusCode
+							}, fileUri);
 							vscode.window.showErrorMessage(`IRIS: ${userMessage}`);
 						} else {
 							// Unexpected error
 							const message = error instanceof Error ? error.message : 'Unknown error';
 							logger.errorWithException('Unexpected error during analysis', error);
-							stateManager.setError(message, fileUri);
+							stateManager.setError({
+								type: 'NETWORK_ERROR',
+								message: 'Analysis failed due to an unexpected error.'
+							}, fileUri);
 							vscode.window.showErrorMessage('IRIS: Analysis failed due to an unexpected error.');
 						}
 					}
@@ -358,7 +368,10 @@ export function activate(context: vscode.ExtensionContext) {
 			// Top-level error boundary
 			const message = error instanceof Error ? error.message : 'Unknown error';
 			logger.errorWithException('Command execution failed', error);
-			stateManager.setError(message);
+			stateManager.setError({
+				type: 'NETWORK_ERROR',
+				message: 'Analysis failed due to an unexpected error.'
+			});
 			vscode.window.showErrorMessage('IRIS: Analysis failed.');
 		}
 	}
