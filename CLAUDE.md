@@ -46,6 +46,24 @@ npm run watch            # Watch mode (from packages/iris-vscode/)
 - **Test naming**: `test_should_<expected>_when_<condition>`
 - **Debugging**: determine root cause before fixing symptoms; remove debug code before committing
 
+## Code Verification Rules
+
+### After Modifying TypeScript Code
+**ALWAYS run these checks in order:**
+1. **Type check**: `npm run typecheck` or `npx tsc --noEmit`
+2. **Lint**: `npm run lint` or `npx eslint <modified-files>`
+3. **Compile**: `npm run build` or `npm run compile`
+
+If any check fails, fix the issues before considering the task complete.
+
+### After Modifying Python Code
+**ALWAYS run these checks in order:**
+1. **Lint**: `cd backend && source venv/bin/activate && flake8 <modified-files>`
+2. **Type check**: `mypy <modified-files>` (if mypy is configured)
+3. **Tests**: `pytest backend/tests/` (run relevant test files)
+
+If any check fails, fix the issues before considering the task complete.
+
 ## Implementation Plan Requirements
 
 - **ALWAYS use the `create-implementation-plan` skill** when asked to write an implementation plan
