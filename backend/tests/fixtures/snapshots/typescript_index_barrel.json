@@ -1,0 +1,41 @@
+{
+  "file_intent": "Index barrel that re-exports services, models, and core utilities",
+  "responsibility_blocks": [
+    {
+      "description": "Aggregate and re-export core service classes (UserService, ProductService, OrderService, AuthService) to provide a single entry point for business logic",
+      "label": "Public API surface for services",
+      "ranges": [
+        [
+          1,
+          4
+        ]
+      ]
+    },
+    {
+      "description": "Aggregate and re-export common TypeScript types for models (User, UserProfile, Product, ProductQuery, Order, OrderStatus, AuthToken, LoginRequest)",
+      "label": "Public API surface for models (types)",
+      "ranges": [
+        [
+          6,
+          9
+        ]
+      ]
+    },
+    {
+      "description": "Expose application bootstrap and infrastructure helpers (createApp, connectDatabase, createLogger, config)",
+      "label": "Core application bootstrap and infrastructure exports",
+      "ranges": [
+        [
+          11,
+          14
+        ]
+      ]
+    }
+  ],
+  "metadata": {
+    "cache_hit": 0,
+    "estimated_cost_usd": 0.000355,
+    "input_tokens": 1608,
+    "output_tokens": 189
+  }
+}

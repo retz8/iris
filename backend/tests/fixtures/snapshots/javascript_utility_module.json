@@ -1,0 +1,111 @@
+{
+  "file_intent": "Utility helpers for string, data, and general-purpose operations",
+  "responsibility_blocks": [
+    {
+      "description": "Utilities to normalize strings for URLs or IDs",
+      "label": "Slugification and text normalization",
+      "ranges": [
+        [
+          5,
+          11
+        ]
+      ]
+    },
+    {
+      "description": "Shorten strings with optional suffix",
+      "label": "Text truncation",
+      "ranges": [
+        [
+          13,
+          16
+        ]
+      ]
+    },
+    {
+      "description": "Capitalize first character of a string",
+      "label": "Capitalization",
+      "ranges": [
+        [
+          18,
+          21
+        ]
+      ]
+    },
+    {
+      "description": "Deep clone plain objects and arrays, preserving dates",
+      "label": "Deep cloning of generic objects",
+      "ranges": [
+        [
+          23,
+          33
+        ]
+      ]
+    },
+    {
+      "description": "Group array elements by key function or property",
+      "label": "Grouping by key",
+      "ranges": [
+        [
+          35,
+          41
+        ]
+      ]
+    },
+    {
+      "description": "Debounce function calls to limit frequency",
+      "label": "Function debounce",
+      "ranges": [
+        [
+          43,
+          49
+        ]
+      ]
+    },
+    {
+      "description": "Retry async function with backoff until success or max attempts",
+      "label": "Retry wrapper for async operations",
+      "ranges": [
+        [
+          51,
+          66
+        ]
+      ]
+    },
+    {
+      "description": "Format bytes into human-readable string with suffixes",
+      "label": "Byte formatting utility",
+      "ranges": [
+        [
+          68,
+          74
+        ]
+      ]
+    },
+    {
+      "description": "Check if value is a plain object",
+      "label": "Plain object detection",
+      "ranges": [
+        [
+          76,
+          80
+        ]
+      ]
+    },
+    {
+      "description": "Export utility functions as module API",
+      "label": "Module exports (API surface)",
+      "ranges": [
+        [
+          82,
+          92
+        ]
+      ]
+    }
+  ],
+  "metadata": {
+    "cache_hit": 0,
+    "estimated_cost_usd": 0.000539,
+    "input_tokens": 2387,
+    "output_tokens": 302
+  }
+}

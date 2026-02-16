@@ -1,0 +1,87 @@
+{
+  "file_intent": "Product catalog service with CRUD, search, and caching",
+  "responsibility_blocks": [
+    {
+      "description": "Fetch by id with cache lookup and cache warm-up on miss; cache invalidation on update/delete; cache for categories",
+      "label": "Cache-enabled read path",
+      "ranges": [
+        [
+          63,
+          77
+        ],
+        [
+          134,
+          139
+        ],
+        [
+          141,
+          153
+        ],
+        [
+          155,
+          162
+        ]
+      ]
+    },
+    {
+      "description": "Input validation for price on create/update; raise domain-specific errors (ProductNotFoundError, InvalidPriceError)",
+      "label": "Validation and error handling",
+      "ranges": [
+        [
+          37,
+          49
+        ],
+        [
+          104,
+          118
+        ],
+        [
+          121,
+          123
+        ]
+      ]
+    },
+    {
+      "description": "CRUD operations against the database: find, insert, update, delete; include search with filters and pagination",
+      "label": "Persistence operations",
+      "ranges": [
+        [
+          79,
+          102
+        ],
+        [
+          125,
+          132
+        ]
+      ]
+    },
+    {
+      "description": "Defines Product, CreateProductInput, UpdateProductInput, ProductQuery interfaces for type safety",
+      "label": "Domain models and inputs",
+      "ranges": [
+        [
+          5,
+          12
+        ],
+        [
+          14,
+          19
+        ],
+        [
+          21,
+          26
+        ],
+        [
+          28,
+          35
+        ]
+      ]
+    }
+  ],
+  "metadata": {
+    "cache_hit": 0,
+    "estimated_cost_usd": 0.000667,
+    "input_tokens": 3055,
+    "output_tokens": 348
+  }
+}
