@@ -224,3 +224,38 @@ This affects:
 
 Open question: start with categories from day one, or add after proving the format works?
 
+
+
+  Two Extremes, One Format                                                                                                                
+                                                                                                                                          
+  First-Year CS Student                                                                                                                   
+                                                                                                                                          
+  - Motivation: See "real" code beyond textbooks                                                                                          
+  - "Before scrolling" experience: Stares for 30-60 seconds, can't fully parse it, scrolls out of curiosity not because they solved it    
+  - What breaks: The "aha" doesn't land. The unique_lock example requires understanding RAII + mutexes + exception safety simultaneously. 
+  They're learning 3 concepts at once instead of 1 insight. The newsletter becomes "words I should learn" — educational but not           
+  actionable.
+
+  Senior SWE at Meta
+
+  - Motivation: Stay sharp, discover clever tricks to steal, coffee-break stimulation
+  - "Before scrolling" experience: Solves it in 2-5 seconds. Scrolls to check if the breakdown reveals something non-obvious
+  - What breaks: Difficulty ceiling is too low. The challenge feels condescending. They want 3 paragraphs on performance trade-offs, not 3
+   bullets. It's a pleasant diversion but not a must-read.
+
+  The Sweet Spot: Mid-Level Engineer (2-5 YoE)
+
+  - Best fit for the current format. Knows enough to parse the code, not enough to spot the clever parts immediately
+  - The challenge creates a 10-30 second think — that's the sweet spot
+  - Highest conversion potential to IRIS (they're actively learning to read code efficiently)
+
+  The Hard Recommendation
+
+  Target mid-level engineers. Accept losing the edges.
+
+  - No difficulty tiers — it kills simplicity and triples content creation
+  - Instead, calibrate snippets to require 10-30 seconds of thinking
+  - The breakdown must add non-obvious depth (not just restate what they saw)
+  - Beginners don't convert to IRIS (not reading production code yet). Seniors don't convert either (already have mental models)
+
+  The newsletter's job isn't to serve everyone — it's to build a qualified audience for IRIS. Mid-level engineers are that audience.
