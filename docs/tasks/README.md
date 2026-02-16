@@ -56,11 +56,17 @@ Phase 4:             G
 Each session is run by independent Claude Code session.
 Each task session follows this structure:
 
+### 0. Exploration Phase (reference: @track-a-extension-ux.md)
+- Understand current state of codebase or documentation
+- Read relevant files, search for patterns
+- Build context before discussions or planning
+- Document findings for next phase
+
 ### 1. Discovery/Discussion Phase with human engineer
-- Read current state (code, docs, UPDATES.md)
+- Review exploration findings
 - Identify requirements and pain points
 - Make design decisions
-- Document findings
+- Document decisions and rationale
 
 ### 2. Implementation Planning
 - Based on Phase 1, create detailed steps

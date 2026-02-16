@@ -32,59 +32,107 @@ The newsletter is a pre-product audience builder for IRIS. It educates developer
 - Frequency: MWF (Mon/Wed/Fri) morning
 - Delivery: Mobile-first (read on phone over morning coffee)
 
+## Phase 0: Exploration
+
+Follow these steps to understand the current state:
+
+1. Read `docs/newsletter-n8n-plan.md` to understand newsletter technical architecture (n8n workflows, Google Sheets schema)
+2. Read `docs/thoughts.md` to see content strategy, sample snippets, and mid-level engineer targeting
+3. Read `docs/strategy-2026-02-10.md` to understand IRIS positioning and pre-product audience building goals
+4. Identify what's already decided (format, frequency, target audience) vs what needs discussion
+5. Review sample C++ snippets in thoughts.md to understand desired snippet complexity level
+6. Check for any existing branding materials or naming preferences in documentation
+
 ## Open Questions to Resolve
 
-### 1. Newsletter Name & Branding
+### 1. Newsletter Name & Branding ✅ DECIDED
 
-**Decision Needed:**
-- Newsletter name (independent brand vs IRIS-branded?)
-  - Option A: "Can you read this?" (provocative, format-driven)
-  - Option B: "[IRIS] Code Insights" (product-branded)
-  - Option C: Something else entirely
-- Visual identity separate from IRIS or aligned?
-- Tone: Technical/academic vs conversational/approachable
+**Decision:**
+- **Newsletter name**: "Snippet"
+- **Sender name**: "Snippet" or "Snippet by IRIS"
+- **Tagline** (for landing page): "Code reading challenges for the AI era"
+- **Branding approach**: Independent brand with soft IRIS link
+- **Tone**: Challenging, direct, educational
 
-**Considerations:**
-- Independent brand allows pivot if IRIS positioning changes
-- IRIS-branded builds direct product awareness
-- Name should resonate with mid-level engineers (not beginners, not seniors)
+**Subject Line Format:**
+- Standard: "Can you read this #NNN: <File Intent>"
+  - Example: "Can you read this #001: Authentication helper"
+  - Example: "Can you read this #003: Thread-safe cache wrapper"
+- Challenge mode: "Can you read this #NNN: ???"
+  - File Intent hidden to teach users its value through absence
+  - NO reveal strategy - if hidden, stays hidden throughout email
+  - Users experience difficulty of reading code without context
+  - Validates IRIS's File Intent feature through firsthand experience
 
-**Output:** Newsletter name, branding approach (independent vs IRIS-linked), tone guidelines
+**Challenge Mode Cadence:**
+- First month (issues #001-012): Always show File Intent (onboard users to format)
+- Month 2+: Randomly hide File Intent in ~30-40% of issues
+- Creates two difficulty modes: context-given vs context-hidden
 
-### 2. Language Support Strategy
+**Rationale:**
+- "Snippet" is short (one word), professional, developer-familiar
+- Subject line format creates curiosity and challenges ego (perfect for mid-level engineers)
+- Hiding File Intent occasionally is a product-led content strategy that demonstrates IRIS value
+- Independent brand allows positioning flexibility while maintaining IRIS funnel connection
 
-**Decision Needed:**
-- Which written languages to support? (en confirmed, ko mentioned, others?)
-- Which programming languages to offer at signup?
-  - From thoughts.md: Python, TypeScript, C++, others?
-  - Popular languages (JavaScript, Python, Go, Rust, Java)?
-  - Niche languages (Haskell, Elixir, Zig)?
-- Start with 1-2 languages or launch with full menu?
+### 2. Language Support Strategy ✅ DECIDED
 
-**Considerations:**
-- More languages = smaller audience per language = harder to find good snippets
+**Decision:**
+
+**Written Languages (email copy language):**
+- `en` (English)
+- `ko` (Korean)
+- Total: 2 options
+
+**Programming Languages (code snippet language):**
+- Python
+- JS/TS (JavaScript/TypeScript combined as one option)
+- C/C++ (C/C++ combined as one option)
+- Total: 3 options
+- **Users can select multiple programming languages** at signup
+
+**Content Variants:**
+- Base variants needed per issue: 2 written × 3 programming = 6 variants
+- Subscriber receives: 1 email per MWF in their written language
+- Email contains: 1 code snippet from one of their selected programming languages
+- Workflow 2 matching: Match written_language exactly, then select from user's programming_languages list
+
+**Signup Form Fields:**
+- Written language: Radio button (single choice: en or ko)
+- Programming languages: Checkboxes (multi-select: Python, JS/TS, C/C++)
+- User must select at least 1 programming language
+
+**Rationale:**
+- Starting lean (2×3) validates format before scaling
+- Leverages personal network (Korean, US-based)
+- Multi-select programming languages increases flexibility without requiring multiple emails
 - Mid-level engineers typically know 2-3 languages well
-- Strategy doc mentions language expansion as 1-hour task (for IRIS extension)
 - Quality over quantity for MVP validation
 
-**Output:** Written languages (en, ko, others), programming languages for launch (3-5 recommended), expansion plan
+**Future Expansion:**
+- Written languages: Add ja (Japanese), zh (Chinese), es (Spanish) based on demand
+- Programming languages: Add Go, Rust, Java after proving format works
 
-### 3. Category System
+### 3. Category System ✅ DECIDED
 
-**Decision Needed (from thoughts.md open question):**
-- Start with categories from day one, or add after proving the format works?
-- If yes to categories, which ones?
-  - From thoughts.md: Concurrency, Memory Management, Data Structures, Metaprogramming, Error Handling, Performance Tricks, API Design, Algorithms
-- How many categories is too many? (cognitive overload in signup form)
-- Allow multiple category selection or single choice?
+**Decision: NO categories for MVP**
 
-**Considerations:**
-- Categories enable better targeting (user gets snippets they care about)
-- But adds complexity to signup, matching logic (Workflow 2), and content sourcing (Workflow 1)
-- Can always add categories later as feature enhancement
-- Strategy: prove format works first, then optimize matching
+**Content Strategy Instead:**
+- Follow **trending tech news** of the week
+- Source snippets from projects making waves in the developer community
+- Examples: OpenClaw source code, Codex releases, viral GitHub repos
+- Aligns with Workflow 1 (GitHub trending API)
 
-**Output:** Category system decision (yes/no), if yes: initial category list (recommend 5-8 max), multi-select or single
+**Rationale:**
+- Simpler signup form (no category checkboxes)
+- Easier content curation (trending = already newsworthy)
+- More shareable (timely content creates conversation)
+- Less complexity in Workflow 2 matching logic
+- Can add categories later as v2 feature after proving format works
+
+**Future Consideration:**
+- Add category preferences in month 2-3 if user feedback shows demand
+- Categories could be: Concurrency, Memory Management, Data Structures, Metaprogramming, Error Handling, Performance Tricks, API Design, Algorithms
 
 ### 4. Landing Page & Signup Form
 
@@ -183,7 +231,7 @@ The newsletter is a pre-product audience builder for IRIS. It educates developer
 
 ## Discussion Structure
 
-### Phase 1: Context Review (with human engineer)
+### Phase 1: Discovery/Discussion (with human engineer)
 - Review newsletter-n8n-plan.md, thoughts.md, strategy doc positioning
 - Align on goals: pre-product audience building, mid-level engineer targeting, IRIS funnel
 

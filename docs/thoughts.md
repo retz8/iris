@@ -259,3 +259,8 @@ Open question: start with categories from day one, or add after proving the form
   - Beginners don't convert to IRIS (not reading production code yet). Seniors don't convert either (already have mental models)
 
   The newsletter's job isn't to serve everyone — it's to build a qualified audience for IRIS. Mid-level engineers are that audience.
+
+
+  In this session, we will work on @docs/tasks/track-a-extension-ux.md
+                                                                                                                                                                                                                           
+  Follow Phase 0 (Exploration) first, then discuss findings with me. 
