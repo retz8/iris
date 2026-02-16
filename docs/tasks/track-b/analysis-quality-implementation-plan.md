@@ -64,9 +64,9 @@ The plan uses a fixture-based testing strategy with cached LLM responses for det
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-001 | Add `_deduplicate_cross_block_ranges(blocks)` function in `backend/src/agent.py`. Algorithm: iterate blocks in order, maintain a set of claimed lines, for each subsequent block trim or split ranges that overlap already-claimed lines, remove blocks that become empty after trimming. | | |
-| TASK-002 | Call `_deduplicate_cross_block_ranges()` in `IrisAgent._analyze_with_llm()` after the existing `_merge_ranges()` loop (line 216), applying it to the full list of `content.responsibility_blocks`. | | |
-| TASK-003 | Add unit tests for `_deduplicate_cross_block_ranges()` in `backend/tests/test_range_dedup.py` covering: no overlaps (passthrough), full overlap (later block removed), partial overlap (later block trimmed), nested ranges across blocks, single-line blocks, empty input. | | |
+| TASK-001 | Add `_deduplicate_cross_block_ranges(blocks)` function in `backend/src/agent.py`. Algorithm: iterate blocks in order, maintain a set of claimed lines, for each subsequent block trim or split ranges that overlap already-claimed lines, remove blocks that become empty after trimming. | ✅ | 2026-02-16 |
+| TASK-002 | Call `_deduplicate_cross_block_ranges()` in `IrisAgent._analyze_with_llm()` after the existing `_merge_ranges()` loop (line 216), applying it to the full list of `content.responsibility_blocks`. | ✅ | 2026-02-16 |
+| TASK-003 | Add unit tests for `_deduplicate_cross_block_ranges()` in `backend/tests/test_range_dedup.py` covering: no overlaps (passthrough), full overlap (later block removed), partial overlap (later block trimmed), nested ranges across blocks, single-line blocks, empty input. | ✅ | 2026-02-16 |
 
 ### Phase 2: Test Infrastructure
 
@@ -74,11 +74,11 @@ The plan uses a fixture-based testing strategy with cached LLM responses for det
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-004 | Create directory structure: `backend/tests/__init__.py`, `backend/tests/conftest.py`, `backend/tests/fixtures/samples/` (with `python/`, `javascript/`, `typescript/` subdirectories), `backend/tests/fixtures/snapshots/`, `backend/tests/utils/`. | | |
-| TASK-005 | Create `backend/tests/utils/__init__.py` and `backend/tests/utils/quality_validators.py` with pure functions: `has_cross_block_overlaps(result) -> list[tuple]`, `has_nested_ranges(result) -> list`, `avg_label_length(result) -> float`, `file_intent_word_count(result) -> int`, `has_generic_labels(result) -> list[str]`, `validate_analysis_quality(result) -> list[str]` (aggregator returning list of issue strings). | | |
-| TASK-006 | Create `backend/tests/conftest.py` with pytest fixtures: `sample_analysis_result` (valid fixture), `overlapping_result` (fixture with cross-block overlaps), `load_snapshot(name)` helper that reads from `backend/tests/fixtures/snapshots/{name}.json`. Add `@pytest.mark.live` marker registration for Tier 2 tests. | | |
-| TASK-007 | Create test corpus of 15 sample source files in `backend/tests/fixtures/samples/`. Files: `python/simple_functions.py` (5 lines, 2 functions), `python/class_with_methods.py` (80 lines, OOP), `python/data_pipeline.py` (200 lines, ETL pattern), `python/empty.py` (0 lines), `python/single_line.py` (1 line: `x = 1`), `python/comments_heavy.py` (60 lines, 70% comments), `javascript/express_routes.js` (120 lines, HTTP handlers), `javascript/react_component.jsx` (90 lines, functional React), `javascript/minified.min.js` (1 line, 800+ chars, UMD bundle), `typescript/types_only.ts` (50 lines, interfaces/types), `typescript/service_class.ts` (180 lines, class with DI), `typescript/state_machine.ts` (150 lines, enum + switch), `python/config_constants.py` (40 lines, constants/dicts), `javascript/utility_module.js` (100 lines, exported helpers), `typescript/index_barrel.ts` (15 lines, re-exports only). | | |
-| TASK-008 | Create `backend/tests/test_quality_validators.py` with unit tests for all validator functions in `quality_validators.py`. Test against hand-crafted fixture dicts (no LLM calls). At least 3 test cases per validator. | | |
+| TASK-004 | Create directory structure: `backend/tests/__init__.py`, `backend/tests/conftest.py`, `backend/tests/fixtures/samples/` (with `python/`, `javascript/`, `typescript/` subdirectories), `backend/tests/fixtures/snapshots/`, `backend/tests/utils/`. | ✅ | 2026-02-16 |
+| TASK-005 | Create `backend/tests/utils/__init__.py` and `backend/tests/utils/quality_validators.py` with pure functions: `has_cross_block_overlaps(result) -> list[tuple]`, `has_nested_ranges(result) -> list`, `avg_label_length(result) -> float`, `file_intent_word_count(result) -> int`, `has_generic_labels(result) -> list[str]`, `validate_analysis_quality(result) -> list[str]` (aggregator returning list of issue strings). | ✅ | 2026-02-16 |
+| TASK-006 | Create `backend/tests/conftest.py` with pytest fixtures: `sample_analysis_result` (valid fixture), `overlapping_result` (fixture with cross-block overlaps), `load_snapshot(name)` helper that reads from `backend/tests/fixtures/snapshots/{name}.json`. Add `@pytest.mark.live` marker registration for Tier 2 tests. | ✅ | 2026-02-16 |
+| TASK-007 | Create test corpus of 15 sample source files in `backend/tests/fixtures/samples/`. Files: `python/simple_functions.py` (5 lines, 2 functions), `python/class_with_methods.py` (80 lines, OOP), `python/data_pipeline.py` (200 lines, ETL pattern), `python/empty.py` (0 lines), `python/single_line.py` (1 line: `x = 1`), `python/comments_heavy.py` (60 lines, 70% comments), `javascript/express_routes.js` (120 lines, HTTP handlers), `javascript/react_component.jsx` (90 lines, functional React), `javascript/minified.min.js` (1 line, 800+ chars, UMD bundle), `typescript/types_only.ts` (50 lines, interfaces/types), `typescript/service_class.ts` (180 lines, class with DI), `typescript/state_machine.ts` (150 lines, enum + switch), `python/config_constants.py` (40 lines, constants/dicts), `javascript/utility_module.js` (100 lines, exported helpers), `typescript/index_barrel.ts` (15 lines, re-exports only). | ✅ | 2026-02-16 |
+| TASK-008 | Create `backend/tests/test_quality_validators.py` with unit tests for all validator functions in `quality_validators.py`. Test against hand-crafted fixture dicts (no LLM calls). At least 3 test cases per validator. | ✅ | 2026-02-16 |
 
 ### Phase 3: Generate Baseline Snapshots
 
@@ -86,9 +86,9 @@ The plan uses a fixture-based testing strategy with cached LLM responses for det
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-009 | Create `backend/tests/utils/snapshot_manager.py` with functions: `generate_snapshot(sample_path, language) -> dict` (calls live API, returns raw result), `save_snapshot(name, result)` (writes to `fixtures/snapshots/{name}.json`), `load_snapshot(name) -> dict` (reads from snapshots dir). | | |
-| TASK-010 | Create `backend/tests/generate_snapshots.py` script that iterates all files in `fixtures/samples/`, calls the analysis endpoint for each, saves results as snapshots, and prints a quality summary using `validate_analysis_quality()`. Run with `--update` flag to regenerate. Requires running backend server. | | |
-| TASK-011 | Run `generate_snapshots.py` against running backend to produce baseline snapshots for all 15 sample files. Commit snapshots to `backend/tests/fixtures/snapshots/`. Review quality summary output and document any issues found. | | |
+| TASK-009 | Create `backend/tests/utils/snapshot_manager.py` with functions: `generate_snapshot(sample_path, language) -> dict` (calls live API, returns raw result), `save_snapshot(name, result)` (writes to `fixtures/snapshots/{name}.json`), `load_snapshot(name) -> dict` (reads from snapshots dir). | ✅ | 2026-02-16 |
+| TASK-010 | Create `backend/tests/generate_snapshots.py` script that iterates all files in `fixtures/samples/`, calls the analysis endpoint for each, saves results as snapshots, and prints a quality summary using `validate_analysis_quality()`. Run with `--update` flag to regenerate. Requires running backend server. | ✅ | 2026-02-16 |
+| TASK-011 | Run `generate_snapshots.py` against running backend to produce baseline snapshots for all 15 sample files. Commit snapshots to `backend/tests/fixtures/snapshots/`. Review quality summary output and document any issues found. | ✅ | 2026-02-16 |
 
 ### Phase 4: Core Test Suite
 
