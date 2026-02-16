@@ -38,6 +38,9 @@ npm run watch            # Watch mode (from packages/iris-vscode/)
 - **Fast iteration over perfect code** — prioritize working prototypes
 - **Do NOT generate `.md` or test files** unless explicitly requested
 - **Do not use new libraries/platforms** unless explicitly told
+- **Do NOT include time estimates or duration predictions** in documentation or plans — avoid phrases like "2-3 days", "~1 week", "should take X hours"
+- **Do NOT use emojis** in documentation or code — waste of tokens
+- **Do NOT overuse `---` dividers** in markdown — headers are sufficient for structure, dividers waste tokens
 - **ALWAYS activate virtual environment** for Python work: `cd backend && source venv/bin/activate`
 - **PEP 8** for Python style
 - **Test naming**: `test_should_<expected>_when_<condition>`
