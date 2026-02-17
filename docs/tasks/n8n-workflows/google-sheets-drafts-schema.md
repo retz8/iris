@@ -5,7 +5,7 @@
 
 ## Overview
 
-Repository for all newsletter issues (past, present, future). Each row represents one newsletter issue with all content variants for different language combinations. Used by content pipeline (Track G) and sending workflow.
+Repository for all newsletter issues (past, present, future). Each row represents one newsletter issue with all content variants for different programming languages. Used by content pipeline (Track G) and sending workflow.
 
 ## Column Definitions
 
@@ -24,7 +24,7 @@ Repository for all newsletter issues (past, present, future). Each row represent
 | breakdown_what | string | Yes | What it does (1st bullet, 30-40 words) | Validates bash commands before execution by checking... |
 | breakdown_responsibility | string | Yes | Key responsibility (2nd bullet, 30-40 words) | Acts as a pre-execution gate for the Bash tool... |
 | breakdown_clever | string | Yes | The clever part (3rd bullet, 30-40 words) | Uses different exit codes for different outcomes... |
-| content_variant | string | Yes | Language combination identifier | en-Python, en-JS/TS, ko-Python, ko-JS/TS, en-C/C++, ko-C/C++ |
+| content_variant | string | Yes | Programming language identifier | Python, JS/TS, C/C++ |
 | created_date | datetime | Yes | ISO 8601 timestamp when draft was created | 2026-02-17T10:00:00Z |
 | scheduled_date | datetime | No | ISO 8601 timestamp when newsletter is scheduled to send | 2026-02-19T07:00:00Z |
 | sent_date | datetime | No | ISO 8601 timestamp when newsletter was sent | 2026-02-19T07:05:00Z |
@@ -41,29 +41,24 @@ Repository for all newsletter issues (past, present, future). Each row represent
 
 ## Content Variants
 
-Each issue has **6 content variants** (2 written languages × 3 programming languages):
+Each issue has **3 content variants** (one per programming language):
 
-| Variant | Written Language | Programming Language | Target Subscribers |
-|---------|------------------|---------------------|-------------------|
-| en-Python | English | Python | written_language=en AND programming_languages contains Python |
-| en-JS/TS | English | JavaScript/TypeScript | written_language=en AND programming_languages contains JS/TS |
-| en-C/C++ | English | C/C++ | written_language=en AND programming_languages contains C/C++ |
-| ko-Python | Korean | Python | written_language=ko AND programming_languages contains Python |
-| ko-JS/TS | Korean | JavaScript/TypeScript | written_language=ko AND programming_languages contains JS/TS |
-| ko-C/C++ | Korean | C/C++ | written_language=ko AND programming_languages contains C/C++ |
+| Variant | Programming Language | Target Subscribers |
+|---------|---------------------|-------------------|
+| Python | Python | programming_languages contains Python |
+| JS/TS | JavaScript/TypeScript | programming_languages contains JS/TS |
+| C/C++ | C/C++ | programming_languages contains C/C++ |
 
 **Storage Strategy:**
-- **Option 1:** One row per variant (6 rows per issue, different programming_language and content_variant)
-- **Option 2:** One row per issue with variant columns (en_breakdown_what, ko_breakdown_what, etc.)
-
-**Recommendation:** Option 1 (one row per variant) for simpler n8n queries and scalability.
+- One row per variant (3 rows per issue, different programming_language and content_variant)
+- Simpler queries and better scalability than single-row-per-issue approach
 
 ## Data Validation Rules
 
 **Issue Number:**
 - Auto-increment starting from 1
 - Sequential (no gaps)
-- Unique per variant (e.g., issue #42 has 6 rows)
+- Unique per variant (e.g., issue #42 has 3 rows)
 
 **Subject Template:**
 - Must include `{issue_number}` and `{file_intent}` placeholders
@@ -86,20 +81,20 @@ Each issue has **6 content variants** (2 written languages × 3 programming lang
 
 ## Usage Examples
 
-**Draft (English, Python variant):**
+**Draft (Python variant):**
 | issue_number | status | subject_template | file_intent | repository_name | repository_url | repository_description | programming_language | code_snippet | challenge_question | breakdown_what | breakdown_responsibility | breakdown_clever | content_variant | created_date | scheduled_date | sent_date | source |
 |--------------|--------|------------------|-------------|-----------------|----------------|----------------------|---------------------|--------------|-------------------|----------------|------------------------|-----------------|----------------|--------------|----------------|-----------|--------|
-| 42 | draft | Can you read this #{issue_number}: {file_intent} | Bash command validation hook | anthropics/claude-code | https://github.com/... | Official CLI tool for Claude | Python | def _validate_command... | Before scrolling: what does this do? | Validates bash commands... | Acts as a pre-execution gate... | Uses different exit codes... | en-Python | 2026-02-17T10:00:00Z | null | null | github_trending |
+| 42 | draft | Can you read this #{issue_number}: {file_intent} | Bash command validation hook | anthropics/claude-code | https://github.com/... | Official CLI tool for Claude | Python | def _validate_command... | Before scrolling: what does this do? | Validates bash commands... | Acts as a pre-execution gate... | Uses different exit codes... | Python | 2026-02-17T10:00:00Z | null | null | github_trending |
 
-**Scheduled (Korean, JS/TS variant):**
+**Scheduled (JS/TS variant):**
 | issue_number | status | subject_template | file_intent | repository_name | repository_url | repository_description | programming_language | code_snippet | challenge_question | breakdown_what | breakdown_responsibility | breakdown_clever | content_variant | created_date | scheduled_date | sent_date | source |
 |--------------|--------|------------------|-------------|-----------------|----------------|----------------------|---------------------|--------------|-------------------|----------------|------------------------|-----------------|----------------|--------------|----------------|-----------|--------|
-| 43 | scheduled | Can you read this #{issue_number}: {file_intent} | TypeScript interface validator | facebook/react | https://github.com/... | Popular UI library | JS/TS | interface Props {...} | 스크롤 전: 이것은 무엇을 하는가? | TypeScript 인터페이스... | 타입 안전성 보장... | 제네릭 타입 활용... | ko-JS/TS | 2026-02-18T09:00:00Z | 2026-02-21T07:00:00Z | null | manual_curation |
+| 43 | scheduled | Can you read this #{issue_number}: {file_intent} | TypeScript interface validator | facebook/react | https://github.com/... | Popular UI library | JS/TS | interface Props {...} | Before scrolling: what does this do? | TypeScript interface... | Type safety enforcement... | Generic type utilization... | JS/TS | 2026-02-18T09:00:00Z | 2026-02-21T07:00:00Z | null | manual_curation |
 
-**Sent (English, C/C++ variant):**
+**Sent (C/C++ variant):**
 | issue_number | status | subject_template | file_intent | repository_name | repository_url | repository_description | programming_language | code_snippet | challenge_question | breakdown_what | breakdown_responsibility | breakdown_clever | content_variant | created_date | scheduled_date | sent_date | source |
 |--------------|--------|------------------|-------------|-----------------|----------------|----------------------|---------------------|--------------|-------------------|----------------|------------------------|-----------------|----------------|--------------|----------------|-----------|--------|
-| 41 | sent | Can you read this #{issue_number}: {file_intent} | Memory pool allocator | torvalds/linux | https://github.com/... | Linux kernel | C/C++ | static inline void *... | Before scrolling: what does this do? | Custom memory allocator... | Reduces fragmentation... | Bit-packing optimization... | en-C/C++ | 2026-02-15T08:00:00Z | 2026-02-17T07:00:00Z | 2026-02-17T07:03:00Z | github_trending |
+| 41 | sent | Can you read this #{issue_number}: {file_intent} | Memory pool allocator | torvalds/linux | https://github.com/... | Linux kernel | C/C++ | static inline void *... | Before scrolling: what does this do? | Custom memory allocator... | Reduces fragmentation... | Bit-packing optimization... | C/C++ | 2026-02-15T08:00:00Z | 2026-02-17T07:00:00Z | 2026-02-17T07:03:00Z | github_trending |
 
 ## Queries
 
@@ -107,7 +102,7 @@ Each issue has **6 content variants** (2 written languages × 3 programming lang
 ```
 Filter: status = "scheduled" AND scheduled_date <= NOW()
 Order by: scheduled_date ASC
-Limit: 6 (all variants for one issue)
+Limit: 3 (all variants for one issue)
 ```
 
 **Get all drafts for content pipeline:**
@@ -130,19 +125,19 @@ Filter: issue_number = 42
 ## Workflow Integration
 
 **Content Creation (Track G):**
-1. Create 6 rows (one per variant) with same issue_number
+1. Create 3 rows (one per variant) with same issue_number
 2. Set status = "draft"
 3. Populate all content fields
 4. Set scheduled_date for next Mon/Wed/Fri 7am
 
 **Newsletter Sending (n8n cron):**
 1. Query: status = "scheduled" AND scheduled_date <= NOW()
-2. For each variant, match with subscribers (written_language + programming_languages)
+2. For each variant, match with subscribers (programming_languages)
 3. Send email to matched subscribers
 4. Update status = "sent", sent_date = NOW()
 
 **Content Preview (landing page):**
-1. Query: status = "sent" AND content_variant = "en-Python"
+1. Query: status = "sent" AND content_variant = "Python"
 2. Order by: sent_date DESC
 3. Limit: 1 (most recent sent issue)
 4. Use for landing page "What you'll receive" preview
@@ -156,7 +151,7 @@ Filter: issue_number = 42
 **Issue Number Generation:**
 - Query max(issue_number) from all rows
 - New issue_number = max + 1
-- Create 6 rows with same issue_number, different content_variant
+- Create 3 rows with same issue_number, different content_variant
 
 ## Challenge Mode (Month 2+)
 

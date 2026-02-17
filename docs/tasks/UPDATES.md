@@ -389,4 +389,58 @@ Single source of truth for all parallel session work. Each session appends its s
 
 ---
 
+## 2026-02-17 - Newsletter Simplification: Remove Written Language Support
+
+**Status:** Complete
+
+### What Was Done
+
+**Removed Written Language Support from Newsletter:**
+- Simplified newsletter to single language (English) for MVP
+- Updated all n8n workflow documentation to remove `written_language` field
+- Reduced content variants from 6 (2 languages × 3 programming languages) to 3 (3 programming languages only)
+
+**Files Modified:**
+- `docs/tasks/n8n-workflows/google-sheets-subscribers-schema.md`
+  - Removed `written_language` column from schema
+  - Removed written language validation rules
+  - Updated all usage examples
+- `docs/tasks/n8n-workflows/google-sheets-drafts-schema.md`
+  - Changed from 6 content variants to 3 (Python, JS/TS, C/C++)
+  - Removed written language dimension from variant table
+  - Updated content_variant values (en-Python → Python, ko-JS/TS → JS/TS, etc.)
+  - Updated all examples and queries (6 rows per issue → 3 rows per issue)
+- `docs/tasks/n8n-workflows/workflow-subscription-double-optin.md`
+  - Removed `written_language` from webhook input
+  - Removed written language validation from Code node
+  - Removed field from all column mappings and test examples
+- `docs/tasks/n8n-workflows/workflow-unsubscribe-token-based.md`
+  - Removed `written_language` from field preservation note
+
+### Decisions Made
+
+**Simplification Rationale:**
+- Focus on single language (English) for MVP to reduce complexity
+- Can add multi-language support post-launch if there's demand
+- Reduces content creation workload from 6 variants to 3 per issue
+- Simplifies subscriber matching logic (only programming_languages needed)
+
+**Content Variants (Simplified):**
+- Python variant → targets subscribers with Python in programming_languages
+- JS/TS variant → targets subscribers with JS/TS in programming_languages
+- C/C++ variant → targets subscribers with C/C++ in programming_languages
+
+**Google Sheets Impact:**
+- Subscribers sheet: Removed `written_language` column
+- Drafts sheet: 3 rows per issue instead of 6
+- Simpler queries and content management
+
+### What's Next
+
+- Frontend (Track E) will need to remove written language field from signup form
+- Newsletter email templates remain English-only for MVP
+- Can revisit multi-language support based on user feedback and growth
+
+---
+
 <!-- All future session updates go below this line -->

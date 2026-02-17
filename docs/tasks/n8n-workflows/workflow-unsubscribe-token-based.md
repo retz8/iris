@@ -440,7 +440,6 @@ unsubscribe_token → {{ $json.unsubscribe_token }}
 
 **Note:** Keep these fields unchanged:
 - `email`
-- `written_language`
 - `programming_languages`
 - `created_date`
 - `confirmed_date`

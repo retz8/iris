@@ -12,7 +12,6 @@ Single source of truth for all newsletter subscribers. Tracks full subscriber li
 | Column Name | Data Type | Required | Description | Example |
 |-------------|-----------|----------|-------------|---------|
 | email | string | Yes | Subscriber email address (unique identifier) | user@example.com |
-| written_language | string | Yes | Language for email content | en, ko |
 | programming_languages | string | Yes | Comma-separated list of preferred programming languages | Python,JS/TS,C/C++ |
 | status | string | Yes | Current subscription state | pending, confirmed, unsubscribed, expired |
 | confirmation_token | string | No | UUID v4 token for email confirmation (null after confirmed) | a7b3c4d5-e6f7-8901-2345-6789abcdef01 |
@@ -59,10 +58,6 @@ unsubscribed
 - Case-insensitive comparison (normalize to lowercase for duplicate checks)
 - Trimmed (no leading/trailing whitespace)
 
-**Written Language:**
-- Allowed values: `en`, `ko`
-- Default: `en`
-
 **Programming Languages:**
 - Allowed values: `Python`, `JS/TS`, `C/C++`
 - Stored as comma-separated string: `Python,JS/TS` or `Python,JS/TS,C/C++`
@@ -85,19 +80,19 @@ unsubscribed
 ## Usage Examples
 
 **New Subscription (Pending):**
-| email | written_language | programming_languages | status | confirmation_token | token_expires_at | unsubscribe_token | created_date | confirmed_date | unsubscribed_date | source |
-|-------|------------------|----------------------|--------|-------------------|-----------------|-------------------|--------------|----------------|-------------------|--------|
-| user@example.com | en | Python,JS/TS | pending | a7b3...def01 | 2026-02-19T10:00:00Z | null | 2026-02-17T10:00:00Z | null | null | landing_page |
+| email | programming_languages | status | confirmation_token | token_expires_at | unsubscribe_token | created_date | confirmed_date | unsubscribed_date | source |
+|-------|----------------------|--------|-------------------|-----------------|-------------------|--------------|----------------|-------------------|--------|
+| user@example.com | Python,JS/TS | pending | a7b3...def01 | 2026-02-19T10:00:00Z | null | 2026-02-17T10:00:00Z | null | null | landing_page |
 
 **Confirmed Subscription:**
-| email | written_language | programming_languages | status | confirmation_token | token_expires_at | unsubscribe_token | created_date | confirmed_date | unsubscribed_date | source |
-|-------|------------------|----------------------|--------|-------------------|-----------------|-------------------|--------------|----------------|-------------------|--------|
-| user@example.com | en | Python,JS/TS | confirmed | null | null | x9y8...l5k4 | 2026-02-17T10:00:00Z | 2026-02-17T10:15:00Z | null | landing_page |
+| email | programming_languages | status | confirmation_token | token_expires_at | unsubscribe_token | created_date | confirmed_date | unsubscribed_date | source |
+|-------|----------------------|--------|-------------------|-----------------|-------------------|--------------|----------------|-------------------|--------|
+| user@example.com | Python,JS/TS | confirmed | null | null | x9y8...l5k4 | 2026-02-17T10:00:00Z | 2026-02-17T10:15:00Z | null | landing_page |
 
 **Unsubscribed:**
-| email | written_language | programming_languages | status | confirmation_token | token_expires_at | unsubscribe_token | created_date | confirmed_date | unsubscribed_date | source |
-|-------|------------------|----------------------|--------|-------------------|-----------------|-------------------|--------------|----------------|-------------------|--------|
-| user@example.com | en | Python,JS/TS | unsubscribed | null | null | null | 2026-02-17T10:00:00Z | 2026-02-17T10:15:00Z | 2026-03-01T14:30:00Z | landing_page |
+| email | programming_languages | status | confirmation_token | token_expires_at | unsubscribe_token | created_date | confirmed_date | unsubscribed_date | source |
+|-------|----------------------|--------|-------------------|-----------------|-------------------|--------------|----------------|-------------------|--------|
+| user@example.com | Python,JS/TS | unsubscribed | null | null | null | 2026-02-17T10:00:00Z | 2026-02-17T10:15:00Z | 2026-03-01T14:30:00Z | landing_page |
 
 ## Queries
 

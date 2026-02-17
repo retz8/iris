@@ -55,7 +55,6 @@ IF: Validation Passed?
 ```json
 {
   "email": "user@example.com",
-  "written_language": "en",
   "programming_languages": ["Python", "JS/TS"],
   "source": "landing_page",
   "subscribed_date": "2026-02-17T12:00:00Z"
@@ -88,7 +87,6 @@ const results = [];
 
 for (const item of items) {
   const email = item.json.email;
-  const written_language = item.json.written_language;
   const programming_languages = item.json.programming_languages;
   const source = item.json.source;
   const subscribed_date = item.json.subscribed_date;
@@ -100,19 +98,6 @@ for (const item of items) {
         error: true,
         error_type: 'invalid_email',
         message: 'Invalid email format',
-        statusCode: 400
-      }
-    });
-    continue;
-  }
-
-  // Validate written_language
-  if (!written_language || !['en', 'ko'].includes(written_language)) {
-    results.push({
-      json: {
-        error: true,
-        error_type: 'invalid_language',
-        message: 'Invalid written language. Must be "en" or "ko"',
         statusCode: 400
       }
     });
@@ -152,7 +137,6 @@ for (const item of items) {
     json: {
       error: false,
       email: email.toLowerCase().trim(), // Normalize email
-      written_language: written_language,
       programming_languages: programming_languages,
       source: source || 'landing_page',
       subscribed_date: subscribed_date || new Date().toISOString()
@@ -286,7 +270,6 @@ return [
     json: {
       action: action,
       email: validatedData.email,
-      written_language: validatedData.written_language,
       programming_languages: validatedData.programming_languages,
       source: validatedData.source,
       subscribed_date: validatedData.subscribed_date,
@@ -426,7 +409,6 @@ const expiresAt = new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48 hours
 // Prepare data for Google Sheets
 const rowData = {
   email: item.json.email,
-  written_language: item.json.written_language,
   programming_languages: item.json.programming_languages.join(','), // Convert array to comma-separated
   status: 'pending',
   confirmation_token: confirmationToken,
@@ -472,7 +454,6 @@ return [
 **Column Mapping:**
 ```
 email → {{ $json.email }}
-written_language → {{ $json.written_language }}
 programming_languages → {{ $json.programming_languages }}
 status → {{ $json.status }}
 confirmation_token → {{ $json.confirmation_token }}
@@ -619,8 +600,7 @@ curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test@example.com",
-    "written_language": "en",
-    "programming_languages": ["Python", "JS/TS"],
+      "programming_languages": ["Python", "JS/TS"],
     "source": "landing_page",
     "subscribed_date": "2026-02-17T12:00:00Z"
   }'
@@ -642,8 +622,7 @@ curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
   -H "Content-Type: application/json" \
   -d '{
     "email": "invalid-email",
-    "written_language": "en",
-    "programming_languages": ["Python"]
+      "programming_languages": ["Python"]
   }'
 ```
 
@@ -663,8 +642,7 @@ curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test2@example.com",
-    "written_language": "en",
-    "programming_languages": []
+      "programming_languages": []
   }'
 ```
 
@@ -683,8 +661,7 @@ curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
   -H "Content-Type: application/json" \
   -d '{
     "email": "confirmed@example.com",
-    "written_language": "en",
-    "programming_languages": ["Python"]
+      "programming_languages": ["Python"]
   }'
 ```
 
@@ -705,8 +682,7 @@ curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
   -H "Content-Type: application/json" \
   -d '{
     "email": "pending@example.com",
-    "written_language": "en",
-    "programming_languages": ["Python"]
+      "programming_languages": ["Python"]
   }'
 ```
 
@@ -727,8 +703,7 @@ curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
   -H "Content-Type: application/json" \
   -d '{
     "email": "unsubscribed@example.com",
-    "written_language": "en",
-    "programming_languages": ["JS/TS"]
+      "programming_languages": ["JS/TS"]
   }'
 ```
 
