@@ -20,9 +20,9 @@ Code: Extract & Validate Token Parameter
     ↓
 IF: Token Provided?
     ├─ FALSE → Respond to Webhook (400 Missing Token)
-    └─ TRUE → Google Sheets: Read All Subscribers
+    └─ TRUE → Google Sheets: Get Row(s) filtered by confirmation_token
                   ↓
-              Code: Find Subscriber by confirmation_token & Validate
+              Code: Validate Subscriber Status & Expiration
                   ↓
               Switch: Route by Validation Result
                   ├─ "not_found" → Respond (404 Invalid Token)
@@ -173,10 +173,10 @@ return [
 
 ---
 
-### Node 5: Google Sheets - Read All Subscribers (TRUE branch)
+### Node 5: Google Sheets - Get Row Filtered by Token (TRUE branch)
 
 **Node Type:** `Google Sheets`
-**Purpose:** Fetch all subscribers to find matching confirmation token
+**Purpose:** Fetch only the subscriber row matching the confirmation token — avoids reading all rows
 
 **Configuration:**
 1. Add Google Sheets node to TRUE branch
@@ -185,21 +185,25 @@ return [
    - **Operation:** Get Row(s)
    - **Document:** "Newsletter Subscribers"
    - **Sheet:** "Newsletter Subscribers"
+   - **Filters:**
+     - Add filter: column `confirmation_token` equals `{{ $json.token }}`
    - **Options:**
-     - **Return All:** ON
+     - **Return All:** OFF (token is unique; first match is enough)
      - **RAW Data:** OFF
 
-**Output:** All subscriber rows
+**Output:** 0 rows (token not found) or 1 row (matching subscriber)
 
 ---
 
-### Node 6: Code - Find Subscriber by Token & Validate
+### Node 6: Code - Validate Subscriber Status & Expiration
 
 **Node Type:** `Code`
-**Purpose:** Look up subscriber by confirmation_token and validate status/expiration
+**Purpose:** Validate the filtered Google Sheets result — check if row exists, status, and token expiration
+
+**Note:** No iteration needed. Node 5's filter returns 0 or 1 rows; this node just inspects the result.
 
 **Configuration:**
-1. Add Code node after Google Sheets read
+1. Add Code node after Google Sheets filtered read
 2. Set parameters:
    - **Mode:** Run Once for All Items
    - **Language:** JavaScript
@@ -211,55 +215,45 @@ return [
 const tokenData = $('Code').first().json;
 const token = tokenData.token;
 
-// Get all subscribers from Google Sheets
-const subscribers = $input.all();
+// Get filtered result from Google Sheets (0 or 1 rows)
+const rows = $input.all();
 
-// Find subscriber by confirmation_token
-const subscriber = subscribers.find(sub => {
-  return sub.json.confirmation_token === token;
-});
-
-// Determine validation result and action
 let validationResult = 'not_found';
 let email = null;
 let rowIndex = null;
 let errorMessage = null;
 let statusCode = 404;
 
-if (!subscriber) {
-  // Token not found in database
+if (rows.length === 0 || !rows[0].json.email) {
+  // No matching row — token doesn't exist in database
   validationResult = 'not_found';
   errorMessage = 'Invalid confirmation token. This link may have expired or been used already.';
   statusCode = 404;
 } else {
-  email = subscriber.json.email;
-  rowIndex = subscriber.json.row_index; // Google Sheets row number
-  const status = subscriber.json.status;
-  const tokenExpiresAt = subscriber.json.token_expires_at;
+  const subscriber = rows[0].json;
+  email = subscriber.email;
+  rowIndex = subscriber.row_index;
+  const status = subscriber.status;
+  const tokenExpiresAt = subscriber.token_expires_at;
 
   if (status === 'confirmed') {
-    // Already confirmed
     validationResult = 'already_confirmed';
-    errorMessage = null; // Not an error, just informational
+    errorMessage = null;
     statusCode = 200;
   } else if (status === 'pending') {
-    // Check if token expired
     const now = new Date();
     const expirationDate = new Date(tokenExpiresAt);
 
     if (now > expirationDate) {
-      // Token expired
       validationResult = 'expired';
       errorMessage = 'This confirmation link has expired. Please sign up again.';
       statusCode = 400;
     } else {
-      // Valid for confirmation
       validationResult = 'valid';
       errorMessage = null;
       statusCode = 200;
     }
   } else {
-    // Status is unsubscribed or expired
     validationResult = 'invalid_status';
     errorMessage = `Cannot confirm subscription. Current status: ${status}`;
     statusCode = 400;
@@ -269,12 +263,12 @@ if (!subscriber) {
 return [
   {
     json: {
-      validationResult: validationResult,
-      email: email,
-      rowIndex: rowIndex,
-      token: token,
-      errorMessage: errorMessage,
-      statusCode: statusCode
+      validationResult,
+      email,
+      rowIndex,
+      token,
+      errorMessage,
+      statusCode
     }
   }
 ];
