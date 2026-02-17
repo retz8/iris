@@ -585,7 +585,8 @@ unsubscribed_date → {{ $json.unsubscribed_date }}
 **Purpose:** Send email with confirmation link
 
 **Configuration:**
-1. Add Gmail node after both Google Sheets operations (merge paths)
+1. Add Gmail node after both Google Sheets operations
+   - **Note:** Connect both Node 10a and Node 10b outputs directly to this Gmail node. No explicit Merge node needed since only one path executes per run.
 2. Configure parameters:
    - **Credential:** Gmail OAuth2
    - **Resource:** Message
@@ -615,7 +616,7 @@ unsubscribed_date → {{ $json.unsubscribed_date }}
 
     <!-- Confirmation Button -->
     <div style="margin: 0 0 24px 0;">
-      <a href="https://iris-codes.com/confirm?token={{ $json.confirmation_token }}"
+      <a href="https://iris-codes.com/snippet/confirm?token={{ $json.confirmation_token }}"
          style="display: inline-block; padding: 12px 32px; background-color: #24292f; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600;">
         Confirm Subscription
       </a>
@@ -624,9 +625,9 @@ unsubscribed_date → {{ $json.unsubscribed_date }}
     <!-- Fallback Link -->
     <p style="margin: 0 0 16px 0; font-size: 14px; color: #57606a;">
       Or copy and paste this link into your browser:<br>
-      <a href="https://iris-codes.com/confirm?token={{ $json.confirmation_token }}"
+      <a href="https://iris-codes.com/snippet/confirm?token={{ $json.confirmation_token }}"
          style="color: #0969da; text-decoration: none; word-break: break-all;">
-        https://iris-codes.com/confirm?token={{ $json.confirmation_token }}
+        https://iris-codes.com/snippet/confirm?token={{ $json.confirmation_token }}
       </a>
     </p>
 

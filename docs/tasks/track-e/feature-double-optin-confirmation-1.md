@@ -98,7 +98,7 @@ Implement a double opt-in email confirmation system for Snippet newsletter subsc
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
 | TASK-008 | Create web/src/pages/ConfirmationPage.tsx file | | |
-| TASK-009 | Add route for /confirm in web/src/App.tsx | | |
+| TASK-009 | Add route for /snippet/confirm in web/src/App.tsx | | |
 | TASK-010 | Add state management: isVerifying (boolean), isConfirmed (boolean), error (string \| null) | | |
 | TASK-011 | Add useEffect to extract token from URL query parameter (?token=xyz) | | |
 | TASK-012 | Implement verifyToken async function that calls backend confirmation endpoint | | |
@@ -262,7 +262,7 @@ const verifyToken = async (token: string) => {
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
 | TASK-033 | Design email template with clear CTA: "Confirm Your Subscription" button | | |
-| TASK-034 | Include confirmation link: https://iris-codes.com/confirm?token={token} | | |
+| TASK-034 | Include confirmation link: https://iris-codes.com/snippet/confirm?token={token} | | |
 | TASK-035 | Add fallback text link in case button doesn't render | | |
 | TASK-036 | Add expiration notice: "This link expires in 48 hours" | | |
 | TASK-037 | Add support contact or help link | | |
@@ -292,7 +292,7 @@ const verifyToken = async (token: string) => {
 | TASK-047 | Test expired token scenario (manually expire or wait 48 hours) | | |
 | TASK-048 | Test already confirmed scenario (click link twice) | | |
 | TASK-049 | Test invalid token scenario (random token string) | | |
-| TASK-050 | Test missing token scenario (navigate to /confirm without token) | | |
+| TASK-050 | Test missing token scenario (navigate to /snippet/confirm without token) | | |
 | TASK-051 | Test email deliverability (check inbox, spam folder) | | |
 | TASK-052 | Test mobile responsive design on confirmation page | | |
 | TASK-053 | Test confirmation email rendering in multiple email clients | | |
@@ -348,7 +348,7 @@ const verifyToken = async (token: string) => {
 
 - **DEP-005**: Existing SignupForm.tsx component
 - **DEP-006**: Existing design system (globals.css, components.css)
-- **DEP-007**: React Router for /confirm route
+- **DEP-007**: React Router for /snippet/confirm route
 - **DEP-008**: getNextDeliveryDay function from SignupForm.tsx (reuse)
 
 **Track Dependencies**
@@ -369,7 +369,7 @@ const verifyToken = async (token: string) => {
 **New Files**
 
 - **FILE-001**: web/src/pages/ConfirmationPage.tsx
-  - New page component for /confirm route
+  - New page component for /snippet/confirm route
   - Handles token verification and displays confirmation status
   - Implements loading, success, and error states
 
@@ -381,7 +381,7 @@ const verifyToken = async (token: string) => {
   - Display pending confirmation status
 
 - **FILE-003**: web/src/App.tsx
-  - Add new route: /confirm for ConfirmationPage
+  - Add new route: /snippet/confirm for ConfirmationPage
 
 - **FILE-004**: web/src/styles/components.css (optional)
   - May need new styles for confirmation page states
@@ -451,7 +451,7 @@ const verifyToken = async (token: string) => {
   - **Expected**: Message: "You're already subscribed!"
 
 - **TEST-007**: Invalid token handling
-  - **Steps**: Navigate to /confirm?token=invalid-random-string
+  - **Steps**: Navigate to /snippet/confirm?token=invalid-random-string
   - **Expected**: Error message: "Invalid confirmation link"
 
 **Email Testing**
@@ -464,7 +464,7 @@ const verifyToken = async (token: string) => {
   - **Expected**: CTA button visible, link clickable
 
 - **TEST-010**: Confirmation link works from email
-  - **Expected**: Clicking link navigates to /confirm page and confirms subscription
+  - **Expected**: Clicking link navigates to /snippet/confirm page and confirms subscription
 
 **Load Testing**
 
