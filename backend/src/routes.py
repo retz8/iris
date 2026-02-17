@@ -123,12 +123,12 @@ async def analyze():
             jsonify({"success": False, "error": f"Unsupported language: {language}"}),
             400,
         )
-    if not source_code:
+    if source_code is None:
         return (
             jsonify(
                 {
                     "success": False,
-                    "error": "Missing required field: source_code or lines",
+                    "error": "Missing required field: source_code",
                 }
             ),
             400,
