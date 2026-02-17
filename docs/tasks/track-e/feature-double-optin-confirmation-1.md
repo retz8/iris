@@ -1,11 +1,14 @@
 ---
 goal: Implement Double Opt-In Email Confirmation System
-version: 1.0
+version: 1.1
 date_created: 2026-02-17
 last_updated: 2026-02-17
 owner: Track E - Frontend Team
 status: Planned
 tags: [feature, security, gdpr, email-verification, legal-compliance]
+changelog:
+  - v1.1 (2026-02-17): Updated to reflect simplified schema (removed written_language, single Google Sheet with status column)
+  - v1.0 (2026-02-17): Initial version
 ---
 
 # Introduction
@@ -13,6 +16,8 @@ tags: [feature, security, gdpr, email-verification, legal-compliance]
 ![Status: Planned](https://img.shields.io/badge/status-Planned-blue)
 
 Implement a double opt-in email confirmation system for Snippet newsletter subscriptions to ensure legal compliance (GDPR, CAN-SPAM), prevent email abuse, and maintain high-quality subscriber lists. Currently, users are immediately subscribed upon email submission, which creates security risks and potential legal issues. This plan transforms the flow to require explicit email confirmation before adding users to the newsletter list.
+
+**Implementation Note:** This plan uses a simplified schema with single Google Sheet and status-based state machine (pending/confirmed/unsubscribed). Written language support has been removed for MVP - newsletter is English-only with 3 content variants (Python, JS/TS, C/C++).
 
 ## 1. Requirements & Constraints
 
@@ -38,7 +43,7 @@ Implement a double opt-in email confirmation system for Snippet newsletter subsc
 - **TEC-001**: Use secure token generation (UUID or cryptographic hash)
 - **TEC-002**: Frontend: React (TypeScript) with React Router
 - **TEC-003**: Backend: n8n webhook integration at https://n8n.iris-codes.com
-- **TEC-004**: Store pending subscriptions separately from confirmed subscriptions
+- **TEC-004**: Store subscriptions with status-based state machine (pending/confirmed/unsubscribed)
 - **TEC-005**: Email template must be mobile-responsive and accessible
 
 **UX Requirements**
@@ -114,7 +119,7 @@ Implement a double opt-in email confirmation system for Snippet newsletter subsc
 | TASK-021 | Define request/response schemas for both endpoints | | |
 | TASK-022 | Define token generation strategy (UUID v4 recommended) | | |
 | TASK-023 | Define token expiration policy (48 hours recommended) | | |
-| TASK-024 | Define database schema for pending_subscriptions table | | |
+| TASK-024 | Define Google Sheets schema with status column (pending/confirmed/unsubscribed) | | |
 | TASK-025 | Define confirmation email template requirements | | |
 | TASK-026 | Create API documentation file: docs/track-f/api-double-optin.md | | |
 
@@ -217,8 +222,8 @@ Implement a double opt-in email confirmation system for Snippet newsletter subsc
 
 - **DEP-001**: n8n webhook service for email sending (Track F)
 - **DEP-002**: Email service provider (SMTP configuration in n8n)
-- **DEP-003**: Database for storing pending subscriptions (Track F backend)
-- **DEP-004**: Token generation library (backend responsibility)
+- **DEP-003**: Google Sheets for storing subscriptions with status column (Track F backend)
+- **DEP-004**: Token generation (crypto.randomUUID in n8n Code node)
 
 **Internal Dependencies**
 
@@ -232,7 +237,7 @@ Implement a double opt-in email confirmation system for Snippet newsletter subsc
 - **DEP-009**: Track F team must implement backend endpoints
 - **DEP-010**: Track F team must implement email template
 - **DEP-011**: Track F team must implement token management system
-- **DEP-012**: Track F team must implement pending subscriptions database
+- **DEP-012**: Track F team must implement Google Sheets with status-based state machine
 
 **Coordination Required**
 
@@ -273,8 +278,8 @@ Implement a double opt-in email confirmation system for Snippet newsletter subsc
 - **FILE-006**: n8n workflow: confirm endpoint
   - Verify token validity
   - Check expiration
-  - Mark subscription as confirmed
-  - Move from pending to confirmed list
+  - Update status from "pending" to "confirmed"
+  - Generate unsubscribe_token
 
 - **FILE-007**: Email template: confirmation-email.html
   - HTML email with confirmation link
@@ -396,9 +401,9 @@ Implement a double opt-in email confirmation system for Snippet newsletter subsc
   - **Mitigation**: Monitor email send times, set up alerts for delays > 2 minutes
   - **Probability**: Low
 
-- **RISK-005**: Database storage for pending subscriptions fills up
+- **RISK-005**: Google Sheets fills up with expired pending subscriptions
   - **Impact**: Medium - need cleanup job for expired pending subscriptions
-  - **Mitigation**: Implement daily cleanup job to delete expired pending subscriptions
+  - **Mitigation**: Implement daily cleanup job to update expired status or delete old rows
   - **Probability**: Low
 
 - **RISK-006**: User confusion about confirmation process
