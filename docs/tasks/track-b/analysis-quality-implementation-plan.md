@@ -4,13 +4,13 @@ version: 1.0
 date_created: 2026-02-16
 last_updated: 2026-02-16
 owner: Track B
-status: Planned
+status: Completed
 tags: [quality, testing, prompt-engineering, backend, edge-cases]
 ---
 
 # Introduction
 
-![Status: Planned](https://img.shields.io/badge/status-Planned-blue)
+![Status: Completed](https://img.shields.io/badge/status-Completed-brightgreen)
 
 This plan implements systematic quality improvements to IRIS's single-shot LLM analysis. It addresses three problems discovered during Phase 0 exploration:
 
@@ -118,10 +118,10 @@ The plan uses a fixture-based testing strategy with cached LLM responses for det
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-020 | Add label conciseness rule to `<block_quality_rules>` in `prompts.py`: "Labels must be 2-5 words. Use noun phrases, not sentences. Examples: 'Route handlers', 'Database persistence', 'Auth middleware'. Wrong: 'HTTP route handlers and request validation', 'Add function capability'." | | |
-| TASK-021 | Add small-file granularity rule to `<block_size_rules>` in `prompts.py`: "For files under 30 lines, prefer fewer blocks (1-2). A 5-line file with two simple functions is ONE block, not two." | | |
-| TASK-022 | Strengthen cross-block overlap instruction in `<responsibility_block_rules>`: change "Each line of code should belong to at most ONE block. Minimize inter-block overlap." to "Each line of code MUST belong to exactly ONE block or NO block. Zero tolerance for inter-block overlap. If two responsibilities share code, assign the shared lines to whichever responsibility they primarily serve." | | |
-| TASK-023 | Regenerate snapshots after prompt changes using `generate_snapshots.py --update`. Run full test suite. Compare quality metrics before/after. Document improvement or regression for each snapshot. | | |
+| TASK-020 | Add label conciseness rule to `<block_quality_rules>` in `prompts.py`: "Labels must be 2-5 words. Use noun phrases, not sentences. Examples: 'Route handlers', 'Database persistence', 'Auth middleware'. Wrong: 'HTTP route handlers and request validation', 'Add function capability'." | ✅ | 2026-02-17 |
+| TASK-021 | Add small-file granularity rule to `<block_size_rules>` in `prompts.py`: "For files under 30 lines, prefer fewer blocks (1-2). A 5-line file with two simple functions is ONE block, not two." | ✅ | 2026-02-17 |
+| TASK-022 | Strengthen cross-block overlap instruction in `<responsibility_block_rules>`: change "Each line of code should belong to at most ONE block. Minimize inter-block overlap." to "Each line of code MUST belong to exactly ONE block or NO block. Zero tolerance for inter-block overlap. If two responsibilities share code, assign the shared lines to whichever responsibility they primarily serve." | ✅ | 2026-02-17 |
+| TASK-023 | Regenerate snapshots after prompt changes using `generate_snapshots.py --update`. Run full test suite. Compare quality metrics before/after. Document improvement or regression for each snapshot. | ✅ | 2026-02-17 |
 
 ## 3. Alternatives
 
