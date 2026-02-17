@@ -2,47 +2,65 @@ function FormatPreview() {
   return (
     <section className="preview animate-fade-up animate-delay-200">
       <div className="container">
-        <p className="section-intro">Every issue looks like this</p>
-        <article className="email-card card">
+        <h2 className="section-intro">What you'll receive</h2>
+
+        <article className="email-card ">
           <p className="email-subject">
-            Can you read this #012: Command resolution with fallback
+            Can you read this #042: Bash command validation hook
           </p>
 
-          <pre className="code-block"><code>{`def resolve_command(tokens, commands):
-    prefix, *args = tokens
-    matches = [c for c in commands
-               if c.name.startswith(prefix)]
+          <pre className="code-block"><code>{`def _validate_command(command: str) -> list[str]:
+    issues = []
+    for pattern, message in _VALIDATION_RULES:
+        if re.search(pattern, command):
+            issues.append(message)
+    return issues
 
-    if len(matches) == 1:
-        return matches[0].execute(args)
+def main():
+    input_data = json.load(sys.stdin)
 
-    exact = [c for c in matches if c.name == prefix]
-    if exact:
-        return exact[0].execute(args)
+    if input_data.get("tool_name") != "Bash":
+        sys.exit(0)
 
-    raise AmbiguousCommandError(prefix, matches)`}</code></pre>
+    command = input_data.get("tool_input", {}).get("command")
+    issues = _validate_command(command)
+
+    if issues:
+        for msg in issues:
+            print(f"• {msg}", file=sys.stderr)
+        sys.exit(2)  # Block execution`}</code></pre>
+
+          <div className="divider" />
 
           <p className="challenge">Before scrolling: what does this do?</p>
+
+          <div className="thinking-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
 
           <div className="breakdown-section">
             <h3 className="breakdown-title">The Breakdown</h3>
             <ul className="breakdown">
               <li>
-                <strong>What it does:</strong> Resolves a user's input to a command using prefix matching — type "st" to run "status" if it's the only match.
+                <strong>What it does:</strong> Validates bash commands before execution by checking them against predefined rules — reads command from stdin, applies regex patterns, and blocks execution if issues are found.
               </li>
               <li>
-                <strong>Key responsibility:</strong> Handles the ambiguity problem — when multiple commands share a prefix, falls back to exact match before raising an error.
+                <strong>Key responsibility:</strong> Acts as a pre-execution gate for the Bash tool — exit code 2 blocks the command and shows validation errors to Claude, preventing problematic commands from running.
               </li>
               <li>
-                <strong>The clever part:</strong> The two-pass strategy (prefix → exact) means "status" still works even when "stash" exists — users get autocomplete-like behavior without a separate autocomplete system.
+                <strong>The clever part:</strong> Uses different exit codes for different outcomes (0 = pass, 1 = user-only error, 2 = block and notify Claude) — this creates a three-way communication channel through a simple integer.
               </li>
             </ul>
           </div>
 
+            <div className="divider" />
+
           <div className="context-section">
             <h3 className="context-title">Project Context</h3>
             <p className="context">
-              From a CLI framework's command dispatcher. This pattern appears in tools like Git, npm, and Docker CLI — letting users type the shortest unambiguous prefix of any command.
+              From Claude Code's PreToolUse hook system (<a href="https://github.com/anthropics/claude-code" target="_blank" rel="noopener noreferrer">github.com/anthropics/claude-code</a>). This hook validates bash commands before Claude executes them, recommending better alternatives like ripgrep instead of grep. Part of Claude Code's extensibility layer that lets developers customize AI behavior through hooks.
             </p>
           </div>
         </article>
