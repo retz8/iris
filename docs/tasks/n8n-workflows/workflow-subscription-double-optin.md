@@ -24,7 +24,7 @@ IF: Validation Passed?
                   ↓
               Code: Check Duplicates & Determine Action
                   ↓
-              IF: How to Handle?
+              Switch: Route by Action
                   ├─ "error_confirmed" → Respond to Webhook (409 Already Subscribed)
                   ├─ "error_pending" → Respond to Webhook (200 Already Sent)
                   ├─ "update_resubscribe" → Code: Generate Token → Google Sheets: Update Row
@@ -170,25 +170,51 @@ return results;
 
 ---
 
-### Node 4a: Respond to Webhook - Validation Error (FALSE branch)
+### Node 4: Code - Format Validation Error Response (FALSE branch)
+
+**Node Type:** `Code`
+**Purpose:** Format validation error into standardized response structure
+
+**Configuration:**
+1. Add Code node to FALSE branch (after IF node)
+2. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
+
+3. JavaScript code:
+
+```javascript
+const item = $input.first();
+
+return [
+  {
+    json: {
+      success: false,
+      error: item.json.message,
+      error_type: item.json.error_type,
+      statusCode: item.json.statusCode
+    }
+  }
+];
+```
+
+**Output:** Formatted error response ready for webhook response
+
+---
+
+### Node 4a: Respond to Webhook - Validation Error
 
 **Node Type:** `Respond to Webhook`
 **Purpose:** Send validation error response back to frontend
 
 **Configuration:**
-1. Add "Respond to Webhook" node to FALSE branch
+1. Add "Respond to Webhook" node after Code formatting node
 2. Set parameters:
+   - **Respond With:** First Incoming Item
    - **Response Code:** `{{ $json.statusCode }}`
-   - **Response Body:**
+   - **Put Response in Field:** Leave empty (will auto-return the JSON from Code node)
 
-```json
-{
-  "success": false,
-  "error": "={{ $json.message }}",
-  "error_type": "={{ $json.error_type }}",
-  "statusCode": "={{ $json.statusCode }}"
-}
-```
+**Note:** The response body is automatically formatted by the previous Code node, so no additional configuration needed.
 
 ---
 
