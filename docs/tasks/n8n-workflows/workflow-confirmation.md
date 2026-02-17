@@ -19,7 +19,7 @@ Webhook GET/POST /webhook-test/confirm?token=xyz
 Code: Extract & Validate Token Parameter
     ↓
 IF: Token Provided?
-    ├─ FALSE → Respond to Webhook (400 Missing Token)
+    ├─ FALSE → Code: Format Error Response → Respond to Webhook (400 Missing Token)
     └─ TRUE → Google Sheets: Get Row(s) filtered by confirmation_token
                   ↓
               Code: Validate Subscriber Status & Expiration
@@ -153,23 +153,49 @@ return [
 
 ---
 
+### Node 4: Code - Format Missing Token Error (FALSE branch)
+
+**Node Type:** `Code`
+**Purpose:** Format the missing token error into a standardized response structure
+
+**Configuration:**
+1. Add Code node to FALSE branch (after IF node)
+2. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
+
+3. JavaScript code:
+
+```javascript
+const item = $input.first();
+
+return [
+  {
+    json: {
+      success: false,
+      error: item.json.message,
+      error_type: item.json.error_type,
+      statusCode: item.json.statusCode
+    }
+  }
+];
+```
+
+**Output:** Formatted error response ready for webhook response
+
+---
+
 ### Node 4a: Respond to Webhook - Missing Token (FALSE branch)
 
 **Node Type:** `Respond to Webhook`
 **Purpose:** Return error for missing token
 
 **Configuration:**
-- **Response Code:** 400
-- **Response Body:**
-
-```json
-{
-  "success": false,
-  "error": "Invalid confirmation link. Token is missing.",
-  "error_type": "missing_token",
-  "statusCode": 400
-}
-```
+1. Add "Respond to Webhook" node after Code formatting node
+2. Set parameters:
+   - **Respond With:** First Incoming Item
+   - **Response Code:** `{{ $json.statusCode }}`
+   - **Put Response in Field:** Leave empty
 
 ---
 
