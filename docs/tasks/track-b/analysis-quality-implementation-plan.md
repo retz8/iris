@@ -107,10 +107,10 @@ The plan uses a fixture-based testing strategy with cached LLM responses for det
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-016 | Add empty file detection in `IrisAgent.analyze()` before LLM call. If `source_code.strip()` is empty, return `{"file_intent": "Empty file", "responsibility_blocks": [], "metadata": {"input_tokens": 0, "output_tokens": 0, "estimated_cost_usd": 0.0, "cache_hit": 0, "skipped": "empty_file"}}`. | | |
-| TASK-017 | Add minified code detection in `IrisAgent.analyze()`. Heuristic: if file has fewer than 3 lines AND any line exceeds 500 characters, set a `minified` flag. Pass this flag as context to the LLM (append note to user prompt: "Note: This file appears to be minified/bundled code."). Add `"minified_detected": true` to metadata. | | |
-| TASK-018 | Add timeout protection to `_analyze_with_llm()`. Wrap the `self.client.responses.parse()` call with `asyncio.wait_for(timeout=30)`. On timeout, raise `IrisError("Analysis timed out after 30 seconds", status_code=504)`. | | |
-| TASK-019 | Update `backend/src/routes.py` to handle empty source_code gracefully. Instead of returning 400 for empty `source_code`, pass it through to `IrisAgent.analyze()` which will return the empty-file response from TASK-016. | | |
+| TASK-016 | Add empty file detection in `IrisAgent.analyze()` before LLM call. If `source_code.strip()` is empty, return `{"file_intent": "Empty file", "responsibility_blocks": [], "metadata": {"input_tokens": 0, "output_tokens": 0, "estimated_cost_usd": 0.0, "cache_hit": 0, "skipped": "empty_file"}}`. | ✅ | 2026-02-17 |
+| TASK-017 | Add minified code detection in `IrisAgent.analyze()`. Heuristic: if file has fewer than 3 lines AND any line exceeds 500 characters, set a `minified` flag. Pass this flag as context to the LLM (append note to user prompt: "Note: This file appears to be minified/bundled code."). Add `"minified_detected": true` to metadata. | ✅ | 2026-02-17 |
+| TASK-018 | Add timeout protection to `_analyze_with_llm()`. Wrap the `self.client.responses.parse()` call with `asyncio.wait_for(timeout=30)`. On timeout, raise `IrisError("Analysis timed out after 30 seconds", status_code=504)`. | ✅ | 2026-02-17 |
+| TASK-019 | Update `backend/src/routes.py` to handle empty source_code gracefully. Instead of returning 400 for empty `source_code`, pass it through to `IrisAgent.analyze()` which will return the empty-file response from TASK-016. | ✅ | 2026-02-17 |
 
 ### Phase 6: Prompt Tuning
 
