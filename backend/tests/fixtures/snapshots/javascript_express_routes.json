@@ -1,31 +1,27 @@
 {
-  "file_intent": "Express router for user management API (CRUD) with validation and auth",
+  "file_intent": "Express route handlers for user management (admin & auth) in REST API",
   "responsibility_blocks": [
     {
-      "description": "GET /api/users - fetch paginated user list with admin auth",
-      "label": "List users with pagination",
+      "description": "List users with pagination and admin auth",
+      "label": "User listing and pagination",
       "ranges": [
         [
           9,
           9
         ],
         [
-          11,
-          18
+          10,
+          19
         ],
         [
           20,
-          20
-        ],
-        [
-          22,
           30
         ]
       ]
     },
     {
-      "description": "GET /api/users/:id - fetch a user by id with validation and auth",
-      "label": "Get single user",
+      "description": "Fetch a user by ID with validation and error handling",
+      "label": "Single user retrieval",
       "ranges": [
         [
           37,
@@ -33,53 +29,65 @@
         ],
         [
           44,
-          55
+          58
         ]
       ]
     },
     {
-      "description": "POST /api/users - validate input, enforce uniqueness, hash password, create user",
-      "label": "Create new user",
+      "description": "Validate input, check uniqueness, hash password, create user",
+      "label": "User creation",
       "ranges": [
         [
           61,
+          61
+        ],
+        [
+          62,
           69
         ],
         [
           70,
-          95
+          99
         ]
       ]
     },
     {
-      "description": "PUT /api/users/:id - update allowed user fields with validation and authorization",
-      "label": "Update user",
+      "description": "Validate input, authorization checks, dynamic field updates",
+      "label": "User update",
       "ranges": [
         [
           102,
-          111
+          106
         ],
         [
-          112,
-          153
+          107,
+          115
+        ],
+        [
+          117,
+          155
         ]
       ]
     },
     {
-      "description": "DELETE /api/users/:id - admin-only delete with validation",
-      "label": "Delete user",
+      "description": "Admin-restricted deletion of user by ID",
+      "label": "User deletion",
       "ranges": [
         [
           157,
-          177
+          159
+        ],
+        [
+          164,
+          176
         ]
       ]
     }
   ],
   "metadata": {
     "cache_hit": 0,
-    "estimated_cost_usd": 0.00065,
-    "input_tokens": 3415,
-    "output_tokens": 229
+    "estimated_cost_usd": 0.000655,
+    "input_tokens": 3528,
+    "output_tokens": 210
   }
 }

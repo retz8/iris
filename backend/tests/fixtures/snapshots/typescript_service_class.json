@@ -1,13 +1,39 @@
 {
-  "file_intent": "Product catalog service with CRUD, search, and caching",
+  "file_intent": "Product management service with persistence and caching",
   "responsibility_blocks": [
     {
-      "description": "Fetch by id with cache lookup and cache warm-up on miss; cache invalidation on update/delete; cache for categories",
-      "label": "Cache-enabled read path",
+      "description": "Cache usage for product fetches and category list",
+      "label": "Caching and retrieval",
       "ranges": [
         [
-          63,
-          77
+          64,
+          68
+        ],
+        [
+          75,
+          76
+        ],
+        [
+          156,
+          161
+        ]
+      ]
+    },
+    {
+      "description": "CRUD operations on products and queries against products collection",
+      "label": "Database persistence",
+      "ranges": [
+        [
+          70,
+          73
+        ],
+        [
+          115,
+          118
+        ],
+        [
+          125,
+          132
         ],
         [
           134,
@@ -16,24 +42,20 @@
         [
           141,
           153
-        ],
-        [
-          155,
-          162
         ]
       ]
     },
     {
-      "description": "Input validation for price on create/update; raise domain-specific errors (ProductNotFoundError, InvalidPriceError)",
-      "label": "Validation and error handling",
+      "description": "Validate inputs and throw domain-specific errors",
+      "label": "Input validation and errors",
       "ranges": [
         [
-          37,
+          45,
           49
         ],
         [
-          104,
-          118
+          105,
+          107
         ],
         [
           121,
@@ -42,22 +64,8 @@
       ]
     },
     {
-      "description": "CRUD operations against the database: find, insert, update, delete; include search with filters and pagination",
-      "label": "Persistence operations",
-      "ranges": [
-        [
-          79,
-          102
-        ],
-        [
-          125,
-          132
-        ]
-      ]
-    },
-    {
-      "description": "Defines Product, CreateProductInput, UpdateProductInput, ProductQuery interfaces for type safety",
-      "label": "Domain models and inputs",
+      "description": "Product data shape and input payload definitions",
+      "label": "Domain models and types",
       "ranges": [
         [
           5,
@@ -76,12 +84,22 @@
           35
         ]
       ]
+    },
+    {
+      "description": "Log actions and debug/cache hits",
+      "label": "Logging and observability",
+      "ranges": [
+        [
+          2,
+          3
+        ]
+      ]
     }
   ],
   "metadata": {
     "cache_hit": 0,
-    "estimated_cost_usd": 0.000667,
-    "input_tokens": 3055,
-    "output_tokens": 348
+    "estimated_cost_usd": 0.000617,
+    "input_tokens": 3168,
+    "output_tokens": 236
   }
 }

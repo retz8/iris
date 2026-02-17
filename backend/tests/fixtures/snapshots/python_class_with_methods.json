@@ -1,9 +1,9 @@
 {
-  "file_intent": "User account model with in-memory persistence and basic auth lifecycle",
+  "file_intent": "User account lifecycle management with in-memory persistence",
   "responsibility_blocks": [
     {
-      "description": "Defines UserAccount with state (username, email, created_at, is_active) and password handling state",
-      "label": "User account domain model",
+      "description": "Core domain model for a user account with password handling, status, and conversion helpers.",
+      "label": "User account lifecycle management",
       "ranges": [
         [
           7,
@@ -15,20 +15,16 @@
         ],
         [
           33,
-          39
-        ],
-        [
-          40,
           51
         ],
         [
           53,
-          57
+          58
         ]
       ]
     },
     {
-      "description": "Simple in-memory storage with CRUD and queries for user accounts",
+      "description": "Simple in-memory storage interface for creating, querying, and listing users.",
       "label": "In-memory user repository",
       "ranges": [
         [
@@ -40,8 +36,8 @@
   ],
   "metadata": {
     "cache_hit": 0,
-    "estimated_cost_usd": 0.000476,
-    "input_tokens": 2260,
-    "output_tokens": 229
+    "estimated_cost_usd": 0.000508,
+    "input_tokens": 2373,
+    "output_tokens": 254
   }
 }

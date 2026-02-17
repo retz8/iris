@@ -1,14 +1,30 @@
 {
-  "file_intent": "Interactive, searchable, sortable list UI component in React",
+  "file_intent": "Interactive searchable, sortable list UI component",
   "responsibility_blocks": [
     {
-      "description": "Debounce user input to minimize filtering recalculations and API calls",
-      "label": "Debounced search query handling",
+      "description": "Debounce a value with a delay to reduce updates",
+      "label": "Debounce hook",
       "ranges": [
         [
           10,
           19
-        ],
+        ]
+      ]
+    },
+    {
+      "description": "Manage query, sort, selection, and loading/error states for the list",
+      "label": "Searchable list state",
+      "ranges": [
+        [
+          21,
+          27
+        ]
+      ]
+    },
+    {
+      "description": "Apply debounced query to memoized filtering",
+      "label": "Query debouncing usage",
+      "ranges": [
         [
           28,
           38
@@ -16,7 +32,7 @@
       ]
     },
     {
-      "description": "Sort filtered results based on predefined SORT_OPTIONS",
+      "description": "Sort filtered results by selected field and order",
       "label": "Sorting of filtered items",
       "ranges": [
         [
@@ -26,8 +42,8 @@
       ]
     },
     {
-      "description": "Track selected item and notify parent via onSelect callback",
-      "label": "Item selection management",
+      "description": "Notify parent of selected item and store current selection",
+      "label": "Selection handler",
       "ranges": [
         [
           50,
@@ -36,8 +52,8 @@
       ]
     },
     {
-      "description": "Clear search input and selection without unmounting component",
-      "label": "Search reset and state clearing",
+      "description": "Clear search query and reset selection",
+      "label": "Clear search action",
       "ranges": [
         [
           58,
@@ -46,8 +62,8 @@
       ]
     },
     {
-      "description": "Render error banner and dismiss action when error state is set",
-      "label": "Error rendering path",
+      "description": "Render error banner and dismiss action",
+      "label": "Error UI",
       "ranges": [
         [
           63,
@@ -56,31 +72,31 @@
       ]
     },
     {
-      "description": "Render search input, clear button, and sort select",
-      "label": "UI render: search controls",
+      "description": "Input field, clear button, and sort dropdown UI",
+      "label": "Render/search UI",
       "ranges": [
         [
           72,
-          99
+          98
         ]
       ]
     },
     {
-      "description": "Show result count when there is an active query",
-      "label": "UI render: result messaging",
+      "description": "Show results count or empty state message",
+      "label": "Results count & empty state",
       "ranges": [
         [
           100,
-          106
+          114
         ]
       ]
     },
     {
-      "description": "Render list of items with selection state and accessibility attributes",
-      "label": "UI render: results listing",
+      "description": "Render list of items with selection state",
+      "label": "List rendering",
       "ranges": [
         [
-          108,
+          115,
           131
         ]
       ]
@@ -88,8 +104,8 @@
   ],
   "metadata": {
     "cache_hit": 0,
-    "estimated_cost_usd": 0.000629,
-    "input_tokens": 2953,
-    "output_tokens": 310
+    "estimated_cost_usd": 0.000655,
+    "input_tokens": 3066,
+    "output_tokens": 326
   }
 }
