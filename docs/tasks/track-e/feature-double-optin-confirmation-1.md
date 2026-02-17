@@ -1,12 +1,13 @@
 ---
 goal: Implement Double Opt-In Email Confirmation System
-version: 1.1
+version: 1.2
 date_created: 2026-02-17
 last_updated: 2026-02-17
 owner: Track E - Frontend Team
-status: Planned
+status: Ready for Implementation
 tags: [feature, security, gdpr, email-verification, legal-compliance]
 changelog:
+  - v1.2 (2026-02-17): Synced with n8n workflows - added API contract, endpoint URLs, error messages, marked Phase 3 complete
   - v1.1 (2026-02-17): Updated to reflect simplified schema (removed written_language, single Google Sheet with status column)
   - v1.0 (2026-02-17): Initial version
 ---
@@ -42,7 +43,7 @@ Implement a double opt-in email confirmation system for Snippet newsletter subsc
 
 - **TEC-001**: Use secure token generation (UUID or cryptographic hash)
 - **TEC-002**: Frontend: React (TypeScript) with React Router
-- **TEC-003**: Backend: n8n webhook integration at https://n8n.iris-codes.com
+- **TEC-003**: Backend: n8n webhook integration at https://retz8.app.n8n.cloud/webhook-test/
 - **TEC-004**: Store subscriptions with status-based state machine (pending/confirmed/unsubscribed)
 - **TEC-005**: Email template must be mobile-responsive and accessible
 
@@ -103,9 +104,9 @@ Implement a double opt-in email confirmation system for Snippet newsletter subsc
 | TASK-012 | Implement verifyToken async function that calls backend confirmation endpoint | | |
 | TASK-013 | Add loading state UI: "Confirming your subscription..." with spinner | | |
 | TASK-014 | Add success state UI: "You're confirmed!" with next delivery day (use getNextDeliveryDay logic) | | |
-| TASK-015 | Add error state UI for expired token: "This link has expired. Please sign up again." | | |
-| TASK-016 | Add error state UI for already confirmed: "You're already subscribed!" | | |
-| TASK-017 | Add error state UI for invalid token: "Invalid confirmation link. Please sign up again." | | |
+| TASK-015 | Add error state UI for expired token: "This confirmation link has expired. Please sign up again." | | |
+| TASK-016 | Add error state UI for already confirmed: "You're already subscribed to Snippet!" | | |
+| TASK-017 | Add error state UI for invalid token: "Invalid confirmation token. This link may have expired or been used already." | | |
 | TASK-018 | Add "Go to homepage" link in all states | | |
 
 ### Phase 3: Define Webhook API Contract
@@ -114,14 +115,104 @@ Implement a double opt-in email confirmation system for Snippet newsletter subsc
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-019 | Document POST /webhook/subscribe endpoint changes (creates pending subscription) | | |
-| TASK-020 | Document POST /webhook/confirm endpoint for token verification | | |
-| TASK-021 | Define request/response schemas for both endpoints | | |
-| TASK-022 | Define token generation strategy (UUID v4 recommended) | | |
-| TASK-023 | Define token expiration policy (48 hours recommended) | | |
-| TASK-024 | Define Google Sheets schema with status column (pending/confirmed/unsubscribed) | | |
-| TASK-025 | Define confirmation email template requirements | | |
-| TASK-026 | Create API documentation file: docs/track-f/api-double-optin.md | | |
+| TASK-019 | Document POST /webhook-test/subscribe endpoint (creates pending subscription) | ✅ | 2026-02-17 |
+| TASK-020 | Document GET/POST /webhook-test/confirm endpoint for token verification | ✅ | 2026-02-17 |
+| TASK-021 | Define request/response schemas for both endpoints | ✅ | 2026-02-17 |
+| TASK-022 | Define token generation strategy (UUID v4 with crypto.randomUUID) | ✅ | 2026-02-17 |
+| TASK-023 | Define token expiration policy (48 hours) | ✅ | 2026-02-17 |
+| TASK-024 | Define Google Sheets schema with status column (pending/confirmed/unsubscribed) | ✅ | 2026-02-17 |
+| TASK-025 | Define confirmation email template requirements | ✅ | 2026-02-17 |
+| TASK-026 | n8n workflow documentation complete: docs/tasks/n8n-workflows/ | ✅ | 2026-02-17 |
+
+**API Contract Details:**
+
+**Confirmation Endpoint:**
+- **URL:** `https://retz8.app.n8n.cloud/webhook-test/confirm`
+- **Method:** GET or POST
+- **Authentication:** None (token-based verification)
+
+**Request Format (GET):**
+```
+GET https://retz8.app.n8n.cloud/webhook-test/confirm?token={confirmation_token}
+```
+
+**Request Format (POST):**
+```json
+{
+  "token": "a7b3c4d5-e6f7-8901-2345-6789abcdef01"
+}
+```
+
+**Response - Success (200):**
+```json
+{
+  "success": true,
+  "message": "You're confirmed! Welcome to Snippet.",
+  "email": "user@example.com",
+  "statusCode": 200
+}
+```
+
+**Response - Already Confirmed (200):**
+```json
+{
+  "success": true,
+  "message": "You're already subscribed to Snippet!",
+  "email": "user@example.com",
+  "statusCode": 200
+}
+```
+
+**Response - Missing Token (400):**
+```json
+{
+  "success": false,
+  "error": "Invalid confirmation link. Token is missing.",
+  "error_type": "missing_token",
+  "statusCode": 400
+}
+```
+
+**Response - Expired Token (400):**
+```json
+{
+  "success": false,
+  "error": "This confirmation link has expired. Please sign up again.",
+  "error_type": "token_expired",
+  "statusCode": 400
+}
+```
+
+**Response - Invalid Token (404):**
+```json
+{
+  "success": false,
+  "error": "Invalid confirmation token. This link may have expired or been used already.",
+  "error_type": "token_not_found",
+  "statusCode": 404
+}
+```
+
+**Backend Processing:**
+1. Extract token from query parameter or request body
+2. Look up subscriber by `confirmation_token` in Google Sheets
+3. Validate:
+   - Token exists in database
+   - Status is "pending" (not already confirmed)
+   - Token has not expired (check `token_expires_at` < NOW)
+4. If valid:
+   - Update status to "confirmed"
+   - Set `confirmed_date` to NOW
+   - Generate new `unsubscribe_token` (UUID v4)
+   - Clear `confirmation_token` and `token_expires_at` (single-use)
+   - Send welcome email with unsubscribe link
+5. Return appropriate response
+
+**Full Documentation:**
+- Subscribe: `docs/tasks/n8n-workflows/workflow-subscription-double-optin.md`
+- Confirm: `docs/tasks/n8n-workflows/workflow-confirmation.md`
+- Unsubscribe: `docs/tasks/n8n-workflows/workflow-unsubscribe-token-based.md`
+- Schema: `docs/tasks/n8n-workflows/google-sheets-subscribers-schema.md`
 
 ### Phase 4: Implement Frontend API Integration
 
@@ -131,10 +222,38 @@ Implement a double opt-in email confirmation system for Snippet newsletter subsc
 |------|-------------|-----------|------|
 | TASK-027 | Update SignupForm webhook call to handle pending response (status: "pending") | | |
 | TASK-028 | Update success logic to check for "pending" vs "confirmed" status | | |
-| TASK-029 | Implement verifyToken function in ConfirmationPage (POST /webhook/confirm) | | |
+| TASK-029 | Implement verifyToken in ConfirmationPage (GET to https://retz8.app.n8n.cloud/webhook-test/confirm?token=xyz) | | |
 | TASK-030 | Add error handling for network failures during confirmation | | |
 | TASK-031 | Add timeout handling (10 second timeout recommended) | | |
 | TASK-032 | Add retry logic for network errors (optional) | | |
+
+**Frontend Implementation Example:**
+```typescript
+// ConfirmationPage.tsx
+const verifyToken = async (token: string) => {
+  setIsVerifying(true);
+
+  try {
+    const response = await fetch(
+      `https://retz8.app.n8n.cloud/webhook-test/confirm?token=${token}`,
+      { method: 'GET', timeout: 10000 }
+    );
+
+    const data = await response.json();
+
+    if (data.success) {
+      setIsConfirmed(true);
+      setEmail(data.email);
+    } else {
+      setError(data.error);
+    }
+  } catch (error) {
+    setError('Network error. Please try again.');
+  } finally {
+    setIsVerifying(false);
+  }
+};
+```
 
 ### Phase 5: Add Email Confirmation Template
 
@@ -268,23 +387,28 @@ Implement a double opt-in email confirmation system for Snippet newsletter subsc
   - May need new styles for confirmation page states
   - Reuse existing .success-message, .error-msg classes
 
-**Backend Files (Track F Responsibility)**
+**Backend Files (n8n Workflows - Completed)**
 
 - **FILE-005**: n8n workflow: subscribe endpoint
-  - Create pending subscription
-  - Generate confirmation token
-  - Send confirmation email
+  - Location: `docs/tasks/n8n-workflows/workflow-subscription-double-optin.md`
+  - Endpoint: `POST https://retz8.app.n8n.cloud/webhook-test/subscribe`
+  - Create pending subscription with UUID v4 confirmation_token
+  - Set 48-hour expiration (token_expires_at)
+  - Send confirmation email with token link
 
 - **FILE-006**: n8n workflow: confirm endpoint
-  - Verify token validity
-  - Check expiration
+  - Location: `docs/tasks/n8n-workflows/workflow-confirmation.md`
+  - Endpoint: `GET/POST https://retz8.app.n8n.cloud/webhook-test/confirm`
+  - Verify token validity and expiration
   - Update status from "pending" to "confirmed"
-  - Generate unsubscribe_token
+  - Generate unsubscribe_token (UUID v4)
+  - Clear confirmation_token (single-use)
+  - Send welcome email with unsubscribe link
 
-- **FILE-007**: Email template: confirmation-email.html
-  - HTML email with confirmation link
-  - Mobile-responsive design
-  - Clear CTA button
+- **FILE-007**: Email templates in n8n workflows
+  - Confirmation email: HTML with CTA button, 48hr expiration notice
+  - Welcome email: HTML with unsubscribe link, newsletter details
+  - Both mobile-responsive with accessible design
 
 **Documentation Files**
 
@@ -441,7 +565,11 @@ Implement a double opt-in email confirmation system for Snippet newsletter subsc
 
 **Internal Documentation**
 
-- Track F: n8n Webhook Implementation (backend endpoints)
+- n8n Workflows (complete implementation documentation):
+  - `docs/tasks/n8n-workflows/workflow-subscription-double-optin.md`
+  - `docs/tasks/n8n-workflows/workflow-confirmation.md`
+  - `docs/tasks/n8n-workflows/workflow-unsubscribe-token-based.md`
+  - `docs/tasks/n8n-workflows/google-sheets-subscribers-schema.md`
 - Track E: SignupForm Component (current implementation)
 - `docs/implementation-plans/feature-unsubscribe-confirmation-1.md` (related flow)
 
