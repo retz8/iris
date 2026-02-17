@@ -290,4 +290,103 @@ Single source of truth for all parallel session work. Each session appends its s
 
 ---
 
+## 2026-02-17 - Track E: Landing Page Refinements & Security Planning
+
+**Status:** Complete
+
+### What Was Done
+
+**Landing Page UX Improvements**
+- **Progressive Disclosure Signup Flow**: Converted two-column sidebar layout to single-column with progressive disclosure
+  - Email input shown first with "Subscribe" button
+  - After email submission, language inputs appear (written language + programming languages)
+  - Button changes to "Complete subscription"
+  - Improves conversion by reducing initial form complexity
+- **Layout Changes**: Removed two-column grid (`.snippet-layout`), removed sticky sidebar, single-column flow throughout
+- **Hero Section Alignment**: Fixed headline/subheadline alignment by giving both `max-width: 32ch` (were 20ch/32ch, causing misalignment)
+- **Preview Section Heading**: Added "What you'll receive" heading using `.section-intro` class (Spectral serif, elegant)
+- **Thinking Dots Separator**: Added vertical three-dot separator after challenge question
+  - Static (no animation) - appropriate for static email preview
+  - Increased spacing before breakdown: `padding: var(--space-xl)`, `margin-bottom: var(--space-2xl)`
+- **Sample Email Update**: Replaced generic code with real Python snippet from Claude Code repository
+  - Subject: "Can you read this #042: Bash command validation hook"
+  - Code from `bash_command_validator_example.py` (PreToolUse hook system)
+  - Project context includes GitHub link: github.com/anthropics/claude-code
+  - Updated breakdown to explain token validation pattern
+
+**Dynamic Delivery Day**
+- Added `getNextDeliveryDay()` function to calculate next Mon/Wed/Fri delivery based on signup day
+- Success message now shows accurate delivery day: "First Snippet arrives {Monday|Wednesday|Friday} 7am"
+- Handles all days: Sun/Mon → Monday, Tue/Wed → Wednesday, Thu/Fri/Sat → Monday
+
+**Unsubscribe Flow (Phases 1-4 Complete)**
+- **Phase 1**: Updated Footer to navigate to `/unsubscribe` (changed from `/snippet/unsubscribe`)
+- **Phase 2**: Added state management to UnsubscribePage (email, isSubmitting, isSuccess, error states)
+  - URL parameter extraction with `useSearchParams`
+  - Email validation on mount
+  - Error handling for missing/invalid email parameters
+- **Phase 3**: Implemented webhook integration with placeholder URL
+  - POST to `https://n8n.iris-codes.com/webhook/unsubscribe`
+  - Payload: email, source, unsubscribed_date
+  - Try-catch-finally error handling
+  - Placeholder behavior: shows success even on error (TODO for real webhook)
+- **Phase 4**: Built complete confirmation UI with conditional rendering
+  - Confirmation state: "Unsubscribe from Snippet?" with email display and confirm button
+  - Loading state: disabled button with "Unsubscribing..." text
+  - Success state: "You're unsubscribed" with resubscribe link
+  - Error state: displays error message with homepage link
+- **Product Design Decision**: Removed footer unsubscribe link entirely
+  - Industry standard: newsletters only have unsubscribe in emails
+  - Prevents confusion from broken/error-state links
+  - Users unsubscribe from email links with pre-filled email parameter
+
+**Security & Compliance Planning**
+- Created comprehensive double opt-in implementation plan: `docs/track-e/feature-double-optin-confirmation-1.md`
+- **8 phases, 62 tasks** covering:
+  1. Update SignupForm to show "Check your email" pending state
+  2. Create ConfirmationPage component with token verification
+  3. Define webhook API contract for Track F backend team
+  4. Frontend API integration with confirmation endpoints
+  5. Email confirmation template requirements
+  6. Edge case handling (expired, invalid, already confirmed tokens)
+  7. Comprehensive testing (unit, integration, email, security, accessibility)
+  8. Documentation and deployment
+- **Legal compliance**: GDPR Article 7 (explicit consent), CAN-SPAM requirements
+- **Security**: UUID v4 tokens, 48-hour expiration, single-use, rate limiting
+- **Quality goals**: 60-80% confirmation rate (industry standard)
+
+### Files Created
+- `docs/implementation-plans/feature-unsubscribe-confirmation-1.md` - Unsubscribe two-step confirmation plan
+- `docs/track-e/feature-double-optin-confirmation-1.md` - Double opt-in security implementation plan
+
+### Files Modified
+- `web/src/components/snippet/SignupForm.tsx` - Progressive disclosure flow, dynamic delivery day calculation
+- `web/src/components/snippet/FormatPreview.tsx` - Added preview heading, thinking dots, updated sample email content
+- `web/src/components/snippet/Footer.tsx` - Removed unsubscribe link (industry standard practice)
+- `web/src/pages/SnippetPage.tsx` - Single-column layout (removed two-column grid)
+- `web/src/pages/UnsubscribePage.tsx` - Complete rewrite with state management, webhook integration, confirmation UI
+- `web/src/styles/components.css` - Hero alignment fix, thinking dots styles, progressive disclosure styles, single-column layout
+
+### Decisions Made
+- **Progressive Disclosure**: Show email first, then language inputs after initial engagement (reduces form anxiety)
+- **Delivery Day Logic**: Mon/Wed/Fri schedule with dynamic calculation based on signup day
+- **Unsubscribe Access**: Email links only (no footer link) - matches Substack, Mailchimp, ConvertKit patterns
+- **Security Approach**: Double opt-in required for legal compliance and list quality (GDPR mandates explicit consent)
+- **Token Expiration**: 48 hours (industry standard)
+- **Sample Content Source**: Real code from trending open source (Claude Code) instead of generic examples
+
+### What's Next
+- **Unsubscribe Flow Phase 5**: Testing & validation (8 tasks) - manual testing, integration testing, accessibility
+- **Double Opt-In**: Ready for implementation when Track F backend support is available
+  - Requires coordination with Track F for webhook endpoints, token management, email sending
+  - Frontend phases 1-2 can start independently (update SignupForm, create ConfirmationPage)
+- **Track E remaining**: Phase 5 (Vercel deployment), Phase 6 (testing & verification)
+
+### Build Status
+- ✅ All TypeScript compilation successful
+- ✅ No type errors
+- ✅ Lint warnings only (pre-existing, not related to changes)
+
+---
+
 <!-- All future session updates go below this line -->
