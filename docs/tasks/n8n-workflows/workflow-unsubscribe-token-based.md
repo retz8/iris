@@ -71,7 +71,7 @@ IF: Token Provided?
 
 **Expected Input (GET):**
 ```
-GET https://n8n.iris-codes.com/webhook/unsubscribe?token=a7b3c4d5-e6f7-8901-2345-6789abcdef01
+GET https://retz8.app.n8n.cloud/webhook-test/unsubscribe?token=a7b3c4d5-e6f7-8901-2345-6789abcdef01
 ```
 
 **Expected Input (POST):**
@@ -81,7 +81,7 @@ GET https://n8n.iris-codes.com/webhook/unsubscribe?token=a7b3c4d5-e6f7-8901-2345
 }
 ```
 
-**Webhook URL:** `https://n8n.iris-codes.com/webhook/unsubscribe`
+**Webhook URL:** `https://retz8.app.n8n.cloud/webhook-test/unsubscribe`
 
 **Note:** Supporting both GET and POST allows:
 - GET: Direct click from email links
@@ -494,7 +494,7 @@ const [searchParams] = useSearchParams();
 const token = searchParams.get('token');
 
 const handleUnsubscribe = async () => {
-  const response = await fetch('https://n8n.iris-codes.com/webhook/unsubscribe', {
+  const response = await fetch('https://retz8.app.n8n.cloud/webhook-test/unsubscribe', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token })
@@ -517,12 +517,12 @@ const handleUnsubscribe = async () => {
 
 **Request (GET):**
 ```bash
-curl https://n8n.iris-codes.com/webhook/unsubscribe?token=a7b3c4d5-e6f7-8901-2345-6789abcdef01
+curl https://retz8.app.n8n.cloud/webhook-test/unsubscribe?token=a7b3c4d5-e6f7-8901-2345-6789abcdef01
 ```
 
 **Request (POST):**
 ```bash
-curl -X POST https://n8n.iris-codes.com/webhook/unsubscribe \
+curl -X POST https://retz8.app.n8n.cloud/webhook-test/unsubscribe \
   -H "Content-Type: application/json" \
   -d '{"token": "a7b3c4d5-e6f7-8901-2345-6789abcdef01"}'
 ```
@@ -538,7 +538,7 @@ curl -X POST https://n8n.iris-codes.com/webhook/unsubscribe \
 
 **Request:**
 ```bash
-curl https://n8n.iris-codes.com/webhook/unsubscribe
+curl https://retz8.app.n8n.cloud/webhook-test/unsubscribe
 ```
 
 **Expected Result:**
@@ -552,7 +552,7 @@ curl https://n8n.iris-codes.com/webhook/unsubscribe
 
 **Request:**
 ```bash
-curl https://n8n.iris-codes.com/webhook/unsubscribe?token=invalid-random-token-12345
+curl https://retz8.app.n8n.cloud/webhook-test/unsubscribe?token=invalid-random-token-12345
 ```
 
 **Expected Result:**
@@ -569,7 +569,7 @@ curl https://n8n.iris-codes.com/webhook/unsubscribe?token=invalid-random-token-1
 
 **Request:**
 ```bash
-curl https://n8n.iris-codes.com/webhook/unsubscribe?token=<existing-unsubscribe-token>
+curl https://retz8.app.n8n.cloud/webhook-test/unsubscribe?token=<existing-unsubscribe-token>
 ```
 
 **Expected Result:**
@@ -586,7 +586,7 @@ curl https://n8n.iris-codes.com/webhook/unsubscribe?token=<existing-unsubscribe-
 
 **Request:**
 ```bash
-curl https://n8n.iris-codes.com/webhook/unsubscribe?token=<unsubscribe-token-from-pending-user>
+curl https://retz8.app.n8n.cloud/webhook-test/unsubscribe?token=<unsubscribe-token-from-pending-user>
 ```
 
 **Expected Result:**
@@ -663,7 +663,7 @@ const unsubscribeToken = crypto.randomUUID();
 
 1. Save workflow
 2. Click "Activate" toggle
-3. Test webhook URL: `https://n8n.iris-codes.com/webhook/unsubscribe`
+3. Test webhook URL: `https://retz8.app.n8n.cloud/webhook-test/unsubscribe`
 4. Provide URL to Track E frontend team
 5. Update email template to include token in unsubscribe link
 

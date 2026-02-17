@@ -61,7 +61,7 @@ IF: Validation Passed?
 }
 ```
 
-**Webhook URL:** `https://n8n.iris-codes.com/webhook/subscribe`
+**Webhook URL:** `https://retz8.app.n8n.cloud/webhook-test/subscribe`
 
 ---
 
@@ -596,7 +596,7 @@ unsubscribed_date → {{ $json.unsubscribed_date }}
 
 **Request:**
 ```bash
-curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
+curl -X POST https://retz8.app.n8n.cloud/webhook-test/subscribe \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test@example.com",
@@ -618,7 +618,7 @@ curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
 
 **Request:**
 ```bash
-curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
+curl -X POST https://retz8.app.n8n.cloud/webhook-test/subscribe \
   -H "Content-Type: application/json" \
   -d '{
     "email": "invalid-email",
@@ -638,7 +638,7 @@ curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
 
 **Request:**
 ```bash
-curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
+curl -X POST https://retz8.app.n8n.cloud/webhook-test/subscribe \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test2@example.com",
@@ -657,7 +657,7 @@ curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
 **Request:**
 ```bash
 # First subscribe and confirm, then try subscribing again
-curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
+curl -X POST https://retz8.app.n8n.cloud/webhook-test/subscribe \
   -H "Content-Type: application/json" \
   -d '{
     "email": "confirmed@example.com",
@@ -678,7 +678,7 @@ curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
 **Request:**
 ```bash
 # Submit same email twice before confirming
-curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
+curl -X POST https://retz8.app.n8n.cloud/webhook-test/subscribe \
   -H "Content-Type: application/json" \
   -d '{
     "email": "pending@example.com",
@@ -699,7 +699,7 @@ curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
 **Request:**
 ```bash
 # Email exists with status="unsubscribed", now re-subscribing
-curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
+curl -X POST https://retz8.app.n8n.cloud/webhook-test/subscribe \
   -H "Content-Type: application/json" \
   -d '{
     "email": "unsubscribed@example.com",
@@ -735,7 +735,7 @@ curl -X POST https://n8n.iris-codes.com/webhook/subscribe \
 
 1. Save workflow
 2. Click "Activate" toggle in top-right
-3. Test webhook URL: `https://n8n.iris-codes.com/webhook/subscribe`
+3. Test webhook URL: `https://retz8.app.n8n.cloud/webhook-test/subscribe`
 4. Provide URL to Track E frontend team
 5. Monitor "Executions" tab for incoming signups
 
