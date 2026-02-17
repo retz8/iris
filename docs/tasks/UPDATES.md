@@ -443,4 +443,117 @@ Single source of truth for all parallel session work. Each session appends its s
 
 ---
 
+## 2026-02-17 - Track F: Newsletter Subscriber Management (Subscription Flow)
+
+**Status:** In Progress (Subscription flow complete, Confirmation and Unsubscribe flows remaining)
+
+### What Was Done
+
+**n8n Workflow: Newsletter Subscription (Double Opt-In)**
+- **Implemented complete subscription workflow** with email validation, duplicate detection, token generation, and confirmation email sending
+- **Node-by-Node Implementation:**
+  - Node 1: Webhook (POST /subscribe) - receives signup form submissions
+  - Node 2: Code - Validates email format and programming languages
+  - Node 3: IF - Routes based on validation result
+  - Node 4: Code - Formats validation error response
+  - Node 4a: Respond to Webhook - Returns 400 error for invalid input
+  - Node 5: Google Sheets - Reads all subscribers to check for duplicates
+  - Node 6: Code - Determines action based on duplicate status (error_confirmed, error_pending, update_resubscribe, create_new)
+  - Node 7: Switch - Routes by action type (4 paths)
+  - Node 8a: Code + Respond to Webhook - Returns 409 error for already confirmed subscribers
+  - Node 8b: Code + Respond to Webhook - Returns 200 info for pending confirmations
+  - Node 9: Code - Generates UUID v4 confirmation token with 48-hour expiration
+  - Node 10a: Google Sheets - Appends new subscriber row (create_new path)
+  - Node 10b: Google Sheets - Updates existing subscriber row (update_resubscribe path)
+  - Node 11: Gmail - Sends confirmation email with token link
+  - Node 12: Code + Respond to Webhook - Returns success response
+
+**Key Features Implemented:**
+- **Email Validation:** Regex-based format validation, programming languages validation (Python, JS/TS, C/C++)
+- **Duplicate Detection:** Case-insensitive email matching with status-aware handling
+  - Already confirmed → 409 error
+  - Already pending → 200 informational response (prevents spam)
+  - Unsubscribed → Update existing row (re-subscription)
+  - Expired → Update existing row (new token)
+- **Token Security:** UUID v4 tokens via `require('crypto').randomUUID()`, 48-hour expiration
+- **Confirmation Email:** HTML template with confirmation button and fallback link
+  - Subject: "Confirm your Snippet subscription"
+  - Link: `https://iris-codes.com/snippet/confirm?token={token}`
+  - Expiration notice: 48 hours
+- **Response Formatting:** Code nodes before all "Respond to Webhook" nodes for clean JSON responses
+- **Error Handling:** Structured error responses with error_type, message, statusCode fields
+
+**Testing Completed:**
+- Test 1: Valid new subscriber → 200, pending status, email sent
+- Test 2: Invalid email format → 400 error
+- Test 3: Missing programming languages → 400 error
+- Test 4: Duplicate (already confirmed) → 409 error
+- Test 5: Duplicate (pending confirmation) → 200 info
+- Test 6: Re-subscription (previously unsubscribed) → 200, new token, email sent
+
+### Files Created/Modified
+
+**Documentation Created:**
+- `docs/tasks/n8n-workflows/workflow-subscription-double-optin.md` - Complete node-by-node configuration guide with all code snippets, testing scenarios, and error handling rules
+
+**Documentation Updated:**
+- `docs/tasks/n8n-workflows/google-sheets-subscribers-schema.md` - (referenced for schema)
+
+**n8n Workflow:**
+- Webhook URL (Test): `https://retz8.app.n8n.cloud/webhook-test/subscribe`
+- Webhook URL (Production): `https://retz8.app.n8n.cloud/webhook/subscribe` (when activated)
+
+### Decisions Made
+
+**Workflow Architecture:**
+- Use Code nodes before all "Respond to Webhook" nodes for clean JSON response formatting
+- Use Switch node instead of nested IF nodes for cleaner action routing
+- First-incoming-item response mode for all webhook responses
+- No Merge node needed before Gmail (direct connections from both Google Sheets nodes)
+
+**Security & Validation:**
+- UUID v4 tokens generated via Node.js crypto module: `const { randomUUID } = require('crypto');`
+- 48-hour token expiration (industry standard)
+- Email normalization: lowercase + trim before comparison
+- Valid programming languages: Python, JS/TS, C/C++
+- Case-insensitive duplicate detection
+
+**Duplicate Handling:**
+- Confirmed subscribers → 409 error (prevent duplicate subscriptions)
+- Pending subscribers → 200 info (prevent email spam from repeated submissions)
+- Unsubscribed subscribers → Update existing row (preserve original created_date)
+- Expired tokens → Update existing row (new token, reset status to pending)
+
+**Email Configuration:**
+- Confirmation page URL: `/snippet/confirm` (not `/confirm`)
+- Email subject: "Confirm your Snippet subscription"
+- HTML email with button + fallback link
+- Gmail OAuth2 for sending
+
+### What's Next
+
+**Track F Remaining Work:**
+1. **Confirmation Flow** - Implement token verification workflow
+   - Webhook: GET/POST `/confirm?token={token}`
+   - Validate token (exists, not expired, status=pending)
+   - Update subscriber status to "confirmed"
+   - Generate unsubscribe token
+   - Display success confirmation page
+   - Handle edge cases (expired, invalid, already confirmed tokens)
+
+2. **Unsubscribe Flow** - Implement token-based unsubscription workflow
+   - Webhook: GET/POST `/unsubscribe?token={token}`
+   - Validate unsubscribe token
+   - Update subscriber status to "unsubscribed"
+   - Display unsubscribe confirmation page
+   - Handle edge cases (invalid token, already unsubscribed)
+
+**Track F Blockers:**
+- None - can proceed with confirmation and unsubscribe workflows independently
+
+**Track G (Content Pipeline):**
+- Still blocked - waits for Track F completion (all three flows: subscribe, confirm, unsubscribe)
+
+---
+
 <!-- All future session updates go below this line -->

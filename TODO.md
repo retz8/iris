@@ -2,6 +2,7 @@
 
 ## TODO (right now)
 - **Track F** (do this before E)- under docs/tasks/n8n-workflows, need to implement n8n workflows for subscribe/confirmation/unsubscribe user flow
+- subscribe n8n workflow [FULLY TESTED & IMPLEMENTED]
 - **Track E** - Completed by Phase 4, but need to add double opt in logic for subscribe/confirmation/unsubscribe user flow
 
 
