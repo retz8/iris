@@ -8,8 +8,8 @@ function SnippetPage() {
   return (
     <Layout>
       <Hero />
-      <FormatPreview />
       <SignupForm />
+      <FormatPreview />
       <Footer />
     </Layout>
   );
