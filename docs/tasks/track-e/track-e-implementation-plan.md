@@ -160,32 +160,32 @@ Build the IRIS landing site as a full React + Vite application hosted on Vercel.
 ## 5. Files
 
 **Project Root:**
-- **FILE-001**: `landing/package.json` — dependencies, scripts
-- **FILE-002**: `landing/vite.config.ts` — Vite config with alias
-- **FILE-003**: `landing/vercel.json` — Vercel deployment config with SPA rewrites
-- **FILE-004**: `landing/index.html` — Vite entry HTML with meta tags and Google Fonts
+- **FILE-001**: `web/package.json` — dependencies, scripts
+- **FILE-002**: `web/vite.config.ts` — Vite config with alias
+- **FILE-003**: `web/vercel.json` — Vercel deployment config with SPA rewrites
+- **FILE-004**: `web/index.html` — Vite entry HTML with meta tags and Google Fonts
 
 **Source:**
-- **FILE-005**: `landing/src/App.tsx` — React Router setup with routes
-- **FILE-006**: `landing/src/main.tsx` — React entry point
+- **FILE-005**: `web/src/App.tsx` — React Router setup with routes
+- **FILE-006**: `web/src/main.tsx` — React entry point
 
 **Styles:**
-- **FILE-007**: `landing/src/styles/globals.css` — CSS custom properties, reset, base typography
-- **FILE-008**: `landing/src/styles/components.css` — Reusable component styles
-- **FILE-009**: `landing/src/styles/animations.css` — Keyframes and animation utilities
+- **FILE-007**: `web/src/styles/globals.css` — CSS custom properties, reset, base typography
+- **FILE-008**: `web/src/styles/components.css` — Reusable component styles
+- **FILE-009**: `web/src/styles/animations.css` — Keyframes and animation utilities
 
 **Layout:**
-- **FILE-010**: `landing/src/components/Layout.tsx` — Shared layout with navigation
+- **FILE-010**: `web/src/components/Layout.tsx` — Shared layout with navigation
 
 **Pages:**
-- **FILE-011**: `landing/src/pages/SnippetPage.tsx` — Snippet newsletter landing page
-- **FILE-012**: `landing/src/pages/UnsubscribePage.tsx` — Unsubscribe confirmation page
+- **FILE-011**: `web/src/pages/SnippetPage.tsx` — Snippet newsletter landing page
+- **FILE-012**: `web/src/pages/UnsubscribePage.tsx` — Unsubscribe confirmation page
 
 **Snippet Components:**
-- **FILE-013**: `landing/src/components/snippet/Hero.tsx` — Snippet hero section
-- **FILE-014**: `landing/src/components/snippet/FormatPreview.tsx` — Example email card with code snippet
-- **FILE-015**: `landing/src/components/snippet/SignupForm.tsx` — Signup form with validation and webhook POST
-- **FILE-016**: `landing/src/components/snippet/Footer.tsx` — Footer with unsubscribe link
+- **FILE-013**: `web/src/components/snippet/Hero.tsx` — Snippet hero section
+- **FILE-014**: `web/src/components/snippet/FormatPreview.tsx` — Example email card with code snippet
+- **FILE-015**: `web/src/components/snippet/SignupForm.tsx` — Signup form with validation and webhook POST
+- **FILE-016**: `web/src/components/snippet/Footer.tsx` — Footer with unsubscribe link
 
 ## 6. Testing
 

@@ -35,6 +35,7 @@ npm run watch            # Watch mode (from packages/iris-vscode/)
 
 ## Development Rules
 
+- **Do ONLY what is asked** — complete the requested step, then stop and report back. Do not jump ahead to the next phase or start building before being told to. When asked to explore, just explore. When asked to discuss, just discuss. When asked to build, then build.
 - **Fast iteration over perfect code** — prioritize working prototypes
 - **Do NOT generate `.md` or test files** unless explicitly requested
 - **Do not use new libraries/platforms** unless explicitly told

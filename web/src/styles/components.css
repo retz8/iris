@@ -262,3 +262,207 @@ legend {
   color: var(--color-text-secondary);
   font-size: var(--text-base);
 }
+
+/* ========================================
+   Snippet Page Components
+   ======================================== */
+
+/* Hero Section */
+.hero {
+  padding: var(--space-4xl) 0 var(--space-3xl);
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .hero {
+    padding: var(--space-5xl) 0 var(--space-4xl);
+  }
+}
+
+.hero-headline {
+  font-family: var(--font-serif);
+  font-size: var(--text-4xl);
+  line-height: 1.15;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+  margin-bottom: var(--space-md);
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 768px) {
+  .hero-headline {
+    font-size: var(--text-5xl);
+  }
+}
+
+.hero-subheadline {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* Preview Section */
+.preview {
+  padding: 0 0 var(--space-3xl);
+}
+
+.section-intro {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  text-align: center;
+  margin-bottom: var(--space-lg);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.email-card {
+  max-width: 100%;
+}
+
+.email-subject {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.challenge {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: var(--text-lg);
+  color: var(--color-text);
+  margin: var(--space-lg) 0;
+  padding: var(--space-md) 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.breakdown-section,
+.context-section {
+  margin-top: var(--space-lg);
+}
+
+.breakdown-title,
+.context-title {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--space-sm);
+}
+
+.breakdown {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.breakdown li {
+  margin-bottom: var(--space-md);
+  line-height: 1.7;
+}
+
+.breakdown li:last-child {
+  margin-bottom: 0;
+}
+
+.breakdown strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.context {
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Subscribe Section */
+.subscribe {
+  padding: var(--space-3xl) 0;
+}
+
+.subscribe-heading {
+  text-align: center;
+  margin-bottom: var(--space-2xl);
+}
+
+.signup-form {
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+.label-hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  font-weight: 400;
+}
+
+/* Footer */
+.footer {
+  padding: var(--space-2xl) 0;
+  text-align: center;
+  border-top: 1px solid var(--color-border);
+}
+
+.footer-link {
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.footer-link:hover {
+  color: var(--color-text-secondary);
+}
+
+/* ========================================
+   Unsubscribe Page
+   ======================================== */
+
+.unsubscribe-page {
+  padding: var(--space-5xl) 0;
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+}
+
+.unsubscribe-content {
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.unsubscribe-content h1 {
+  font-size: var(--text-3xl);
+  margin-bottom: var(--space-md);
+}
+
+.unsubscribe-text {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-xl);
+}
+
+.resubscribe-link {
+  display: inline-block;
+  font-size: var(--text-base);
+  color: var(--color-accent);
+  text-decoration: none;
+  padding: var(--space-sm) var(--space-md);
+  border: 1.5px solid var(--color-accent);
+  border-radius: var(--radius);
+  transition: all var(--transition-fast);
+}
+
+.resubscribe-link:hover {
+  background-color: var(--color-accent);
+  color: white;
+}
