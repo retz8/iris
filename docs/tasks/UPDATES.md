@@ -135,35 +135,53 @@ Single source of truth for all parallel session work. Each session appends its s
 
 ---
 
-## 2026-02-16 - Track B: Analysis Quality (Phases 1-3)
+## 2026-02-17 - Track B: Analysis Quality
 
-**Status:** In Progress (Phases 1-3 complete, Phases 4-6 remaining)
+**Status:** Complete (all 6 phases, 23 tasks, 129 tests passing)
 
 ### What Was Done
 
 **Phase 0: Exploration**
-- Tested current analysis quality against 5 diverse files via live API
-- Discovered critical cross-block range overlaps in 6/15 file types
+- Tested current analysis quality against diverse files via live API
+- Discovered critical cross-block range overlaps in ~40% of analyzed files
 - Confirmed zero test coverage (backend/tests/ did not exist)
 - Documented quality issues: verbose labels, over-granular blocks, long file intents
 
 **Phase 1: Cross-Block Overlap Fix**
 - Added `_deduplicate_cross_block_ranges()` in `backend/src/agent.py` (first-block-wins strategy)
 - Wired into post-processing pipeline after existing `_merge_ranges()` loop
-- 10 unit tests in `backend/tests/test_range_dedup.py` (all passing)
+- 10 unit tests in `backend/tests/test_range_dedup.py`
 
 **Phase 2: Test Infrastructure**
 - Created full test directory structure with conftest, quality validators, sample corpus
 - 6 quality validator functions + aggregator in `backend/tests/utils/quality_validators.py`
 - 15 diverse sample files across Python (7), JavaScript (4), TypeScript (4)
-- 24 validator unit tests in `backend/tests/test_quality_validators.py` (all passing)
+- 24 validator unit tests in `backend/tests/test_quality_validators.py`
 
 **Phase 3: Baseline Snapshots**
 - Created `snapshot_manager.py` and `generate_snapshots.py` script
 - Generated 15 baseline snapshots against live API with dedup-enabled server
 - All 15 snapshots pass quality checks (zero cross-block overlaps)
 
-**Total: 34 tests, all passing, lint clean**
+**Phase 4: Core Test Suite**
+- `test_analysis_quality.py`: 74 parameterized snapshot quality tests
+- `test_edge_cases.py`: 8 edge case tests (empty, minified, comments, barrel files)
+- `test_prompt_builder.py`: 6 prompt construction unit tests
+- `test_range_processing.py`: 7 within-block merge unit tests
+
+**Phase 5: Edge Case Handling**
+- Empty file detection: returns graceful response without LLM call
+- Minified code detection: heuristic (< 3 lines, any line > 500 chars), appends note to LLM prompt
+- 30s timeout protection via OpenAI `timeout` parameter + `APITimeoutError` catch
+- `routes.py`: changed `if not source_code` to `if source_code is None` (allow empty strings through)
+
+**Phase 6: Prompt Tuning**
+- Label conciseness rule: 2-5 words, noun phrases
+- Small-file granularity rule: prefer 1-2 blocks for files under 30 lines
+- Zero-tolerance cross-block overlap instruction (strengthened from "minimize" to "MUST")
+- Regenerated all 15 snapshots; all pass quality checks post-tuning
+
+**Total: 129 tests, all passing, lint clean**
 
 ### Files Created
 - `docs/tasks/track-b/analysis-quality-implementation-plan.md`
@@ -171,22 +189,24 @@ Single source of truth for all parallel session work. Each session appends its s
 - `backend/tests/utils/__init__.py`, `backend/tests/utils/quality_validators.py`, `backend/tests/utils/snapshot_manager.py`
 - `backend/tests/generate_snapshots.py`
 - `backend/tests/test_range_dedup.py`, `backend/tests/test_quality_validators.py`
+- `backend/tests/test_analysis_quality.py`, `backend/tests/test_edge_cases.py`
+- `backend/tests/test_prompt_builder.py`, `backend/tests/test_range_processing.py`
 - `backend/tests/fixtures/samples/` (15 sample files)
 - `backend/tests/fixtures/snapshots/` (15 snapshot JSON files)
 
 ### Files Modified
-- `backend/src/agent.py` — Added `_deduplicate_cross_block_ranges()` and wired into `_analyze_with_llm()`
+- `backend/src/agent.py` — Cross-block dedup, empty file detection, minified detection, 30s timeout
+- `backend/src/prompts.py` — Label conciseness, small-file granularity, zero-tolerance overlap rules
+- `backend/src/routes.py` — Allow empty source_code passthrough
 
 ### Decisions Made
 - First-block-wins for cross-block dedup (preserves comprehension-ordered priority)
 - Two-tier testing: Tier 1 (fixtures, deterministic) by default; Tier 2 (live API) opt-in via `@pytest.mark.live`
 - Quality validators are pure functions reusable in tests, CI, and snapshot generation
+- Post-processing pipeline: LLM output -> within-block merge -> cross-block dedup -> validation
 
 ### What's Next
-- **Phase 4**: Core test suite (parameterized snapshot tests, edge case tests, prompt builder tests)
-- **Phase 5**: Edge case handling (empty files, minified detection, timeout protection)
-- **Phase 6**: Prompt tuning (label conciseness, small-file granularity, stronger overlap rules)
-- Track B still **blocks Track D** (backend hardening)
+- Track B is complete; **Track D (backend hardening) is now unblocked**
 
 ---
 
