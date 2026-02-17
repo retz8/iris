@@ -210,4 +210,84 @@ Single source of truth for all parallel session work. Each session appends its s
 
 ---
 
+## 2026-02-17 - Track E: Newsletter Landing Page (Phases 1-4)
+
+**Status:** In Progress (Phases 1-4 complete, Phases 5-6 remaining)
+
+### What Was Done
+
+**Phase 0: Exploration**
+- Reviewed Track H design decisions (all branding/messaging locked)
+- Confirmed no existing landing page infrastructure
+- Explored hosting options (EC2 vs Vercel)
+- Decided on React + Vite stack for full startup homepage (not just newsletter page)
+
+**Phase 1: Project Setup & Infrastructure**
+- Initialized Vite React TypeScript project with `react-router-dom`
+- Configured `vite.config.ts` with `@/` alias for cleaner imports
+- Set up React Router: `/` → `/snippet`, `/snippet`, `/snippet/unsubscribe`
+- Created shared `Layout` component with brand mark header (`>_ Snippet`)
+- Organized project structure: `pages/`, `components/`, `styles/`, `utils/`
+- Created `vercel.json` with SPA rewrite rules for client-side routing
+- Added meta tags and Open Graph tags to `index.html`
+
+**Phase 2: Global Styles & Design System**
+- Created `globals.css` with comprehensive CSS custom properties (colors, typography, spacing, shadows)
+- Warm editorial color palette: off-white background, serif headlines (Newsreader), system sans body
+- Defined spacing scale (8px rhythm), breakpoints, fluid typography with `clamp()`
+- Created `components.css`: buttons, form inputs, pill toggles, cards, code blocks (Track H spec)
+- Created `animations.css`: fade-up/fade-in keyframes with staggered delays
+- WCAG AA compliance: focus styles, color contrast, reduced motion support
+- Added Google Fonts: Newsreader (serif), JetBrains Mono (monospace)
+
+**Phase 3: Snippet Page Components**
+- Created `Hero` component: headline "Can you read code faster than AI writes it?", subheadline, responsive padding
+- Created `FormatPreview` component: email card with Python code snippet (command resolver), challenge question, 3-bullet breakdown, project context
+- Created `SignupForm` component: controlled state, email/written language/programming languages fields, pill-style radio/checkbox toggles
+- Added form validation: email regex, min 1 programming language check, inline error messages
+- Added webhook POST to placeholder URL (`https://n8n.iris-codes.com/webhook/subscribe`) with success/error states
+- Created `Footer` component: unsubscribe link to `/snippet/unsubscribe`
+
+**Phase 4: Pages Assembly**
+- Assembled `SnippetPage`: Hero + FormatPreview + SignupForm + Footer with staggered animations
+- Styled `UnsubscribePage`: centered layout with resubscribe link
+- Added responsive CSS throughout: mobile-first breakpoints at 768px
+
+**Refactor: Renamed `landing/` → `web/`**
+- Updated package.json name to reflect full web application scope (not just landing page)
+- Updated all implementation plan references
+
+**Build verified**: 11.51 KB CSS, 236.55 KB JS, all routes functional
+
+### Files Created
+- `docs/tasks/track-e/track-e-implementation-plan.md` — Complete implementation plan (6 phases, 32 tasks)
+- `web/` — Full React + Vite application (renamed from `landing/`)
+- `web/src/components/Layout.tsx` — Shared layout with brand mark
+- `web/src/components/snippet/Hero.tsx` — Hero section
+- `web/src/components/snippet/FormatPreview.tsx` — Email preview card
+- `web/src/components/snippet/SignupForm.tsx` — Signup form with validation
+- `web/src/components/snippet/Footer.tsx` — Footer with unsubscribe link
+- `web/src/pages/SnippetPage.tsx` — Landing page assembly
+- `web/src/pages/UnsubscribePage.tsx` — Unsubscribe confirmation
+- `web/src/styles/globals.css` — Design system (224 lines)
+- `web/src/styles/components.css` — Component styles (282 lines)
+- `web/src/styles/animations.css` — CSS animations (47 lines)
+- `web/vercel.json` — Vercel deployment config
+
+### Decisions Made
+- **Hosting**: Vercel (NOT EC2) — free tier, automatic SSL, preview deployments
+- **Tech stack**: React + Vite (NOT plain HTML/CSS) — scalable for future product pages (extension, Mac app)
+- **Architecture**: Full startup homepage, not just newsletter landing page
+- **Unsubscribe URL**: `/snippet/unsubscribe` (NOT `/unsubscribe`)
+- **Webhook**: Placeholder URL for now, Track F will provide real n8n webhook
+- **Design system**: Warm editorial palette with Newsreader serif headlines, system sans body
+- **Sample snippet**: New CLI tool code (command resolver with prefix matching) — NOT reused from thoughts.md
+
+### What's Next
+- **Phase 5**: Vercel deployment (7 tasks) — install CLI, deploy to preview/production, configure custom domain at Namesquare DNS, verify SSL
+- **Phase 6**: Testing & verification (6 tasks) — responsiveness, form validation, cross-browser, performance, accessibility, SPA routing
+- After Phase 5-6 complete: **Track G (Content Pipeline) is unblocked** (depends on Track E and F completion)
+
+---
+
 <!-- All future session updates go below this line -->
