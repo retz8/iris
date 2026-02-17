@@ -25,14 +25,14 @@ IF: Validation Passed?
               Code: Check Duplicates & Determine Action
                   ↓
               Switch: Route by Action
-                  ├─ "error_confirmed" → Respond to Webhook (409 Already Subscribed)
-                  ├─ "error_pending" → Respond to Webhook (200 Already Sent)
+                  ├─ "error_confirmed" → Code: Format Error → Respond to Webhook (409)
+                  ├─ "error_pending" → Code: Format Response → Respond to Webhook (200)
                   ├─ "update_resubscribe" → Code: Generate Token → Google Sheets: Update Row
                   └─ "create_new" → Code: Generate Token → Google Sheets: Append Row
                                           ↓
                                       Gmail: Send Confirmation Email
                                           ↓
-                                      Respond to Webhook (200 Success)
+                                      Code: Format Success → Respond to Webhook (200)
 ```
 
 ## Node-by-Node Configuration
@@ -371,44 +371,96 @@ return [
 
 ---
 
-### Node 8a: Respond to Webhook - Already Confirmed Error (Rule 1)
+### Node 8a: Code - Format Already Confirmed Error (Rule 1)
 
-**Node Type:** `Respond to Webhook`
-**Purpose:** Return 409 error for already confirmed subscribers
+**Node Type:** `Code`
+**Purpose:** Format error response for already confirmed subscribers
 
 **Configuration:**
-- **Response Code:** 409
-- **Response Body:**
+1. Add Code node to Switch Rule 1 output
+2. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
 
-```json
-{
-  "success": false,
-  "error": "Email already subscribed",
-  "email": "={{ $json.email }}",
-  "statusCode": 409
-}
+3. JavaScript code:
+
+```javascript
+const item = $input.first();
+
+return [
+  {
+    json: {
+      success: false,
+      error: "Email already subscribed",
+      email: item.json.email,
+      statusCode: 409
+    }
+  }
+];
 ```
+
+**Output:** Formatted 409 error response
 
 ---
 
-### Node 8b: Respond to Webhook - Already Pending Info (Rule 2)
+### Node 8a-1: Respond to Webhook - Already Confirmed Error
 
 **Node Type:** `Respond to Webhook`
-**Purpose:** Return informational message for pending confirmations
+**Purpose:** Send 409 error response to frontend
 
 **Configuration:**
-- **Response Code:** 200
-- **Response Body:**
+1. Add "Respond to Webhook" node after Code formatting node
+2. Set parameters:
+   - **Respond With:** First Incoming Item
+   - **Response Code:** `{{ $json.statusCode }}`
+   - **Put Response in Field:** Leave empty
 
-```json
-{
-  "success": true,
-  "status": "pending",
-  "message": "Confirmation email already sent. Please check your inbox.",
-  "email": "={{ $json.email }}",
-  "statusCode": 200
-}
+---
+
+### Node 8b: Code - Format Already Pending Response (Rule 2)
+
+**Node Type:** `Code`
+**Purpose:** Format informational response for pending confirmations
+
+**Configuration:**
+1. Add Code node to Switch Rule 2 output
+2. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
+
+3. JavaScript code:
+
+```javascript
+const item = $input.first();
+
+return [
+  {
+    json: {
+      success: true,
+      status: "pending",
+      message: "Confirmation email already sent. Please check your inbox.",
+      email: item.json.email,
+      statusCode: 200
+    }
+  }
+];
 ```
+
+**Output:** Formatted 200 informational response
+
+---
+
+### Node 8b-1: Respond to Webhook - Already Pending Info
+
+**Node Type:** `Respond to Webhook`
+**Purpose:** Send informational response to frontend
+
+**Configuration:**
+1. Add "Respond to Webhook" node after Code formatting node
+2. Set parameters:
+   - **Respond With:** First Incoming Item
+   - **Response Code:** `{{ $json.statusCode }}`
+   - **Put Response in Field:** Leave empty
 
 ---
 
@@ -422,11 +474,14 @@ return [
 2. JavaScript code:
 
 ```javascript
+// Import crypto module for UUID generation
+const { randomUUID } = require('crypto');
+
 const item = $input.first();
 const action = item.json.action;
 
 // Generate UUID v4 token
-const confirmationToken = crypto.randomUUID();
+const confirmationToken = randomUUID();
 
 // Calculate expiration (48 hours from now)
 const now = new Date();
@@ -594,25 +649,49 @@ unsubscribed_date → {{ $json.unsubscribed_date }}
 
 ---
 
-### Node 12: Respond to Webhook - Success
+### Node 12: Code - Format Success Response
+
+**Node Type:** `Code`
+**Purpose:** Format success response after email sent
+
+**Configuration:**
+1. Add Code node after Gmail node
+2. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
+
+3. JavaScript code:
+
+```javascript
+const item = $input.first();
+
+return [
+  {
+    json: {
+      success: true,
+      status: "pending",
+      message: "Please check your email to confirm your subscription",
+      email: item.json.email
+    }
+  }
+];
+```
+
+**Output:** Formatted success response
+
+---
+
+### Node 12a: Respond to Webhook - Success
 
 **Node Type:** `Respond to Webhook`
 **Purpose:** Send success response back to frontend
 
 **Configuration:**
-1. Add "Respond to Webhook" node after Gmail node
+1. Add "Respond to Webhook" node after Code formatting node
 2. Set parameters:
+   - **Respond With:** First Incoming Item
    - **Response Code:** 200
-   - **Response Body:**
-
-```json
-{
-  "success": true,
-  "status": "pending",
-  "message": "Please check your email to confirm your subscription",
-  "email": "={{ $json.email }}"
-}
-```
+   - **Put Response in Field:** Leave empty
 
 ---
 
@@ -748,7 +827,8 @@ curl -X POST https://retz8.app.n8n.cloud/webhook-test/subscribe \
 - If Google Sheets fails: Return 500 error to user (critical failure)
 
 **Token Generation:**
-- Always use `crypto.randomUUID()` for cryptographic randomness
+- Always import crypto: `const { randomUUID } = require('crypto');`
+- Use `randomUUID()` for cryptographic randomness
 - Never use `Math.random()` (not secure)
 
 **Email Normalization:**
