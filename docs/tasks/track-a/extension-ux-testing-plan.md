@@ -21,7 +21,7 @@ Manual testing plan for the two major Track A features: Error UI and Multi-file 
 
 ## Part 1: Error UI Testing
 
-### TEST-E01: Network Error Display
+### TEST-E01: Network Error Display [DONE]
 
 **Setup:** Stop local backend. Set endpoint to `http://localhost:8080/api/iris/analyze` in `packages/iris-core/src/config/endpoints.ts`. Rebuild and press F5.
 
@@ -45,7 +45,7 @@ Manual testing plan for the two major Track A features: Error UI and Multi-file 
 | No Configure API Key button | |
 | Error toast also shown | |
 
-### TEST-E02: Auth Error (401) Display
+### TEST-E02: Auth Error (401) Display [DEFER, BE NOT DEPLOYED YET]
 
 **Setup:** Set endpoint to production `https://api.iris-codes.com/api/iris/analyze`. Set `iris.apiKey` to `wrong-key-123` in VS Code settings. Rebuild and press F5.
 
@@ -66,7 +66,7 @@ Manual testing plan for the two major Track A features: Error UI and Multi-file 
 | Both buttons visible | |
 | Configure API Key opens settings | |
 
-### TEST-E03: Timeout Error Display
+### TEST-E03: Timeout Error Display [DONE]
 
 **Setup:** Start local backend. Set `DEFAULT_IRIS_API_TIMEOUT = 100` in `packages/iris-core/src/config/endpoints.ts` (100ms will timeout). Set endpoint to localhost. Rebuild and press F5.
 
@@ -88,7 +88,7 @@ Manual testing plan for the two major Track A features: Error UI and Multi-file 
 | Retry button present | |
 | No Configure API Key button | |
 
-### TEST-E04: Retry Button Triggers New Analysis
+### TEST-E04: Retry Button Triggers New Analysis [DONE]
 
 **Setup:** Trigger any error (TEST-E01 is easiest).
 
@@ -108,7 +108,7 @@ Manual testing plan for the two major Track A features: Error UI and Multi-file 
 | Spinner appears during analysis | |
 | Success clears error completely | |
 
-### TEST-E05: Error Clears on Manual Re-analysis
+### TEST-E05: Error Clears on Manual Re-analysis [DONE]
 
 **Steps:**
 1. Trigger an error
@@ -124,7 +124,7 @@ Manual testing plan for the two major Track A features: Error UI and Multi-file 
 | Manual command clears error state | |
 | Results render normally after | |
 
-### TEST-E06: Auto-analysis Error (Silent Mode)
+### TEST-E06: Auto-analysis Error (Silent Mode) [DONE]
 
 **Setup:** Enable `iris.autoAnalyze` (default true). Stop backend. Set endpoint to localhost. Rebuild and press F5.
 
@@ -142,7 +142,7 @@ Manual testing plan for the two major Track A features: Error UI and Multi-file 
 | Error renders in sidebar | |
 | No toast shown for silent errors | |
 
-### TEST-E07: Theme Compatibility
+### TEST-E07: Theme Compatibility [DONE]
 
 **Steps:**
 1. Trigger an auth error (TEST-E02)
@@ -163,7 +163,7 @@ Manual testing plan for the two major Track A features: Error UI and Multi-file 
 
 ## Part 2: Multi-file Cache + Persistence Testing
 
-### TEST-C01: Cache Hit on File Switch
+### TEST-C01: Cache Hit on File Switch [DONE]
 
 **Setup:** Backend running. Valid API key configured. Rebuild and press F5.
 
@@ -183,7 +183,7 @@ Manual testing plan for the two major Track A features: Error UI and Multi-file 
 | Output channel shows "Cache hit" | |
 | No new API call made for cached file | |
 
-### TEST-C02: Manual Analysis Bypasses Cache
+### TEST-C02: Manual Analysis Bypasses Cache [DONE]
 
 **Steps:**
 1. Analyze `fileA.ts` (now cached)
@@ -199,7 +199,7 @@ Manual testing plan for the two major Track A features: Error UI and Multi-file 
 | Manual command triggers API call | |
 | Output channel shows API request, not cache hit | |
 
-### TEST-C03: Cache Invalidation on File Edit
+### TEST-C03: Cache Invalidation on File Edit [DONE]
 
 **Steps:**
 1. Analyze `fileA.ts` (cached)
@@ -218,7 +218,7 @@ Manual testing plan for the two major Track A features: Error UI and Multi-file 
 | Cache entry removed on edit | |
 | Re-analysis triggered on switch-back | |
 
-### TEST-C04: LRU Eviction
+### TEST-C04: LRU Eviction [DONE]
 
 **Steps:**
 1. Analyze 11 different supported files sequentially (file1 through file11)
@@ -254,7 +254,7 @@ Manual testing plan for the two major Track A features: Error UI and Multi-file 
 | Output channel shows cache restore | |
 | No API call for restored file | |
 
-### TEST-C06: Stale Persistence Detection (External Edit)
+### TEST-C06: Stale Persistence Detection (External Edit) [DEFER]
 
 **Steps:**
 1. Analyze `fileA.ts`
@@ -273,7 +273,7 @@ Manual testing plan for the two major Track A features: Error UI and Multi-file 
 | Output channel logs hash mismatch | |
 | Fresh analysis triggered | |
 
-### TEST-C07: Activation Performance
+### TEST-C07: Activation Performance [DEFER, tunnel env doesn't allow this test]
 
 **Steps:**
 1. Analyze 5-10 files to populate cache
@@ -290,7 +290,7 @@ Manual testing plan for the two major Track A features: Error UI and Multi-file 
 | No noticeable activation delay | |
 | Editor responsive during restore | |
 
-### TEST-C08: Auto-analysis Uses Cache
+### TEST-C08: Auto-analysis Uses Cache [DONE]
 
 **Setup:** Enable `iris.autoAnalyze` (default). Backend running.
 

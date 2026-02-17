@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from openai import OpenAI
+from openai import APITimeoutError, OpenAI
 
 # Single-shot inference imports
 from src.config import (
@@ -175,6 +175,30 @@ class IrisAgent:
         Raises:
             IrisError: On LLM API failures or invalid responses.
         """
+        # Early return for empty files (no LLM call needed)
+        if not source_code.strip():
+            logger.info(f"Empty file detected: {filename}")
+            return {
+                "file_intent": "Empty file",
+                "responsibility_blocks": [],
+                "metadata": {
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "estimated_cost_usd": 0.0,
+                    "cache_hit": 0,
+                    "skipped": "empty_file",
+                },
+            }
+
+        # Detect minified code (fewer than 3 lines, any line > 500 chars)
+        lines = source_code.splitlines()
+        is_minified = (
+            len(lines) < 3
+            and any(len(line) > 500 for line in lines)
+        )
+        if is_minified:
+            logger.info(f"Minified code detected: {filename}")
+
         # Compute content hash for cache lookup
         file_hash = compute_file_hash(source_code)
         file_size = len(source_code.encode())
@@ -200,7 +224,14 @@ class IrisAgent:
         # Cache miss or cache unavailable - proceed with LLM analysis
         logger.debug(f"Cache miss for {filename} - calling LLM")
         logger.info(f"Analyzing {filename} with single-shot inference...")
-        return await self._analyze_with_llm(filename, language, source_code, file_hash)
+        result = await self._analyze_with_llm(
+            filename, language, source_code,
+            file_hash, is_minified=is_minified,
+        )
+        if is_minified:
+            result.setdefault("metadata", {})
+            result["metadata"]["minified_detected"] = True
+        return result
 
     async def _analyze_with_llm(
         self,
@@ -208,6 +239,7 @@ class IrisAgent:
         language: str,
         source_code: str,
         file_hash: str | None = None,
+        is_minified: bool = False,
     ) -> Dict[str, Any]:
         """Execute single-shot LLM inference with structured output parsing.
 
@@ -216,6 +248,7 @@ class IrisAgent:
             language: Programming language identifier.
             source_code: Full source code content.
             file_hash: SHA-256 hash of source_code (computed if not provided).
+            is_minified: Whether the file was detected as minified/bundled.
 
         Returns:
             Dict with file_intent, responsibility_blocks, and metadata.
@@ -229,6 +262,11 @@ class IrisAgent:
                 language,
                 source_code,
             )
+            if is_minified:
+                user_prompt += (
+                    "\n\nNote: This file appears to be "
+                    "minified/bundled code."
+                )
             response = self.client.responses.parse(
                 model=SINGLE_SHOT_MODEL,
                 input=[
@@ -240,6 +278,7 @@ class IrisAgent:
                 ],
                 text_format=LLMOutputSchema,
                 reasoning={"effort": SINGLE_SHOT_REASONING_EFFORT},
+                timeout=30,
             )
 
             # Record OpenAI usage metrics (including automatic prompt caching)
@@ -313,6 +352,14 @@ class IrisAgent:
             }
             return result
 
+        except APITimeoutError:
+            logger.error(
+                f"LLM inference timed out for {filename}"
+            )
+            raise IrisError(
+                "Analysis timed out after 30 seconds",
+                status_code=504,
+            )
         except Exception as e:
             logger.error(f"LLM inference failed: {e}")
             raise

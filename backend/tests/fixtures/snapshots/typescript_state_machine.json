@@ -1,9 +1,9 @@
 {
-  "file_intent": "Order state machine to manage lifecycle of an order from draft to refund",
+  "file_intent": "State machine for order lifecycle management",
   "responsibility_blocks": [
     {
-      "description": "Defines statuses and transitions between them with guards and side effects",
-      "label": "State machine core: Order lifecycle states",
+      "description": "Define order statuses and event/transition structures",
+      "label": "Order state definitions",
       "ranges": [
         [
           1,
@@ -15,70 +15,62 @@
         ],
         [
           18,
-          24
+          23
         ]
       ]
     },
     {
-      "description": "Defines OrderEvent, OrderContext shapes and how events are recorded",
-      "label": "Event and context modeling",
-      "ranges": [
-        [
-          11,
-          11
-        ],
-        [
-          25,
-          34
-        ],
-        [
-          41,
-          47
-        ]
-      ]
-    },
-    {
-      "description": "Central TRANSITIONS map detailing from- to- states, guards, and actions per event",
-      "label": "Transition table configuration",
+      "description": "Centralized transition map with guards and actions",
+      "label": "Transition configuration",
       "ranges": [
         [
           36,
-          40
-        ],
-        [
-          49,
-          60
-        ],
-        [
-          61,
-          76
-        ],
-        [
-          77,
           100
         ]
       ]
     },
     {
-      "description": "Public methods to query status, context, and history, and to mutate order (addItem, setPayment, etc.)",
-      "label": "State machine API and state accessors",
+      "description": "Context model carrying order data and history",
+      "label": "Order context and data",
+      "ranges": [
+        [
+          25,
+          35
+        ]
+      ]
+    },
+    {
+      "description": "Core API surface: transition, queries, and history",
+      "label": "State machine operations",
       "ranges": [
         [
           102,
-          109
+          110
         ],
         [
-          110,
-          123
+          112,
+          119
         ],
+        [
+          120,
+          123
+        ]
+      ]
+    },
+    {
+      "description": "Item addition, payment, shipping, and tracking setters",
+      "label": "Mutators and helpers",
+      "ranges": [
         [
           124,
-          133
-        ],
-        [
-          135,
           146
-        ],
+        ]
+      ]
+    },
+    {
+      "description": "Validation, guard checks, side effects, and state update",
+      "label": "Transition execution",
+      "ranges": [
         [
           147,
           169
@@ -86,24 +78,20 @@
       ]
     },
     {
-      "description": "Get available transitions and historical data for external use",
-      "label": "Utility and helpers for inspection",
+      "description": "Available transitions and history retrieval",
+      "label": "Query utilities",
       "ranges": [
         [
           171,
           179
-        ],
-        [
-          180,
-          180
         ]
       ]
     }
   ],
   "metadata": {
     "cache_hit": 0,
-    "estimated_cost_usd": 0.000686,
-    "input_tokens": 3159,
-    "output_tokens": 353
+    "estimated_cost_usd": 0.000634,
+    "input_tokens": 3272,
+    "output_tokens": 239
   }
 }

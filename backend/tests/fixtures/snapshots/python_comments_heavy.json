@@ -1,9 +1,9 @@
 {
-  "file_intent": "Centralized configuration constants and feature flags for the application",
+  "file_intent": "Centralized configuration constants for application behavior",
   "responsibility_blocks": [
     {
-      "description": "Define core constants for retries, timeouts, base API URL, and DB pool settings",
-      "label": "Global configuration constants",
+      "description": "Configure retry behavior and request timeouts for external API calls",
+      "label": "Retry and timeout policies",
       "ranges": [
         [
           8,
@@ -12,20 +12,22 @@
         [
           13,
           15
-        ],
-        [
-          17,
-          19
-        ],
-        [
-          38,
-          47
         ]
       ]
     },
     {
-      "description": "Flag-based toggles for UI, real-time features, and experimental components",
-      "label": "Feature flag definitions",
+      "description": "Base URL and environment-driven override for the primary API endpoint",
+      "label": "API connectivity",
+      "ranges": [
+        [
+          17,
+          19
+        ]
+      ]
+    },
+    {
+      "description": "Flags to enable/disable features at runtime",
+      "label": "Feature flags",
       "ranges": [
         [
           21,
@@ -42,7 +44,17 @@
       ]
     },
     {
-      "description": "Module-specific logging levels that influence runtime verbosity",
+      "description": "Connection pool and query timeout settings for PostgreSQL",
+      "label": "Database configuration",
+      "ranges": [
+        [
+          38,
+          47
+        ]
+      ]
+    },
+    {
+      "description": "Per-module logging levels and root default",
       "label": "Logging configuration",
       "ranges": [
         [
@@ -52,8 +64,8 @@
       ]
     },
     {
-      "description": "Default rate limits per user types controlling request throughput",
-      "label": "Rate limiting configuration",
+      "description": "Default and tiered rate limits for API usage",
+      "label": "Rate limiting",
       "ranges": [
         [
           58,
@@ -64,8 +76,8 @@
   ],
   "metadata": {
     "cache_hit": 0,
-    "estimated_cost_usd": 0.000419,
-    "input_tokens": 2067,
-    "output_tokens": 181
+    "estimated_cost_usd": 0.000452,
+    "input_tokens": 2180,
+    "output_tokens": 208
   }
 }

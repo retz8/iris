@@ -20,6 +20,9 @@
   - TASK-014: Create `test_prompt_builder.py` for prompt builder unit tests
   - TASK-015: Create `test_range_processing.py` for `_merge_ranges()` unit tests
 
+### Update Track E, F Doc to reflect decisions made from Track H
+then, start E
+
 ### Completed
 - **Track H (Newsletter Design)** - ✅ Complete
 - **Track A (Extension UX)** - ✅ Implementation complete (testing pending)

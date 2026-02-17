@@ -11,8 +11,8 @@
 /**
  * Production IRIS API endpoint (EC2 deployment)
  */
-export const DEFAULT_IRIS_API_ENDPOINT = 'https://api.iris-codes.com/api/iris/analyze';
-
+// export const DEFAULT_IRIS_API_ENDPOINT = 'https://api.iris-codes.com/api/iris/analyze';
+export const DEFAULT_IRIS_API_ENDPOINT = 'http://localhost:8080/api/iris/analyze';
 /**
  * Default request timeout in milliseconds
  */

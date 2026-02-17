@@ -4,13 +4,13 @@ version: 1.0
 date_created: 2026-02-16
 last_updated: 2026-02-16
 owner: Track B
-status: Planned
+status: Completed
 tags: [quality, testing, prompt-engineering, backend, edge-cases]
 ---
 
 # Introduction
 
-![Status: Planned](https://img.shields.io/badge/status-Planned-blue)
+![Status: Completed](https://img.shields.io/badge/status-Completed-brightgreen)
 
 This plan implements systematic quality improvements to IRIS's single-shot LLM analysis. It addresses three problems discovered during Phase 0 exploration:
 
@@ -96,10 +96,10 @@ The plan uses a fixture-based testing strategy with cached LLM responses for det
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-012 | Create `backend/tests/test_analysis_quality.py` with tests that load each snapshot and run `validate_analysis_quality()`. Tests: `test_should_have_no_cross_block_overlaps_when_any_snapshot`, `test_should_have_file_intent_under_20_words_when_any_snapshot`, `test_should_have_no_generic_labels_when_any_snapshot`, `test_should_have_at_least_one_block_when_nonempty_file`, `test_should_have_valid_range_format_when_any_snapshot` (each range is [start, end] with start <= end, both >= 1). Use `@pytest.mark.parametrize` over snapshot files. | | |
-| TASK-013 | Create `backend/tests/test_edge_cases.py` with tests: `test_should_reject_empty_source_when_empty_string` (API returns 400), `test_should_handle_minified_code_when_single_long_line` (validates result structure), `test_should_handle_comments_only_file_when_no_executable_code`, `test_should_handle_barrel_file_when_only_reexports`. Use fixture snapshots where available; mock API responses for edge cases not in snapshot set. | | |
-| TASK-014 | Create `backend/tests/test_prompt_builder.py` with unit tests for `build_single_shot_user_prompt()`: `test_should_add_line_numbers_when_multiline_source`, `test_should_format_xml_tags_when_valid_input`, `test_should_handle_empty_source_when_empty_string`, `test_should_handle_unicode_when_special_chars`. No LLM calls needed. | | |
-| TASK-015 | Create `backend/tests/test_range_processing.py` with unit tests for `_merge_ranges()`: `test_should_passthrough_when_no_overlaps`, `test_should_merge_when_nested_ranges`, `test_should_merge_when_adjacent_ranges`, `test_should_handle_when_single_range`, `test_should_handle_when_empty_list`. | | |
+| TASK-012 | Create `backend/tests/test_analysis_quality.py` with tests that load each snapshot and run `validate_analysis_quality()`. Tests: `test_should_have_no_cross_block_overlaps_when_any_snapshot`, `test_should_have_file_intent_under_20_words_when_any_snapshot`, `test_should_have_no_generic_labels_when_any_snapshot`, `test_should_have_at_least_one_block_when_nonempty_file`, `test_should_have_valid_range_format_when_any_snapshot` (each range is [start, end] with start <= end, both >= 1). Use `@pytest.mark.parametrize` over snapshot files. | ✅ | 2026-02-17 |
+| TASK-013 | Create `backend/tests/test_edge_cases.py` with tests: `test_should_reject_empty_source_when_empty_string` (API returns 400), `test_should_handle_minified_code_when_single_long_line` (validates result structure), `test_should_handle_comments_only_file_when_no_executable_code`, `test_should_handle_barrel_file_when_only_reexports`. Use fixture snapshots where available; mock API responses for edge cases not in snapshot set. | ✅ | 2026-02-17 |
+| TASK-014 | Create `backend/tests/test_prompt_builder.py` with unit tests for `build_single_shot_user_prompt()`: `test_should_add_line_numbers_when_multiline_source`, `test_should_format_xml_tags_when_valid_input`, `test_should_handle_empty_source_when_empty_string`, `test_should_handle_unicode_when_special_chars`. No LLM calls needed. | ✅ | 2026-02-17 |
+| TASK-015 | Create `backend/tests/test_range_processing.py` with unit tests for `_merge_ranges()`: `test_should_passthrough_when_no_overlaps`, `test_should_merge_when_nested_ranges`, `test_should_merge_when_adjacent_ranges`, `test_should_handle_when_single_range`, `test_should_handle_when_empty_list`. | ✅ | 2026-02-17 |
 
 ### Phase 5: Edge Case Handling
 
@@ -107,10 +107,10 @@ The plan uses a fixture-based testing strategy with cached LLM responses for det
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-016 | Add empty file detection in `IrisAgent.analyze()` before LLM call. If `source_code.strip()` is empty, return `{"file_intent": "Empty file", "responsibility_blocks": [], "metadata": {"input_tokens": 0, "output_tokens": 0, "estimated_cost_usd": 0.0, "cache_hit": 0, "skipped": "empty_file"}}`. | | |
-| TASK-017 | Add minified code detection in `IrisAgent.analyze()`. Heuristic: if file has fewer than 3 lines AND any line exceeds 500 characters, set a `minified` flag. Pass this flag as context to the LLM (append note to user prompt: "Note: This file appears to be minified/bundled code."). Add `"minified_detected": true` to metadata. | | |
-| TASK-018 | Add timeout protection to `_analyze_with_llm()`. Wrap the `self.client.responses.parse()` call with `asyncio.wait_for(timeout=30)`. On timeout, raise `IrisError("Analysis timed out after 30 seconds", status_code=504)`. | | |
-| TASK-019 | Update `backend/src/routes.py` to handle empty source_code gracefully. Instead of returning 400 for empty `source_code`, pass it through to `IrisAgent.analyze()` which will return the empty-file response from TASK-016. | | |
+| TASK-016 | Add empty file detection in `IrisAgent.analyze()` before LLM call. If `source_code.strip()` is empty, return `{"file_intent": "Empty file", "responsibility_blocks": [], "metadata": {"input_tokens": 0, "output_tokens": 0, "estimated_cost_usd": 0.0, "cache_hit": 0, "skipped": "empty_file"}}`. | ✅ | 2026-02-17 |
+| TASK-017 | Add minified code detection in `IrisAgent.analyze()`. Heuristic: if file has fewer than 3 lines AND any line exceeds 500 characters, set a `minified` flag. Pass this flag as context to the LLM (append note to user prompt: "Note: This file appears to be minified/bundled code."). Add `"minified_detected": true` to metadata. | ✅ | 2026-02-17 |
+| TASK-018 | Add timeout protection to `_analyze_with_llm()`. Wrap the `self.client.responses.parse()` call with `asyncio.wait_for(timeout=30)`. On timeout, raise `IrisError("Analysis timed out after 30 seconds", status_code=504)`. | ✅ | 2026-02-17 |
+| TASK-019 | Update `backend/src/routes.py` to handle empty source_code gracefully. Instead of returning 400 for empty `source_code`, pass it through to `IrisAgent.analyze()` which will return the empty-file response from TASK-016. | ✅ | 2026-02-17 |
 
 ### Phase 6: Prompt Tuning
 
@@ -118,10 +118,10 @@ The plan uses a fixture-based testing strategy with cached LLM responses for det
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-020 | Add label conciseness rule to `<block_quality_rules>` in `prompts.py`: "Labels must be 2-5 words. Use noun phrases, not sentences. Examples: 'Route handlers', 'Database persistence', 'Auth middleware'. Wrong: 'HTTP route handlers and request validation', 'Add function capability'." | | |
-| TASK-021 | Add small-file granularity rule to `<block_size_rules>` in `prompts.py`: "For files under 30 lines, prefer fewer blocks (1-2). A 5-line file with two simple functions is ONE block, not two." | | |
-| TASK-022 | Strengthen cross-block overlap instruction in `<responsibility_block_rules>`: change "Each line of code should belong to at most ONE block. Minimize inter-block overlap." to "Each line of code MUST belong to exactly ONE block or NO block. Zero tolerance for inter-block overlap. If two responsibilities share code, assign the shared lines to whichever responsibility they primarily serve." | | |
-| TASK-023 | Regenerate snapshots after prompt changes using `generate_snapshots.py --update`. Run full test suite. Compare quality metrics before/after. Document improvement or regression for each snapshot. | | |
+| TASK-020 | Add label conciseness rule to `<block_quality_rules>` in `prompts.py`: "Labels must be 2-5 words. Use noun phrases, not sentences. Examples: 'Route handlers', 'Database persistence', 'Auth middleware'. Wrong: 'HTTP route handlers and request validation', 'Add function capability'." | ✅ | 2026-02-17 |
+| TASK-021 | Add small-file granularity rule to `<block_size_rules>` in `prompts.py`: "For files under 30 lines, prefer fewer blocks (1-2). A 5-line file with two simple functions is ONE block, not two." | ✅ | 2026-02-17 |
+| TASK-022 | Strengthen cross-block overlap instruction in `<responsibility_block_rules>`: change "Each line of code should belong to at most ONE block. Minimize inter-block overlap." to "Each line of code MUST belong to exactly ONE block or NO block. Zero tolerance for inter-block overlap. If two responsibilities share code, assign the shared lines to whichever responsibility they primarily serve." | ✅ | 2026-02-17 |
+| TASK-023 | Regenerate snapshots after prompt changes using `generate_snapshots.py --update`. Run full test suite. Compare quality metrics before/after. Document improvement or regression for each snapshot. | ✅ | 2026-02-17 |
 
 ## 3. Alternatives
 

@@ -1,9 +1,9 @@
 {
-  "file_intent": "Type definitions for user/auth/response/pagination models used across the app",
+  "file_intent": "Type definitions for user/auth, pagination, and common API shapes",
   "responsibility_blocks": [
     {
-      "description": "User, UserProfile, AuthToken, Notification, ApiError definitions and their fields",
-      "label": "Core domain entities",
+      "description": "User and user profile shapes used across the app",
+      "label": "Core User Types",
       "ranges": [
         [
           1,
@@ -12,24 +12,22 @@
         [
           10,
           16
-        ],
-        [
-          18,
-          23
-        ],
-        [
-          57,
-          64
-        ],
-        [
-          66,
-          71
         ]
       ]
     },
     {
-      "description": "Interfaces for login flow and tokens (LoginRequest, LoginResponse, AuthToken)",
-      "label": "Authentication and login data shapes",
+      "description": "Token data structures for auth flows",
+      "label": "Authentication Tokens",
+      "ranges": [
+        [
+          18,
+          23
+        ]
+      ]
+    },
+    {
+      "description": "Login request/response contracts",
+      "label": "Login Interfaces",
       "ranges": [
         [
           25,
@@ -38,8 +36,8 @@
       ]
     },
     {
-      "description": "PaginationParams and PaginatedResponse to standardize list endpoints",
-      "label": "Pagination and generic API responses",
+      "description": "Generic pagination params and responses",
+      "label": "Pagination Utilities",
       "ranges": [
         [
           36,
@@ -48,20 +46,40 @@
       ]
     },
     {
-      "description": "UserRole and NotificationType string unions",
-      "label": "Identity and role/type unions",
+      "description": "Enumerations for roles and notification types",
+      "label": "App-wide Types",
       "ranges": [
         [
           53,
-          55
+          63
+        ]
+      ]
+    },
+    {
+      "description": "Notification entity contract",
+      "label": "Notification Interface",
+      "ranges": [
+        [
+          64,
+          64
+        ]
+      ]
+    },
+    {
+      "description": "Standard error payload for API responses",
+      "label": "API Error Contract",
+      "ranges": [
+        [
+          66,
+          71
         ]
       ]
     }
   ],
   "metadata": {
     "cache_hit": 0,
-    "estimated_cost_usd": 0.000417,
-    "input_tokens": 2018,
-    "output_tokens": 190
+    "estimated_cost_usd": 0.000447,
+    "input_tokens": 2131,
+    "output_tokens": 212
   }
 }

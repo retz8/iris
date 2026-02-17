@@ -1,50 +1,32 @@
 {
-  "file_intent": "ETL pipeline for CSV transactions into aggregated reports",
+  "file_intent": "ETL pipeline for CSV transaction data to aggregated reports",
   "responsibility_blocks": [
     {
-      "description": "Define in-memory data models for transactions and aggregated reports and provide CSV reading/line counting utilities",
-      "label": "CSV ingestion and transaction model",
+      "description": "Read transactions from CSV, convert rows to Transaction objects",
+      "label": "CSV ingestion and parsing",
       "ranges": [
-        [
-          16,
-          16
-        ],
-        [
-          17,
-          25
-        ],
-        [
-          27,
-          35
-        ],
         [
           37,
           58
-        ]
-      ]
-    },
-    {
-      "description": "Read a CSV file and yield strongly-typed Transaction objects; count input lines",
-      "label": "CSV reading and parsing",
-      "ranges": [
+        ],
         [
           59,
-          61
+          62
         ]
       ]
     },
     {
-      "description": "Apply configurable filters to the transaction stream to narrow the dataset",
+      "description": "Apply amount, currency, status, and category filters to transactions",
       "label": "Transaction filtering",
       "ranges": [
         [
           64,
-          88
+          87
         ]
       ]
     },
     {
-      "description": "Aggregate filtered transactions into totals, counts, and per-key breakdowns",
+      "description": "Compute totals and per-key aggregates (category, currency, status)",
       "label": "Aggregation of transactions",
       "ranges": [
         [
@@ -54,17 +36,21 @@
       ]
     },
     {
-      "description": "Serialize the aggregated report to JSON and generate a human-readable summary file",
+      "description": "Serialize aggregated report to JSON and human-readable summary",
       "label": "Report writing",
       "ranges": [
         [
           118,
+          140
+        ],
+        [
+          141,
           156
         ]
       ]
     },
     {
-      "description": "Coordinate reading, filtering, aggregating, and writing to produce final reports",
+      "description": "Coordinate reader, filter, aggregator, and writer to produce reports",
       "label": "Pipeline orchestration",
       "ranges": [
         [
@@ -72,22 +58,12 @@
           177
         ]
       ]
-    },
-    {
-      "description": "Command-line interface to configure input, output, and filter options and run the pipeline",
-      "label": "CLI entrypoint and configuration",
-      "ranges": [
-        [
-          179,
-          196
-        ]
-      ]
     }
   ],
   "metadata": {
     "cache_hit": 0,
-    "estimated_cost_usd": 0.000687,
-    "input_tokens": 3449,
-    "output_tokens": 283
+    "estimated_cost_usd": 0.000696,
+    "input_tokens": 3562,
+    "output_tokens": 270
   }
 }
