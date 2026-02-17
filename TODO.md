@@ -1,32 +1,30 @@
 # IRIS — Task Execution Plan
 
-## For Tomorrow
+## TODO (right now)
+- **Track F** (do this before E)- under docs/tasks/n8n-workflows, need to implement n8n workflows for subscribe/confirmation/unsubscribe user flow
+- **Track E** - Completed by Phase 4, but need to add double opt in logic for subscribe/confirmation/unsubscribe user flow
 
-### Manual Testing & Verification
-- **Track A (Extension UX)** - ✅ Implementation complete, needs manual testing
-  - Test error handling flows in VS Code
-  - Test caching behavior
-  - Test state persistence
-  - Verify all UX improvements work as expected
 
-### Continue Track B (Analysis Quality)
-- **Phase 3 Verification** - Review and verify Phase 1-3 completeness
-  - Check generated snapshots quality
-  - Review baseline snapshot data
-  - Validate snapshot generation script
-- **Phase 4 Implementation** - Core Test Suite
-  - TASK-012: Create `test_analysis_quality.py` with snapshot-based quality tests
-  - TASK-013: Create `test_edge_cases.py` for empty/minified/comments-only/barrel files
-  - TASK-014: Create `test_prompt_builder.py` for prompt builder unit tests
-  - TASK-015: Create `test_range_processing.py` for `_merge_ranges()` unit tests
+## TODO (later)
+- **Track G** - Newsletter Generation Pipeline
 
-### Update Track E, F Doc to reflect decisions made from Track H
-then, start E
+## TODO (BEFORE release NEWSLETTER)
+- Newsletter n8n workflow end-to-end testing with UI
+- Adjust any UX things on newsletter
+- Release n8n workflow online & n8n non-free plan
+- Deploy web app to Vercel and connect custom url iris-codes.com
+
+## TODO (AFTER release NEWSLETTER)
+- VSCode Extension Full UX Check
+- Agent Response Quality Check with Track B
+- Deploy Flask Server on EC2 & Track D (BE pipeline strengthen)
+- Track C: VSCode Marketplace setup
+- Release VSCode Extension
 
 ### Completed
 - **Track H (Newsletter Design)** - ✅ Complete
-- **Track A (Extension UX)** - ✅ Implementation complete (testing pending)
-- **Track B (Analysis Quality)** - 🔄 Phase 1-3 complete
+- **Track A (Extension UX)** - ✅ Complete
+- **Track B (Analysis Quality)** - ✅ Complete, will use it later for quality testing before release
 
 ## Quick Start
 
