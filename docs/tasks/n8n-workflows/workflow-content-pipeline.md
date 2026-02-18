@@ -9,7 +9,7 @@
 - Google Sheets document `Newsletter` with sheet `Newsletter Drafts` (see `google-sheets-drafts-schema.md`)
 - Google OAuth2 credentials configured in n8n
 - Gmail OAuth2 credentials configured in n8n
-- GitHub token: create a **Header Auth** credential (Name: `Authorization`, Value: `Bearer <token>`) — used in Nodes 6a and 8
+- GitHub token: create a **Header Auth** credential (Name: `Authorization`, Value: `Bearer <token>`) — used in Node 6a only
 - OpenAI API key: used in two places:
   - Node 4: add as n8n **OpenAI** credential (`openAiAccount`) for the Chat Model sub-node
   - Node 10: create a **Header Auth** credential (Name: `Authorization`, Value: `Bearer <key>`) for the HTTP Request node
@@ -48,11 +48,8 @@ IF ───────────── needs_fallback == true? (agent couldn
 Merge ────────── Combine both branches (3 language items)
        v
 AI Agent ─────── Code Hunter  [runs once per language item]
-       |          Tools:
-       |           - GitHub Get Tree (explores repo structure)
-       |           - GitHub Read File (inspects candidate files)
-       |          Mission: find an 8-12 line self-contained snippet
-       |          with a non-obvious insight. Retries files if needed.
+       |          Built-in web search — finds a clever snippet
+       |          from the repo in a single LLM call. No tool loop.
        v
 HTTP Request ─── Claude Haiku API
        |          Generates: file_intent + 3-bullet breakdown (JSON)
@@ -361,15 +358,17 @@ return [{
 ### Node 8: AI Agent - Code Hunter
 
 **Node Type:** `AI Agent`
-**Purpose:** Explore the selected GitHub repo using tools and find a self-contained 8-12 line snippet with a non-obvious insight. Can retry different files if the first candidate is not good enough.
+**Purpose:** Use OpenAI GPT with built-in web search to find a clever 8-12 line code snippet from the selected GitHub repo. Single LLM call — no HTTP Request tool loop, no growing context.
 
 **Configuration:**
 1. Add AI Agent node after Merge
-2. Connect a **Chat Model** sub-node:
-   - Node Type: `Anthropic Chat Model`
-   - Credential: `anthropicApiKey`
-   - Model: `claude-haiku-4-5-20251001`
-   - **Options → Response Format:** `JSON Schema`
+2. Connect an **OpenAI Chat Model** sub-node:
+   - Node Type: `OpenAI Chat Model`
+   - Credential: `openAiAccount`
+   - Model: `gpt-5-nano-2025-08-07`
+   - **Use Responses API:** ON
+   - **Built-in Tools → Web Search:** add, set Search Context Size to `Medium`
+   - **Options → Response Format:** `JSON Schema (recommended)`
    - **Schema:**
      ```json
      {
@@ -383,30 +382,23 @@ return [{
        "additionalProperties": false
      }
      ```
-3. Connect two **HTTP Request Tool** sub-nodes (see Tool 1 and Tool 2 below)
+3. No tool sub-nodes needed — web search is built-in
 4. Set **System Message**:
 
 ```
-You are a senior engineer curating code snippets for a developer newsletter.
-Your job is to find ONE self-contained, clever code snippet (8-12 lines) from a GitHub repo.
+You are a senior engineer curating code snippets for a developer newsletter targeting mid-level engineers (2-5 YoE).
+Your job: find ONE self-contained, clever code snippet (8-12 lines) from the given GitHub repository.
 
 What makes a good snippet:
 - Has one clear "aha" moment — a non-obvious trick, pattern, or design choice
-- Self-contained: can be read and understood without surrounding context
-- 8-12 lines maximum, max 60 characters per line
-- Shows real logic — not getters/setters, imports, configs, or boilerplate
+- Self-contained: readable without surrounding context
+- 8-12 lines, max 60 characters per line
+- Real logic — not getters/setters, imports, configs, or boilerplate
 
 What to avoid:
 - Test files, configuration files, auto-generated code
 - Files with only imports or re-exports
-- Utility functions that are trivially obvious
-
-Strategy:
-1. Call get_repo_tree to see the file structure
-2. Identify 2-3 candidate files (prefer src/, lib/, core/)
-3. Call read_file on your top candidate
-4. If the file has no interesting snippet, try your next candidate
-5. Return the best snippet you found
+- Trivially obvious utility functions
 ```
 
 5. Set **Prompt** field:
@@ -415,29 +407,8 @@ Strategy:
 Repository: {{ $json.repo_full_name }}
 Language: {{ $json.language }}
 
-Explore this repository and find the best code snippet.
+Search the web to find a clever, self-contained code snippet from this repository.
 ```
-
-**Tool 1: get_repo_tree**
-
-1. Add HTTP Request Tool sub-node to the AI Agent
-2. Configure:
-   - **Name:** `get_repo_tree`
-   - **Description:** `Get the full recursive file tree of a GitHub repository. Returns a list of all file paths. Use this first to understand the repo structure before reading files.`
-   - **Authentication:** `Generic Credential Type` → `Header Auth` → select GitHub Header Auth credential
-   - **Method:** GET
-   - **URL:** `https://api.github.com/repos/{{ $fromAI('repo_full_name', 'Repository in owner/repo format, e.g. vercel/next.js', 'string') }}/git/trees/HEAD?recursive=1`
-   - **Headers:**
-     - `Accept`: `application/vnd.github.v3+json`
-
-**Tool 2: read_file**
-
-1. Add a second HTTP Request Tool sub-node to the AI Agent
-2. Configure:
-   - **Name:** `read_file`
-   - **Description:** `Read the raw source code of a file from a GitHub repository. Input: repo_full_name (owner/repo format) and file_path (relative path from repo root, e.g. src/utils.py).`
-   - **Method:** GET
-   - **URL:** `https://github.com/{{ $fromAI('repo_full_name', 'Repository in owner/repo format, e.g. vercel/next.js', 'string') }}/raw/HEAD/{{ $fromAI('file_path', 'Relative file path from repo root, e.g. src/utils.py', 'string') }}`
 
 **Output:** `{ output: { snippet: "...", file_path: "...", selection_reason: "..." } }` — parsed object guaranteed by JSON Schema.
 
