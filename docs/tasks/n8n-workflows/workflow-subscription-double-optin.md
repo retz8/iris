@@ -22,9 +22,9 @@ Code: Validate Email & Required Fields
     ↓
 IF: Validation Passed?
     ├─ FALSE → Code: Format Error Response → Respond to Webhook (400)
-    └─ TRUE → Google Sheets: Read All Subscribers
+    └─ TRUE → Google Sheets: Get Row(s) filtered by email
                   ↓
-              Code: Check Duplicates & Determine Action
+              Code: Check Duplicate Status & Determine Action
                   ↓
               Switch: Route by Action
                   ├─ "error_confirmed" → Code: Format Error → Respond to Webhook (409)
@@ -220,10 +220,10 @@ return [
 
 ---
 
-### Node 5: Google Sheets - Read All Subscribers (TRUE branch)
+### Node 5: Google Sheets - Get Row Filtered by Email (TRUE branch)
 
 **Node Type:** `Google Sheets`
-**Purpose:** Fetch all subscribers to check for duplicates
+**Purpose:** Fetch only the subscriber row matching the incoming email — avoids reading all rows
 
 **Configuration:**
 1. Add Google Sheets node to TRUE branch
@@ -232,21 +232,25 @@ return [
    - **Operation:** Get Row(s)
    - **Document:** Select "Newsletter Subscribers" spreadsheet
    - **Sheet:** Select "Newsletter Subscribers" sheet
+   - **Filters:**
+     - Add filter: column `email` equals `{{ $json.email }}`
    - **Options:**
-     - **Return All:** ON (toggle enabled)
+     - **Return All:** OFF (email is unique; first match is enough)
      - **RAW Data:** OFF
 
-**Output:** All existing subscriber rows
+**Output:** 0 rows (new email) or 1 row (existing subscriber)
 
 ---
 
-### Node 6: Code - Check Duplicates & Determine Action
+### Node 6: Code - Check Duplicate Status & Determine Action
 
 **Node Type:** `Code`
-**Purpose:** Check if email exists and determine appropriate action based on current status
+**Purpose:** Inspect the filtered Google Sheets result and determine action based on existing subscriber status
+
+**Note:** No iteration needed. Node 5's filter returns 0 or 1 rows; this node just checks the result.
 
 **Configuration:**
-1. Add Code node after Google Sheets read
+1. Add Code node after Google Sheets filtered read
 2. Set parameters:
    - **Mode:** Run Once for All Items
    - **Language:** JavaScript
@@ -256,39 +260,27 @@ return [
 ```javascript
 // Get validated data from validation node
 const validatedData = $('Code').first().json;
-const newEmail = validatedData.email; // Already normalized (lowercase, trimmed)
 
-// Get all existing subscribers from Google Sheets
-const existingSubscribers = $input.all();
-
-// Find duplicate by email (case-insensitive)
-const duplicate = existingSubscribers.find(subscriber => {
-  const existingEmail = subscriber.json.email?.toLowerCase().trim();
-  return existingEmail === newEmail;
-});
+// Get filtered result from Google Sheets (0 or 1 rows)
+const rows = $input.all();
+const duplicate = rows.length > 0 ? rows[0].json : null;
 
 let action = 'create_new'; // Default: new subscriber
 let errorMessage = null;
 let statusCode = 200;
 
 if (duplicate) {
-  const status = duplicate.json.status;
+  const status = duplicate.status;
 
   if (status === 'confirmed') {
-    // Already subscribed - return error
     action = 'error_confirmed';
     errorMessage = 'Email already subscribed';
     statusCode = 409;
   } else if (status === 'pending') {
-    // Already sent confirmation email - inform user
     action = 'error_pending';
     errorMessage = 'Confirmation email already sent. Please check your inbox.';
-    statusCode = 200; // Not an error, just informational
-  } else if (status === 'unsubscribed') {
-    // Re-subscription: update existing row
-    action = 'update_resubscribe';
-  } else if (status === 'expired') {
-    // Expired confirmation: update existing row
+    statusCode = 200;
+  } else if (status === 'unsubscribed' || status === 'expired') {
     action = 'update_resubscribe';
   }
 }
@@ -296,15 +288,14 @@ if (duplicate) {
 return [
   {
     json: {
-      action: action,
+      action,
       email: validatedData.email,
       programming_languages: validatedData.programming_languages,
       source: validatedData.source,
       subscribed_date: validatedData.subscribed_date,
-      errorMessage: errorMessage,
-      statusCode: statusCode,
-      // If updating, pass existing row data
-      existingRowIndex: duplicate ? duplicate.json.row_index : null
+      errorMessage,
+      statusCode,
+      existingRowIndex: duplicate ? duplicate.row_index : null
     }
   }
 ];
