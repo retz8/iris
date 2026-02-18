@@ -157,7 +157,8 @@ return [{ json: { next_issue_number: maxIssue + 1 } }];
              "repo_full_name": { "type": "string" },
              "trend_source": { "type": "string" }
            },
-           "required": ["repo_full_name", "trend_source"]
+           "required": ["repo_full_name", "trend_source"],
+           "additionalProperties": false
          },
          "js_ts": {
            "type": "object",
@@ -165,7 +166,8 @@ return [{ json: { next_issue_number: maxIssue + 1 } }];
              "repo_full_name": { "type": "string" },
              "trend_source": { "type": "string" }
            },
-           "required": ["repo_full_name", "trend_source"]
+           "required": ["repo_full_name", "trend_source"],
+           "additionalProperties": false
          },
          "cpp": {
            "type": "object",
@@ -174,10 +176,12 @@ return [{ json: { next_issue_number: maxIssue + 1 } }];
              "trend_source": { "type": ["string", "null"] },
              "not_found": { "type": "boolean" }
            },
-           "required": ["repo_full_name", "trend_source", "not_found"]
+           "required": ["repo_full_name", "trend_source", "not_found"],
+           "additionalProperties": false
          }
        },
-       "required": ["python", "js_ts", "cpp"]
+       "required": ["python", "js_ts", "cpp"],
+       "additionalProperties": false
      }
      ```
 3. No tool sub-nodes needed — web search is built-in on the OpenAI Chat Model
