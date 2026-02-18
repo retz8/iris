@@ -557,3 +557,34 @@ Single source of truth for all parallel session work. Each session appends its s
 ---
 
 <!-- All future session updates go below this line -->
+
+## 2026-02-18 - Track F: Confirmation Flow
+
+**Status:** Complete (implemented and tested)
+
+### What Was Done
+
+**n8n Workflow: Newsletter Email Confirmation**
+- Implemented complete confirmation workflow in n8n (Node 1 through Node 12a)
+- Full end-to-end testing passed (5 test scenarios: valid confirmation, missing token, invalid token, already confirmed, expired token)
+
+**Documentation Improvements (workflow-confirmation.md):**
+- Node 5: replaced read-all + JS find() with filtered Google Sheets Get Row(s) by `confirmation_token`
+- Node 6: removed iteration logic — inspects 0 or 1 filtered rows directly
+- Added Code format nodes before every Respond to Webhook node (Nodes 4, 8a, 8b, 8c, 8d, 12) for consistent pattern
+- Node 7 Switch: replaced vague fallback with explicit Rule 5 (`invalid_status`) routing to 500
+- Added Node 8d for invalid_status 500 response branch
+- Node 9: fixed `crypto.randomUUID()` → `require('crypto')` + `randomUUID()`
+- Node 10: fixed row matching from `Row Number: rowIndex` to `Column to Match On: email`
+
+**Subscription workflow side effect (workflow-subscription-double-optin.md):**
+- Applied same filter optimization to Node 5/6 (email filter instead of read-all + find())
+
+### Decisions Made
+- No webhook authentication needed — UUID v4 token is the authentication (industry standard)
+- Google Sheets filter over read-all: avoids pulling all rows into n8n pipeline
+- Email as match key for Google Sheets Update Row (n8n doesn't support row-index-based updates)
+
+### What's Next
+- **Track F Remaining:** Unsubscribe Flow (`workflow-unsubscribe-token-based.md`)
+- **Track G (Content Pipeline):** Still blocked — waits for unsubscribe flow completion
