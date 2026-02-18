@@ -122,15 +122,8 @@ function SignupForm() {
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, email: e.target.value }));
-    if (errors.email) {
-      setErrors((prev) => ({ ...prev, email: undefined }));
-    }
-  };
-
-  const handleGoBack = () => {
-    setShowLanguageInputs(false);
-    setSubmitError(null);
-    setErrors({});
+    if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+    if (submitError) setSubmitError(null);
   };
 
   const handleProgrammingLanguageToggle = (language: string) => {
@@ -195,19 +188,14 @@ function SignupForm() {
         ) : (
           <form onSubmit={handleFinalSubmit} className="signup-form" noValidate>
             <div className="form-group">
-              <div className="form-label-row">
-                <label htmlFor="email">Email</label>
-                <button type="button" className="change-email-btn" onClick={handleGoBack}>
-                  Change
-                </button>
-              </div>
+              <label htmlFor="email">Email</label>
               <input
                 type="email"
                 id="email"
                 name="email"
                 value={formData.email}
-                readOnly
-                disabled
+                onChange={handleEmailChange}
+                autoComplete="email"
               />
             </div>
 
