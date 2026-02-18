@@ -135,13 +135,16 @@ function SignupForm() {
   };
 
   if (isSuccess) {
-    const nextDelivery = getNextDeliveryDay();
     return (
       <section className="subscribe">
         <div className="container">
-          <div className="success-message">
-            <h3>You're subscribed!</h3>
-            <p>First Snippet arrives {nextDelivery} 7am.</p>
+          <div className="success-message pending-confirmation animate-fade-up">
+            <div className="confirmation-icon" aria-hidden="true">✉</div>
+            <h3>Check your email</h3>
+            <p className="confirmation-body">
+              We sent a confirmation link to <strong>{formData.email}</strong>. Click it to complete your subscription.
+            </p>
+            <p className="confirmation-hint">Didn't receive it? Check your spam folder.</p>
           </div>
         </div>
       </section>
