@@ -25,10 +25,10 @@ IF: Token Provided?
               Code: Validate Subscriber Status & Expiration
                   ↓
               Switch: Route by Validation Result
-                  ├─ "not_found" → Respond (404 Invalid Token)
-                  ├─ "already_confirmed" → Respond (200 Already Confirmed)
-                  ├─ "expired" → Respond (400 Token Expired)
-                  ├─ "invalid_status" → Respond (500 Invalid Status)
+                  ├─ "not_found" → Code: Format Error → Respond (404 Invalid Token)
+                  ├─ "already_confirmed" → Code: Format Response → Respond (200 Already Confirmed)
+                  ├─ "expired" → Code: Format Error → Respond (400 Token Expired)
+                  ├─ "invalid_status" → Code: Format Error → Respond (500 Invalid Status)
                   └─ "valid" → Code: Generate unsubscribe_token
                                     ↓
                                 Google Sheets: Update Row (status=confirmed)
@@ -351,83 +351,183 @@ return [
 
 ---
 
-### Node 8a: Respond to Webhook - Token Not Found (Rule 1)
+### Node 8a: Code - Format Token Not Found Error (Rule 1)
+
+**Node Type:** `Code`
+**Purpose:** Format 404 error response for invalid token
+
+**Configuration:**
+1. Add Code node to Rule 1 output
+2. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
+
+3. JavaScript code:
+
+```javascript
+return [
+  {
+    json: {
+      success: false,
+      error: 'Invalid confirmation token. This link may have expired or been used already.',
+      error_type: 'token_not_found',
+      statusCode: 404
+    }
+  }
+];
+```
+
+**Output:** Formatted 404 error response
+
+---
+
+### Node 8a-1: Respond to Webhook - Token Not Found (Rule 1)
 
 **Node Type:** `Respond to Webhook`
 **Purpose:** Return 404 error for invalid token
 
 **Configuration:**
-- **Response Code:** 404
-- **Response Body:**
-
-```json
-{
-  "success": false,
-  "error": "Invalid confirmation token. This link may have expired or been used already.",
-  "error_type": "token_not_found",
-  "statusCode": 404
-}
-```
+1. Add "Respond to Webhook" node after Code formatting node
+2. Set parameters:
+   - **Respond With:** First Incoming Item
+   - **Response Code:** `{{ $json.statusCode }}`
+   - **Put Response in Field:** Leave empty
 
 ---
 
-### Node 8b: Respond to Webhook - Already Confirmed (Rule 2)
+### Node 8b: Code - Format Already Confirmed Response (Rule 2)
+
+**Node Type:** `Code`
+**Purpose:** Format 200 informational response for already confirmed users
+
+**Configuration:**
+1. Add Code node to Rule 2 output
+2. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
+
+3. JavaScript code:
+
+```javascript
+const item = $input.first();
+
+return [
+  {
+    json: {
+      success: true,
+      message: "You're already subscribed to Snippet!",
+      email: item.json.email,
+      statusCode: 200
+    }
+  }
+];
+```
+
+**Output:** Formatted 200 informational response
+
+---
+
+### Node 8b-1: Respond to Webhook - Already Confirmed (Rule 2)
 
 **Node Type:** `Respond to Webhook`
 **Purpose:** Return informational message for already confirmed users
 
 **Configuration:**
-- **Response Code:** 200
-- **Response Body:**
-
-```json
-{
-  "success": true,
-  "message": "You're already subscribed to Snippet!",
-  "email": "={{ $json.email }}",
-  "statusCode": 200
-}
-```
+1. Add "Respond to Webhook" node after Code formatting node
+2. Set parameters:
+   - **Respond With:** First Incoming Item
+   - **Response Code:** `{{ $json.statusCode }}`
+   - **Put Response in Field:** Leave empty
 
 ---
 
-### Node 8c: Respond to Webhook - Token Expired (Rule 3)
+### Node 8c: Code - Format Token Expired Error (Rule 3)
+
+**Node Type:** `Code`
+**Purpose:** Format 400 error response for expired tokens
+
+**Configuration:**
+1. Add Code node to Rule 3 output
+2. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
+
+3. JavaScript code:
+
+```javascript
+return [
+  {
+    json: {
+      success: false,
+      error: 'This confirmation link has expired. Please sign up again.',
+      error_type: 'token_expired',
+      statusCode: 400
+    }
+  }
+];
+```
+
+**Output:** Formatted 400 error response
+
+---
+
+### Node 8c-1: Respond to Webhook - Token Expired (Rule 3)
 
 **Node Type:** `Respond to Webhook`
 **Purpose:** Return error for expired tokens
 
 **Configuration:**
-- **Response Code:** 400
-- **Response Body:**
-
-```json
-{
-  "success": false,
-  "error": "This confirmation link has expired. Please sign up again.",
-  "error_type": "token_expired",
-  "statusCode": 400
-}
-```
+1. Add "Respond to Webhook" node after Code formatting node
+2. Set parameters:
+   - **Respond With:** First Incoming Item
+   - **Response Code:** `{{ $json.statusCode }}`
+   - **Put Response in Field:** Leave empty
 
 ---
 
-### Node 8d: Respond to Webhook - Invalid Status (Rule 5)
+### Node 8d: Code - Format Invalid Status Error (Rule 5)
+
+**Node Type:** `Code`
+**Purpose:** Format 500 error response for unexpected subscriber status
+
+**Configuration:**
+1. Add Code node to Rule 5 output
+2. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
+
+3. JavaScript code:
+
+```javascript
+const item = $input.first();
+
+return [
+  {
+    json: {
+      success: false,
+      error: item.json.errorMessage,
+      error_type: 'invalid_status',
+      statusCode: 500
+    }
+  }
+];
+```
+
+**Output:** Formatted 500 error response
+
+---
+
+### Node 8d-1: Respond to Webhook - Invalid Status (Rule 5)
 
 **Node Type:** `Respond to Webhook`
 **Purpose:** Return 500 error for unexpected subscriber status
 
 **Configuration:**
-- **Response Code:** 500
-- **Response Body:**
-
-```json
-{
-  "success": false,
-  "error": "{{ $json.errorMessage }}",
-  "error_type": "invalid_status",
-  "statusCode": 500
-}
-```
+1. Add "Respond to Webhook" node after Code formatting node
+2. Set parameters:
+   - **Respond With:** First Incoming Item
+   - **Response Code:** `{{ $json.statusCode }}`
+   - **Put Response in Field:** Leave empty
 
 ---
 
