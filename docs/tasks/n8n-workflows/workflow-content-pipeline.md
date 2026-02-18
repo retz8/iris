@@ -368,6 +368,20 @@ return [{
    - Node Type: `Anthropic Chat Model`
    - Credential: `anthropicApiKey`
    - Model: `claude-haiku-4-5-20251001`
+   - **Options → Response Format:** `JSON Schema`
+   - **Schema:**
+     ```json
+     {
+       "type": "object",
+       "properties": {
+         "snippet": { "type": "string" },
+         "file_path": { "type": "string" },
+         "selection_reason": { "type": "string" }
+       },
+       "required": ["snippet", "file_path", "selection_reason"],
+       "additionalProperties": false
+     }
+     ```
 3. Connect two **HTTP Request Tool** sub-nodes (see Tool 1 and Tool 2 below)
 4. Set **System Message**:
 
@@ -401,12 +415,6 @@ Repository: {{ $json.repo_full_name }}
 Language: {{ $json.language }}
 
 Explore this repository and find the best code snippet.
-Return ONLY a JSON object:
-{
-  "snippet": "<the exact code lines, preserving indentation>",
-  "file_path": "<relative path to the file>",
-  "selection_reason": "<one sentence: why this snippet is interesting>"
-}
 ```
 
 **Tool 1: get_repo_tree**
@@ -430,7 +438,7 @@ Return ONLY a JSON object:
    - **Method:** GET
    - **URL:** `https://raw.githubusercontent.com/{{ $fromAI('repo_full_name') }}/HEAD/{{ $fromAI('file_path') }}`
 
-**Output:** `{ output: "<JSON string with snippet, file_path, selection_reason>" }`
+**Output:** `{ output: { snippet: "...", file_path: "...", selection_reason: "..." } }` — parsed object guaranteed by JSON Schema.
 
 ---
 
@@ -449,15 +457,11 @@ Return ONLY a JSON object:
 
 ```javascript
 const item = $input.first();
-const raw = item.json.output;
-
-let parsed;
-try {
-  parsed = JSON.parse(raw);
-} catch (e) {
-  const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (match) parsed = JSON.parse(match[1]);
-  else throw new Error('Failed to parse Code Hunter output: ' + raw);
+// JSON Schema response format returns a parsed object. Defensive fallback for string output.
+let parsed = item.json.output;
+if (typeof parsed === 'string') {
+  const match = parsed.match(/```(?:json)?\s*([\s\S]*?)```/);
+  parsed = JSON.parse(match ? match[1] : parsed);
 }
 
 return [{
