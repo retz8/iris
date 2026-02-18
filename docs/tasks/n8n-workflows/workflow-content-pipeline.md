@@ -51,7 +51,7 @@ AI Agent ─────── Code Hunter  [runs once per language item]
        |          Built-in web search — finds a clever snippet
        |          from the repo in a single LLM call. No tool loop.
        v
-HTTP Request ─── Claude Haiku API
+HTTP Request ─── OpenAI API (gpt-5-nano)
        |          Generates: file_intent + 3-bullet breakdown (JSON)
        v
 Code ─────────── Parse Breakdown
@@ -376,9 +376,10 @@ return [{
        "properties": {
          "snippet": { "type": "string" },
          "file_path": { "type": "string" },
-         "selection_reason": { "type": "string" }
+         "selection_reason": { "type": "string" },
+         "repo_description": { "type": "string" }
        },
-       "required": ["snippet", "file_path", "selection_reason"],
+       "required": ["snippet", "file_path", "selection_reason", "repo_description"],
        "additionalProperties": false
      }
      ```
@@ -407,17 +408,17 @@ What to avoid:
 Repository: {{ $json.repo_full_name }}
 Language: {{ $json.language }}
 
-Search the web to find a clever, self-contained code snippet from this repository.
+Search the web to find a clever, self-contained code snippet from this repository. Also return a one-sentence description of what the repository does.
 ```
 
-**Output:** `{ output: { snippet: "...", file_path: "...", selection_reason: "..." } }` — parsed object guaranteed by JSON Schema.
+**Output:** `{ output: { snippet: "...", file_path: "...", selection_reason: "...", repo_description: "..." } }` — parsed object guaranteed by JSON Schema.
 
 ---
 
 ### Node 9: Code - Parse Code Hunter Output
 
 **Node Type:** `Code`
-**Purpose:** Extract snippet and file_path from the Code Hunter agent output
+**Purpose:** Consolidate all data needed by downstream nodes into one clean JSON object. Pulls issue_number from Node 3, repo metadata from Node 7, and snippet fields from the Code Hunter agent output. Every downstream node (10–15) reads from this node's output.
 
 **Configuration:**
 1. Add Code node after AI Agent - Code Hunter
@@ -428,17 +429,25 @@ Search the web to find a clever, self-contained code snippet from this repositor
 3. JavaScript code:
 
 ```javascript
-const item = $input.first();
+const agentItem = $input.first();
 // JSON Schema response format returns a parsed object. Defensive fallback for string output.
-let parsed = item.json.output;
+let parsed = agentItem.json.output;
 if (typeof parsed === 'string') {
   const match = parsed.match(/```(?:json)?\s*([\s\S]*?)```/);
   parsed = JSON.parse(match ? match[1] : parsed);
 }
 
+// Pull repo metadata from the Merge node — it holds language/repo_full_name/trend_source
+// set by Parse Repo Selections (Node 5) or Select Best C/C++ Repo (Node 6b).
+const repoData = $('Merge - Combine Language Items').item.json;
+
 return [{
   json: {
-    ...item.json,
+    issue_number: $('Compute Issue Number').first().json.next_issue_number,
+    language: repoData.language,
+    repo_full_name: repoData.repo_full_name,
+    trend_source: repoData.trend_source,
+    repo_description: parsed.repo_description || '',
     snippet: parsed.snippet,
     file_path: parsed.file_path,
     selection_reason: parsed.selection_reason
@@ -505,10 +514,10 @@ return [{
 ### Node 11: Code - Parse Breakdown
 
 **Node Type:** `Code`
-**Purpose:** Extract the JSON breakdown from Claude's response
+**Purpose:** Extract the JSON breakdown from OpenAI's response and merge with the consolidated repo/snippet data from Node 9. Explicitly references Node 9 so downstream nodes get a clean, flat JSON — not the raw OpenAI response object (which contains choices, usage, model, etc.).
 
 **Configuration:**
-1. Add Code node after Claude Haiku HTTP Request
+1. Add Code node after OpenAI Breakdown HTTP Request
 2. Set parameters:
    - **Mode:** Run Once for All Items
    - **Language:** JavaScript
@@ -521,9 +530,19 @@ const item = $input.first();
 const text = item.json.choices[0].message.content;
 const parsed = JSON.parse(text);
 
+// Carry forward the consolidated fields from Node 9 — not from item.json
+// (item.json here is Node 10's raw OpenAI response, which we don't want to spread).
+const upstream = $('Parse Code Hunter Output').item.json;
+
 return [{
   json: {
-    ...item.json,
+    issue_number: upstream.issue_number,
+    language: upstream.language,
+    repo_full_name: upstream.repo_full_name,
+    trend_source: upstream.trend_source,
+    repo_description: upstream.repo_description,
+    snippet: upstream.snippet,
+    file_path: upstream.file_path,
     file_intent: parsed.file_intent,
     breakdown_what: parsed.breakdown_what,
     breakdown_responsibility: parsed.breakdown_responsibility,
