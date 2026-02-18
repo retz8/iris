@@ -658,7 +658,7 @@ const handleUnsubscribe = async () => {
 
 ## Workflow Testing
 
-### Test 1: Valid Unsubscribe
+### Test 1: Valid Unsubscribe [DONE]
 
 **Setup:**
 1. Create subscriber with status="confirmed" and unsubscribe_token populated
@@ -683,7 +683,7 @@ curl -X POST https://retz8.app.n8n.cloud/webhook-test/unsubscribe \
 
 ---
 
-### Test 2: Missing Token
+### Test 2: Missing Token [DONE]
 
 **Request:**
 ```bash
@@ -697,7 +697,7 @@ curl https://retz8.app.n8n.cloud/webhook-test/unsubscribe
 
 ---
 
-### Test 3: Invalid Token (Not Found)
+### Test 3: Invalid Token (Not Found) [DONE]
 
 **Request:**
 ```bash
@@ -711,7 +711,7 @@ curl https://retz8.app.n8n.cloud/webhook-test/unsubscribe?token=invalid-random-t
 
 ---
 
-### Test 4: Already Unsubscribed
+### Test 4: Already Unsubscribed [DONE]
 
 **Setup:**
 1. Subscriber already has status="unsubscribed"
@@ -728,7 +728,7 @@ curl https://retz8.app.n8n.cloud/webhook-test/unsubscribe?token=<existing-unsubs
 
 ---
 
-### Test 5: Not Confirmed (Pending Status)
+### Test 5: Not Confirmed (Pending Status) [DONE]
 
 **Setup:**
 1. Subscriber has status="pending" (never confirmed)

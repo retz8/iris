@@ -359,6 +359,15 @@ Single source of truth for all parallel session work. Each session appends its s
 
 **Status:** Complete — see [`docs/tasks/n8n-workflows/workflow-confirmation.md`](n8n-workflows/workflow-confirmation.md)
 
+---
+
+## 2026-02-18 - Track F: Unsubscribe Flow
+
+**Status:** Complete — see [`docs/tasks/n8n-workflows/workflow-unsubscribe-token-based.md`](n8n-workflows/workflow-unsubscribe-token-based.md)
+
+### What Was Done
+- Implemented token-based unsubscribe webhook workflow in n8n
+- All 5 test cases passing: valid unsubscribe, missing token, invalid token, already unsubscribed, not confirmed (pending status)
+
 ### What's Next
-- **Track F Remaining:** Unsubscribe Flow — see [`docs/tasks/n8n-workflows/workflow-unsubscribe-token-based.md`](n8n-workflows/workflow-unsubscribe-token-based.md)
-- **Track G (Content Pipeline):** Still blocked — waits for unsubscribe flow completion
+- **Track G (Content Pipeline):** Now unblocked — Track E and Track F both complete
