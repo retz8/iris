@@ -122,9 +122,11 @@ Google Sheets ── Append row to Newsletter Drafts
 
 ```javascript
 const items = $input.all();
-const last = items[items.length - 1];
-const lastIssue = parseInt(last?.json?.issue_number || '0', 10);
-return [{ json: { next_issue_number: lastIssue + 1 } }];
+const maxIssue = items.reduce((max, item) => {
+  const n = parseInt(item.json.issue_number || '0', 10);
+  return n > max ? n : max;
+}, 0);
+return [{ json: { next_issue_number: maxIssue + 1 } }];
 ```
 
 **Output:** `{ next_issue_number: N }` — referenced later by `$('Compute Issue Number').first().json.next_issue_number`
