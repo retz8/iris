@@ -771,7 +771,7 @@ useEffect(() => {
 
 ## Workflow Testing
 
-### Test 1: Valid Confirmation
+### Test 1: Valid Confirmation [DONE]
 
 **Setup:**
 1. Create subscriber with status="pending", confirmation_token populated, token_expires_at in future
@@ -789,7 +789,7 @@ curl https://retz8.app.n8n.cloud/webhook-test/confirm?token=a7b3c4d5-e6f7-8901-2
 
 ---
 
-### Test 2: Missing Token
+### Test 2: Missing Token [DONE]
 
 **Request:**
 ```bash
@@ -804,7 +804,7 @@ curl https://retz8.app.n8n.cloud/webhook-test/confirm
 
 ---
 
-### Test 3: Invalid Token (Not Found)
+### Test 3: Invalid Token (Not Found) [DONE]
 
 **Request:**
 ```bash
@@ -819,7 +819,7 @@ curl https://retz8.app.n8n.cloud/webhook-test/confirm?token=invalid-random-token
 
 ---
 
-### Test 4: Already Confirmed
+### Test 4: Already Confirmed [DONE]
 
 **Setup:**
 1. Subscriber already has status="confirmed"
@@ -837,7 +837,7 @@ curl https://retz8.app.n8n.cloud/webhook-test/confirm?token=<old-confirmation-to
 
 ---
 
-### Test 5: Expired Token
+### Test 5: Expired Token [DONE]
 
 **Setup:**
 1. Subscriber has status="pending" but token_expires_at < NOW()

@@ -698,7 +698,7 @@ return [
 curl -X POST https://retz8.app.n8n.cloud/webhook-test/subscribe \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "test@example.com",
+    "email": "jiohin@umich.edu",
       "programming_languages": ["Python", "JS/TS"],
     "source": "landing_page",
     "subscribed_date": "2026-02-17T12:00:00Z"
