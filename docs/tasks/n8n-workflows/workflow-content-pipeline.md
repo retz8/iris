@@ -425,7 +425,7 @@ Explore this repository and find the best code snippet.
    - **Description:** `Get the full recursive file tree of a GitHub repository. Returns a list of all file paths. Use this first to understand the repo structure before reading files.`
    - **Authentication:** `Generic Credential Type` → `Header Auth` → select GitHub Header Auth credential
    - **Method:** GET
-   - **URL:** `https://api.github.com/repos/{{ $fromAI('repo_full_name') }}/git/trees/HEAD?recursive=1`
+   - **URL:** `https://api.github.com/repos/{{ $fromAI('repo_full_name', 'Repository in owner/repo format, e.g. vercel/next.js', 'string') }}/git/trees/HEAD?recursive=1`
    - **Headers:**
      - `Accept`: `application/vnd.github.v3+json`
 
@@ -434,9 +434,9 @@ Explore this repository and find the best code snippet.
 1. Add a second HTTP Request Tool sub-node to the AI Agent
 2. Configure:
    - **Name:** `read_file`
-   - **Description:** `Read the raw source code content of a specific file from a GitHub repository. Use this to inspect a candidate file for a good code snippet. Input: repo_full_name (owner/repo) and file_path (relative path from repo root).`
+   - **Description:** `Read the raw source code of a file from a GitHub repository. Input: repo_full_name (owner/repo format) and file_path (relative path from repo root, e.g. src/utils.py).`
    - **Method:** GET
-   - **URL:** `https://raw.githubusercontent.com/{{ $fromAI('repo_full_name') }}/HEAD/{{ $fromAI('file_path') }}`
+   - **URL:** `https://github.com/{{ $fromAI('repo_full_name', 'Repository in owner/repo format, e.g. vercel/next.js', 'string') }}/raw/HEAD/{{ $fromAI('file_path', 'Relative file path from repo root, e.g. src/utils.py', 'string') }}`
 
 **Output:** `{ output: { snippet: "...", file_path: "...", selection_reason: "..." } }` — parsed object guaranteed by JSON Schema.
 
