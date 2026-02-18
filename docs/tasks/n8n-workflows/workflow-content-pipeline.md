@@ -446,16 +446,56 @@ return agentItems.map((agentItem, i) => {
     parsed = JSON.parse(match ? match[1] : parsed);
   }
   const repoData = repoItems[i].json;
+  const { language, repo_full_name, trend_source } = repoData;
+  const { snippet, file_path, selection_reason, repo_description } = parsed;
+
+  // Pre-serialize the OpenAI request body so Node 10 (HTTP Request) receives
+  // a raw JSON string. Embedding snippet directly via {{ $json.snippet }} in
+  // n8n's JSON body editor breaks because snippets contain newlines, backticks,
+  // and quotes that the template cannot escape.
+  const openai_request_body = JSON.stringify({
+    model: 'gpt-5-nano-2025-08-07',
+    messages: [
+      {
+        role: 'system',
+        content: 'You are a senior engineer writing concise code breakdowns for a developer newsletter targeting mid-level engineers (2-5 YoE). Each field must be 30-40 words except file_intent which is 3-5 words as a noun phrase.'
+      },
+      {
+        role: 'user',
+        content: `Analyze this ${language} snippet from ${repo_full_name}:\n\n\`\`\`${language}\n${snippet}\n\`\`\`\n\nRules:\n- file_intent: 3-5 word noun phrase (e.g. 'Bash command validation hook')\n- breakdown_what: what this code does, starting with a verb\n- breakdown_responsibility: its role in the codebase\n- breakdown_clever: a non-obvious insight a mid-level engineer would miss — not a restatement of visible code`
+      }
+    ],
+    response_format: {
+      type: 'json_schema',
+      json_schema: {
+        name: 'breakdown',
+        strict: true,
+        schema: {
+          type: 'object',
+          properties: {
+            file_intent: { type: 'string' },
+            breakdown_what: { type: 'string' },
+            breakdown_responsibility: { type: 'string' },
+            breakdown_clever: { type: 'string' }
+          },
+          required: ['file_intent', 'breakdown_what', 'breakdown_responsibility', 'breakdown_clever'],
+          additionalProperties: false
+        }
+      }
+    }
+  });
+
   return {
     json: {
       issue_number: issueNumber,
-      language: repoData.language,
-      repo_full_name: repoData.repo_full_name,
-      trend_source: repoData.trend_source,
-      repo_description: parsed.repo_description || '',
-      snippet: parsed.snippet,
-      file_path: parsed.file_path,
-      selection_reason: parsed.selection_reason
+      language,
+      repo_full_name,
+      trend_source,
+      repo_description: repo_description || '',
+      snippet,
+      file_path,
+      selection_reason,
+      openai_request_body
     }
   };
 });
@@ -474,46 +514,12 @@ return agentItems.map((agentItem, i) => {
    - **Authentication:** `Generic Credential Type` → `Header Auth` → select OpenAI Header Auth credential (Name: `Authorization`, Value: `Bearer <your_openai_key>`)
    - **Method:** POST
    - **URL:** `https://api.openai.com/v1/chat/completions`
-   - **Headers:**
-     - `Content-Type`: `application/json`
-   - **Body Content Type:** JSON
-   - **Body:**
-
-```json
-{
-  "model": "gpt-5-nano-2025-08-07",
-  "messages": [
-    {
-      "role": "system",
-      "content": "You are a senior engineer writing concise code breakdowns for a developer newsletter targeting mid-level engineers (2-5 YoE). Each field must be 30-40 words except file_intent which is 3-5 words as a noun phrase."
-    },
-    {
-      "role": "user",
-      "content": "Analyze this {{ $json.language }} snippet from {{ $json.repo_full_name }}:\n\n```{{ $json.language }}\n{{ $json.snippet }}\n```\n\nRules:\n- file_intent: 3-5 word noun phrase (e.g. 'Bash command validation hook')\n- breakdown_what: what this code does, starting with a verb\n- breakdown_responsibility: its role in the codebase\n- breakdown_clever: a non-obvious insight a mid-level engineer would miss — not a restatement of visible code"
-    }
-  ],
-  "response_format": {
-    "type": "json_schema",
-    "json_schema": {
-      "name": "breakdown",
-      "strict": true,
-      "schema": {
-        "type": "object",
-        "properties": {
-          "file_intent": { "type": "string" },
-          "breakdown_what": { "type": "string" },
-          "breakdown_responsibility": { "type": "string" },
-          "breakdown_clever": { "type": "string" }
-        },
-        "required": ["file_intent", "breakdown_what", "breakdown_responsibility", "breakdown_clever"],
-        "additionalProperties": false
-      }
-    }
-  }
-}
-```
-
+   - **Body Content Type:** Raw
+   - **Content Type:** `application/json`
+   - **Body:** `{{ $json.openai_request_body }}`
    - **Options → On Error:** Continue
+
+**Note:** The request body is pre-serialized in Node 9 using `JSON.stringify`. Do not use n8n's JSON body editor with `{{ $json.snippet }}` expressions — snippets contain newlines, backticks, and quotes that break the JSON template.
 
 ---
 
