@@ -436,6 +436,32 @@ legend {
   font-weight: 400;
 }
 
+.form-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.change-email-btn {
+  all: unset;
+  font-size: var(--text-xs);
+  color: var(--color-accent);
+  cursor: pointer;
+  padding: 0;
+  min-height: unset;
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  transition: color var(--transition-fast);
+}
+
+.change-email-btn:hover {
+  color: var(--color-text);
+  background: none;
+  transform: none;
+  box-shadow: none;
+}
+
 /* Preview Section */
 .preview {
   padding: var(--space-xl) 0;

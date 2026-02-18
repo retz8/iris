@@ -127,6 +127,12 @@ function SignupForm() {
     }
   };
 
+  const handleGoBack = () => {
+    setShowLanguageInputs(false);
+    setSubmitError(null);
+    setErrors({});
+  };
+
   const handleProgrammingLanguageToggle = (language: string) => {
     setFormData((prev) => {
       const isSelected = prev.programmingLanguages.includes(language);
@@ -189,7 +195,12 @@ function SignupForm() {
         ) : (
           <form onSubmit={handleFinalSubmit} className="signup-form" noValidate>
             <div className="form-group">
-              <label htmlFor="email">Email</label>
+              <div className="form-label-row">
+                <label htmlFor="email">Email</label>
+                <button type="button" className="change-email-btn" onClick={handleGoBack}>
+                  Change
+                </button>
+              </div>
               <input
                 type="email"
                 id="email"
