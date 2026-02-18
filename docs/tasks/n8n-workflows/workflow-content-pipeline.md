@@ -19,8 +19,8 @@
 Schedule Trigger (Sunday 8pm)
        |
        v
-Google Sheets ── Read last row from Newsletter Drafts
-       |          (to get current issue_number)
+Google Sheets ── Read all rows from Newsletter Drafts
+       |          (to determine current max issue_number)
        v
 Code ─────────── Compute next issue_number (last + 1)
        |
@@ -88,34 +88,29 @@ Google Sheets ── Append row to Newsletter Drafts
 
 ---
 
-### Node 2: Google Sheets - Read Last Draft Row
+### Node 2: Google Sheets - Read All Draft Rows
 
 **Node Type:** `Google Sheets`
-**Purpose:** Fetch only the last row to get the current issue_number
+**Purpose:** Read all rows from Newsletter Drafts to determine the current max issue_number
 
 **Configuration:**
 1. Add Google Sheets node after Schedule Trigger
 2. Configure parameters:
    - **Credential:** Google OAuth2
-   - **Operation:** Get Rows
+   - **Operation:** Get Row(s)
    - **Document:** `Newsletter`
    - **Sheet:** `Newsletter Drafts`
-   - **Return All:** OFF
-   - **Options → Limit:** `1`
-   - **Options → Sort:**
-     - Column: `Row Number` (or leave default — rows append in order)
-     - Direction: Descending
 
-**Note:** On first run the sheet is empty and returns 0 rows — the Code node handles this.
+**Note:** No Limit or Sort options exist on the Google Sheets node — it always returns all rows. The Code node extracts the last row. On first run the sheet is empty and returns 0 rows — handled in Node 3.
 
-**Output:** 0 rows (first run) or 1 row (the most recently appended row)
+**Output:** All rows from the sheet (0 rows on first run, otherwise all appended rows in order)
 
 ---
 
 ### Node 3: Code - Compute Issue Number
 
 **Node Type:** `Code`
-**Purpose:** Read issue_number from the last row and add 1. Defaults to 1 if the sheet is empty.
+**Purpose:** Grab the last row (highest issue_number) and add 1. Defaults to 1 if the sheet is empty.
 
 **Configuration:**
 1. Add Code node after Google Sheets read
@@ -126,7 +121,8 @@ Google Sheets ── Append row to Newsletter Drafts
 3. JavaScript code:
 
 ```javascript
-const last = $input.first();
+const items = $input.all();
+const last = items[items.length - 1];
 const lastIssue = parseInt(last?.json?.issue_number || '0', 10);
 return [{ json: { next_issue_number: lastIssue + 1 } }];
 ```
