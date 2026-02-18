@@ -2,14 +2,13 @@
 
 **Workflow Name:** Newsletter Content Pipeline
 **Trigger Type:** Schedule (Sunday 8pm)
-**Purpose:** Discover trending IT topics via Perplexity, find relevant GitHub repos, extract code snippets, generate breakdowns via Claude Haiku, compose HTML emails, save as Gmail drafts for human review, and write tracking rows to Google Sheets. Runs every Sunday to produce 3 Gmail drafts (Python, JS/TS, C/C++) ready for Mon/Wed/Fri send.
+**Purpose:** Discover trending tech topics from Hacker News, find relevant GitHub repos via an AI Topic Analyzer, extract clever code snippets via an AI Code Hunter agent, generate breakdowns via Claude Haiku, compose HTML emails, save as Gmail drafts for human review, and write tracking rows to Google Sheets. Runs every Sunday to produce 3 Gmail drafts (Python, JS/TS, C/C++) ready for Mon/Wed/Fri send.
 
 ## Prerequisites
 
 - Google Sheets document `Newsletter` with sheet `Newsletter Drafts` (see `google-sheets-drafts-schema.md`)
 - Google OAuth2 credentials configured in n8n
 - Gmail OAuth2 credentials configured in n8n
-- Perplexity API key added as n8n credential (`perplexityApiKey`)
 - GitHub Personal Access Token added as n8n credential (`githubToken`)
 - Anthropic API key added as n8n credential (`anthropicApiKey`)
 - n8n instance: `retz8.app.n8n.cloud`
@@ -21,58 +20,54 @@ Schedule Trigger (Sunday 8pm)
        |
        v
 Google Sheets ── Read all rows from Newsletter Drafts
-       |          (to compute next issue_number)
+       |          (to find current max issue_number)
        v
 Code ─────────── Compute next issue_number (max + 1)
        |
        v
-HTTP Request ─── Perplexity API (sonar-pro, web search)
-       |          "6 trending IT topics, 2 per language, return JSON"
+HTTP Request ─── HN Algolia API
+       |          (trending stories, past 7 days, points > 50)
        v
-Code ─────────── Parse Perplexity response
-       |          Emit 3 items: { language, primary, secondary }
-       |          (one item per language: Python / JS/TS / C/C++)
+AI Agent ─────── Topic Analyzer
+       |          - Reads HN story titles + URLs
+       |          - Selects 1 GitHub repo per language (Python, JS/TS, C/C++)
+       |          - Flags C/C++ as not_found if no HN story qualifies
        v
-HTTP Request ─── GitHub Search API
-       |          GET /search/repositories?q={primary.github_search_query}
+Code ─────────── Parse Topic Selections
+       |          Emits 3 items: { language, repo_full_name, trend_source, needs_fallback }
        v
-Code ─────────── Select best repo (score by stars + recency)
-       |          If no results → search_failed: true
+IF ───────────── needs_fallback == true? (C/C++ not found in HN)
+       ├─ TRUE  → HTTP Request: GitHub Search C/C++
+       │               ↓
+       │          Code: Select Best C/C++ Repo
+       │               ↓
+       └─ FALSE → (continue)
        v
-IF ───────────── Needs fallback?
-       ├─ TRUE  → HTTP Request: GitHub Search (secondary query)
-       └─ FALSE → continue
+Merge ────────── Combine both branches (3 language items)
        v
-Merge ────────── Merge primary + fallback streams
-       v
-HTTP Request ─── GitHub API: Get file tree (recursive)
-       |          GET /repos/{owner}/{repo}/git/trees/{branch}?recursive=1
-       v
-Code ─────────── Filter candidate files
-       |          (by extension, blocklist tests/configs/generated)
-       v
-HTTP Request ─── GitHub: Fetch raw file content
-       |          GET raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}
-       v
-Code ─────────── Extract best 8-12 line snippet
-       |          (sliding window scoring — function defs, logic density, line length)
+AI Agent ─────── Code Hunter  [runs once per language item]
+       |          Tools:
+       |           - GitHub Get Tree (explores repo structure)
+       |           - GitHub Read File (inspects candidate files)
+       |          Mission: find an 8-12 line self-contained snippet
+       |          with a non-obvious insight. Retries files if needed.
        v
 HTTP Request ─── Claude Haiku API
-       |          Generate: file_intent + 3-bullet breakdown (JSON)
+       |          Generates: file_intent + 3-bullet breakdown (JSON)
        v
-Code ─────────── Parse Claude response
+Code ─────────── Parse Breakdown
        v
-Code ─────────── Compose HTML email
+Code ─────────── Compose HTML Email
        |          (inline CSS, syntax highlighting, mobile-first)
        v
 Gmail ────────── Create Draft (NOT send)
        |          Returns gmail_draft_id
        v
-Code ─────────── Extract draft ID
+Code ─────────── Extract Draft ID
        v
 Google Sheets ── Append row to Newsletter Drafts
                   [issue_number, status: "draft", gmail_draft_id,
-                   programming_language, repo metadata, file_intent]
+                   programming_language, repo metadata, trend_source]
 ```
 
 **Manual step after this runs**: Open Gmail every Sunday, review 3 drafts. Edit tone/content directly in Gmail if needed. Then in Google Sheets, set `status` to `"scheduled"` and `scheduled_date` to the target Mon/Wed/Fri 7am. Workflow 2 picks up scheduled rows automatically.
@@ -138,49 +133,93 @@ return [{ json: { next_issue_number: maxIssue + 1 } }];
 
 ---
 
-### Node 4: HTTP Request - Perplexity API
+### Node 4: HTTP Request - HN Algolia API
 
 **Node Type:** `HTTP Request`
-**Purpose:** Identify 6 trending IT topics (2 per language) with GitHub search queries via web-search-enabled LLM
+**Purpose:** Fetch recent trending Hacker News stories from the past 7 days with meaningful community signal
 
 **Configuration:**
-1. Add HTTP Request node after Code node
+1. Add HTTP Request node after Compute Issue Number
 2. Configure parameters:
-   - **Method:** POST
-   - **URL:** `https://api.perplexity.ai/chat/completions`
-   - **Authentication:** Header Auth
-     - **Name:** `Authorization`
-     - **Value:** `Bearer {{ $credentials.perplexityApiKey }}`
-   - **Body Content Type:** JSON
-   - **Body:**
+   - **Method:** GET
+   - **URL:** `https://hn.algolia.com/api/v1/search_by_date`
+   - **Query Parameters:**
+     - `tags`: `story`
+     - `numericFilters`: `points>50,created_at_i>{{ Math.floor($now.toSeconds()) - 604800 }}`
+     - `hitsPerPage`: `50`
+   - **Options → On Error:** Stop Workflow
 
-```json
-{
-  "model": "sonar-pro",
-  "messages": [
-    {
-      "role": "system",
-      "content": "You are a tech trend analyst for a developer newsletter. Always respond with valid JSON only. No markdown, no explanation — raw JSON."
-    },
-    {
-      "role": "user",
-      "content": "Identify the top trending IT topics from the past 7 days that have notable open-source GitHub repositories with clean, readable code.\n\nReturn exactly 6 topics as a JSON object — 2 topics per programming language category.\n\n{\n  \"topics\": [\n    {\n      \"language\": \"Python\",\n      \"topic\": \"DeepSeek R2\",\n      \"description\": \"New open-source LLM achieving strong benchmark performance\",\n      \"github_search_query\": \"deepseek-ai/DeepSeek-R2\",\n      \"fallback_query\": \"language:python sort:stars pushed:>2026-01-01\"\n    }\n  ]\n}\n\nRules:\n- language must be exactly: \"Python\", \"JS/TS\", or \"C/C++\"\n- 2 entries per language (6 total)\n- github_search_query: the specific repo slug (owner/repo) if known, otherwise a search string\n- fallback_query: a broader GitHub search string if the primary query fails\n- For C/C++: if no recent trending topic found this week, use a well-known active project (LLVM, CPython, Linux kernel, Redis, SQLite) — never leave C/C++ empty\n- topic and description must reflect actual events from the past 7 days"
-    }
-  ]
-}
-```
+**Note:** `604800` = 7 days in seconds. `$now.toSeconds()` returns the current Unix timestamp in n8n.
 
-**Output:** Perplexity chat completion response
+**Output:** `{ hits: [{ objectID, title, url, points, author, created_at }, ...] }`
 
 ---
 
-### Node 5: Code - Parse Topics
+### Node 5: AI Agent - Topic Analyzer
 
-**Node Type:** `Code`
-**Purpose:** Parse Perplexity JSON response and emit 3 items — one per language variant
+**Node Type:** `AI Agent`
+**Purpose:** Read HN stories, identify the best GitHub repo for each language (Python, JS/TS, C/C++), and flag C/C++ as not found if no qualifying story exists
 
 **Configuration:**
-1. Add Code node after Perplexity HTTP Request
+1. Add AI Agent node after HN Algolia HTTP Request
+2. Connect a **Chat Model** sub-node:
+   - Node Type: `Anthropic Chat Model`
+   - Credential: `anthropicApiKey`
+   - Model: `claude-haiku-4-5-20251001`
+3. No tools needed — all data comes from the HN response
+4. Set **Prompt** field:
+
+```
+Here are the top Hacker News stories from the past 7 days:
+
+{{ JSON.stringify($json.hits.map(h => ({ id: h.objectID, title: h.title, url: h.url, points: h.points }))) }}
+
+You are selecting code snippets for a developer newsletter targeting mid-level engineers (2-5 YoE).
+Your job: identify exactly ONE notable open-source GitHub repository for each of these 3 programming language categories: Python, JS/TS, and C/C++.
+
+Rules:
+- The repo must have a real GitHub URL (github.com/owner/repo format)
+- Prefer: new releases, tools people are actually using, clever libraries, OSS projects with notable announcements this week
+- Avoid: tutorials, blog posts, "awesome-lists", aggregator repos, documentation repos
+- For C/C++: only select from HN stories if a strong match exists. If not, set not_found to true.
+
+Return ONLY a JSON object in this exact format:
+{
+  "python": {
+    "repo_full_name": "owner/repo",
+    "hn_story_id": "12345678",
+    "trend_source": "HN #12345678"
+  },
+  "js_ts": {
+    "repo_full_name": "owner/repo",
+    "hn_story_id": "12345679",
+    "trend_source": "HN #12345679"
+  },
+  "cpp": {
+    "repo_full_name": "owner/repo",
+    "hn_story_id": "12345680",
+    "trend_source": "HN #12345680",
+    "not_found": false
+  }
+}
+
+If no suitable C/C++ repo is found in HN this week, return:
+  "cpp": { "repo_full_name": null, "hn_story_id": null, "trend_source": null, "not_found": true }
+
+JSON only. No explanation.
+```
+
+**Output:** `{ output: "<JSON string with python/js_ts/cpp selections>" }`
+
+---
+
+### Node 6: Code - Parse Topic Selections
+
+**Node Type:** `Code`
+**Purpose:** Parse the Topic Analyzer agent output and emit 3 items — one per language. Sets `needs_fallback: true` on the C/C++ item if not found.
+
+**Configuration:**
+1. Add Code node after AI Agent - Topic Analyzer
 2. Set parameters:
    - **Mode:** Run Once for All Items
    - **Language:** JavaScript
@@ -189,67 +228,86 @@ return [{ json: { next_issue_number: maxIssue + 1 } }];
 
 ```javascript
 const item = $input.first();
-const content = item.json.choices[0].message.content;
+const raw = item.json.output;
 
 let parsed;
 try {
-  parsed = JSON.parse(content);
+  parsed = JSON.parse(raw);
 } catch (e) {
-  // Fallback: extract JSON from markdown code block if LLM wrapped it
-  const match = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (match) parsed = JSON.parse(match[1]);
-  else throw new Error('Failed to parse Perplexity response as JSON: ' + content);
+  else throw new Error('Failed to parse Topic Analyzer output: ' + raw);
 }
 
-const topics = parsed.topics;
-const languages = ['Python', 'JS/TS', 'C/C++'];
-return languages.map(lang => {
-  const candidates = topics.filter(t => t.language === lang);
+const langMap = [
+  { key: 'python',  language: 'Python' },
+  { key: 'js_ts',   language: 'JS/TS'  },
+  { key: 'cpp',     language: 'C/C++'  }
+];
+
+return langMap.map(({ key, language }) => {
+  const selection = parsed[key] || {};
   return {
     json: {
-      language: lang,
-      primary: candidates[0] || null,
-      secondary: candidates[1] || null
+      language,
+      repo_full_name: selection.repo_full_name || null,
+      trend_source: selection.trend_source || null,
+      needs_fallback: selection.not_found === true || !selection.repo_full_name
     }
   };
 });
 ```
 
-**Output:** 3 items — all subsequent nodes run once per item (once per language)
+**Output:** 3 items, each with `{ language, repo_full_name, trend_source, needs_fallback }`
 
 ---
 
-### Node 6: HTTP Request - GitHub Search Repos
+### Node 7: IF - Needs GitHub Fallback?
 
-**Node Type:** `HTTP Request`
-**Purpose:** Search GitHub for the trending repo matching the primary topic query
+**Node Type:** `IF`
+**Purpose:** Route items that didn't get a repo from HN (typically C/C++) to the GitHub Search fallback
 
 **Configuration:**
-1. Add HTTP Request node after Parse Topics Code node
+1. Add IF node after Parse Topic Selections
+2. Set condition:
+   - **Value 1:** `{{ $json.needs_fallback }}`
+   - **Operation:** is equal to
+   - **Value 2:** `true`
+
+**Outputs:**
+- **TRUE branch:** No HN repo found → GitHub Search fallback
+- **FALSE branch:** Repo found → skip to Merge
+
+---
+
+### Node 7a: HTTP Request - GitHub Search C/C++ (TRUE branch)
+
+**Node Type:** `HTTP Request`
+**Purpose:** Search GitHub for a well-known, active C/C++ project as fallback
+
+**Configuration:**
+1. Add HTTP Request node on TRUE branch
 2. Configure parameters:
    - **Method:** GET
    - **URL:** `https://api.github.com/search/repositories`
    - **Query Parameters:**
-     - `q`: `{{ $json.primary.github_search_query }}`
+     - `q`: `language:c++ stars:>5000 pushed:>{{ $now.minus({ days: 90 }).toFormat('yyyy-MM-dd') }}`
      - `sort`: `stars`
      - `order`: `desc`
-     - `per_page`: `5`
+     - `per_page`: `10`
    - **Headers:**
      - `Authorization`: `Bearer {{ $credentials.githubToken }}`
      - `Accept`: `application/vnd.github.v3+json`
-   - **Options → On Error:** Continue
-
-**Output:** GitHub search results with `items` array
 
 ---
 
-### Node 7: Code - Select Best Repo
+### Node 7b: Code - Select Best C/C++ Repo (TRUE branch)
 
 **Node Type:** `Code`
-**Purpose:** Score search results and pick the best repo. Set `search_failed: true` if no results.
+**Purpose:** Pick the highest-scored C/C++ repo from GitHub Search results
 
 **Configuration:**
-1. Add Code node after GitHub Search
+1. Add Code node after GitHub Search C/C++
 2. Set parameters:
    - **Mode:** Run Once for All Items
    - **Language:** JavaScript
@@ -261,193 +319,130 @@ const item = $input.first();
 const results = item.json.items || [];
 
 if (results.length === 0) {
-  return [{ json: { ...item.json, search_failed: true } }];
+  throw new Error('GitHub Search returned no C/C++ repos — check query');
 }
 
-const now = Date.now();
-const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
-
-const scored = results.map(repo => {
-  let score = 0;
-  if (repo.stargazers_count > 1000) score += 3;
-  else if (repo.stargazers_count > 100) score += 1;
-  if (now - new Date(repo.updated_at).getTime() < ninetyDaysMs) score += 2;
-  if (repo.description && repo.description.length > 10) score += 1;
-  return { repo, score };
-});
-
-scored.sort((a, b) => b.score - a.score);
-const best = scored[0].repo;
+// Prefer: high stars, recently pushed, has description
+const best = results
+  .map(r => ({
+    repo: r,
+    score: (r.stargazers_count > 10000 ? 3 : 1) +
+           (new Date(r.pushed_at) > new Date(Date.now() - 90*86400000) ? 2 : 0) +
+           (r.description ? 1 : 0)
+  }))
+  .sort((a, b) => b.score - a.score)[0].repo;
 
 return [{
   json: {
-    language: item.json.language,
-    search_failed: false,
+    language: 'C/C++',
     repo_full_name: best.full_name,
-    repo_url: best.html_url,
-    repo_description: best.description || '',
-    default_branch: best.default_branch || 'main',
-    repo_stars: best.stargazers_count,
-    primary: item.json.primary,
-    secondary: item.json.secondary
+    trend_source: 'github_fallback',
+    needs_fallback: false
   }
 }];
 ```
 
 ---
 
-### Node 8: IF - Needs Fallback?
-
-**Node Type:** `IF`
-**Purpose:** Route items with no primary search results to the fallback GitHub search
-
-**Configuration:**
-1. Add IF node after Select Best Repo
-2. Set condition:
-   - **Value 1:** `{{ $json.search_failed }}`
-   - **Operation:** is equal to
-   - **Value 2:** `true`
-
-**Outputs:**
-- **TRUE branch:** No primary results → fallback search
-- **FALSE branch:** Repo found → continue to file tree
-
----
-
-### Node 8a: HTTP Request - GitHub Fallback Search (TRUE branch)
-
-**Node Type:** `HTTP Request`
-**Purpose:** Search GitHub using the secondary topic query
-
-**Configuration:**
-1. Add HTTP Request node on TRUE branch
-2. Same configuration as Node 6, except:
-   - **Query Parameter `q`:** `{{ $json.secondary.github_search_query }}`
-
----
-
-### Node 8b: Code - Select Best Repo (Fallback)
-
-**Node Type:** `Code`
-**Purpose:** Select best repo from fallback results (same logic as Node 7)
-
-**Configuration:** Identical to Node 7 code.
-
----
-
-### Node 9: Merge - Combine Streams
+### Node 8: Merge - Combine Language Items
 
 **Node Type:** `Merge`
-**Purpose:** Reunite the primary-success and fallback streams into one
+**Purpose:** Reunite HN-sourced items (FALSE branch) and GitHub-fallback item (TRUE branch) into one stream of 3 language items
 
 **Configuration:**
 1. Add Merge node
 2. Connect Node 7 FALSE branch output → Merge input 1
-3. Connect Node 8b output → Merge input 2
-4. Set **Mode:** Combine
+3. Connect Node 7b output → Merge input 2
+4. Set **Mode:** Append
+
+**Output:** 3 items (Python, JS/TS, C/C++) — all with valid `repo_full_name`
 
 ---
 
-### Node 10: HTTP Request - GitHub Get File Tree
+### Node 9: AI Agent - Code Hunter
 
-**Node Type:** `HTTP Request`
-**Purpose:** Fetch the full recursive file tree for the selected repo
+**Node Type:** `AI Agent`
+**Purpose:** Explore the selected GitHub repo using tools and find a self-contained 8-12 line snippet with a non-obvious insight. Can retry different files if the first candidate is not good enough.
 
 **Configuration:**
-1. Add HTTP Request node after Merge
-2. Configure parameters:
+1. Add AI Agent node after Merge
+2. Connect a **Chat Model** sub-node:
+   - Node Type: `Anthropic Chat Model`
+   - Credential: `anthropicApiKey`
+   - Model: `claude-haiku-4-5-20251001`
+3. Connect two **HTTP Request Tool** sub-nodes (see Tool 1 and Tool 2 below)
+4. Set **System Message**:
+
+```
+You are a senior engineer curating code snippets for a developer newsletter.
+Your job is to find ONE self-contained, clever code snippet (8-12 lines) from a GitHub repo.
+
+What makes a good snippet:
+- Has one clear "aha" moment — a non-obvious trick, pattern, or design choice
+- Self-contained: can be read and understood without surrounding context
+- 8-12 lines maximum, max 60 characters per line
+- Shows real logic — not getters/setters, imports, configs, or boilerplate
+
+What to avoid:
+- Test files, configuration files, auto-generated code
+- Files with only imports or re-exports
+- Utility functions that are trivially obvious
+
+Strategy:
+1. Call get_repo_tree to see the file structure
+2. Identify 2-3 candidate files (prefer src/, lib/, core/)
+3. Call read_file on your top candidate
+4. If the file has no interesting snippet, try your next candidate
+5. Return the best snippet you found
+```
+
+5. Set **Prompt** field:
+
+```
+Repository: {{ $json.repo_full_name }}
+Language: {{ $json.language }}
+
+Explore this repository and find the best code snippet.
+Return ONLY a JSON object:
+{
+  "snippet": "<the exact code lines, preserving indentation>",
+  "file_path": "<relative path to the file>",
+  "selection_reason": "<one sentence: why this snippet is interesting>"
+}
+```
+
+**Tool 1: get_repo_tree**
+
+1. Add HTTP Request Tool sub-node to the AI Agent
+2. Configure:
+   - **Name:** `get_repo_tree`
+   - **Description:** `Get the full recursive file tree of a GitHub repository. Returns a list of all file paths. Use this first to understand the repo structure before reading files.`
    - **Method:** GET
-   - **URL:** `https://api.github.com/repos/{{ $json.repo_full_name }}/git/trees/{{ $json.default_branch }}?recursive=1`
+   - **URL:** `https://api.github.com/repos/{{ $fromAI('repo_full_name') }}/git/trees/HEAD?recursive=1`
    - **Headers:**
      - `Authorization`: `Bearer {{ $credentials.githubToken }}`
      - `Accept`: `application/vnd.github.v3+json`
-   - **Options → On Error:** Continue
 
-**Output:** `{ tree: [{ path, type, sha }, ...] }`
+**Tool 2: read_file**
 
----
-
-### Node 11: Code - Filter Candidate Files
-
-**Node Type:** `Code`
-**Purpose:** Filter tree by language extension, apply blocklist, rank by file quality, output top 1 file path
-
-**Configuration:**
-1. Add Code node after Get File Tree
-2. Set parameters:
-   - **Mode:** Run Once for All Items
-   - **Language:** JavaScript
-
-3. JavaScript code:
-
-```javascript
-const item = $input.first();
-const tree = item.json.tree || [];
-
-const extensionMap = {
-  'Python': ['.py'],
-  'JS/TS': ['.ts', '.tsx', '.js', '.jsx'],
-  'C/C++': ['.c', '.cpp', '.cc', '.cxx', '.h', '.hpp']
-};
-
-const lang = item.json.language;
-const validExts = extensionMap[lang] || [];
-
-const blocklistPatterns = [
-  /test[s]?[_\/]/, /_test\./, /\.test\./, /\.spec\./,
-  /__init__\.py$/, /setup\.py$/, /conftest\.py$/,
-  /index\.(ts|js)$/, /\.d\.ts$/,
-  /generated/, /auto_/, /pb\./, /\.min\.js$/,
-  /config[s]?\./i, /\.config\./
-];
-
-const isBlocked = (path) => blocklistPatterns.some(p => p.test(path));
-const hasValidExt = (path) => validExts.some(ext => path.endsWith(ext));
-
-const candidates = tree
-  .filter(f => f.type === 'blob' && hasValidExt(f.path) && !isBlocked(f.path))
-  .map(f => {
-    let score = 0;
-    if (/^src\//.test(f.path) || /^lib\//.test(f.path)) score += 2;
-    score -= f.path.split('/').length;
-    if (f.path.endsWith('.ts') || f.path.endsWith('.tsx')) score += 1;
-    return { path: f.path, score };
-  })
-  .sort((a, b) => b.score - a.score);
-
-if (candidates.length === 0) {
-  return [{ json: { ...item.json, extraction_failed: true, file_path: null } }];
-}
-
-return [{ json: { ...item.json, extraction_failed: false, file_path: candidates[0].path } }];
-```
-
----
-
-### Node 12: HTTP Request - GitHub Fetch File Content
-
-**Node Type:** `HTTP Request`
-**Purpose:** Download the raw source file content
-
-**Configuration:**
-1. Add HTTP Request node after Filter Candidate Files
-2. Configure parameters:
+1. Add a second HTTP Request Tool sub-node to the AI Agent
+2. Configure:
+   - **Name:** `read_file`
+   - **Description:** `Read the raw source code content of a specific file from a GitHub repository. Use this to inspect a candidate file for a good code snippet. Input: repo_full_name (owner/repo) and file_path (relative path from repo root).`
    - **Method:** GET
-   - **URL:** `https://raw.githubusercontent.com/{{ $json.repo_full_name }}/{{ $json.default_branch }}/{{ $json.file_path }}`
-   - **Response Format:** Text
-   - **Options → On Error:** Continue
+   - **URL:** `https://raw.githubusercontent.com/{{ $fromAI('repo_full_name') }}/HEAD/{{ $fromAI('file_path') }}`
 
-**Note:** `raw.githubusercontent.com` is public — no auth header needed.
+**Output:** `{ output: "<JSON string with snippet, file_path, selection_reason>" }`
 
 ---
 
-### Node 13: Code - Extract Snippet
+### Node 10: Code - Parse Code Hunter Output
 
 **Node Type:** `Code`
-**Purpose:** Find the best 8-12 line self-contained snippet using sliding window scoring
+**Purpose:** Extract snippet and file_path from the Code Hunter agent output
 
 **Configuration:**
-1. Add Code node after Fetch File Content
+1. Add Code node after AI Agent - Code Hunter
 2. Set parameters:
    - **Mode:** Run Once for All Items
    - **Language:** JavaScript
@@ -456,67 +451,36 @@ return [{ json: { ...item.json, extraction_failed: false, file_path: candidates[
 
 ```javascript
 const item = $input.first();
-const rawBody = item.json.body || item.json.data || '';
-const content = typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody);
-const lines = content.split('\n');
+const raw = item.json.output;
 
-if (lines.length < 8) {
-  const fallback = lines.slice(0, Math.min(10, lines.length));
-  return [{ json: { ...item.json, snippet: fallback.join('\n'), snippet_start_line: 1 } }];
+let parsed;
+try {
+  parsed = JSON.parse(raw);
+} catch (e) {
+  const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (match) parsed = JSON.parse(match[1]);
+  else throw new Error('Failed to parse Code Hunter output: ' + raw);
 }
 
-let bestWindow = null;
-let bestScore = -Infinity;
-
-for (let windowSize = 8; windowSize <= 12; windowSize++) {
-  for (let start = 0; start <= lines.length - windowSize; start++) {
-    const window = lines.slice(start, start + windowSize);
-    let score = 0;
-
-    // Must contain a function/class definition
-    const hasDef = window.some(l =>
-      /^\s*(def |class |function |const |export (function|const|class)|async function|public |private |template )/.test(l)
-    );
-    if (!hasDef) continue;
-
-    // Penalize long lines (mobile readability)
-    const longLines = window.filter(l => l.length > 60).length;
-    score -= longLines * 2;
-
-    // Reward logic density
-    const logicLines = window.filter(l =>
-      l.trim().length > 3 &&
-      !/^(import|from|#|\/\/|\/\*)/.test(l.trim()) &&
-      !/^(pass|return None)$/.test(l.trim())
-    ).length;
-    score += logicLines;
-
-    // Prefer code near top of file
-    score -= start * 0.01;
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestWindow = { lines: window, startLine: start + 1 };
-    }
+return [{
+  json: {
+    ...item.json,
+    snippet: parsed.snippet,
+    file_path: parsed.file_path,
+    selection_reason: parsed.selection_reason
   }
-}
-
-if (!bestWindow) {
-  bestWindow = { lines: lines.slice(0, 10), startLine: 1 };
-}
-
-return [{ json: { ...item.json, snippet: bestWindow.lines.join('\n'), snippet_start_line: bestWindow.startLine } }];
+}];
 ```
 
 ---
 
-### Node 14: HTTP Request - Claude Haiku API
+### Node 11: HTTP Request - Claude Haiku API
 
 **Node Type:** `HTTP Request`
-**Purpose:** Generate file_intent and 3-bullet breakdown for the extracted snippet
+**Purpose:** Generate the 3-bullet breakdown and file_intent label for the extracted snippet
 
 **Configuration:**
-1. Add HTTP Request node after Extract Snippet
+1. Add HTTP Request node after Parse Code Hunter Output
 2. Configure parameters:
    - **Method:** POST
    - **URL:** `https://api.anthropic.com/v1/messages`
@@ -544,13 +508,13 @@ return [{ json: { ...item.json, snippet: bestWindow.lines.join('\n'), snippet_st
 
 ---
 
-### Node 15: Code - Parse Breakdown
+### Node 12: Code - Parse Breakdown
 
 **Node Type:** `Code`
 **Purpose:** Extract the JSON breakdown from Claude's response
 
 **Configuration:**
-1. Add Code node after Claude HTTP Request
+1. Add Code node after Claude Haiku HTTP Request
 2. Set parameters:
    - **Mode:** Run Once for All Items
    - **Language:** JavaScript
@@ -567,7 +531,7 @@ try {
 } catch (e) {
   const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (match) parsed = JSON.parse(match[1]);
-  else throw new Error('Failed to parse Claude response: ' + text);
+  else throw new Error('Failed to parse Claude breakdown: ' + text);
 }
 
 return [{
@@ -583,7 +547,7 @@ return [{
 
 ---
 
-### Node 16: Code - Compose HTML Email
+### Node 13: Code - Compose HTML Email
 
 **Node Type:** `Code`
 **Purpose:** Build the full mobile-first HTML email with inline CSS and syntax-highlighted code block
@@ -599,7 +563,7 @@ return [{
 ```javascript
 const item = $input.first();
 const { language, snippet, file_intent, repo_full_name, repo_url, repo_description,
-        breakdown_what, breakdown_responsibility, breakdown_clever } = item.json;
+        breakdown_what, breakdown_responsibility, breakdown_clever, trend_source } = item.json;
 
 const issueNumber = $('Compute Issue Number').first().json.next_issue_number;
 const paddedIssue = String(issueNumber).padStart(3, '0');
@@ -614,13 +578,15 @@ function highlight(code, lang) {
       .replace(/\b(def|class|import|from|return|if|else|elif|for|while|with|as|in|not|and|or|True|False|None|raise|try|except|finally|pass|yield|lambda)\b/g,
         '<span style="color:#cf222e;">$1</span>')
       .replace(/(#[^\n]*)/g, '<span style="color:#6e7781;">$1</span>')
-      .replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, '<span style="color:#0a3069;">$1</span>');
+      .replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g,
+        '<span style="color:#0a3069;">$1</span>');
   } else if (lang === 'JS/TS') {
     h = h
       .replace(/\b(const|let|var|function|return|if|else|for|while|class|import|export|from|async|await|new|this|typeof|instanceof|true|false|null|undefined)\b/g,
         '<span style="color:#cf222e;">$1</span>')
       .replace(/(\/\/[^\n]*)/g, '<span style="color:#6e7781;">$1</span>')
-      .replace(/(`(?:[^`\\]|\\.)*`|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, '<span style="color:#0a3069;">$1</span>');
+      .replace(/(`(?:[^`\\]|\\.)*`|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g,
+        '<span style="color:#0a3069;">$1</span>');
   } else if (lang === 'C/C++') {
     h = h
       .replace(/\b(int|char|void|return|if|else|for|while|struct|class|template|typename|const|static|inline|auto|bool|true|false|nullptr|new|delete|public|private|protected|virtual|override)\b/g,
@@ -659,7 +625,7 @@ const html_body = `<!DOCTYPE html>
 
     <h3 style="margin:0 0 8px 0;font-size:15px;font-weight:600;">Project Context</h3>
     <p style="margin:0 0 32px 0;font-size:14px;color:#57606a;">
-      From <a href="${repo_url}" style="color:#0969da;text-decoration:none;">${repo_full_name}</a>. ${repo_description}
+      From <a href="https://github.com/${repo_full_name}" style="color:#0969da;text-decoration:none;">${repo_full_name}</a>. ${repo_description || ''}
     </p>
 
     <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
@@ -675,7 +641,7 @@ return [{ json: { ...item.json, subject, html_body, issue_number: issueNumber } 
 
 ---
 
-### Node 17: Gmail - Create Draft
+### Node 14: Gmail - Create Draft
 
 **Node Type:** `Gmail`
 **Purpose:** Save the composed email as a Gmail draft for human review
@@ -695,10 +661,10 @@ return [{ json: { ...item.json, subject, html_body, issue_number: issueNumber } 
 
 ---
 
-### Node 18: Code - Extract Draft ID
+### Node 15: Code - Extract Draft ID
 
 **Node Type:** `Code`
-**Purpose:** Pull `id` from Gmail response and attach as `gmail_draft_id` alongside item fields
+**Purpose:** Pull `id` from Gmail response and attach as `gmail_draft_id`
 
 **Configuration:**
 1. Add Code node after Create Gmail Draft
@@ -715,10 +681,10 @@ return [{ json: { ...item.json, gmail_draft_id: item.json.id } }];
 
 ---
 
-### Node 19: Google Sheets - Append Draft Row
+### Node 16: Google Sheets - Append Draft Row
 
 **Node Type:** `Google Sheets`
-**Purpose:** Write one tracking row per language variant with status "draft" and the gmail_draft_id
+**Purpose:** Write one tracking row per language variant with status "draft", gmail_draft_id, and trend_source
 
 **Configuration:**
 1. Add Google Sheets node after Extract Draft ID
@@ -738,13 +704,14 @@ return [{ json: { ...item.json, gmail_draft_id: item.json.id } }];
 | `programming_language` | `{{ $json.language }}` |
 | `file_intent` | `{{ $json.file_intent }}` |
 | `repository_name` | `{{ $json.repo_full_name }}` |
-| `repository_url` | `{{ $json.repo_url }}` |
-| `repository_description` | `{{ $json.repo_description }}` |
+| `repository_url` | `https://github.com/{{ $json.repo_full_name }}` |
 | `gmail_draft_id` | `{{ $json.gmail_draft_id }}` |
+| `trend_source` | `{{ $json.trend_source }}` |
 | `created_date` | `{{ $now.toISO() }}` |
-| `source` | `perplexity_trending` |
+| `scheduled_date` | *(leave empty — human sets during review)* |
+| `sent_date` | *(leave empty)* |
 
-**Note:** `scheduled_date` and `sent_date` are left empty — human sets `scheduled_date` and changes `status` to `"scheduled"` during Sunday review.
+**Note:** `scheduled_date` and `sent_date` are left empty. Human sets `scheduled_date` and changes `status` to `"scheduled"` during Sunday review to trigger Workflow 2.
 
 ---
 
@@ -757,99 +724,99 @@ return [{ json: { ...item.json, gmail_draft_id: item.json.id } }];
 - Click "Execute Workflow" (do not wait for Sunday)
 
 **Expected Result:**
-- "Parse Topics" output: 3 items, each with `language`, `primary`, `secondary` populated
-- "Select Best Repo" output: `repo_full_name` present, `search_failed: false`
-- "Extract Snippet" output: `snippet` is 8-12 lines
-- "Parse Breakdown" output: `file_intent`, `breakdown_what`, `breakdown_responsibility`, `breakdown_clever` all present
+- Node 4 (HN Algolia): returns `hits` array with 30-50 stories
+- Node 5 (Topic Analyzer): `output` field contains valid JSON with python/js_ts/cpp keys
+- Node 6 (Parse Topics): emits 3 items with `repo_full_name` populated
+- Node 7 (IF): C/C++ item routes to TRUE branch if `needs_fallback: true`, FALSE otherwise
+- Node 9 (Code Hunter): each item's `output` contains `snippet`, `file_path`, `selection_reason`
+- Node 11 (Claude Haiku): `content[0].text` is valid JSON with all 4 breakdown fields
 - Gmail: 3 new drafts appear in inbox
-- Google Sheets: 3 new rows with `status: "draft"`, same `issue_number`, `gmail_draft_id` populated
+- Google Sheets: 3 new rows with `status: "draft"`, same `issue_number`, `gmail_draft_id` and `trend_source` populated
 
 ---
 
 ### Test 2: Verify Email Rendering
 
 **Setup:**
-- After Test 1 completes, open Gmail
-- Open each of the 3 drafts
+- After Test 1, open Gmail and open each of the 3 drafts
 
 **Expected Result:**
-- Subject line: `Can you read this #001: <file_intent>`
-- Code block: styled with light background, left border, syntax coloring for keywords/strings/comments
-- Challenge text: italic, visible before breakdown
-- Three thinking dots separator
-- Breakdown list: 3 bullets with bold labels
-- Project Context: repo link clickable
-- Layout readable on mobile (max-width 600px)
+- Subject: `Can you read this #001: <file_intent>`
+- Code block: syntax-colored keywords, readable on mobile (max-width 600px)
+- Snippet: 8-12 lines, not config or boilerplate
+- Breakdown: 3 bullets with bold labels, ~30-40 words each
+- Project Context: repo link renders correctly
+- Unsubscribe link present in footer
 
 ---
 
-### Test 3: Verify Human Review Handoff
+### Test 3: C/C++ Fallback Path
 
 **Setup:**
-- In Google Sheets Newsletter Drafts sheet, find one of the 3 new rows
+- In Node 6 (Parse Topics), temporarily force `needs_fallback: true` for the C/C++ item
+- Run workflow
+
+**Expected Result:**
+- C/C++ item routes to Node 7a (GitHub Search)
+- Node 7b selects a high-star C/C++ repo
+- `trend_source` is `"github_fallback"` in the Sheets row
+- Rest of pipeline (Code Hunter → breakdown → draft) completes normally
+
+---
+
+### Test 4: Human Review Handoff
+
+**Setup:**
+- In Google Sheets, find one of the 3 new rows
 - Set `status` to `scheduled`
 - Set `scheduled_date` to a past Mon/Wed/Fri 7am timestamp (e.g., `2026-02-16T07:00:00Z`)
 - Trigger Workflow 2 manually
 
 **Expected Result:**
-- Workflow 2 finds the row (status = scheduled, scheduled_date <= now)
-- Workflow 2 fetches the Gmail draft by `gmail_draft_id`
-- Workflow 2 sends to matched subscribers
+- Workflow 2 finds the row
+- Fetches the Gmail draft by `gmail_draft_id`
+- Sends to matched subscribers
 - Row `status` updated to `sent`
-
----
-
-### Test 4: Fallback Path (Simulated)
-
-**Setup:**
-- In "Select Best Repo" Code node, temporarily override `results` to `[]` for one language
-- Run workflow
-
-**Expected Result:**
-- IF node routes that item to TRUE branch
-- Fallback HTTP Request runs with `secondary.github_search_query`
-- Merge node combines the result back into main stream
-- Workflow continues normally for that language
 
 ---
 
 ## Error Handling
 
-**Perplexity API failure:**
-- If response is not valid JSON: Code node catches parse error and throws — execution stops for all 3 items. Check Executions tab for error message. Retry manually.
+**HN Algolia returns no results:**
+- Unlikely (>50 points filter applied to last 7 days). If it happens, "Stop Workflow" on Node 4 triggers — check Executions tab. Lower `points` threshold or widen `hitsPerPage` if needed.
 
-**GitHub Search returns 0 results:**
-- Primary query: `search_failed: true` set, falls through to secondary query via IF node
-- Secondary query also returns 0: item outputs empty repo fields. Subsequent nodes will fail gracefully (On Error: Continue). That language draft is skipped for this run.
+**Topic Analyzer outputs malformed JSON:**
+- Node 6 (Parse Topics) catches the parse error and throws. Check the raw `output` field in Node 5's execution log to see what the agent returned. Adjust the prompt's JSON example if the model is wrapping with markdown.
 
-**GitHub file tree truncated:**
-- GitHub truncates trees > 100,000 blobs. For very large repos, some files may be missing. Heuristic will still find a candidate among available files.
+**Code Hunter can't find a good snippet:**
+- Agent returns a suboptimal snippet rather than failing — it always returns something. Review the draft in Gmail. If snippet quality is poor, edit directly in Gmail before approving.
 
-**Claude API failure:**
-- On Error: Continue — item passes through with empty breakdown fields
-- Email will be composed with blank breakdown bullets — visible in draft review. Edit manually in Gmail before approving.
+**Code Hunter tool call fails (GitHub 404):**
+- Happens if the repo's default branch isn't `HEAD` or if the repo is private. Agent will see the error in the tool response and attempt a different file. If all calls fail, the agent returns a best-effort snippet from whatever it received.
 
-**Gmail Draft creation failure:**
-- If Gmail node fails, `gmail_draft_id` will be null — Sheets row will be written without an ID
-- Check Executions tab, manually create the draft and update the Sheets row
+**Claude Haiku returns malformed breakdown:**
+- Node 12 (Parse Breakdown) catches the error and throws. Set `On Error: Continue` on Node 11 to allow the other 2 language items to complete. The failed draft is skipped — check Executions tab and create manually.
+
+**Gmail draft creation fails:**
+- `gmail_draft_id` will be null in the Sheets row. Manually create the draft and update the Sheets row with the correct ID.
 
 ---
 
 ## Workflow Activation
 
-1. Configure all credentials in n8n: `perplexityApiKey`, `githubToken`, `anthropicApiKey`
-2. Create `Newsletter Drafts` sheet with all columns from the field mapping table
+1. Configure credentials in n8n: `githubToken`, `anthropicApiKey`, Gmail OAuth2, Google Sheets OAuth2
+2. Create `Newsletter Drafts` sheet with all columns from the field mapping table above, plus `trend_source`
 3. Save workflow
 4. Click "Activate" toggle in top-right
-5. Run Test 1 (manual execute) to verify end-to-end before first Sunday trigger
-6. Monitor "Executions" tab each Sunday to check for errors
+5. Run Test 1 (manual execute) before the first Sunday trigger
+6. Monitor "Executions" tab each Sunday — pay attention to Code Hunter execution time (it may take 30-60 seconds per language as the agent iterates through files)
 
 ---
 
 ## Next Steps
 
 After this workflow is operational:
-1. Monitor first 3-4 Sunday runs — check snippet quality and breakdown accuracy
-2. Tune Perplexity prompt if topics are off-target for any language
-3. Tune snippet extraction heuristics if consistently picking boilerplate files
-4. Add cleanup job for old `draft` rows not promoted to `scheduled` within 14 days
+1. Monitor first 3-4 Sunday runs — evaluate Code Hunter snippet quality vs manual selection
+2. Tune Topic Analyzer prompt if it selects tutorials or non-code repos
+3. Tune Code Hunter system message if it consistently picks boilerplate
+4. Add cleanup job for `draft` rows not promoted to `scheduled` within 14 days
