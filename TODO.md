@@ -14,6 +14,9 @@
 ## TODO (BEFORE release NEWSLETTER)
 - Newsletter n8n workflow end-to-end testing with UI
 - Adjust any UX things on newsletter
+- Welcome Email & confirmation email design and testing
+- time zone handling for newsletter scheduling
+- full security review of n8n workflows (especially around email confirmation token generation and validation)
 - Release n8n workflow online & n8n non-free plan
 - Deploy web app to Vercel and connect custom url iris-codes.com
 
