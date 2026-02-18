@@ -1,10 +1,8 @@
-import { useState, type FormEvent } from 'react';
-
-const WEBHOOK_URL = 'https://n8n.iris-codes.com/webhook/subscribe'; // TODO: replace with real URL from Track F
+import { useState, useEffect, useRef, type FormEvent } from 'react';
+import { WEBHOOK_BASE } from '../../config/webhooks';
 
 interface FormData {
   email: string;
-  writtenLanguage: 'en' | 'ko';
   programmingLanguages: string[];
 }
 
@@ -13,10 +11,20 @@ interface FormErrors {
   programmingLanguages?: string;
 }
 
+// Calculate next delivery day (Mon/Wed/Fri schedule)
+function getNextDeliveryDay(): string {
+  const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  if (today === 0 || today === 1) return 'Monday';
+  if (today === 2 || today === 3) return 'Wednesday';
+  return 'Monday'; // Thu/Fri/Sat → next Monday
+}
+
+// Exported for reuse in ConfirmationPage
+export { getNextDeliveryDay };
+
 function SignupForm() {
   const [formData, setFormData] = useState<FormData>({
     email: '',
-    writtenLanguage: 'en',
     programmingLanguages: [],
   });
 
@@ -24,31 +32,25 @@ function SignupForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showLanguageInputs, setShowLanguageInputs] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Cancel any in-flight request on unmount (TASK-033)
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  // Calculate next delivery day (Mon/Wed/Fri schedule)
-  const getNextDeliveryDay = (): string => {
-    const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-
-    // Mon/Wed/Fri = 1/3/5
-    if (today === 0 || today === 1) return 'Monday';      // Sunday or Monday → Monday
-    if (today === 2 || today === 3) return 'Wednesday';   // Tuesday or Wednesday → Wednesday
-    if (today === 4 || today === 5 || today === 6) return 'Monday'; // Thu/Fri/Sat → Monday
-
-    return 'Monday'; // Fallback
-  };
-
   const handleEmailSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    // Reset errors
     setErrors({});
 
-    // Validate email
     if (!formData.email || !validateEmail(formData.email)) {
       setErrors((prev) => ({
         ...prev,
@@ -57,17 +59,14 @@ function SignupForm() {
       return;
     }
 
-    // Show language inputs after valid email
     setShowLanguageInputs(true);
   };
 
   const handleFinalSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    // Reset errors
     setErrors({});
+    setSubmitError(null);
 
-    // Validate programming languages
     if (formData.programmingLanguages.length === 0) {
       setErrors((prev) => ({
         ...prev,
@@ -76,34 +75,47 @@ function SignupForm() {
       return;
     }
 
-    // Submit to webhook
     setIsSubmitting(true);
+
+    // Cancel any previous in-flight request
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
     try {
       const payload = {
         email: formData.email,
-        written_language: formData.writtenLanguage,
         programming_languages: formData.programmingLanguages,
         source: 'landing_page',
         subscribed_date: new Date().toISOString(),
       };
 
-      await fetch(WEBHOOK_URL, {
+      const res = await fetch(`${WEBHOOK_BASE}/subscribe`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
 
-      // Success
-      setIsSuccess(true);
-    } catch (error) {
-      // TODO: Remove this catch fallback when Track F provides real webhook URL
-      // For now, show success even on error since webhook is placeholder
-      console.error('Webhook error (expected with placeholder):', error);
-      setIsSuccess(true);
+      const data = await res.json();
+
+      if (data.success && data.status === 'pending') {
+        setIsSuccess(true);
+      } else if (data.success === false) {
+        setSubmitError(data.error ?? 'Something went wrong. Please try again.');
+      } else {
+        // Unexpected response shape — treat as success
+        setIsSuccess(true);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        setSubmitError('Request timed out. Please check your connection and try again.');
+      } else {
+        setSubmitError('Something went wrong. Please check your connection and try again.');
+      }
     } finally {
+      clearTimeout(timeout);
       setIsSubmitting(false);
     }
   };
@@ -113,10 +125,6 @@ function SignupForm() {
     if (errors.email) {
       setErrors((prev) => ({ ...prev, email: undefined }));
     }
-  };
-
-  const handleWrittenLanguageChange = (language: 'en' | 'ko') => {
-    setFormData((prev) => ({ ...prev, writtenLanguage: language }));
   };
 
   const handleProgrammingLanguageToggle = (language: string) => {
@@ -156,7 +164,6 @@ function SignupForm() {
       <div className="container">
         {!showLanguageInputs ? (
           <form onSubmit={handleEmailSubmit} className="signup-form" noValidate>
-            {/* Email */}
             <div className="form-group">
               <label htmlFor="email">Email</label>
               <input
@@ -173,7 +180,6 @@ function SignupForm() {
               {errors.email && <span className="error-msg">{errors.email}</span>}
             </div>
 
-            {/* Submit Button */}
             <button type="submit" className="button-full-width">
               Subscribe
             </button>
@@ -182,7 +188,6 @@ function SignupForm() {
           </form>
         ) : (
           <form onSubmit={handleFinalSubmit} className="signup-form" noValidate>
-            {/* Email (readonly) */}
             <div className="form-group">
               <label htmlFor="email">Email</label>
               <input
@@ -195,82 +200,35 @@ function SignupForm() {
               />
             </div>
 
-            {/* Written Language */}
-            <fieldset className="form-group">
-              <legend>Written language</legend>
-              <div className="option-group">
-                <div className="option-pill">
-                  <input
-                    type="radio"
-                    name="written_language"
-                    id="lang-en"
-                    value="en"
-                    checked={formData.writtenLanguage === 'en'}
-                    onChange={() => handleWrittenLanguageChange('en')}
-                  />
-                  <label htmlFor="lang-en">English</label>
-                </div>
-                <div className="option-pill">
-                  <input
-                    type="radio"
-                    name="written_language"
-                    id="lang-ko"
-                    value="ko"
-                    checked={formData.writtenLanguage === 'ko'}
-                    onChange={() => handleWrittenLanguageChange('ko')}
-                  />
-                  <label htmlFor="lang-ko">Korean</label>
-                </div>
-              </div>
-            </fieldset>
-
-            {/* Programming Languages */}
             <fieldset className="form-group">
               <legend>
                 Programming languages{' '}
                 <span className="label-hint">(select at least 1)</span>
               </legend>
               <div className="option-group">
-                <div className="option-pill">
-                  <input
-                    type="checkbox"
-                    name="programming_languages"
-                    id="pl-python"
-                    value="Python"
-                    checked={formData.programmingLanguages.includes('Python')}
-                    onChange={() => handleProgrammingLanguageToggle('Python')}
-                  />
-                  <label htmlFor="pl-python">Python</label>
-                </div>
-                <div className="option-pill">
-                  <input
-                    type="checkbox"
-                    name="programming_languages"
-                    id="pl-jsts"
-                    value="JS/TS"
-                    checked={formData.programmingLanguages.includes('JS/TS')}
-                    onChange={() => handleProgrammingLanguageToggle('JS/TS')}
-                  />
-                  <label htmlFor="pl-jsts">JS/TS</label>
-                </div>
-                <div className="option-pill">
-                  <input
-                    type="checkbox"
-                    name="programming_languages"
-                    id="pl-cpp"
-                    value="C/C++"
-                    checked={formData.programmingLanguages.includes('C/C++')}
-                    onChange={() => handleProgrammingLanguageToggle('C/C++')}
-                  />
-                  <label htmlFor="pl-cpp">C/C++</label>
-                </div>
+                {(['Python', 'JS/TS', 'C/C++'] as const).map((lang) => (
+                  <div className="option-pill" key={lang}>
+                    <input
+                      type="checkbox"
+                      name="programming_languages"
+                      id={`pl-${lang.toLowerCase().replace(/[^a-z]/g, '')}`}
+                      value={lang}
+                      checked={formData.programmingLanguages.includes(lang)}
+                      onChange={() => handleProgrammingLanguageToggle(lang)}
+                    />
+                    <label htmlFor={`pl-${lang.toLowerCase().replace(/[^a-z]/g, '')}`}>{lang}</label>
+                  </div>
+                ))}
               </div>
               {errors.programmingLanguages && (
                 <span className="error-msg">{errors.programmingLanguages}</span>
               )}
             </fieldset>
 
-            {/* Submit Button */}
+            {submitError && (
+              <p className="error-msg" role="alert">{submitError}</p>
+            )}
+
             <button
               type="submit"
               className="button-full-width"

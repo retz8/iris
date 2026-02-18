@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
-
-const CONFIRM_URL = 'https://retz8.app.n8n.cloud/webhook-test/confirm'; // replaced in Phase 4 via webhooks.ts
+import { WEBHOOK_BASE } from '../config/webhooks';
 
 type ConfirmState =
   | 'verifying'
@@ -39,7 +38,7 @@ function ConfirmationPage() {
 
     (async () => {
       try {
-        const res = await fetch(`${CONFIRM_URL}?token=${encodeURIComponent(token)}`, {
+        const res = await fetch(`${WEBHOOK_BASE}/confirm?token=${encodeURIComponent(token)}`, {
           signal: controller.signal,
         });
         const data = await res.json();
