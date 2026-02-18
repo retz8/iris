@@ -10,8 +10,9 @@
 - Google OAuth2 credentials configured in n8n
 - Gmail OAuth2 credentials configured in n8n
 - GitHub token: create a **Header Auth** credential (Name: `Authorization`, Value: `Bearer <token>`) — used in Nodes 6a and 8
-- Anthropic API key: create a **Header Auth** credential (Name: `x-api-key`, Value: `<key>`) — used in Node 10
-- OpenAI API key added as n8n **OpenAI** credential (`openAiAccount`) — used in Node 4
+- OpenAI API key: used in two places:
+  - Node 4: add as n8n **OpenAI** credential (`openAiAccount`) for the Chat Model sub-node
+  - Node 10: create a **Header Auth** credential (Name: `Authorization`, Value: `Bearer <key>`) for the HTTP Request node
 
 **Note:** `$credentials.xxx` is not accessible in n8n expressions. API keys must be set via the node's **Authentication** field using `Generic Credential Type → Header Auth`.
 - n8n instance: `retz8.app.n8n.cloud`
@@ -476,33 +477,53 @@ return [{
 
 ---
 
-### Node 10: HTTP Request - Claude Haiku API
+### Node 10: HTTP Request - OpenAI Breakdown
 
 **Node Type:** `HTTP Request`
-**Purpose:** Generate the 3-bullet breakdown and file_intent label for the extracted snippet
+**Purpose:** Generate the 3-bullet breakdown and file_intent label for the extracted snippet using GPT-5 nano
 
 **Configuration:**
 1. Add HTTP Request node after Parse Code Hunter Output
 2. Configure parameters:
-   - **Authentication:** `Generic Credential Type` → `Header Auth` → select an Anthropic Header Auth credential (Name: `x-api-key`, Value: `<your_anthropic_key>`)
+   - **Authentication:** `Generic Credential Type` → `Header Auth` → select OpenAI Header Auth credential (Name: `Authorization`, Value: `Bearer <your_openai_key>`)
    - **Method:** POST
-   - **URL:** `https://api.anthropic.com/v1/messages`
+   - **URL:** `https://api.openai.com/v1/chat/completions`
    - **Headers:**
-     - `anthropic-version`: `2023-06-01`
      - `Content-Type`: `application/json`
    - **Body Content Type:** JSON
    - **Body:**
 
 ```json
 {
-  "model": "claude-haiku-4-5-20251001",
-  "max_tokens": 400,
+  "model": "gpt-5-nano-2025-08-07",
   "messages": [
     {
+      "role": "system",
+      "content": "You are a senior engineer writing concise code breakdowns for a developer newsletter targeting mid-level engineers (2-5 YoE). Each field must be 30-40 words except file_intent which is 3-5 words as a noun phrase."
+    },
+    {
       "role": "user",
-      "content": "Analyze this code snippet from {{ $json.repo_full_name }}:\n\n```{{ $json.language }}\n{{ $json.snippet }}\n```\n\nReturn ONLY a JSON object:\n{\n  \"file_intent\": \"[3-5 words, noun phrase, e.g. 'Bash command validation hook']\",\n  \"breakdown_what\": \"[30-40 words: what this code does, starting with a verb]\",\n  \"breakdown_responsibility\": \"[30-40 words: its role in the codebase]\",\n  \"breakdown_clever\": \"[30-40 words: the non-obvious insight, NOT a restatement of visible code]\"\n}\n\nRules:\n- file_intent: 3-5 words, noun phrase\n- Each breakdown field: 30-40 words\n- breakdown_clever must reveal something non-obvious to a mid-level engineer (2-5 YoE)\n- JSON only, no markdown, no explanation"
+      "content": "Analyze this {{ $json.language }} snippet from {{ $json.repo_full_name }}:\n\n```{{ $json.language }}\n{{ $json.snippet }}\n```\n\nRules:\n- file_intent: 3-5 word noun phrase (e.g. 'Bash command validation hook')\n- breakdown_what: what this code does, starting with a verb\n- breakdown_responsibility: its role in the codebase\n- breakdown_clever: a non-obvious insight a mid-level engineer would miss — not a restatement of visible code"
     }
-  ]
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "breakdown",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "file_intent": { "type": "string" },
+          "breakdown_what": { "type": "string" },
+          "breakdown_responsibility": { "type": "string" },
+          "breakdown_clever": { "type": "string" }
+        },
+        "required": ["file_intent", "breakdown_what", "breakdown_responsibility", "breakdown_clever"],
+        "additionalProperties": false
+      }
+    }
+  }
 }
 ```
 
@@ -525,16 +546,9 @@ return [{
 
 ```javascript
 const item = $input.first();
-const text = item.json.content[0].text;
-
-let parsed;
-try {
-  parsed = JSON.parse(text);
-} catch (e) {
-  const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (match) parsed = JSON.parse(match[1]);
-  else throw new Error('Failed to parse Claude breakdown: ' + text);
-}
+// JSON Schema response_format guarantees valid JSON string in choices[0].message.content
+const text = item.json.choices[0].message.content;
+const parsed = JSON.parse(text);
 
 return [{
   json: {
