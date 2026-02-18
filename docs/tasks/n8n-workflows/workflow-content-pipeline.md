@@ -193,15 +193,14 @@ Your job is to find ONE notable open-source GitHub repository per language categ
 
 Selection rules:
 - Must be a real GitHub repo in owner/repo format
-- Prefer: new releases, tools engineers are actively using, clever libraries, OSS with notable activity this week
+- Prefer: repos appearing in developer news or community discussion this week (Hacker News, Reddit, dev.to, tech blogs), new releases engineers are actively talking about, clever libraries with notable GitHub activity
 - Avoid: tutorials, blog posts, awesome-lists, aggregator repos, docs-only repos
-- For C/C++: set not_found to true if no strong match exists after searching
 ```
 
 5. Set **Prompt** field:
 
 ```
-Today is {{ $now.toFormat('yyyy-MM-dd') }}. Search the web for trending open-source projects from the past 7 days and return one repo per language.
+Today is {{ $now.toFormat('yyyy-MM-dd') }}. Search developer news sources (Hacker News, Reddit r/programming, dev.to, tech blogs) and GitHub trending for open-source projects engineers are talking about this week. Return one repo per language.
 ```
 
 **Note:** The JSON Schema response format guarantees structured output — no markdown wrapping, no parse failures.
@@ -392,9 +391,10 @@ Your job: find ONE self-contained, clever code snippet (8-12 lines) from the giv
 
 What makes a good snippet:
 - Has one clear "aha" moment — a non-obvious trick, pattern, or design choice
+- One complete logical unit — a single function, method, or tightly coupled block with one clear responsibility
 - Self-contained: readable without surrounding context
-- 8-12 lines, max 60 characters per line
 - Real logic — not getters/setters, imports, configs, or boilerplate
+- Avoid one-liners and simple expressions — the snippet should contain enough logic that a reader needs a moment to parse it
 
 What to avoid:
 - Test files, configuration files, auto-generated code
@@ -406,6 +406,7 @@ Critical rules:
 - Always return a real code snippet immediately, even if imperfect
 - If the repo is large or complex, search for well-known files and pick the best candidate you find
 - file_path must be a real file path from the repo (e.g. src/model.py), never empty
+- snippet renders directly inside a <pre><code> block — any markdown fences, introductory phrases, or added comments will appear literally as text. Copy code verbatim from the file. Explanation belongs in selection_reason.
 ```
 
 5. Set **Prompt** field:
@@ -586,30 +587,31 @@ const subject = `Can you read this #${paddedIssue}: ${file_intent}`;
 
 // Syntax highlighting per Track H spec
 // Keywords: #cf222e | Strings: #0a3069 | Comments: #6e7781
+// Protect strings/comments with placeholders first so the keyword regex
+// cannot match content inside already-inserted span style attributes.
 function highlight(code, lang) {
   let h = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const store = [];
+  const protect = (html) => { store.push(html); return `\x00${store.length - 1}\x00`; };
+  const restore = (s) => s.replace(/\x00(\d+)\x00/g, (_, i) => store[+i]);
+
   if (lang === 'Python') {
-    h = h
-      .replace(/\b(def|class|import|from|return|if|else|elif|for|while|with|as|in|not|and|or|True|False|None|raise|try|except|finally|pass|yield|lambda)\b/g,
-        '<span style="color:#cf222e;">$1</span>')
-      .replace(/(#[^\n]*)/g, '<span style="color:#6e7781;">$1</span>')
-      .replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g,
-        '<span style="color:#0a3069;">$1</span>');
+    h = h.replace(/(#[^\n]*)/g, m => protect(`<span style="color:#6e7781;">${m}</span>`));
+    h = h.replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, m => protect(`<span style="color:#0a3069;">${m}</span>`));
+    h = h.replace(/\b(def|class|import|from|return|if|else|elif|for|while|with|as|in|not|and|or|True|False|None|raise|try|except|finally|pass|yield|lambda)\b/g,
+      '<span style="color:#cf222e;">$1</span>');
   } else if (lang === 'JS/TS') {
-    h = h
-      .replace(/\b(const|let|var|function|return|if|else|for|while|class|import|export|from|async|await|new|this|typeof|instanceof|true|false|null|undefined)\b/g,
-        '<span style="color:#cf222e;">$1</span>')
-      .replace(/(\/\/[^\n]*)/g, '<span style="color:#6e7781;">$1</span>')
-      .replace(/(`(?:[^`\\]|\\.)*`|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g,
-        '<span style="color:#0a3069;">$1</span>');
+    h = h.replace(/(\/\/[^\n]*)/g, m => protect(`<span style="color:#6e7781;">${m}</span>`));
+    h = h.replace(/(`(?:[^`\\]|\\.)*`|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, m => protect(`<span style="color:#0a3069;">${m}</span>`));
+    h = h.replace(/\b(const|let|var|function|return|if|else|for|while|class|import|export|from|async|await|new|this|typeof|instanceof|true|false|null|undefined)\b/g,
+      '<span style="color:#cf222e;">$1</span>');
   } else if (lang === 'C/C++') {
-    h = h
-      .replace(/\b(int|char|void|return|if|else|for|while|struct|class|template|typename|const|static|inline|auto|bool|true|false|nullptr|new|delete|public|private|protected|virtual|override)\b/g,
-        '<span style="color:#cf222e;">$1</span>')
-      .replace(/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)/g, '<span style="color:#6e7781;">$1</span>')
-      .replace(/("(?:[^"\\]|\\.)*")/g, '<span style="color:#0a3069;">$1</span>');
+    h = h.replace(/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)/g, m => protect(`<span style="color:#6e7781;">${m}</span>`));
+    h = h.replace(/("(?:[^"\\]|\\.)*")/g, m => protect(`<span style="color:#0a3069;">${m}</span>`));
+    h = h.replace(/\b(int|char|void|return|if|else|for|while|struct|class|template|typename|const|static|inline|auto|bool|true|false|nullptr|new|delete|public|private|protected|virtual|override)\b/g,
+      '<span style="color:#cf222e;">$1</span>');
   }
-  return h;
+  return restore(h);
 }
 
 const highlightedCode = highlight(snippet, language);
