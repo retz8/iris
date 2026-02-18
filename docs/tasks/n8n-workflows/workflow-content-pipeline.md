@@ -11,7 +11,7 @@
 - Gmail OAuth2 credentials configured in n8n
 - GitHub Personal Access Token added as n8n credential (`githubToken`)
 - Anthropic API key added as n8n credential (`anthropicApiKey`)
-- Tavily API key added as n8n credential or HTTP Header Auth (`tavilyApiKey`)
+- OpenAI API key added as n8n credential (`openAiAccount`) — used only for Node 4 (Trending OSS Finder)
 - n8n instance: `retz8.app.n8n.cloud`
 
 ## Workflow Overview
@@ -135,70 +135,70 @@ return [{ json: { next_issue_number: maxIssue + 1 } }];
 ### Node 4: AI Agent - Trending OSS Finder
 
 **Node Type:** `AI Agent`
-**Purpose:** Autonomously search the web for trending open-source projects this week and select one notable GitHub repo per language (Python, JS/TS, C/C++)
+**Purpose:** Use OpenAI GPT with built-in web search to find trending OSS repos for each language this week. Returns structured JSON guaranteed by JSON Schema response format.
 
 **Configuration:**
 1. Add AI Agent node after Compute Issue Number
-2. Connect a **Chat Model** sub-node:
-   - Node Type: `Anthropic Chat Model`
-   - Credential: `anthropicApiKey`
-   - Model: `claude-haiku-4-5-20251001`
-3. Connect one **HTTP Request Tool** sub-node (see Tool 1 below)
-4. Set **System Message**:
-
-```
-You are a tech curator for a developer newsletter targeting mid-level engineers (2-5 YoE).
-Your job: find ONE notable open-source GitHub repository for each of these 3 language categories this week: Python, JS/TS, and C/C++.
-
-Use the web_search tool to search for trending OSS projects. Suggested searches:
-- "trending open source Python projects this week"
-- "trending open source JavaScript TypeScript library this week"
-- "trending open source C++ project this week site:github.com"
-
-Selection rules:
-- Must have a real GitHub repo (github.com/owner/repo)
-- Prefer: new releases, tools engineers are talking about, clever libraries, OSS with notable activity this week
-- Avoid: tutorials, blog posts, "awesome-lists", aggregator repos, docs-only repos
-- For C/C++: if no strong match found after searching, set not_found to true
-
-Return ONLY a JSON object:
-{
-  "python":  { "repo_full_name": "owner/repo", "trend_source": "brief reason (e.g. 'new release this week')" },
-  "js_ts":   { "repo_full_name": "owner/repo", "trend_source": "brief reason" },
-  "cpp":     { "repo_full_name": "owner/repo", "trend_source": "brief reason", "not_found": false }
-}
-If no C/C++ found: "cpp": { "repo_full_name": null, "trend_source": null, "not_found": true }
-JSON only. No explanation.
-```
-
-5. Set **Prompt** field:
-
-```
-Today is {{ $now.toFormat('yyyy-MM-dd') }}. Search for trending open-source projects from the past 7 days and return the repo selections.
-```
-
-**Tool 1: web_search**
-
-1. Add HTTP Request Tool sub-node to the AI Agent
-2. Configure:
-   - **Name:** `web_search`
-   - **Description:** `Search the web for information about trending open-source projects, GitHub repos, and tech news. Input: a search query string.`
-   - **Method:** POST
-   - **URL:** `https://api.tavily.com/search`
-   - **Body (JSON):**
+2. Connect an **OpenAI Chat Model** sub-node:
+   - Node Type: `OpenAI Chat Model`
+   - Credential: `openAiAccount`
+   - Model: `gpt-5-nano-2025-08-07`
+   - **Use Responses API:** ON (toggle)
+   - **Built-in Tools → Web Search:** add, set Search Context Size to `Medium`
+   - **Options → Response Format:** `JSON Schema (recommended)`
+   - **Schema:**
      ```json
      {
-       "api_key": "{{ $credentials.tavilyApiKey }}",
-       "query": "{{ $fromAI('query') }}",
-       "search_depth": "basic",
-       "max_results": 5,
-       "include_domains": ["github.com", "news.ycombinator.com", "dev.to", "reddit.com"]
+       "type": "object",
+       "properties": {
+         "python": {
+           "type": "object",
+           "properties": {
+             "repo_full_name": { "type": "string" },
+             "trend_source": { "type": "string" }
+           },
+           "required": ["repo_full_name", "trend_source"]
+         },
+         "js_ts": {
+           "type": "object",
+           "properties": {
+             "repo_full_name": { "type": "string" },
+             "trend_source": { "type": "string" }
+           },
+           "required": ["repo_full_name", "trend_source"]
+         },
+         "cpp": {
+           "type": "object",
+           "properties": {
+             "repo_full_name": { "type": ["string", "null"] },
+             "trend_source": { "type": ["string", "null"] },
+             "not_found": { "type": "boolean" }
+           },
+           "required": ["repo_full_name", "trend_source", "not_found"]
+         }
+       },
+       "required": ["python", "js_ts", "cpp"]
      }
      ```
+3. No tool sub-nodes needed — web search is built-in on the OpenAI Chat Model
+4. Set **Prompt** field:
 
-**Note:** Tavily API key must be added to n8n credentials. Free tier: 1000 searches/month — well within budget for weekly runs.
+```
+Today is {{ $now.toFormat('yyyy-MM-dd') }}.
 
-**Output:** `{ output: "<JSON string with python/js_ts/cpp repo selections>" }`
+You are a tech curator for a developer newsletter targeting mid-level engineers (2-5 YoE).
+Search the web and find ONE notable open-source GitHub repository for each of these 3 language categories from the past 7 days: Python, JS/TS, and C/C++.
+
+Selection rules:
+- Must be a real GitHub repo (owner/repo format)
+- Prefer: new releases, tools engineers are talking about, clever libraries, notable OSS activity this week
+- Avoid: tutorials, blog posts, awesome-lists, aggregator repos, docs-only repos
+- For C/C++: set not_found to true if no strong match exists
+```
+
+**Note:** The JSON Schema response format guarantees structured output — no markdown wrapping, no parse failures.
+
+**Output:** `{ output: { python: {...}, js_ts: {...}, cpp: {...} } }` — already a parsed object, not a string.
 
 ---
 
@@ -217,15 +217,12 @@ Today is {{ $now.toFormat('yyyy-MM-dd') }}. Search for trending open-source proj
 
 ```javascript
 const item = $input.first();
-const raw = item.json.output;
-
-let parsed;
-try {
-  parsed = JSON.parse(raw);
-} catch (e) {
-  const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (match) parsed = JSON.parse(match[1]);
-  else throw new Error('Failed to parse Trending OSS Finder output: ' + raw);
+// JSON Schema response format guarantees a parsed object, not a string.
+// Defensive fallback: handle string output if model wraps in markdown.
+let parsed = item.json.output;
+if (typeof parsed === 'string') {
+  const match = parsed.match(/```(?:json)?\s*([\s\S]*?)```/);
+  parsed = JSON.parse(match ? match[1] : parsed);
 }
 
 const langMap = [
@@ -254,7 +251,7 @@ return langMap.map(({ key, language }) => {
 ### Node 6: IF - Needs GitHub Fallback?
 
 **Node Type:** `IF`
-**Purpose:** Route items that didn't get a repo from HN (typically C/C++) to the GitHub Search fallback
+**Purpose:** Route items where the agent couldn't find a repo (typically C/C++) to the GitHub Search fallback
 
 **Configuration:**
 1. Add IF node after Parse Topic Selections
@@ -264,7 +261,7 @@ return langMap.map(({ key, language }) => {
    - **Value 2:** `true`
 
 **Outputs:**
-- **TRUE branch:** No HN repo found → GitHub Search fallback
+- **TRUE branch:** No repo found by agent → GitHub Search fallback
 - **FALSE branch:** Repo found → skip to Merge
 
 ---
@@ -773,8 +770,8 @@ return [{ json: { ...item.json, gmail_draft_id: item.json.id } }];
 **Trending OSS Finder outputs malformed JSON:**
 - Node 5 (Parse Repo Selections) catches the parse error and throws. Check the raw `output` field in Node 4's execution log to see what the agent returned. Adjust the system message JSON example if the model is wrapping with markdown.
 
-**Tavily search returns no useful results:**
-- The agent will retry with different queries autonomously. If it still can't find a repo, it will set `not_found: true` for that language and fall through to the GitHub Search fallback (for C/C++) or return a best-effort pick.
+**OpenAI web search returns no useful results:**
+- The agent will retry with different queries autonomously. If it still can't find a C/C++ repo, it sets `not_found: true` and the IF node routes to the GitHub Search fallback. For Python/JS/TS it always returns a best-effort pick.
 
 **Code Hunter can't find a good snippet:**
 - Agent returns a suboptimal snippet rather than failing — it always returns something. Review the draft in Gmail. If snippet quality is poor, edit directly in Gmail before approving.
