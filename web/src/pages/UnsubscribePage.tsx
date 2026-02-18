@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { WEBHOOK_BASE } from '../config/webhooks';
@@ -20,14 +20,6 @@ function UnsubscribePage() {
     searchParams.get('token') ? 'confirm_prompt' : 'missing_token'
   );
   const [email, setEmail] = useState<string | null>(null);
-  const isMountedRef = useRef(true);
-
-  // TASK-033: track mount state to prevent updates after unmount
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
 
   // TASK-046: missing token → skip API, immediately show error
   useEffect(() => {
@@ -56,8 +48,6 @@ function UnsubscribePage() {
 
       const data = await res.json();
 
-      if (!isMountedRef.current) return;
-
       if (data.success) {
         setEmail(data.email ?? null);
         if (data.message?.toLowerCase().includes('already')) {
@@ -78,7 +68,7 @@ function UnsubscribePage() {
         }
       }
     } catch {
-      if (isMountedRef.current) setUnsubState('server_error');
+      setUnsubState('server_error');
     } finally {
       clearTimeout(timeout);
     }
