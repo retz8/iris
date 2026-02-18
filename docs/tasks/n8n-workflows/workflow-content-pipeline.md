@@ -2,7 +2,7 @@
 
 **Workflow Name:** Newsletter Content Pipeline
 **Trigger Type:** Schedule (Sunday 8pm)
-**Purpose:** Discover trending tech topics from Hacker News, find relevant GitHub repos via an AI Topic Analyzer, extract clever code snippets via an AI Code Hunter agent, generate breakdowns via Claude Haiku, compose HTML emails, save as Gmail drafts for human review, and write tracking rows to Google Sheets. Runs every Sunday to produce 3 Gmail drafts (Python, JS/TS, C/C++) ready for Mon/Wed/Fri send.
+**Purpose:** Use an AI agent with web search to discover trending OSS repos for each language, extract clever code snippets via a Code Hunter agent, generate breakdowns via Claude Haiku, compose HTML emails, save as Gmail drafts for human review, and write tracking rows to Google Sheets. Runs every Sunday to produce 3 Gmail drafts (Python, JS/TS, C/C++) ready for Mon/Wed/Fri send.
 
 ## Prerequisites
 
@@ -11,6 +11,7 @@
 - Gmail OAuth2 credentials configured in n8n
 - GitHub Personal Access Token added as n8n credential (`githubToken`)
 - Anthropic API key added as n8n credential (`anthropicApiKey`)
+- Tavily API key added as n8n credential or HTTP Header Auth (`tavilyApiKey`)
 - n8n instance: `retz8.app.n8n.cloud`
 
 ## Workflow Overview
@@ -22,21 +23,19 @@ Schedule Trigger (Sunday 8pm)
 Google Sheets ── Read all rows from Newsletter Drafts
        |          (to determine current max issue_number)
        v
-Code ─────────── Compute next issue_number (last + 1)
+Code ─────────── Compute next issue_number (max + 1)
        |
        v
-HTTP Request ─── HN Algolia API
-       |          (trending stories, past 7 days, points > 50)
+AI Agent ─────── Trending OSS Finder
+       |          Tool: web_search (Tavily API)
+       |          - Searches "trending open source <language> projects this week"
+       |          - Selects 1 notable GitHub repo per language (Python, JS/TS, C/C++)
+       |          - Flags C/C++ as not_found if no strong match exists
        v
-AI Agent ─────── Topic Analyzer
-       |          - Reads HN story titles + URLs
-       |          - Selects 1 GitHub repo per language (Python, JS/TS, C/C++)
-       |          - Flags C/C++ as not_found if no HN story qualifies
-       v
-Code ─────────── Parse Topic Selections
+Code ─────────── Parse Repo Selections
        |          Emits 3 items: { language, repo_full_name, trend_source, needs_fallback }
        v
-IF ───────────── needs_fallback == true? (C/C++ not found in HN)
+IF ───────────── needs_fallback == true? (agent couldn't find C/C++ repo)
        ├─ TRUE  → HTTP Request: GitHub Search C/C++
        │               ↓
        │          Code: Select Best C/C++ Repo
@@ -70,7 +69,7 @@ Google Sheets ── Append row to Newsletter Drafts
                    programming_language, repo metadata, trend_source]
 ```
 
-**Manual step after this runs**: Open Gmail every Sunday, review 3 drafts. Edit tone/content directly in Gmail if needed. Then in Google Sheets, set `status` to `"scheduled"` and `scheduled_date` to the target Mon/Wed/Fri 7am. Workflow 2 picks up scheduled rows automatically.
+**Manual step after this runs**: Open Gmail every Sunday, review 3 drafts. Edit tone/content directly in Gmail if needed. Then in Google Sheets, set `status` to `"scheduled"` and `scheduled_day` to `mon`, `wed`, or `fri`. Workflow 2 picks up scheduled rows automatically.
 
 ## Node-by-Node Configuration
 
@@ -133,93 +132,83 @@ return [{ json: { next_issue_number: maxIssue + 1 } }];
 
 ---
 
-### Node 4: HTTP Request - HN Algolia API
-
-**Node Type:** `HTTP Request`
-**Purpose:** Fetch recent trending Hacker News stories from the past 7 days with meaningful community signal
-
-**Configuration:**
-1. Add HTTP Request node after Compute Issue Number
-2. Configure parameters:
-   - **Method:** GET
-   - **URL:** `https://hn.algolia.com/api/v1/search_by_date`
-   - **Query Parameters:**
-     - `tags`: `story`
-     - `numericFilters`: `points>50,created_at_i>{{ Math.floor($now.toSeconds()) - 604800 }}`
-     - `hitsPerPage`: `50`
-   - **Options → On Error:** Stop Workflow
-
-**Note:** `604800` = 7 days in seconds. `$now.toSeconds()` returns the current Unix timestamp in n8n.
-
-**Output:** `{ hits: [{ objectID, title, url, points, author, created_at }, ...] }`
-
----
-
-### Node 5: AI Agent - Topic Analyzer
+### Node 4: AI Agent - Trending OSS Finder
 
 **Node Type:** `AI Agent`
-**Purpose:** Read HN stories, identify the best GitHub repo for each language (Python, JS/TS, C/C++), and flag C/C++ as not found if no qualifying story exists
+**Purpose:** Autonomously search the web for trending open-source projects this week and select one notable GitHub repo per language (Python, JS/TS, C/C++)
 
 **Configuration:**
-1. Add AI Agent node after HN Algolia HTTP Request
+1. Add AI Agent node after Compute Issue Number
 2. Connect a **Chat Model** sub-node:
    - Node Type: `Anthropic Chat Model`
    - Credential: `anthropicApiKey`
    - Model: `claude-haiku-4-5-20251001`
-3. No tools needed — all data comes from the HN response
-4. Set **Prompt** field:
+3. Connect one **HTTP Request Tool** sub-node (see Tool 1 below)
+4. Set **System Message**:
 
 ```
-Here are the top Hacker News stories from the past 7 days:
+You are a tech curator for a developer newsletter targeting mid-level engineers (2-5 YoE).
+Your job: find ONE notable open-source GitHub repository for each of these 3 language categories this week: Python, JS/TS, and C/C++.
 
-{{ JSON.stringify($json.hits.map(h => ({ id: h.objectID, title: h.title, url: h.url, points: h.points }))) }}
+Use the web_search tool to search for trending OSS projects. Suggested searches:
+- "trending open source Python projects this week"
+- "trending open source JavaScript TypeScript library this week"
+- "trending open source C++ project this week site:github.com"
 
-You are selecting code snippets for a developer newsletter targeting mid-level engineers (2-5 YoE).
-Your job: identify exactly ONE notable open-source GitHub repository for each of these 3 programming language categories: Python, JS/TS, and C/C++.
+Selection rules:
+- Must have a real GitHub repo (github.com/owner/repo)
+- Prefer: new releases, tools engineers are talking about, clever libraries, OSS with notable activity this week
+- Avoid: tutorials, blog posts, "awesome-lists", aggregator repos, docs-only repos
+- For C/C++: if no strong match found after searching, set not_found to true
 
-Rules:
-- The repo must have a real GitHub URL (github.com/owner/repo format)
-- Prefer: new releases, tools people are actually using, clever libraries, OSS projects with notable announcements this week
-- Avoid: tutorials, blog posts, "awesome-lists", aggregator repos, documentation repos
-- For C/C++: only select from HN stories if a strong match exists. If not, set not_found to true.
-
-Return ONLY a JSON object in this exact format:
+Return ONLY a JSON object:
 {
-  "python": {
-    "repo_full_name": "owner/repo",
-    "hn_story_id": "12345678",
-    "trend_source": "HN #12345678"
-  },
-  "js_ts": {
-    "repo_full_name": "owner/repo",
-    "hn_story_id": "12345679",
-    "trend_source": "HN #12345679"
-  },
-  "cpp": {
-    "repo_full_name": "owner/repo",
-    "hn_story_id": "12345680",
-    "trend_source": "HN #12345680",
-    "not_found": false
-  }
+  "python":  { "repo_full_name": "owner/repo", "trend_source": "brief reason (e.g. 'new release this week')" },
+  "js_ts":   { "repo_full_name": "owner/repo", "trend_source": "brief reason" },
+  "cpp":     { "repo_full_name": "owner/repo", "trend_source": "brief reason", "not_found": false }
 }
-
-If no suitable C/C++ repo is found in HN this week, return:
-  "cpp": { "repo_full_name": null, "hn_story_id": null, "trend_source": null, "not_found": true }
-
+If no C/C++ found: "cpp": { "repo_full_name": null, "trend_source": null, "not_found": true }
 JSON only. No explanation.
 ```
 
-**Output:** `{ output: "<JSON string with python/js_ts/cpp selections>" }`
+5. Set **Prompt** field:
+
+```
+Today is {{ $now.toFormat('yyyy-MM-dd') }}. Search for trending open-source projects from the past 7 days and return the repo selections.
+```
+
+**Tool 1: web_search**
+
+1. Add HTTP Request Tool sub-node to the AI Agent
+2. Configure:
+   - **Name:** `web_search`
+   - **Description:** `Search the web for information about trending open-source projects, GitHub repos, and tech news. Input: a search query string.`
+   - **Method:** POST
+   - **URL:** `https://api.tavily.com/search`
+   - **Body (JSON):**
+     ```json
+     {
+       "api_key": "{{ $credentials.tavilyApiKey }}",
+       "query": "{{ $fromAI('query') }}",
+       "search_depth": "basic",
+       "max_results": 5,
+       "include_domains": ["github.com", "news.ycombinator.com", "dev.to", "reddit.com"]
+     }
+     ```
+
+**Note:** Tavily API key must be added to n8n credentials. Free tier: 1000 searches/month — well within budget for weekly runs.
+
+**Output:** `{ output: "<JSON string with python/js_ts/cpp repo selections>" }`
 
 ---
 
-### Node 6: Code - Parse Topic Selections
+### Node 5: Code - Parse Repo Selections
 
 **Node Type:** `Code`
-**Purpose:** Parse the Topic Analyzer agent output and emit 3 items — one per language. Sets `needs_fallback: true` on the C/C++ item if not found.
+**Purpose:** Parse the Trending OSS Finder agent output and emit 3 items — one per language. Sets `needs_fallback: true` on the C/C++ item if not found.
 
 **Configuration:**
-1. Add Code node after AI Agent - Topic Analyzer
+1. Add Code node after AI Agent - Trending OSS Finder
 2. Set parameters:
    - **Mode:** Run Once for All Items
    - **Language:** JavaScript
@@ -236,7 +225,7 @@ try {
 } catch (e) {
   const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (match) parsed = JSON.parse(match[1]);
-  else throw new Error('Failed to parse Topic Analyzer output: ' + raw);
+  else throw new Error('Failed to parse Trending OSS Finder output: ' + raw);
 }
 
 const langMap = [
@@ -262,7 +251,7 @@ return langMap.map(({ key, language }) => {
 
 ---
 
-### Node 7: IF - Needs GitHub Fallback?
+### Node 6: IF - Needs GitHub Fallback?
 
 **Node Type:** `IF`
 **Purpose:** Route items that didn't get a repo from HN (typically C/C++) to the GitHub Search fallback
@@ -280,7 +269,7 @@ return langMap.map(({ key, language }) => {
 
 ---
 
-### Node 7a: HTTP Request - GitHub Search C/C++ (TRUE branch)
+### Node 6a: HTTP Request - GitHub Search C/C++ (TRUE branch)
 
 **Node Type:** `HTTP Request`
 **Purpose:** Search GitHub for a well-known, active C/C++ project as fallback
@@ -301,7 +290,7 @@ return langMap.map(({ key, language }) => {
 
 ---
 
-### Node 7b: Code - Select Best C/C++ Repo (TRUE branch)
+### Node 6b: Code - Select Best C/C++ Repo (TRUE branch)
 
 **Node Type:** `Code`
 **Purpose:** Pick the highest-scored C/C++ repo from GitHub Search results
@@ -344,22 +333,22 @@ return [{
 
 ---
 
-### Node 8: Merge - Combine Language Items
+### Node 7: Merge - Combine Language Items
 
 **Node Type:** `Merge`
 **Purpose:** Reunite HN-sourced items (FALSE branch) and GitHub-fallback item (TRUE branch) into one stream of 3 language items
 
 **Configuration:**
 1. Add Merge node
-2. Connect Node 7 FALSE branch output → Merge input 1
-3. Connect Node 7b output → Merge input 2
+2. Connect Node 6 FALSE branch output → Merge input 1
+3. Connect Node 6b output → Merge input 2
 4. Set **Mode:** Append
 
 **Output:** 3 items (Python, JS/TS, C/C++) — all with valid `repo_full_name`
 
 ---
 
-### Node 9: AI Agent - Code Hunter
+### Node 8: AI Agent - Code Hunter
 
 **Node Type:** `AI Agent`
 **Purpose:** Explore the selected GitHub repo using tools and find a self-contained 8-12 line snippet with a non-obvious insight. Can retry different files if the first candidate is not good enough.
@@ -436,7 +425,7 @@ Return ONLY a JSON object:
 
 ---
 
-### Node 10: Code - Parse Code Hunter Output
+### Node 9: Code - Parse Code Hunter Output
 
 **Node Type:** `Code`
 **Purpose:** Extract snippet and file_path from the Code Hunter agent output
@@ -474,7 +463,7 @@ return [{
 
 ---
 
-### Node 11: HTTP Request - Claude Haiku API
+### Node 10: HTTP Request - Claude Haiku API
 
 **Node Type:** `HTTP Request`
 **Purpose:** Generate the 3-bullet breakdown and file_intent label for the extracted snippet
@@ -508,7 +497,7 @@ return [{
 
 ---
 
-### Node 12: Code - Parse Breakdown
+### Node 11: Code - Parse Breakdown
 
 **Node Type:** `Code`
 **Purpose:** Extract the JSON breakdown from Claude's response
@@ -547,7 +536,7 @@ return [{
 
 ---
 
-### Node 13: Code - Compose HTML Email
+### Node 12: Code - Compose HTML Email
 
 **Node Type:** `Code`
 **Purpose:** Build the full mobile-first HTML email with inline CSS and syntax-highlighted code block
@@ -641,7 +630,7 @@ return [{ json: { ...item.json, subject, html_body, issue_number: issueNumber } 
 
 ---
 
-### Node 14: Gmail - Create Draft
+### Node 13: Gmail - Create Draft
 
 **Node Type:** `Gmail`
 **Purpose:** Save the composed email as a Gmail draft for human review
@@ -661,7 +650,7 @@ return [{ json: { ...item.json, subject, html_body, issue_number: issueNumber } 
 
 ---
 
-### Node 15: Code - Extract Draft ID
+### Node 14: Code - Extract Draft ID
 
 **Node Type:** `Code`
 **Purpose:** Pull `id` from Gmail response and attach as `gmail_draft_id`
@@ -681,7 +670,7 @@ return [{ json: { ...item.json, gmail_draft_id: item.json.id } }];
 
 ---
 
-### Node 16: Google Sheets - Append Draft Row
+### Node 15: Google Sheets - Append Draft Row
 
 **Node Type:** `Google Sheets`
 **Purpose:** Write one tracking row per language variant. Full email content lives in the Gmail draft — this row is metadata only.
@@ -724,12 +713,11 @@ return [{ json: { ...item.json, gmail_draft_id: item.json.id } }];
 - Click "Execute Workflow" (do not wait for Sunday)
 
 **Expected Result:**
-- Node 4 (HN Algolia): returns `hits` array with 30-50 stories
-- Node 5 (Topic Analyzer): `output` field contains valid JSON with python/js_ts/cpp keys
-- Node 6 (Parse Topics): emits 3 items with `repo_full_name` populated
-- Node 7 (IF): C/C++ item routes to TRUE branch if `needs_fallback: true`, FALSE otherwise
-- Node 9 (Code Hunter): each item's `output` contains `snippet`, `file_path`, `selection_reason`
-- Node 11 (Claude Haiku): `content[0].text` is valid JSON with all 4 breakdown fields
+- Node 4 (Trending OSS Finder): `output` field contains valid JSON with python/js_ts/cpp repo selections
+- Node 5 (Parse Repo Selections): emits 3 items with `repo_full_name` populated
+- Node 6 (IF): C/C++ item routes to TRUE branch if `needs_fallback: true`, FALSE otherwise
+- Node 8 (Code Hunter): each item's `output` contains `snippet`, `file_path`, `selection_reason`
+- Node 10 (Claude Haiku): `content[0].text` is valid JSON with all 4 breakdown fields
 - Gmail: 3 new drafts appear in inbox
 - Google Sheets: 3 new rows with `status: "draft"`, same `issue_number`, `gmail_draft_id` and `trend_source` populated
 
@@ -753,12 +741,12 @@ return [{ json: { ...item.json, gmail_draft_id: item.json.id } }];
 ### Test 3: C/C++ Fallback Path
 
 **Setup:**
-- In Node 6 (Parse Topics), temporarily force `needs_fallback: true` for the C/C++ item
+- In Node 5 (Parse Repo Selections), temporarily force `needs_fallback: true` for the C/C++ item
 - Run workflow
 
 **Expected Result:**
-- C/C++ item routes to Node 7a (GitHub Search)
-- Node 7b selects a high-star C/C++ repo
+- C/C++ item routes to Node 6a (GitHub Search)
+- Node 6b selects a high-star C/C++ repo
 - `trend_source` is `"github_fallback"` in the Sheets row
 - Rest of pipeline (Code Hunter → breakdown → draft) completes normally
 
@@ -769,7 +757,7 @@ return [{ json: { ...item.json, gmail_draft_id: item.json.id } }];
 **Setup:**
 - In Google Sheets, find one of the 3 new rows
 - Set `status` to `scheduled`
-- Set `scheduled_date` to a past Mon/Wed/Fri 7am timestamp (e.g., `2026-02-16T07:00:00Z`)
+- Set `scheduled_day` to `mon`, `wed`, or `fri`
 - Trigger Workflow 2 manually
 
 **Expected Result:**
@@ -782,11 +770,11 @@ return [{ json: { ...item.json, gmail_draft_id: item.json.id } }];
 
 ## Error Handling
 
-**HN Algolia returns no results:**
-- Unlikely (>50 points filter applied to last 7 days). If it happens, "Stop Workflow" on Node 4 triggers — check Executions tab. Lower `points` threshold or widen `hitsPerPage` if needed.
+**Trending OSS Finder outputs malformed JSON:**
+- Node 5 (Parse Repo Selections) catches the parse error and throws. Check the raw `output` field in Node 4's execution log to see what the agent returned. Adjust the system message JSON example if the model is wrapping with markdown.
 
-**Topic Analyzer outputs malformed JSON:**
-- Node 6 (Parse Topics) catches the parse error and throws. Check the raw `output` field in Node 5's execution log to see what the agent returned. Adjust the prompt's JSON example if the model is wrapping with markdown.
+**Tavily search returns no useful results:**
+- The agent will retry with different queries autonomously. If it still can't find a repo, it will set `not_found: true` for that language and fall through to the GitHub Search fallback (for C/C++) or return a best-effort pick.
 
 **Code Hunter can't find a good snippet:**
 - Agent returns a suboptimal snippet rather than failing — it always returns something. Review the draft in Gmail. If snippet quality is poor, edit directly in Gmail before approving.
@@ -795,7 +783,7 @@ return [{ json: { ...item.json, gmail_draft_id: item.json.id } }];
 - Happens if the repo's default branch isn't `HEAD` or if the repo is private. Agent will see the error in the tool response and attempt a different file. If all calls fail, the agent returns a best-effort snippet from whatever it received.
 
 **Claude Haiku returns malformed breakdown:**
-- Node 12 (Parse Breakdown) catches the error and throws. Set `On Error: Continue` on Node 11 to allow the other 2 language items to complete. The failed draft is skipped — check Executions tab and create manually.
+- Node 11 (Parse Breakdown) catches the error and throws. Set `On Error: Continue` on Node 10 to allow the other 2 language items to complete. The failed draft is skipped — check Executions tab and create manually.
 
 **Gmail draft creation fails:**
 - `gmail_draft_id` will be null in the Sheets row. Manually create the draft and update the Sheets row with the correct ID.
