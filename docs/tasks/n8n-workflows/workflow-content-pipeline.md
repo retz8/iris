@@ -400,6 +400,12 @@ What to avoid:
 - Test files, configuration files, auto-generated code
 - Files with only imports or re-exports
 - Trivially obvious utility functions
+
+Critical rules:
+- Never ask for permission, clarification, or confirmation
+- Always return a real code snippet immediately, even if imperfect
+- If the repo is large or complex, search for well-known files and pick the best candidate you find
+- file_path must be a real file path from the repo (e.g. src/model.py), never empty
 ```
 
 5. Set **Prompt** field:
@@ -408,7 +414,7 @@ What to avoid:
 Repository: {{ $json.repo_full_name }}
 Language: {{ $json.language }}
 
-Search the web to find a clever, self-contained code snippet from this repository. Also return a one-sentence description of what the repository does.
+Search the web now and return a snippet immediately. Also return a one-sentence description of what the repository does.
 ```
 
 **Output:** `{ output: { snippet: "...", file_path: "...", selection_reason: "...", repo_description: "..." } }` — parsed object guaranteed by JSON Schema.
