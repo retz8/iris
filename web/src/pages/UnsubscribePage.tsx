@@ -15,7 +15,10 @@ type UnsubscribeState =
 
 function UnsubscribePage() {
   const [searchParams] = useSearchParams();
-  const [unsubState, setUnsubState] = useState<UnsubscribeState>('confirm_prompt');
+  // Lazy-initialize from URL: avoids confirm_prompt flash on missing token (TASK-046)
+  const [unsubState, setUnsubState] = useState<UnsubscribeState>(() =>
+    searchParams.get('token') ? 'confirm_prompt' : 'missing_token'
+  );
   const [email, setEmail] = useState<string | null>(null);
   const isMountedRef = useRef(true);
 

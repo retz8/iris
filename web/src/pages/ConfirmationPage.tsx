@@ -21,7 +21,10 @@ function getNextDeliveryDay(): string {
 
 function ConfirmationPage() {
   const [searchParams] = useSearchParams();
-  const [confirmState, setConfirmState] = useState<ConfirmState>('verifying');
+  // Lazy-initialize from URL: avoids spinner flash on missing token (TASK-041)
+  const [confirmState, setConfirmState] = useState<ConfirmState>(() =>
+    searchParams.get('token') ? 'verifying' : 'missing_token'
+  );
   const [email, setEmail] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
