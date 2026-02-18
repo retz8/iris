@@ -560,17 +560,15 @@ return {
 **Configuration:**
 1. Add Code node after Parse Breakdown
 2. Set parameters:
-   - **Mode:** Run Once for All Items
+   - **Mode:** Run Once for Each Item
    - **Language:** JavaScript
 
 3. JavaScript code:
 
 ```javascript
-const item = $input.first();
-const { language, snippet, file_intent, repo_full_name, repo_url, repo_description,
-        breakdown_what, breakdown_responsibility, breakdown_clever, trend_source } = item.json;
-
-const issueNumber = $('Compute Issue Number').first().json.next_issue_number;
+const { language, snippet, file_intent, repo_full_name, repo_description,
+        breakdown_what, breakdown_responsibility, breakdown_clever, trend_source,
+        issue_number: issueNumber } = $input.item.json;
 const paddedIssue = String(issueNumber).padStart(3, '0');
 const subject = `Can you read this #${paddedIssue}: ${file_intent}`;
 
@@ -641,7 +639,7 @@ const html_body = `<!DOCTYPE html>
 </body>
 </html>`;
 
-return [{ json: { ...item.json, subject, html_body, issue_number: issueNumber } }];
+return { json: { ...$input.item.json, subject, html_body } };
 ```
 
 ---
@@ -674,14 +672,13 @@ return [{ json: { ...item.json, subject, html_body, issue_number: issueNumber } 
 **Configuration:**
 1. Add Code node after Create Gmail Draft
 2. Set parameters:
-   - **Mode:** Run Once for All Items
+   - **Mode:** Run Once for Each Item
    - **Language:** JavaScript
 
 3. JavaScript code:
 
 ```javascript
-const item = $input.first();
-return [{ json: { ...item.json, gmail_draft_id: item.json.id } }];
+return { json: { ...$input.item.json, gmail_draft_id: $input.item.json.id } };
 ```
 
 ---
