@@ -28,6 +28,7 @@ IF: Token Provided?
                   ├─ "not_found" → Respond (404 Invalid Token)
                   ├─ "already_confirmed" → Respond (200 Already Confirmed)
                   ├─ "expired" → Respond (400 Token Expired)
+                  ├─ "invalid_status" → Respond (500 Invalid Status)
                   └─ "valid" → Code: Generate unsubscribe_token
                                     ↓
                                 Google Sheets: Update Row (status=confirmed)
@@ -342,8 +343,11 @@ return [
   - Value 2: `valid`
 - Output: Route to confirmation flow
 
-**Rule 5 (Fallback): Unknown Error**
-- **Otherwise (Fallback):** Route to 500 error response
+**Rule 5: Invalid Status**
+- Value 1: `{{ $json.validationResult }}`
+- Operation: `Equal`
+- Value 2: `invalid_status`
+- Output: Route to 500 error response
 
 ---
 
@@ -402,6 +406,26 @@ return [
   "error": "This confirmation link has expired. Please sign up again.",
   "error_type": "token_expired",
   "statusCode": 400
+}
+```
+
+---
+
+### Node 8d: Respond to Webhook - Invalid Status (Rule 5)
+
+**Node Type:** `Respond to Webhook`
+**Purpose:** Return 500 error for unexpected subscriber status
+
+**Configuration:**
+- **Response Code:** 500
+- **Response Body:**
+
+```json
+{
+  "success": false,
+  "error": "{{ $json.errorMessage }}",
+  "error_type": "invalid_status",
+  "statusCode": 500
 }
 ```
 
