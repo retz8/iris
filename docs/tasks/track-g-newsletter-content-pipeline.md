@@ -54,29 +54,52 @@ Follow these steps to understand the current state:
 
 ## Phase 1: Discovery/Discussion (with human engineer)
 
-### Topics to Discuss
+### Decisions Made
 
-Based on Phase 0 exploration, discuss and generate specific questions for:
+**Human Review Workflow:**
+- Gmail Drafts approach: Workflow 1 creates Gmail drafts (NOT stores content in Sheets directly)
+- `gmail_draft_id` tracked in Sheets for linking
+- Human opens Gmail every Sunday, reads 3 drafts, manually updates status in Sheets to trigger Workflow 2
+- The Google Sheets Drafts schema (`google-sheets-drafts-schema.md`) stores metadata + `gmail_draft_id`; full email content lives in Gmail draft
 
-1. **GitHub Trending API** - Official vs unofficial, search API alternatives, filtering approach, repo count
-2. **Snippet Extraction Heuristics** - Quality detection logic, Claude role, avoiding boilerplate, candidate count
-3. **Claude API Integration** - Model choice, prompt structure, token budget, error handling
-4. **Code Image Rendering** - Service choice, image settings, rate limits, image format
-5. **Gmail Draft Creation** - Template structure, mobile design, image embedding, subject format
-6. **Human Review Workflow** - Review process, approval workflow, integration with Workflow 2
+**Code Rendering:**
+- HTML text with inline styles (per Track H spec) — NOT Carbon/ray.so images
+- Syntax highlighting via `<span style="color: ...">` tags inline in email
 
-Document specific questions and design decisions here after discussion.
+**Claude Model:**
+- `claude-haiku-4-5-20251001` — fast and cheap, sufficient for 3-bullet breakdown generation
+
+**Issue Numbering:**
+- Auto-increment from 1: `max(issue_number) + 1` queried from Google Sheets at runtime
+- Each run creates 3 rows (one per language variant) with the same issue_number
+
+**Scheduled Date:**
+- Human manually sets scheduled date during review (not auto-set by Workflow 1)
+- Workflow 1 sets status to `"draft"` only; human changes to `"scheduled"` with a date
+
+**GitHub Source:**
+- Perplexity API (sonar-pro) identifies trending topics with web search and returns structured JSON with GitHub search queries per language — replaces raw HN/trending scraping
+- GitHub Search API used as the second hop: `GET /search/repositories?q={perplexity_query}&sort=stars&per_page=5`
+- Repos scored by stars + recency; highest score selected per language
+
+**Snippet Extraction:**
+- Fetch repo file tree (recursive), filter by extension + blocklist (tests, configs, generated files)
+- Sliding window scoring over file lines: 8-12 line windows, scored by logic density + line length + position
+- Fallback: first 10 lines of best-scored file if no window scores above threshold
 
 ## Phase 2: Implementation Planning
 
-**Will be filled in after Phase 1 discussion.** Should include:
-- n8n Workflow 1 node structure (step-by-step)
-- GitHub API query parameters
-- Snippet extraction logic (Code node implementation)
-- Claude API prompt template
-- Carbon API request format
-- Email HTML template
-- Google Sheets draft tracking setup
+**Complete** — see [`docs/tasks/n8n-workflows/workflow-content-pipeline.md`](../n8n-workflows/workflow-content-pipeline.md)
+
+Plan covers all 8 phases (17 TASK items + 7 TEST items):
+- Phase 1: Schedule Trigger + issue_number auto-increment
+- Phase 2: Perplexity API call (trending topics, structured JSON, 2 per language)
+- Phase 3: GitHub Search API (repo selection with scoring + fallback)
+- Phase 4: File tree fetch + snippet extraction heuristics (8-12 lines, self-contained)
+- Phase 5: Claude Haiku breakdown generation (file_intent + 3 bullets)
+- Phase 6: HTML email composition (inline CSS, syntax highlighting) + Gmail draft creation
+- Phase 7: Google Sheets tracking (status: "draft", gmail_draft_id, issue_number)
+- Phase 8: End-to-end testing checklist
 
 ## Phase 3: Execution
 
