@@ -418,30 +418,30 @@ Search the web to find a clever, self-contained code snippet from this repositor
 ### Node 9: Code - Parse Code Hunter Output
 
 **Node Type:** `Code`
-**Purpose:** Consolidate all data needed by downstream nodes into one clean JSON object. Pulls issue_number from Node 3, repo metadata from Node 7, and snippet fields from the Code Hunter agent output. Every downstream node (10–15) reads from this node's output.
+**Purpose:** Consolidate all data needed by downstream nodes into one clean JSON object. Runs once per language item (3 total). Pulls issue_number from Node 3, repo metadata from Parse Repo Selections, and snippet fields from the current Code Hunter agent output.
 
 **Configuration:**
 1. Add Code node after AI Agent - Code Hunter
 2. Set parameters:
-   - **Mode:** Run Once for All Items
+   - **Mode:** Run Once for Each Item
    - **Language:** JavaScript
 
 3. JavaScript code:
 
 ```javascript
-const agentItem = $input.first();
-// JSON Schema response format returns a parsed object. Defensive fallback for string output.
-let parsed = agentItem.json.output;
+// $input.item is the current Code Hunter output for this language iteration.
+// Node 8 runs once per language item, so this node also runs 3 times (Python, JS/TS, C/C++).
+let parsed = $input.item.json.output;
 if (typeof parsed === 'string') {
   const match = parsed.match(/```(?:json)?\s*([\s\S]*?)```/);
   parsed = JSON.parse(match ? match[1] : parsed);
 }
 
-// Pull repo metadata from the Merge node — it holds language/repo_full_name/trend_source
-// set by Parse Repo Selections (Node 5) or Select Best C/C++ Repo (Node 6b).
-const repoData = $('Merge - Combine Language Items').item.json;
+// $('Parse Repo Selections').item.json gives the paired item at the same index
+// (Python item when processing Python, JS/TS when processing JS/TS, etc.)
+const repoData = $('Parse Repo Selections').item.json;
 
-return [{
+return {
   json: {
     issue_number: $('Compute Issue Number').first().json.next_issue_number,
     language: repoData.language,
@@ -452,7 +452,7 @@ return [{
     file_path: parsed.file_path,
     selection_reason: parsed.selection_reason
   }
-}];
+};
 ```
 
 ---
@@ -514,27 +514,26 @@ return [{
 ### Node 11: Code - Parse Breakdown
 
 **Node Type:** `Code`
-**Purpose:** Extract the JSON breakdown from OpenAI's response and merge with the consolidated repo/snippet data from Node 9. Explicitly references Node 9 so downstream nodes get a clean, flat JSON — not the raw OpenAI response object (which contains choices, usage, model, etc.).
+**Purpose:** Extract the JSON breakdown from OpenAI's response and merge with the consolidated repo/snippet data from Node 9. Runs once per language item. Uses `$input.item` (not `$input.first()`) so all 3 items are processed.
 
 **Configuration:**
 1. Add Code node after OpenAI Breakdown HTTP Request
 2. Set parameters:
-   - **Mode:** Run Once for All Items
+   - **Mode:** Run Once for Each Item
    - **Language:** JavaScript
 
 3. JavaScript code:
 
 ```javascript
-const item = $input.first();
 // JSON Schema response_format guarantees valid JSON string in choices[0].message.content
-const text = item.json.choices[0].message.content;
+const text = $input.item.json.choices[0].message.content;
 const parsed = JSON.parse(text);
 
-// Carry forward the consolidated fields from Node 9 — not from item.json
-// (item.json here is Node 10's raw OpenAI response, which we don't want to spread).
+// Carry forward consolidated fields from Node 9 — not from $input.item.json,
+// which is Node 10's raw OpenAI response (choices, usage, model, etc.).
 const upstream = $('Parse Code Hunter Output').item.json;
 
-return [{
+return {
   json: {
     issue_number: upstream.issue_number,
     language: upstream.language,
@@ -548,7 +547,7 @@ return [{
     breakdown_responsibility: parsed.breakdown_responsibility,
     breakdown_clever: parsed.breakdown_clever
   }
-}];
+};
 ```
 
 ---
