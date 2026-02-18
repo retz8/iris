@@ -601,6 +601,126 @@ legend {
 }
 
 /* ========================================
+   Confirmation Page
+   ======================================== */
+
+.confirmation-page {
+  padding: var(--space-5xl) 0;
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+}
+
+.confirmation-content {
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.confirmation-content h1 {
+  font-size: var(--text-3xl);
+  margin-bottom: var(--space-md);
+}
+
+/* Spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.confirmation-spinner {
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  margin: 0 auto var(--space-md);
+}
+
+.confirmation-loading-text {
+  color: var(--color-text-tertiary);
+  font-size: var(--text-sm);
+}
+
+/* State Icons */
+.confirmation-status-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 auto var(--space-lg);
+  line-height: 1;
+}
+
+.confirmation-icon-success {
+  background-color: rgba(0, 102, 255, 0.08);
+  color: var(--color-accent);
+}
+
+.confirmation-icon-warning {
+  background-color: rgba(217, 119, 6, 0.08);
+  color: #d97706;
+}
+
+.confirmation-icon-error {
+  background-color: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+}
+
+/* Body text */
+.confirmation-text {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-xl);
+}
+
+.confirmation-text strong {
+  color: var(--color-text);
+}
+
+/* Primary action link (e.g. "Sign up again") */
+.confirmation-action-btn {
+  display: inline-block;
+  font-size: var(--text-base);
+  color: var(--color-button-text);
+  background-color: var(--color-button-bg);
+  text-decoration: none;
+  padding: 12px var(--space-lg);
+  border-radius: var(--radius);
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+  margin-bottom: var(--space-md);
+  min-height: 44px;
+  line-height: 1.25;
+}
+
+.confirmation-action-btn:hover {
+  background-color: var(--color-button-hover);
+  color: var(--color-button-text);
+  transform: translateY(-1px);
+}
+
+/* Retry button spacing */
+.confirmation-retry-btn {
+  margin-bottom: var(--space-md);
+}
+
+/* Secondary "Go to homepage" link */
+.confirmation-home-link {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.confirmation-home-link:hover {
+  color: var(--color-text-secondary);
+}
+
+/* ========================================
    Unsubscribe Page
    ======================================== */
 
