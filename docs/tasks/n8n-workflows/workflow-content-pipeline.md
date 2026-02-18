@@ -19,10 +19,10 @@
 Schedule Trigger (Sunday 8pm)
        |
        v
-Google Sheets ── Read all rows from Newsletter Drafts
-       |          (to find current max issue_number)
+Google Sheets ── Read last row from Newsletter Drafts
+       |          (to get current issue_number)
        v
-Code ─────────── Compute next issue_number (max + 1)
+Code ─────────── Compute next issue_number (last + 1)
        |
        v
 HTTP Request ─── HN Algolia API
@@ -88,10 +88,10 @@ Google Sheets ── Append row to Newsletter Drafts
 
 ---
 
-### Node 2: Google Sheets - Read Drafts Sheet
+### Node 2: Google Sheets - Read Last Draft Row
 
 **Node Type:** `Google Sheets`
-**Purpose:** Fetch all existing rows to compute the next issue_number
+**Purpose:** Fetch only the last row to get the current issue_number
 
 **Configuration:**
 1. Add Google Sheets node after Schedule Trigger
@@ -100,16 +100,22 @@ Google Sheets ── Append row to Newsletter Drafts
    - **Operation:** Get Rows
    - **Document:** `Newsletter`
    - **Sheet:** `Newsletter Drafts`
-   - **Return All:** ON
+   - **Return All:** OFF
+   - **Options → Limit:** `1`
+   - **Options → Sort:**
+     - Column: `Row Number` (or leave default — rows append in order)
+     - Direction: Descending
 
-**Output:** All existing rows (may be empty on first run)
+**Note:** On first run the sheet is empty and returns 0 rows — the Code node handles this.
+
+**Output:** 0 rows (first run) or 1 row (the most recently appended row)
 
 ---
 
 ### Node 3: Code - Compute Issue Number
 
 **Node Type:** `Code`
-**Purpose:** Find max issue_number across all rows and increment by 1
+**Purpose:** Read issue_number from the last row and add 1. Defaults to 1 if the sheet is empty.
 
 **Configuration:**
 1. Add Code node after Google Sheets read
@@ -120,13 +126,9 @@ Google Sheets ── Append row to Newsletter Drafts
 3. JavaScript code:
 
 ```javascript
-const rows = $input.all();
-let maxIssue = 0;
-for (const row of rows) {
-  const n = parseInt(row.json.issue_number || '0', 10);
-  if (n > maxIssue) maxIssue = n;
-}
-return [{ json: { next_issue_number: maxIssue + 1 } }];
+const last = $input.first();
+const lastIssue = parseInt(last?.json?.issue_number || '0', 10);
+return [{ json: { next_issue_number: lastIssue + 1 } }];
 ```
 
 **Output:** `{ next_issue_number: N }` — referenced later by `$('Compute Issue Number').first().json.next_issue_number`
