@@ -35,6 +35,8 @@ IF: Token Provided?
                                     ↓
                                 Gmail: Send Welcome Email
                                     ↓
+                                Code: Format Success Response
+                                    ↓
                                 Respond (200 Success)
 ```
 
@@ -680,23 +682,49 @@ token_expires_at → (empty/null)
 
 ---
 
-### Node 12: Respond to Webhook - Confirmation Success
+### Node 12: Code - Format Confirmation Success Response
+
+**Node Type:** `Code`
+**Purpose:** Format success response after confirmation
+
+**Configuration:**
+1. Add Code node after Gmail node
+2. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
+
+3. JavaScript code:
+
+```javascript
+const item = $input.first();
+
+return [
+  {
+    json: {
+      success: true,
+      message: "You're confirmed! Welcome to Snippet.",
+      email: item.json.email,
+      statusCode: 200
+    }
+  }
+];
+```
+
+**Output:** Formatted success response
+
+---
+
+### Node 12a: Respond to Webhook - Confirmation Success
 
 **Node Type:** `Respond to Webhook`
 **Purpose:** Send success response after confirmation
 
 **Configuration:**
-- **Response Code:** 200
-- **Response Body:**
-
-```json
-{
-  "success": true,
-  "message": "You're confirmed! Welcome to Snippet.",
-  "email": "={{ $json.email }}",
-  "statusCode": 200
-}
-```
+1. Add "Respond to Webhook" node after Code formatting node
+2. Set parameters:
+   - **Respond With:** First Incoming Item
+   - **Response Code:** `{{ $json.statusCode }}`
+   - **Put Response in Field:** Leave empty
 
 ---
 
