@@ -9,9 +9,11 @@
 - Google Sheets document `Newsletter` with sheet `Newsletter Drafts` (see `google-sheets-drafts-schema.md`)
 - Google OAuth2 credentials configured in n8n
 - Gmail OAuth2 credentials configured in n8n
-- GitHub Personal Access Token added as n8n credential (`githubToken`)
-- Anthropic API key added as n8n credential (`anthropicApiKey`)
-- OpenAI API key added as n8n credential (`openAiAccount`) — used only for Node 4 (Trending OSS Finder)
+- GitHub token: create a **Header Auth** credential (Name: `Authorization`, Value: `Bearer <token>`) — used in Nodes 6a and 8
+- Anthropic API key: create a **Header Auth** credential (Name: `x-api-key`, Value: `<key>`) — used in Node 10
+- OpenAI API key added as n8n **OpenAI** credential (`openAiAccount`) — used in Node 4
+
+**Note:** `$credentials.xxx` is not accessible in n8n expressions. API keys must be set via the node's **Authentication** field using `Generic Credential Type → Header Auth`.
 - n8n instance: `retz8.app.n8n.cloud`
 
 ## Workflow Overview
@@ -282,6 +284,9 @@ return langMap.map(({ key, language }) => {
 **Configuration:**
 1. Add HTTP Request node on TRUE branch
 2. Configure parameters:
+   - **Authentication:** `Generic Credential Type`
+   - **Generic Auth Type:** `Header Auth`
+   - **Credential:** select your GitHub Header Auth credential (Name: `Authorization`, Value: `Bearer <token>`)
    - **Method:** GET
    - **URL:** `https://api.github.com/search/repositories`
    - **Query Parameters:**
@@ -290,7 +295,6 @@ return langMap.map(({ key, language }) => {
      - `order`: `desc`
      - `per_page`: `10`
    - **Headers:**
-     - `Authorization`: `Bearer {{ $credentials.githubToken }}`
      - `Accept`: `application/vnd.github.v3+json`
 
 ---
@@ -411,10 +415,10 @@ Return ONLY a JSON object:
 2. Configure:
    - **Name:** `get_repo_tree`
    - **Description:** `Get the full recursive file tree of a GitHub repository. Returns a list of all file paths. Use this first to understand the repo structure before reading files.`
+   - **Authentication:** `Generic Credential Type` → `Header Auth` → select GitHub Header Auth credential
    - **Method:** GET
    - **URL:** `https://api.github.com/repos/{{ $fromAI('repo_full_name') }}/git/trees/HEAD?recursive=1`
    - **Headers:**
-     - `Authorization`: `Bearer {{ $credentials.githubToken }}`
      - `Accept`: `application/vnd.github.v3+json`
 
 **Tool 2: read_file**
@@ -476,10 +480,10 @@ return [{
 **Configuration:**
 1. Add HTTP Request node after Parse Code Hunter Output
 2. Configure parameters:
+   - **Authentication:** `Generic Credential Type` → `Header Auth` → select an Anthropic Header Auth credential (Name: `x-api-key`, Value: `<your_anthropic_key>`)
    - **Method:** POST
    - **URL:** `https://api.anthropic.com/v1/messages`
    - **Headers:**
-     - `x-api-key`: `{{ $credentials.anthropicApiKey }}`
      - `anthropic-version`: `2023-06-01`
      - `Content-Type`: `application/json`
    - **Body Content Type:** JSON
