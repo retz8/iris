@@ -545,10 +545,11 @@ return [
 3. JavaScript code:
 
 ```javascript
+const { randomUUID } = require('crypto');
 const item = $input.first();
 
 // Generate unsubscribe token (UUID v4)
-const unsubscribeToken = crypto.randomUUID();
+const unsubscribeToken = randomUUID();
 
 // Current timestamp
 const now = new Date().toISOString();
