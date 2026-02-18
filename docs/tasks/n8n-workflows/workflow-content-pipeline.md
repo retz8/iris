@@ -686,7 +686,7 @@ return [{ json: { ...item.json, gmail_draft_id: item.json.id } }];
 ### Node 16: Google Sheets - Append Draft Row
 
 **Node Type:** `Google Sheets`
-**Purpose:** Write one tracking row per language variant with status "draft", gmail_draft_id, and trend_source
+**Purpose:** Write one tracking row per language variant. Full email content lives in the Gmail draft — this row is metadata only.
 
 **Configuration:**
 1. Add Google Sheets node after Extract Draft ID
@@ -702,18 +702,18 @@ return [{ json: { ...item.json, gmail_draft_id: item.json.id } }];
 |---|---|
 | `issue_number` | `{{ $json.issue_number }}` |
 | `status` | `draft` |
-| `content_variant` | `{{ $json.language }}` |
-| `programming_language` | `{{ $json.language }}` |
+| `gmail_draft_id` | `{{ $json.gmail_draft_id }}` |
 | `file_intent` | `{{ $json.file_intent }}` |
 | `repository_name` | `{{ $json.repo_full_name }}` |
 | `repository_url` | `https://github.com/{{ $json.repo_full_name }}` |
-| `gmail_draft_id` | `{{ $json.gmail_draft_id }}` |
-| `trend_source` | `{{ $json.trend_source }}` |
+| `repository_description` | `{{ $json.repo_description }}` |
+| `programming_language` | `{{ $json.language }}` |
+| `source` | `{{ $json.trend_source }}` |
 | `created_date` | `{{ $now.toISO() }}` |
-| `scheduled_date` | *(leave empty — human sets during review)* |
-| `sent_date` | *(leave empty)* |
+| `scheduled_day` | *(leave empty — human fills during Sunday review)* |
+| `sent_date` | *(leave empty — Workflow 2 fills after send)* |
 
-**Note:** `scheduled_date` and `sent_date` are left empty. Human sets `scheduled_date` and changes `status` to `"scheduled"` during Sunday review to trigger Workflow 2.
+**Note:** Human sets `scheduled_day` to `mon`, `wed`, or `fri` and changes `status` to `"scheduled"` during Sunday review.
 
 ---
 

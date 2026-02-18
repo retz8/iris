@@ -1,169 +1,78 @@
 # Google Sheets Schema: Newsletter Drafts
 
 **Sheet Name:** Newsletter Drafts
-**Purpose:** Store newsletter content drafts with code snippets, breakdowns, and project context for scheduled delivery.
-
-## Overview
-
-Repository for all newsletter issues (past, present, future). Each row represents one newsletter issue with all content variants for different programming languages. Used by content pipeline (Track G) and sending workflow.
+**Purpose:** Track newsletter drafts by linking to Gmail draft IDs. Full email content lives in Gmail — this sheet is the control panel for status and scheduling.
 
 ## Column Definitions
 
-| Column Name | Data Type | Required | Description | Example |
-|-------------|-----------|----------|-------------|---------|
-| issue_number | integer | Yes | Sequential issue number | 42 |
-| status | string | Yes | Draft state | draft, scheduled, sent |
-| subject_template | string | Yes | Email subject line template with placeholders | Can you read this #{issue_number}: {file_intent} |
-| file_intent | string | Yes | One-line description of what the file does | Bash command validation hook |
-| repository_name | string | Yes | GitHub repository name | anthropics/claude-code |
-| repository_url | string | Yes | Full GitHub repository URL | https://github.com/anthropics/claude-code |
-| repository_description | string | Yes | Why this repo is trending/interesting | Official CLI tool for Claude with extensibility hooks |
-| programming_language | string | Yes | Code snippet language | Python, JavaScript, TypeScript, C, C++ |
-| code_snippet | text | Yes | Actual code snippet (8-12 lines) | def _validate_command(command: str)...\n |
-| challenge_question | string | Yes | Question before breakdown | Before scrolling: what does this do? |
-| breakdown_what | string | Yes | What it does (1st bullet, 30-40 words) | Validates bash commands before execution by checking... |
-| breakdown_responsibility | string | Yes | Key responsibility (2nd bullet, 30-40 words) | Acts as a pre-execution gate for the Bash tool... |
-| breakdown_clever | string | Yes | The clever part (3rd bullet, 30-40 words) | Uses different exit codes for different outcomes... |
-| content_variant | string | Yes | Programming language identifier | Python, JS/TS, C/C++ |
-| created_date | datetime | Yes | ISO 8601 timestamp when draft was created | 2026-02-17T10:00:00Z |
-| scheduled_date | datetime | No | ISO 8601 timestamp when newsletter is scheduled to send | 2026-02-19T07:00:00Z |
-| sent_date | datetime | No | ISO 8601 timestamp when newsletter was sent | 2026-02-19T07:05:00Z |
-| source | string | Yes | How this snippet was sourced | github_trending, manual_curation, community_submission |
+| Column Name | Data Type | Required | Set by | Description | Example |
+|-------------|-----------|----------|--------|-------------|---------|
+| issue_number | integer | Yes | Workflow 1 | Sequential issue number, auto-incremented | 42 |
+| status | string | Yes | Workflow 1 / Human | Current state of the draft | `draft`, `scheduled`, `sent` |
+| gmail_draft_id | string | Yes | Workflow 1 | Gmail draft ID returned after draft creation | `r-9182736450198273` |
+| file_intent | string | Yes | Workflow 1 | One-line description of what the code file does | `Bash command validation hook` |
+| repository_name | string | Yes | Workflow 1 | GitHub repository name | `anthropics/claude-code` |
+| repository_url | string | Yes | Workflow 1 | Full GitHub repository URL | `https://github.com/anthropics/claude-code` |
+| repository_description | string | Yes | Workflow 1 | Why this repo is trending | `Official CLI tool for Claude` |
+| programming_language | string | Yes | Workflow 1 | Language of this row's snippet | `Python`, `JS/TS`, `C/C++` |
+| source | string | Yes | Workflow 1 | How the repo was discovered | `HN #39872345`, `github_fallback` |
+| created_date | datetime | Yes | Workflow 1 | ISO 8601 timestamp when draft was created | `2026-02-17T10:00:00Z` |
+| scheduled_day | string | No | Human | Day to send. Human picks during Sunday review. | `mon`, `wed`, `fri` |
+| sent_date | datetime | No | Workflow 2 | ISO 8601 timestamp when email was sent | `2026-02-23T07:03:00Z` |
+
+**Column order in sheet:** `issue_number`, `status`, `gmail_draft_id`, `file_intent`, `repository_name`, `repository_url`, `repository_description`, `programming_language`, `source`, `created_date`, `scheduled_day`, `sent_date`
 
 ## Status Values
 
-| Status | Description | Next States |
-|--------|-------------|-------------|
-| draft | Content created but not ready for sending | scheduled, archived |
-| scheduled | Ready to send, scheduled for specific date/time | sent, draft (if rescheduled) |
-| sent | Successfully sent to subscribers | N/A (terminal state) |
-| archived | Not sent, removed from queue | N/A |
+| Status | Set by | Description |
+|--------|--------|-------------|
+| `draft` | Workflow 1 | Gmail draft created, pending human review |
+| `scheduled` | Human | Human has reviewed and set `scheduled_day` |
+| `sent` | Workflow 2 | Email sent to subscribers |
 
-## Content Variants
+## scheduled_day Values
 
-Each issue has **3 content variants** (one per programming language):
+Human sets this during Sunday review — just type one of three values:
 
-| Variant | Programming Language | Target Subscribers |
-|---------|---------------------|-------------------|
-| Python | Python | programming_languages contains Python |
-| JS/TS | JavaScript/TypeScript | programming_languages contains JS/TS |
-| C/C++ | C/C++ | programming_languages contains C/C++ |
+| Value | Sends on |
+|-------|----------|
+| `mon` | Monday at 7am |
+| `wed` | Wednesday at 7am |
+| `fri` | Friday at 7am |
 
-**Storage Strategy:**
-- One row per variant (3 rows per issue, different programming_language and content_variant)
-- Simpler queries and better scalability than single-row-per-issue approach
+Workflow 2 cron runs Mon/Wed/Fri at 7am and filters rows where `status = "scheduled"` AND `scheduled_day = today's day abbreviation`.
 
-## Data Validation Rules
+## Row Structure
 
-**Issue Number:**
-- Auto-increment starting from 1
-- Sequential (no gaps)
-- Unique per variant (e.g., issue #42 has 3 rows)
+Each Sunday run writes 3 rows — one per language — sharing the same `issue_number`:
 
-**Subject Template:**
-- Must include `{issue_number}` and `{file_intent}` placeholders
-- Max length: 100 characters (email subject line best practice)
+| issue_number | status | gmail_draft_id | programming_language | scheduled_day |
+|---|---|---|---|---|
+| 42 | draft | `r-9182736450` | Python | _(human fills)_ |
+| 42 | draft | `r-1827364501` | JS/TS | _(human fills)_ |
+| 42 | draft | `r-8273645019` | C/C++ | _(human fills)_ |
 
-**Code Snippet:**
-- 8-12 lines of code (readability constraint)
-- Properly formatted with indentation
-- Syntax-highlighted in email (handled by email template)
+## Human Review Workflow (Every Sunday)
 
-**Breakdown Bullets:**
-- Each bullet: 30-40 words
-- Total breakdown: ~120 words max
-- Clear, concise, actionable insights
+1. Open Gmail — 3 new drafts waiting
+2. Read each draft (Python, JS/TS, C/C++)
+3. Edit content directly in Gmail if needed
+4. In Google Sheets: for each row, set `status` to `scheduled` and `scheduled_day` to `mon`, `wed`, or `fri`
+5. Workflow 2 picks up rows automatically on the matching day at 7am
 
-**Timestamps:**
-- Format: ISO 8601 with timezone (e.g., `2026-02-17T10:00:00Z`)
-- Scheduled date must be Mon/Wed/Fri at 7:00 AM
-- Sent date should match scheduled date (within 10 minutes tolerance)
+## Workflow 1 Writes (per language row)
 
-## Usage Examples
-
-**Draft (Python variant):**
-| issue_number | status | subject_template | file_intent | repository_name | repository_url | repository_description | programming_language | code_snippet | challenge_question | breakdown_what | breakdown_responsibility | breakdown_clever | content_variant | created_date | scheduled_date | sent_date | source |
-|--------------|--------|------------------|-------------|-----------------|----------------|----------------------|---------------------|--------------|-------------------|----------------|------------------------|-----------------|----------------|--------------|----------------|-----------|--------|
-| 42 | draft | Can you read this #{issue_number}: {file_intent} | Bash command validation hook | anthropics/claude-code | https://github.com/... | Official CLI tool for Claude | Python | def _validate_command... | Before scrolling: what does this do? | Validates bash commands... | Acts as a pre-execution gate... | Uses different exit codes... | Python | 2026-02-17T10:00:00Z | null | null | github_trending |
-
-**Scheduled (JS/TS variant):**
-| issue_number | status | subject_template | file_intent | repository_name | repository_url | repository_description | programming_language | code_snippet | challenge_question | breakdown_what | breakdown_responsibility | breakdown_clever | content_variant | created_date | scheduled_date | sent_date | source |
-|--------------|--------|------------------|-------------|-----------------|----------------|----------------------|---------------------|--------------|-------------------|----------------|------------------------|-----------------|----------------|--------------|----------------|-----------|--------|
-| 43 | scheduled | Can you read this #{issue_number}: {file_intent} | TypeScript interface validator | facebook/react | https://github.com/... | Popular UI library | JS/TS | interface Props {...} | Before scrolling: what does this do? | TypeScript interface... | Type safety enforcement... | Generic type utilization... | JS/TS | 2026-02-18T09:00:00Z | 2026-02-21T07:00:00Z | null | manual_curation |
-
-**Sent (C/C++ variant):**
-| issue_number | status | subject_template | file_intent | repository_name | repository_url | repository_description | programming_language | code_snippet | challenge_question | breakdown_what | breakdown_responsibility | breakdown_clever | content_variant | created_date | scheduled_date | sent_date | source |
-|--------------|--------|------------------|-------------|-----------------|----------------|----------------------|---------------------|--------------|-------------------|----------------|------------------------|-----------------|----------------|--------------|----------------|-----------|--------|
-| 41 | sent | Can you read this #{issue_number}: {file_intent} | Memory pool allocator | torvalds/linux | https://github.com/... | Linux kernel | C/C++ | static inline void *... | Before scrolling: what does this do? | Custom memory allocator... | Reduces fragmentation... | Bit-packing optimization... | C/C++ | 2026-02-15T08:00:00Z | 2026-02-17T07:00:00Z | 2026-02-17T07:03:00Z | github_trending |
-
-## Queries
-
-**Get next scheduled issue for sending (Mon/Wed/Fri 7am cron):**
 ```
-Filter: status = "scheduled" AND scheduled_date <= NOW()
-Order by: scheduled_date ASC
-Limit: 3 (all variants for one issue)
+issue_number         = next_issue_number (from Node 3)
+status               = "draft"
+gmail_draft_id       = returned from Gmail Create Draft node
+file_intent          = from Claude Haiku breakdown
+repository_name      = from AI Code Hunter
+repository_url       = constructed from repo_full_name
+repository_description = from AI Code Hunter
+programming_language = "Python" | "JS/TS" | "C/C++"
+source               = "HN #<story_id>" | "github_fallback"
+created_date         = ISO 8601 timestamp (auto)
+scheduled_day        = (empty — human fills)
+sent_date            = (empty — Workflow 2 fills)
 ```
-
-**Get all drafts for content pipeline:**
-```
-Filter: status = "draft"
-Order by: created_date DESC
-```
-
-**Get sent issues for analytics:**
-```
-Filter: status = "sent"
-Order by: sent_date DESC
-```
-
-**Get specific issue with all variants:**
-```
-Filter: issue_number = 42
-```
-
-## Workflow Integration
-
-**Content Creation (Track G):**
-1. Create 3 rows (one per variant) with same issue_number
-2. Set status = "draft"
-3. Populate all content fields
-4. Set scheduled_date for next Mon/Wed/Fri 7am
-
-**Newsletter Sending (n8n cron):**
-1. Query: status = "scheduled" AND scheduled_date <= NOW()
-2. For each variant, match with subscribers (programming_languages)
-3. Send email to matched subscribers
-4. Update status = "sent", sent_date = NOW()
-
-**Content Preview (landing page):**
-1. Query: status = "sent" AND content_variant = "Python"
-2. Order by: sent_date DESC
-3. Limit: 1 (most recent sent issue)
-4. Use for landing page "What you'll receive" preview
-
-## Maintenance
-
-**Archive Old Drafts:**
-- Find rows with status = "draft" AND created_date < (NOW() - 30 days)
-- Update status = "archived" (keeps data for reference)
-
-**Issue Number Generation:**
-- Query max(issue_number) from all rows
-- New issue_number = max + 1
-- Create 3 rows with same issue_number, different content_variant
-
-## Challenge Mode (Month 2+)
-
-**Hide File Intent in 30-40% of Issues:**
-- Add column: `challenge_mode` (boolean)
-- If true: subject_template = "Can you read this #{issue_number}: ???"
-- Email body hides file_intent until after breakdown
-- Randomly select 30-40% of issues for challenge mode
-
-## Security Notes
-
-- No sensitive data stored (all content is public OSS code)
-- Repository URLs validated (must be valid GitHub URLs)
-- Code snippets sanitized before email sending (prevent XSS in email clients)
-- Scheduled dates validated (must be future Mon/Wed/Fri 7am)
