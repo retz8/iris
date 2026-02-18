@@ -18,16 +18,19 @@ Webhook GET/POST /unsubscribe?token=xyz
 Code: Extract & Validate Token Parameter
     ↓
 IF: Token Provided?
-    ├─ FALSE → Respond to Webhook (400 Missing Token)
+    ├─ FALSE → Code: Format Error Response → Respond to Webhook (400 Missing Token)
     └─ TRUE → Google Sheets: Read All Subscribers
                   ↓
               Code: Find Subscriber by unsubscribe_token
                   ↓
               Switch: Route by Validation Result
-                  ├─ "not_found" → Respond (404 Invalid Token)
-                  ├─ "already_unsubscribed" → Respond (200 Already Unsubscribed)
-                  ├─ "not_confirmed" → Respond (400 Not Confirmed)
+                  ├─ "not_found" → Code: Format Error → Respond (404 Invalid Token)
+                  ├─ "already_unsubscribed" → Code: Format Response → Respond (200 Already Unsubscribed)
+                  ├─ "not_confirmed" → Code: Format Error → Respond (400 Not Confirmed)
+                  ├─ "invalid_status" → Code: Format Error → Respond (500 Invalid Status)
                   └─ "valid" → Google Sheets: Update Row (status=unsubscribed)
+                                    ↓
+                                Code: Format Success Response
                                     ↓
                                 Respond (200 Success)
 ```
@@ -169,30 +172,56 @@ return [
 
 ---
 
+### Node 4: Code - Format Missing Token Error (FALSE branch)
+
+**Node Type:** `Code`
+**Purpose:** Format the missing token error into a standardized response structure
+
+**Configuration:**
+1. Add Code node to FALSE branch (after IF node)
+2. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
+
+3. JavaScript code:
+
+```javascript
+const item = $input.first();
+
+return [
+  {
+    json: {
+      success: false,
+      error: item.json.message,
+      error_type: item.json.error_type,
+      statusCode: item.json.statusCode
+    }
+  }
+];
+```
+
+**Output:** Formatted error response ready for webhook response
+
+---
+
 ### Node 4a: Respond to Webhook - Missing Token (FALSE branch)
 
 **Node Type:** `Respond to Webhook`
 **Purpose:** Return error for missing token
 
 **Configuration:**
-- **Response Code:** 400
-- **Response Body:**
-
-```json
-{
-  "success": false,
-  "error": "Invalid unsubscribe link. Token is missing.",
-  "error_type": "missing_token",
-  "statusCode": 400
-}
-```
+1. Add "Respond to Webhook" node after Code formatting node
+2. Set parameters:
+   - **Respond With:** First Incoming Item
+   - **Response Code:** `{{ $json.statusCode }}`
+   - **Put Response in Field:** Leave empty
 
 ---
 
-### Node 5: Google Sheets - Read All Subscribers (TRUE branch)
+### Node 5: Google Sheets - Get Row Filtered by Token (TRUE branch)
 
 **Node Type:** `Google Sheets`
-**Purpose:** Fetch all subscribers to find matching token
+**Purpose:** Fetch only the subscriber row matching the unsubscribe token — avoids reading all rows
 
 **Configuration:**
 1. Add Google Sheets node to TRUE branch
@@ -201,21 +230,25 @@ return [
    - **Operation:** Get Row(s)
    - **Document:** "Newsletter Subscribers"
    - **Sheet:** "Newsletter Subscribers"
+   - **Filters:**
+     - Add filter: column `unsubscribe_token` equals `{{ $json.token }}`
    - **Options:**
-     - **Return All:** ON
+     - **Return All:** OFF (token is unique; first match is enough)
      - **RAW Data:** OFF
 
-**Output:** All subscriber rows
+**Output:** 0 rows (token not found) or 1 row (matching subscriber)
 
 ---
 
-### Node 6: Code - Find Subscriber by Token & Validate
+### Node 6: Code - Validate Subscriber Status
 
 **Node Type:** `Code`
-**Purpose:** Look up subscriber by unsubscribe_token and validate status
+**Purpose:** Inspect the filtered Google Sheets result and validate subscriber status
+
+**Note:** No iteration needed. Node 5's filter returns 0 or 1 rows; this node just checks the result.
 
 **Configuration:**
-1. Add Code node after Google Sheets read
+1. Add Code node after Google Sheets filtered read
 2. Set parameters:
    - **Mode:** Run Once for All Items
    - **Language:** JavaScript
@@ -227,48 +260,36 @@ return [
 const tokenData = $('Code').first().json;
 const token = tokenData.token;
 
-// Get all subscribers from Google Sheets
-const subscribers = $input.all();
+// Get filtered result from Google Sheets (0 or 1 rows)
+const rows = $input.all();
 
-// Find subscriber by unsubscribe_token
-const subscriber = subscribers.find(sub => {
-  return sub.json.unsubscribe_token === token;
-});
-
-// Determine validation result and action
 let validationResult = 'not_found';
 let email = null;
-let rowIndex = null;
 let errorMessage = null;
 let statusCode = 404;
 
-if (!subscriber) {
-  // Token not found in database
+if (rows.length === 0 || !rows[0].json.email) {
   validationResult = 'not_found';
   errorMessage = 'Invalid unsubscribe token. This link may have expired or been used already.';
   statusCode = 404;
 } else {
-  email = subscriber.json.email;
-  rowIndex = subscriber.json.row_index; // Google Sheets row number
-  const status = subscriber.json.status;
+  const subscriber = rows[0].json;
+  email = subscriber.email;
+  const status = subscriber.status;
 
   if (status === 'unsubscribed') {
-    // Already unsubscribed
     validationResult = 'already_unsubscribed';
-    errorMessage = null; // Not an error, just informational
+    errorMessage = null;
     statusCode = 200;
   } else if (status === 'pending' || status === 'expired') {
-    // Not confirmed yet, cannot unsubscribe
     validationResult = 'not_confirmed';
     errorMessage = 'Cannot unsubscribe. Your subscription was never confirmed.';
     statusCode = 400;
   } else if (status === 'confirmed') {
-    // Valid for unsubscription
     validationResult = 'valid';
     errorMessage = null;
     statusCode = 200;
   } else {
-    // Unknown status
     validationResult = 'invalid_status';
     errorMessage = `Invalid subscription status: ${status}`;
     statusCode = 500;
@@ -278,12 +299,11 @@ if (!subscriber) {
 return [
   {
     json: {
-      validationResult: validationResult,
-      email: email,
-      rowIndex: rowIndex,
-      token: token,
-      errorMessage: errorMessage,
-      statusCode: statusCode
+      validationResult,
+      email,
+      token,
+      errorMessage,
+      statusCode
     }
   }
 ];
@@ -331,68 +351,191 @@ return [
   - Value 2: `valid`
 - Output: Route to Google Sheets update
 
-**Rule 5 (Fallback): Unknown Error**
-- **Otherwise (Fallback):** Route to 500 error response
+**Rule 5: Invalid Status**
+- Value 1: `{{ $json.validationResult }}`
+- Operation: `Equal`
+- Value 2: `invalid_status`
+- Output: Route to 500 error response
 
 ---
 
-### Node 8a: Respond to Webhook - Token Not Found (Rule 1)
+### Node 8a: Code - Format Token Not Found Error (Rule 1)
+
+**Node Type:** `Code`
+**Purpose:** Format 404 error response for invalid token
+
+**Configuration:**
+1. Add Code node to Rule 1 output
+2. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
+
+3. JavaScript code:
+
+```javascript
+return [
+  {
+    json: {
+      success: false,
+      error: 'Invalid unsubscribe token. This link may have expired or been used already.',
+      error_type: 'token_not_found',
+      statusCode: 404
+    }
+  }
+];
+```
+
+**Output:** Formatted 404 error response
+
+---
+
+### Node 8a-1: Respond to Webhook - Token Not Found (Rule 1)
 
 **Node Type:** `Respond to Webhook`
 **Purpose:** Return 404 error for invalid token
 
 **Configuration:**
-- **Response Code:** 404
-- **Response Body:**
-
-```json
-{
-  "success": false,
-  "error": "Invalid unsubscribe token. This link may have expired or been used already.",
-  "error_type": "token_not_found",
-  "statusCode": 404
-}
-```
+1. Add "Respond to Webhook" node after Code formatting node
+2. Set parameters:
+   - **Respond With:** First Incoming Item
+   - **Response Code:** `{{ $json.statusCode }}`
+   - **Put Response in Field:** Leave empty
 
 ---
 
-### Node 8b: Respond to Webhook - Already Unsubscribed (Rule 2)
+### Node 8b: Code - Format Already Unsubscribed Response (Rule 2)
+
+**Node Type:** `Code`
+**Purpose:** Format 200 informational response for already unsubscribed users
+
+**Configuration:**
+1. Add Code node to Rule 2 output
+2. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
+
+3. JavaScript code:
+
+```javascript
+const item = $input.first();
+
+return [
+  {
+    json: {
+      success: true,
+      message: "You're already unsubscribed from Snippet.",
+      email: item.json.email,
+      statusCode: 200
+    }
+  }
+];
+```
+
+**Output:** Formatted 200 informational response
+
+---
+
+### Node 8b-1: Respond to Webhook - Already Unsubscribed (Rule 2)
 
 **Node Type:** `Respond to Webhook`
 **Purpose:** Return informational message for already unsubscribed users
 
 **Configuration:**
-- **Response Code:** 200
-- **Response Body:**
-
-```json
-{
-  "success": true,
-  "message": "You're already unsubscribed from Snippet.",
-  "email": "={{ $json.email }}",
-  "statusCode": 200
-}
-```
+1. Add "Respond to Webhook" node after Code formatting node
+2. Set parameters:
+   - **Respond With:** First Incoming Item
+   - **Response Code:** `{{ $json.statusCode }}`
+   - **Put Response in Field:** Leave empty
 
 ---
 
-### Node 8c: Respond to Webhook - Not Confirmed (Rule 3)
+### Node 8c: Code - Format Not Confirmed Error (Rule 3)
+
+**Node Type:** `Code`
+**Purpose:** Format 400 error response for unconfirmed subscriptions
+
+**Configuration:**
+1. Add Code node to Rule 3 output
+2. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
+
+3. JavaScript code:
+
+```javascript
+return [
+  {
+    json: {
+      success: false,
+      error: 'Cannot unsubscribe. Your subscription was never confirmed.',
+      error_type: 'not_confirmed',
+      statusCode: 400
+    }
+  }
+];
+```
+
+**Output:** Formatted 400 error response
+
+---
+
+### Node 8c-1: Respond to Webhook - Not Confirmed (Rule 3)
 
 **Node Type:** `Respond to Webhook`
 **Purpose:** Return error for unconfirmed subscriptions
 
 **Configuration:**
-- **Response Code:** 400
-- **Response Body:**
+1. Add "Respond to Webhook" node after Code formatting node
+2. Set parameters:
+   - **Respond With:** First Incoming Item
+   - **Response Code:** `{{ $json.statusCode }}`
+   - **Put Response in Field:** Leave empty
 
-```json
-{
-  "success": false,
-  "error": "Cannot unsubscribe. Your subscription was never confirmed.",
-  "error_type": "not_confirmed",
-  "statusCode": 400
-}
+---
+
+### Node 8d: Code - Format Invalid Status Error (Rule 5)
+
+**Node Type:** `Code`
+**Purpose:** Format 500 error response for unexpected subscriber status
+
+**Configuration:**
+1. Add Code node to Rule 5 output
+2. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
+
+3. JavaScript code:
+
+```javascript
+const item = $input.first();
+
+return [
+  {
+    json: {
+      success: false,
+      error: item.json.errorMessage,
+      error_type: 'invalid_status',
+      statusCode: 500
+    }
+  }
+];
 ```
+
+**Output:** Formatted 500 error response
+
+---
+
+### Node 8d-1: Respond to Webhook - Invalid Status (Rule 5)
+
+**Node Type:** `Respond to Webhook`
+**Purpose:** Return 500 error for unexpected subscriber status
+
+**Configuration:**
+1. Add "Respond to Webhook" node after Code formatting node
+2. Set parameters:
+   - **Respond With:** First Incoming Item
+   - **Response Code:** `{{ $json.statusCode }}`
+   - **Put Response in Field:** Leave empty
 
 ---
 
@@ -409,37 +552,19 @@ return [
    - **Document:** "Newsletter Subscribers"
    - **Sheet:** "Newsletter Subscribers"
    - **Data Mode:** Auto-Map Input Data to Columns
-   - **Row Number:** `{{ $json.rowIndex }}`
-
-**Columns to Update:**
-```javascript
-// Prepare update data
-const now = new Date().toISOString();
-
-return [
-  {
-    json: {
-      status: 'unsubscribed',
-      unsubscribed_date: now,
-      confirmation_token: null,      // Clear confirmation token
-      token_expires_at: null,        // Clear expiration
-      unsubscribe_token: null        // Clear unsubscribe token (single-use)
-    }
-  }
-];
-```
+   - **Column to Match On:** `email`
 
 **Column Mapping:**
 ```
+email (match key) → {{ $json.email }}
 status → unsubscribed
-unsubscribed_date → {{ $json.unsubscribed_date }}
-confirmation_token → {{ $json.confirmation_token }}
-token_expires_at → {{ $json.token_expires_at }}
-unsubscribe_token → {{ $json.unsubscribe_token }}
+unsubscribed_date → {{ new Date().toISOString() }}
+confirmation_token → (empty/null)
+token_expires_at → (empty/null)
+unsubscribe_token → (empty/null)
 ```
 
 **Note:** Keep these fields unchanged:
-- `email`
 - `programming_languages`
 - `created_date`
 - `confirmed_date`
@@ -449,25 +574,49 @@ This preserves subscription history for analytics.
 
 ---
 
-### Node 10: Respond to Webhook - Unsubscribe Success (After Update)
+### Node 10: Code - Format Unsubscribe Success Response
+
+**Node Type:** `Code`
+**Purpose:** Format success response after unsubscribing
+
+**Configuration:**
+1. Add Code node after Google Sheets update
+2. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
+
+3. JavaScript code:
+
+```javascript
+const item = $input.first();
+
+return [
+  {
+    json: {
+      success: true,
+      message: "You're unsubscribed from Snippet. Sorry to see you go.",
+      email: item.json.email,
+      statusCode: 200
+    }
+  }
+];
+```
+
+**Output:** Formatted success response
+
+---
+
+### Node 10a: Respond to Webhook - Unsubscribe Success
 
 **Node Type:** `Respond to Webhook`
 **Purpose:** Return success response after unsubscribing
 
 **Configuration:**
-- **Response Code:** 200
-- **Response Body:**
-
-```json
-{
-  "success": true,
-  "message": "You're unsubscribed from Snippet. Sorry to see you go.",
-  "email": "={{ $('Code1').first().json.email }}",
-  "statusCode": 200
-}
-```
-
-**Note:** Reference the email from the validation Code node using `$('Code1').first().json.email`
+1. Add "Respond to Webhook" node after Code formatting node
+2. Set parameters:
+   - **Respond With:** First Incoming Item
+   - **Response Code:** `{{ $json.statusCode }}`
+   - **Put Response in Field:** Leave empty
 
 ---
 
