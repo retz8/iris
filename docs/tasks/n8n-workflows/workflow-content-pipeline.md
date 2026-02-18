@@ -423,36 +423,36 @@ Search the web to find a clever, self-contained code snippet from this repositor
 **Configuration:**
 1. Add Code node after AI Agent - Code Hunter
 2. Set parameters:
-   - **Mode:** Run Once for Each Item
+   - **Mode:** Run Once for All Items
    - **Language:** JavaScript
 
 3. JavaScript code:
 
 ```javascript
-// $input.item is the current Code Hunter output for this language iteration.
-// Node 8 runs once per language item, so this node also runs 3 times (Python, JS/TS, C/C++).
-let parsed = $input.item.json.output;
-if (typeof parsed === 'string') {
-  const match = parsed.match(/```(?:json)?\s*([\s\S]*?)```/);
-  parsed = JSON.parse(match ? match[1] : parsed);
-}
+const agentItems = $input.all();
+const repoItems = $('Parse Repo Selections').all();
+const issueNumber = $('Compute Issue Number').first().json.next_issue_number;
 
-// $('Parse Repo Selections').item.json gives the paired item at the same index
-// (Python item when processing Python, JS/TS when processing JS/TS, etc.)
-const repoData = $('Parse Repo Selections').item.json;
-
-return {
-  json: {
-    issue_number: $('Compute Issue Number').first().json.next_issue_number,
-    language: repoData.language,
-    repo_full_name: repoData.repo_full_name,
-    trend_source: repoData.trend_source,
-    repo_description: parsed.repo_description || '',
-    snippet: parsed.snippet,
-    file_path: parsed.file_path,
-    selection_reason: parsed.selection_reason
+return agentItems.map((agentItem, i) => {
+  let parsed = agentItem.json.output;
+  if (typeof parsed === 'string') {
+    const match = parsed.match(/```(?:json)?\s*([\s\S]*?)```/);
+    parsed = JSON.parse(match ? match[1] : parsed);
   }
-};
+  const repoData = repoItems[i].json;
+  return {
+    json: {
+      issue_number: issueNumber,
+      language: repoData.language,
+      repo_full_name: repoData.repo_full_name,
+      trend_source: repoData.trend_source,
+      repo_description: parsed.repo_description || '',
+      snippet: parsed.snippet,
+      file_path: parsed.file_path,
+      selection_reason: parsed.selection_reason
+    }
+  };
+});
 ```
 
 ---
