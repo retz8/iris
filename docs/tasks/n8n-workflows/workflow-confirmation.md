@@ -560,7 +560,6 @@ return [
   {
     json: {
       email: item.json.email,
-      rowIndex: item.json.rowIndex,
       unsubscribeToken: unsubscribeToken,
       confirmedDate: now
     }
@@ -585,7 +584,7 @@ return [
    - **Document:** "Newsletter Subscribers"
    - **Sheet:** "Newsletter Subscribers"
    - **Data Mode:** Auto-Map Input Data to Columns
-   - **Row Number:** `{{ $json.rowIndex }}`
+   - **Column to Match On:** `email`
 
 **Columns to Update:**
 ```javascript
@@ -600,6 +599,7 @@ return [
 
 **Column Mapping:**
 ```
+email (match key) → {{ $json.email }}
 status → confirmed
 confirmed_date → {{ $json.confirmedDate }}
 unsubscribe_token → {{ $json.unsubscribeToken }}
