@@ -181,19 +181,23 @@ return [{ json: { next_issue_number: maxIssue + 1 } }];
      }
      ```
 3. No tool sub-nodes needed — web search is built-in on the OpenAI Chat Model
-4. Set **Prompt** field:
+4. Set **System Message** field:
 
 ```
-Today is {{ $now.toFormat('yyyy-MM-dd') }}.
-
 You are a tech curator for a developer newsletter targeting mid-level engineers (2-5 YoE).
-Search the web and find ONE notable open-source GitHub repository for each of these 3 language categories from the past 7 days: Python, JS/TS, and C/C++.
+Your job is to find ONE notable open-source GitHub repository per language category (Python, JS/TS, C/C++) that engineers are talking about this week.
 
 Selection rules:
-- Must be a real GitHub repo (owner/repo format)
-- Prefer: new releases, tools engineers are talking about, clever libraries, notable OSS activity this week
+- Must be a real GitHub repo in owner/repo format
+- Prefer: new releases, tools engineers are actively using, clever libraries, OSS with notable activity this week
 - Avoid: tutorials, blog posts, awesome-lists, aggregator repos, docs-only repos
-- For C/C++: set not_found to true if no strong match exists
+- For C/C++: set not_found to true if no strong match exists after searching
+```
+
+5. Set **Prompt** field:
+
+```
+Today is {{ $now.toFormat('yyyy-MM-dd') }}. Search the web for trending open-source projects from the past 7 days and return one repo per language.
 ```
 
 **Note:** The JSON Schema response format guarantees structured output — no markdown wrapping, no parse failures.
