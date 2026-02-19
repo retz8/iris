@@ -14,21 +14,23 @@
 
 ## Workflow Overview
 
-The workflow fans out from the Form Trigger into two parallel branches that rejoin at a Merge node. This is required because when a draft is not yet in the sheet, the Google Sheets lookup returns 0 items — making it impossible to use a simple IF node (0 items means the branch never executes). The Merge node's "Keep Non-Matches" mode handles this correctly.
+The workflow fans out from the Form Trigger into two parallel branches that rejoin at a Merge node. This is required because when a draft is not yet in the sheet, Google Sheets returns 0 items — making it impossible to use a simple IF node (0 items means the branch never executes). The Merge node appends both inputs together so Node 6 always receives the Gmail items regardless of whether Sheets returned anything.
 
 ```
 n8n Form Trigger (issue_number)
     │
-    ├─── Branch A ──→ Gmail: Get Drafts ──→ Code: Validate Count ──→ Merge (Input 1)
-    │                                                                      │
-    └─── Branch B ──→ Google Sheets: Get All Rows ─────────────────→ Merge (Input 2)
-                                                                           │
-                                                           Merge: Keep Non-Matching Drafts
-                                                           (Input 1 id ≠ Input 2 gmail_draft_id)
-                                                                           │
-                                                                  Code: Parse Draft
-                                                                           │
-                                                               Google Sheets: Append Row
+    ├─── Branch A ──→ Gmail: Get All Drafts ──→ Code: Filter by Issue & Validate ──→ Merge (Input 1)
+    │                                                                                       │
+    └─── Branch B ──→ Google Sheets: Get Rows for Issue ──────────────────────────→ Merge (Input 2)
+                      (filter: issue_number = form value)                                  │
+                                                                          Merge (append both inputs)
+                                                                           3 Gmail items + 0–3 Sheets rows
+                                                                                           │
+                                                                              Code: Dedup & Parse
+                                                                           (separates by structure,
+                                                                            skips known IDs, parses new)
+                                                                                           │
+                                                                               Google Sheets: Append Row
 ```
 
 ## Node-by-Node Configuration
@@ -124,10 +126,10 @@ return issueDrafts;
 
 ---
 
-### Node 4: Google Sheets - Get All Rows (Branch B)
+### Node 4: Google Sheets - Get Rows for Issue (Branch B)
 
 **Node Type:** `Google Sheets`
-**Purpose:** Fetch all existing rows from the Newsletter Drafts sheet. Used by the Merge node to identify which drafts are already present.
+**Purpose:** Fetch only the rows already in the sheet for the current issue number. Used by the Merge node to detect duplicates. Filtering by `issue_number` avoids reading the entire sheet.
 
 **Configuration:**
 1. Add Google Sheets node connected from n8n Form Trigger (Branch B — separate connection from Node 1, NOT from the Gmail branch)
@@ -136,125 +138,139 @@ return issueDrafts;
    - **Operation:** `Get Row(s)` (value: `read`)
    - **Document:** "Newsletter Drafts"
    - **Sheet:** "Newsletter Drafts"
-   - **Filters:** (none — return all rows)
+   - **Filters:**
+     - Add filter: column `issue_number` equals `{{ $json['Issue Number'] }}`
    - **Options → Return All:** ON
 
-**Output:** All existing rows. Each row includes a `gmail_draft_id` field. Returns 0 items when the sheet is empty (first run) — handled correctly by the Merge node.
+**Output:** 0–3 rows for the current issue number. Returns 0 items on first run (nothing in sheet yet) — handled correctly in Node 6.
 
 **Connects to:** Merge node as **Input 2**.
 
 ---
 
-### Node 5: Merge - Keep Non-Matching Drafts
+### Node 5: Merge
 
 **Node Type:** `Merge`
-**Purpose:** Find Gmail drafts that are NOT yet in the sheet. Replaces the IF + per-item Sheets lookup pattern, which fails silently when no match is found (0 items returned = IF never fires).
+**Purpose:** Combine the 3 Gmail draft items (Input 1) with the 0–3 existing Sheets rows (Input 2) into a single stream. Node 6 then separates and processes them. Since Merge just appends all items, the combined output always contains the Gmail items regardless of whether Sheets returned anything — this is what allows Node 6 to always execute even when the sheet has no rows for this issue yet.
 
 **Configuration:**
 1. Add Merge node to canvas
-2. Connect **Node 3** (Validate Count) to **Input 1**
-3. Connect **Node 4** (Sheets Get All) to **Input 2**
-4. Configure parameters:
-   - **Mode:** `Keep Non-Matches`
-   - **Input 1 Field:** `id`
-   - **Input 2 Field:** `gmail_draft_id`
+2. Connect **Node 3** (Filter by Issue & Validate Count) to **Input 1**
+3. Connect **Node 4** (Sheets Get Rows for Issue) to **Input 2**
+4. Set **Number of Inputs:** `2`
 
-**How it works:**
-- Compares `id` from each Gmail draft (Input 1) against `gmail_draft_id` in all Sheets rows (Input 2)
-- Outputs only Gmail draft items that have no matching Sheets row = new drafts
-- When sheet is empty (0 Input 2 items): all 3 drafts pass through ✓
-- When all 3 already in sheet: 0 items pass through, Append never runs ✓
-- When 1 of 3 already in sheet: 2 items pass through ✓
-
-**Output:** 0–3 Gmail draft items representing new (unprocessed) drafts. Item structure is the same as the Gmail node output — `$input.item.json` in Node 6 directly gives the draft.
+**Output:** 3–6 items: 3 Gmail draft items plus 0–3 Sheets rows, all in one list.
 
 ---
 
-### Node 6: Code - Parse Draft
+### Node 6: Code - Dedup & Parse
 
 **Node Type:** `Code`
-**Purpose:** Parse `issue_number`, `file_intent`, repository fields, and `created_date` from the current draft. Runs once per new draft.
+**Purpose:** Separate Gmail draft items from Sheets rows (distinguishable by structure), build the set of already-processed draft IDs, skip duplicates, and parse the remaining new drafts into sheet-ready rows.
 
 **Configuration:**
 1. Add Code node after Merge node
 2. Set parameters:
-   - **Mode:** Run Once for Each Item
+   - **Mode:** Run Once for All Items
    - **Language:** JavaScript
 
 3. JavaScript code:
 
 ```javascript
-// $input.item.json is the Gmail draft directly — no cross-node reference needed
-const draft = $input.item.json;
+const allItems = $input.all();
 
-// Extract subject from message headers
-const headers = draft.message?.payload?.headers || [];
-const subjectHeader = headers.find(h => h.name === 'Subject');
-const subject = subjectHeader?.value || '';
+// Gmail draft items have a `message` field; Sheets rows do not
+const gmailDrafts = allItems.filter(
+  item => item.json.message !== undefined
+);
+const sheetsRows = allItems.filter(
+  item => item.json.message === undefined
+);
 
-// Parse issue_number and file_intent
-// Subject format: "Can you read this #42: Bash command validation hook"
-const subjectMatch = subject.match(/Can you read this #(\d+):\s*(.+)/);
-if (!subjectMatch) {
-  throw new Error(`Unexpected subject format: "${subject}"`);
+// Build set of already-processed draft IDs from existing Sheets rows
+const existingIds = new Set(
+  sheetsRows
+    .filter(r => r.json.gmail_draft_id)
+    .map(r => String(r.json.gmail_draft_id))
+);
+
+const newRows = [];
+
+for (const item of gmailDrafts) {
+  const draft = item.json;
+
+  // Skip if already in sheet
+  if (existingIds.has(String(draft.id))) continue;
+
+  // Extract subject from message headers
+  const headers = draft.message?.payload?.headers || [];
+  const subjectHeader = headers.find(h => h.name === 'Subject');
+  const subject = subjectHeader?.value || '';
+
+  // Parse issue_number and file_intent
+  const subjectMatch = subject.match(/Can you read this #(\d+):\s*(.+)/);
+  if (!subjectMatch) {
+    throw new Error(`Unexpected subject format: "${subject}"`);
+  }
+
+  const issueNumber = parseInt(subjectMatch[1], 10);
+  const fileIntent = subjectMatch[2].trim();
+
+  // Decode HTML body (may be in body.data or inside parts)
+  let htmlBody = '';
+  const payload = draft.message?.payload;
+
+  if (payload?.body?.data) {
+    htmlBody = Buffer.from(payload.body.data, 'base64url').toString('utf-8');
+  } else if (payload?.parts) {
+    const htmlPart = payload.parts.find(p => p.mimeType === 'text/html');
+    if (htmlPart?.body?.data) {
+      htmlBody = Buffer.from(htmlPart.body.data, 'base64url').toString('utf-8');
+    }
+  }
+
+  // Parse repository fields from Project Context section
+  // HTML pattern: From <a href="https://github.com/owner/repo">owner/repo</a>
+  const repoMatch = htmlBody.match(
+    /From\s+<a[^>]+href="(https:\/\/github\.com\/([^"]+))"[^>]*>[^<]+<\/a>/
+  );
+  const repositoryUrl = repoMatch ? repoMatch[1] : '';
+  const repositoryName = repoMatch ? repoMatch[2] : '';
+
+  // Parse description: text after the file_path anchor
+  const descMatch = htmlBody.match(
+    /href="https:\/\/github\.com\/[^"]+\/blob\/[^"]+">([^<]+)<\/a>\.\s*([^<]+)/
+  );
+  const repositoryDescription = descMatch ? descMatch[2].trim() : '';
+
+  // created_date from internalDate (ms since epoch as string)
+  const internalDate = draft.message?.internalDate;
+  const createdDate = internalDate
+    ? new Date(parseInt(internalDate, 10)).toISOString()
+    : new Date().toISOString();
+
+  newRows.push({
+    json: {
+      issue_number: issueNumber,
+      status: 'draft',
+      gmail_draft_id: draft.id,
+      file_intent: fileIntent,
+      repository_name: repositoryName,
+      repository_url: repositoryUrl,
+      repository_description: repositoryDescription,
+      programming_language: '',
+      source: 'manual',
+      created_date: createdDate,
+      scheduled_day: '',
+      sent_date: ''
+    }
+  });
 }
 
-const issueNumber = parseInt(subjectMatch[1], 10);
-const fileIntent = subjectMatch[2].trim();
-
-// Decode HTML body (may be in body.data or inside parts)
-let htmlBody = '';
-const payload = draft.message?.payload;
-
-if (payload?.body?.data) {
-  htmlBody = Buffer.from(payload.body.data, 'base64url').toString('utf-8');
-} else if (payload?.parts) {
-  const htmlPart = payload.parts.find(p => p.mimeType === 'text/html');
-  if (htmlPart?.body?.data) {
-    htmlBody = Buffer.from(htmlPart.body.data, 'base64url').toString('utf-8');
-  }
-}
-
-// Parse repository_url and repository_name from Project Context section
-// HTML pattern: From <a href="https://github.com/owner/repo">owner/repo</a>
-const repoMatch = htmlBody.match(
-  /From\s+<a[^>]+href="(https:\/\/github\.com\/([^"]+))"[^>]*>[^<]+<\/a>/
-);
-const repositoryUrl = repoMatch ? repoMatch[1] : '';
-const repositoryName = repoMatch ? repoMatch[2] : ''; // "owner/repo"
-
-// Parse repository_description: text after the file_path anchor
-// HTML pattern: ...file_path</a>. description text</p>
-const descMatch = htmlBody.match(
-  /href="https:\/\/github\.com\/[^"]+\/blob\/[^"]+">([^<]+)<\/a>\.\s*([^<]+)/
-);
-const repositoryDescription = descMatch ? descMatch[2].trim() : '';
-
-// created_date from internalDate (ms since epoch as string)
-const internalDate = draft.message?.internalDate;
-const createdDate = internalDate
-  ? new Date(parseInt(internalDate, 10)).toISOString()
-  : new Date().toISOString();
-
-return {
-  json: {
-    issue_number: issueNumber,
-    status: 'draft',
-    gmail_draft_id: draft.id,
-    file_intent: fileIntent,
-    repository_name: repositoryName,
-    repository_url: repositoryUrl,
-    repository_description: repositoryDescription,
-    programming_language: '',
-    source: 'manual',
-    created_date: createdDate,
-    scheduled_day: '',
-    sent_date: ''
-  }
-};
+return newRows;
 ```
 
-**Output:** One item with all sheet columns populated.
+**Output:** 0–3 items, one per new draft that is not already in the sheet. Returns 0 items if all drafts are already present — Node 7 does not execute.
 
 **Parsing logic summary:**
 
@@ -317,10 +333,10 @@ Node 3 throws and halts the entire workflow before any sheet writes. The error m
 Node 2 returns zero items. Node 3 immediately throws (0 ≠ 3). Workflow halts cleanly.
 
 **All drafts already in sheet (duplicate run):**
-Merge outputs 0 items — all 3 drafts matched existing rows. Nodes 6 and 7 do not execute. Sheet unchanged.
+Node 6 builds a set of all 3 existing IDs and skips all Gmail drafts. Returns 0 items. Node 7 does not execute. Sheet unchanged.
 
 **Sheet is empty (first run):**
-Node 4 returns 0 rows. Merge receives empty Input 2 — all 3 Gmail drafts have no match and pass through. All 3 are appended. ✓
+Node 4 returns 0 rows. Merge still receives 3 Gmail items from Node 3. Node 6 builds an empty existing-ID set, processes all 3 drafts, returns 3 new rows. ✓
 
 **Subject line does not match expected format:**
 Node 6 throws for that item. n8n marks it as failed. Human should inspect and correct the subject line.
