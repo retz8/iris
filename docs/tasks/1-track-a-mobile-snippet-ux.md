@@ -2,6 +2,7 @@
 
 **Phase:** 1
 **Track:** A
+**Status:** Complete (2026-02-19)
 **Scope:** Define and document a mobile-readability criterion for code snippet selection in the Snippet newsletter manual workflow.
 
 **Dependencies:** None
@@ -47,6 +48,11 @@ Surface the following findings to the human engineer and make decisions together
 4. Decide the exact wording to add to the Step 2 prompt.
 
 Do not proceed to Plan until the human engineer confirms the rule definition and wording.
+
+**Decisions (confirmed 2026-02-19):**
+- Rule type: soft preference (not hard rejection)
+- Wording to add to Step 2 prompt: "Prefer snippets where no line exceeds 65 characters and nesting depth stays at 3 levels or fewer — these read cleanly on mobile without wrapping."
+- Rationale: hard limit risks discarding good snippets from verbose languages (C/C++, chained JS); soft preference preserves judgment while providing a concrete tiebreaker
 
 ---
 

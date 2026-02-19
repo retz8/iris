@@ -35,22 +35,38 @@ Scan this GitHub repository using these exact steps:
 3. Extract the snippet directly from the file content you see.
 
 Return 5 candidates spread across different files. For each:
-- file_path: path as it appears in the repo
+- file_path: path as it appears in the repo. MUST be real file path.
 - snippet: a complete logical unit copied verbatim from the file (a single function, method, or tightly coupled block)
 
 Strict rule: only extract snippets that would take a developer at least 1 minute to fully understand — skip anything trivially obvious at a glance.
+
+Prefer snippets where no line exceeds 65 characters and nesting depth stays at 3 levels or fewer — these read cleanly on mobile without wrapping.
 
 No interpretation. No explanation of what the code does. File path and raw code only.
 ```
 
 Read through the 5 candidates and pick the one you want to feature. Then move to Step 3.
 
-## Step 3: Generate Breakdown
+## Step 3: Reformat for Mobile
 
-In the same conversation as Step 2, send this follow-up. Replace `[N]` with the number of the snippet you picked.
+Copy the snippet you picked and paste it into a new conversation. Send this prompt with the snippet pasted in place of `[PASTE SNIPPET]`.
 
 ```
-Break down snippet [N].
+Here is a code snippet:
+
+[PASTE SNIPPET]
+
+Reformat this snippet for mobile readability. Do NOT change any logic, variable names, function names, or comments. You may only: add or remove line breaks, adjust indentation, and break long lines across multiple lines. Target: no line exceeds 65 characters, nesting depth 3 levels or fewer where possible. Return only the reformatted code with no explanation.
+```
+
+Copy the reformatted snippet. Use this version in all subsequent steps. Then move to Step 4.
+
+## Step 4: Generate Breakdown
+
+In the same conversation as Step 3, send this follow-up.
+
+```
+Break down the snippet above.
 
 Return exactly four fields:
 - file_intent: 3-5 word noun phrase describing what this file/component is (e.g. "Bash command validation hook", "HTTP retry backoff scheduler")
@@ -59,9 +75,9 @@ Return exactly four fields:
 - breakdown_clever: a non-obvious insight a mid-level engineer would miss — not a restatement of what the code visibly does, 30-40 words
 ```
 
-## Step 4: Export as JSON
+## Step 5: Export as JSON
 
-In the same conversation, send this to get a clean JSON object ready to paste into the email template.
+In the same conversation as Step 4, send this to get a clean JSON object ready to paste into the email template.
 
 ```
 Summarize this conversation into two parts:
@@ -86,9 +102,9 @@ Use only values established in this conversation. No placeholders. language must
 
 Copy the JSON output and use it to compose the Gmail draft.
 
-## Step 5: Generate HTML Email
+## Step 6: Generate HTML Email
 
-In the same conversation, send this prompt. The template is fixed — the LLM only fills in the placeholders from the JSON.
+In the same conversation as Step 4, send this prompt. The template is fixed — the LLM only fills in the placeholders from the JSON.
 
 ```
 Fill in the HTML template below using the JSON from this conversation.
