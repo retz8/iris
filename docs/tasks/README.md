@@ -38,7 +38,7 @@ Before starting execution, check `UPDATES.md` for your listed dependencies. If a
 ## Workflow Overview
 
 ```
-Phase 1 (parallel)
+Phase 1 (parallel) [DONE]
   1-A  Mobile Snippet UX          — add mobile-readability rule to snippet selection prompt
   1-B  Gmail Drafts → Sheets      — n8n workflow: fetch manual Gmail drafts → populate Drafts sheet
   1-C  Welcome Email Refinement   — refine post-confirmation welcome email copy and HTML
