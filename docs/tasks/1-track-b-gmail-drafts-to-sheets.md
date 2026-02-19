@@ -26,6 +26,7 @@
 
 Read the following files in order:
 
+0. `./README.md` - understand the workflow
 1. `snippet/n8n-workflows/google-sheets-drafts-schema.md` — understand all required fields, which are set by Workflow 1, which are set by human, and what can be parsed from a draft
 2. `snippet/n8n-workflows/manual-content-generation.md` — understand the Gmail draft format: subject line pattern, HTML body structure, what structured data is embedded
 3. `snippet/n8n-workflows/workflow-confirmation.md` — study the existing n8n workflow doc format and node-by-node structure to match the documentation style

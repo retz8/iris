@@ -24,6 +24,7 @@
 
 Read the following files in order:
 
+0. `./README.md` - understand the workflow
 1. `snippet/n8n-workflows/manual-content-generation.md` — understand the full 5-step manual workflow, especially Step 2 (snippet candidate selection) and Step 5 (HTML email template)
 2. `snippet/n8n-workflows/google-sheets-drafts-schema.md` — understand the `file_intent` field and how snippets are described
 

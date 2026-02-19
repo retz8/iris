@@ -24,6 +24,7 @@
 
 Read the following files in order:
 
+0. `./README.md` - understand the workflow
 1. `snippet/n8n-workflows/workflow-confirmation.md` — focus on Node 11 (Gmail: Send Welcome Email), read the full HTML template carefully
 2. `snippet/n8n-workflows/manual-content-generation.md` — read the newsletter email template (Step 5) to understand the visual and copy language of the broader Snippet brand
 

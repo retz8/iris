@@ -24,6 +24,7 @@
 
 Read the following files in order:
 
+0. `./README.md` - understand the workflow
 1. `snippet/n8n-workflows/workflow-subscription-double-optin.md` — map all nodes, identify which are public-facing, which require credentials
 2. `snippet/n8n-workflows/workflow-confirmation.md` — same
 3. `snippet/n8n-workflows/workflow-unsubscribe-token-based.md` — same

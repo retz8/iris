@@ -26,6 +26,7 @@
 
 Read the following to understand the current web app:
 
+0. `./README.md` - understand the workflow
 1. `web/` directory structure — understand what pages and components exist
 2. Read the main page component(s) — landing page, signup flow, confirmation page, unsubscribe page
 3. Read the CSS or styling approach (Tailwind, inline styles, CSS modules — identify which)

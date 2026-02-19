@@ -24,6 +24,7 @@
 
 Read the following to understand the current deployment setup:
 
+0. `./README.md` - understand the workflow
 1. `web/` — check for any existing deployment config (vercel.json, .env.example, build scripts)
 2. `snippet/n8n-workflows/` — review all workflow docs to understand which are new vs already live, and what activation steps each requires
 3. `docs/ai-agent-workflow-2026-02.md` — check the Infrastructure section for what is already running

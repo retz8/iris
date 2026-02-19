@@ -24,6 +24,7 @@
 
 Read the following to understand the product and its positioning:
 
+0. `./README.md` - understand the workflow
 1. `docs/philosophy-and-vision.md` — understand the core belief and who this is for
 2. `web/` main landing page component — read the actual copy to understand how Snippet is currently positioned to visitors
 3. `snippet/n8n-workflows/workflow-confirmation.md` Node 11 (welcome email) — read the welcome email copy for the brand voice

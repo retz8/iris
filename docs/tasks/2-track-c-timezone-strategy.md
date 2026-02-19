@@ -25,6 +25,7 @@
 
 Read the following files in order:
 
+0. `./README.md` - understand the workflow
 1. `snippet/n8n-workflows/google-sheets-subscribers-schema.md` — does the subscribers schema have any timezone or location field?
 2. `snippet/n8n-workflows/google-sheets-drafts-schema.md` — review the `scheduled_day` field and how Workflow 2 uses it
 3. `snippet/n8n-workflows/workflow-confirmation.md` — check the signup and confirmation flow for any timezone signal from the subscriber

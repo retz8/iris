@@ -25,6 +25,7 @@
 
 Read the following files in order:
 
+0. `./README.md` - understand the workflow
 1. `snippet/n8n-workflows/google-sheets-drafts-schema.md` — understand the full drafts sheet schema, especially the `status`, `scheduled_day`, `gmail_draft_id`, and `sent_date` fields and how Workflow 2 is expected to interact with them
 2. `snippet/n8n-workflows/google-sheets-subscribers-schema.md` — understand the subscribers sheet: which fields are needed to send an email (email, unsubscribe_token, status)
 3. `snippet/n8n-workflows/workflow-confirmation.md` — study the node-by-node documentation format to match exactly
