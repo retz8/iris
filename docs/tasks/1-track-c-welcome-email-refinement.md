@@ -1,7 +1,7 @@
-# 2-Track-B — Welcome Email Refinement
+# 1-Track-C — Welcome Email Refinement
 
-**Phase:** 2
-**Track:** B
+**Phase:** 1
+**Track:** C
 **Scope:** Review and refine the welcome email sent to subscribers after they confirm their subscription.
 
 **Dependencies:** None
@@ -53,7 +53,7 @@ Do not proceed to Plan until the human engineer approves the revised copy and st
 
 ## Phase 3 — Plan
 
-Use the `create-implementation-plan` skill to write a plan to `docs/tasks/2-track-b-welcome-email-refinement/`.
+Use the `create-implementation-plan` skill to write a plan to `docs/tasks/1-track-c-welcome-email-refinement/`.
 
 The plan must show:
 - Exact old HTML sections and their replacements
