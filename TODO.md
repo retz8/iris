@@ -1,24 +1,17 @@
 # IRIS — Task Execution Plan
 
-## DONE - today
-- **Track F** (do this before E)- under docs/tasks/n8n-workflows, need to implement n8n workflows for subscribe/confirmation/unsubscribe user flow
-- subscribe n8n workflow [FULLY TESTED & IMPLEMENTED]
-- confirmation n8n workflow [FULLY TESTED & IMPLEMENTED]
-- unsubscribe n8n workflow [FULLY TESTED & IMPLEMENTED]
-
 ## TODO (right now)
-- **Track E** - Completed by Phase 4, but need to add double opt in logic for subscribe/confirmation/unsubscribe user flow [should be done by Claude Code]
-
-- **Track G** - Newsletter Generation Pipeline
+- **PHASE 2** (both tracks already done explore, start with /resume)
+- track a: new send email workflow n8n planning & implementation by myself
+- track c: time zone strategy
+- verify new welcome email (subscribe -> confirmation flow from UI)
 
 ## TODO (BEFORE release NEWSLETTER)
-- Newsletter n8n workflow end-to-end testing with UI
-- Adjust any UX things on newsletter
-- Welcome Email & confirmation email design and testing
-- time zone handling for newsletter scheduling
-- full security review of n8n workflows (especially around email confirmation token generation and validation)
-- Release n8n workflow online & n8n non-free plan
-- Deploy web app to Vercel and connect custom url iris-codes.com
+- **PHASE 3**
+- n8n security review
+- web app ux & security review
+- **PHASE 4**
+- deployment...
 
 ## TODO (AFTER release NEWSLETTER)
 - VSCode Extension Full UX Check
