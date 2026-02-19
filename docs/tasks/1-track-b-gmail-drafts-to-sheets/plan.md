@@ -58,10 +58,10 @@ n8n Form Trigger (issue_number)
 
 ---
 
-### Node 2: Gmail - Get Drafts (Branch A)
+### Node 2: Gmail - Get All Drafts (Branch A)
 
 **Node Type:** `Gmail`
-**Purpose:** Fetch all Gmail drafts for the specified issue number. Scoped to exactly the 3 drafts written this week.
+**Purpose:** Fetch all Gmail drafts in the account. The Draft resource's Get Many operation does not support a subject filter — filtering happens in Node 3.
 
 **Configuration:**
 1. Add Gmail node connected from n8n Form Trigger (Branch A)
@@ -70,14 +70,11 @@ n8n Form Trigger (issue_number)
    - **Resource:** Draft
    - **Operation:** Get Many
    - **Return All:** ON
-   - **Filters > Query (q):** `subject:"Can you read this #{{ $json['Issue Number'] }}"`
    - **Additional Fields → Format:** `Full`
 
-**Note on `Format: Full`:** Without this, `message.payload` (headers, body, internalDate) will not be populated in the response. Setting Format to Full ensures the complete message content is returned.
+**Note on `Format: Full`:** Without this, `message.payload` (headers, body, internalDate) will not be populated in the response. Required for Node 3 to read subjects and for Node 6 to parse the HTML body.
 
-**Note on Draft resource:** If the `Draft` resource is not available in the Gmail node version on your n8n instance, use `Resource: Message, Operation: Get Many` with query `in:draft subject:"Can you read this #{{ $json['Issue Number'] }}"` instead. In this case, use `message.id` as the dedup key throughout the workflow.
-
-**Output:** One item per matching draft. Each item contains:
+**Output:** One item per draft in the account. Each item contains:
 - `id` — the draft ID (e.g. `r-9182736450198273`), used as `gmail_draft_id`
 - `message.payload.headers` — array of `{name, value}` pairs; contains `Subject`
 - `message.payload.body.data` — base64url-encoded body (simple messages)
@@ -86,10 +83,10 @@ n8n Form Trigger (issue_number)
 
 ---
 
-### Node 3: Code - Validate Draft Count (Branch A)
+### Node 3: Code - Filter by Issue & Validate Count (Branch A)
 
 **Node Type:** `Code`
-**Purpose:** Confirm exactly 3 drafts were returned. If not, halt before any sheet writes.
+**Purpose:** Filter the full drafts list down to only the current issue's 3 drafts by matching the subject pattern, then validate exactly 3 were found. Combines filtering (since the Gmail node has no subject filter) and count validation into one step.
 
 **Configuration:**
 1. Add Code node connected after Gmail node
@@ -100,20 +97,28 @@ n8n Form Trigger (issue_number)
 3. JavaScript code:
 
 ```javascript
-const drafts = $input.all();
+const allDrafts = $input.all();
 const issueNumber = $('n8n Form Trigger').first().json['Issue Number'];
+const pattern = new RegExp(`Can you read this #${issueNumber}:`);
 
-if (drafts.length !== 3) {
+// Filter to only this issue's drafts by subject
+const issueDrafts = allDrafts.filter(item => {
+  const headers = item.json.message?.payload?.headers || [];
+  const subject = headers.find(h => h.name === 'Subject')?.value || '';
+  return pattern.test(subject);
+});
+
+if (issueDrafts.length !== 3) {
   throw new Error(
-    `Expected 3 drafts for issue #${issueNumber}, found ${drafts.length}. ` +
+    `Expected 3 drafts for issue #${issueNumber}, found ${issueDrafts.length}. ` +
     `Check Gmail and ensure all 3 drafts have the correct subject format.`
   );
 }
 
-return drafts;
+return issueDrafts;
 ```
 
-**Output:** Passes all 3 Gmail draft items through unchanged.
+**Output:** Exactly 3 Gmail draft items for the given issue number. Throws and halts if count is not 3.
 
 **Connects to:** Merge node as **Input 1**.
 
