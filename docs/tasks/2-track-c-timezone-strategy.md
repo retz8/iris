@@ -14,6 +14,11 @@
 - Implementing complex infrastructure (geo-IP, real-time timezone detection)
 - Changes to the frontend signup flow (unless decided in Discuss)
 
+**Skills:**
+- `sequential-thinking` — for structured analysis of timezone options, tradeoffs, and recommendation
+- `n8n-skills-2.2.0` — if the decision requires cron or workflow changes, reference this for implementation details
+- `planning` — useful in Discuss phase for framing the decision and comparing options systematically
+
 ---
 
 ## Phase 1 — Explore

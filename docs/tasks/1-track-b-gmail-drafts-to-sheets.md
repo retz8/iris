@@ -15,6 +15,11 @@
 - Auto-generating draft content
 - Modifying the existing subscriber or confirmation workflows
 
+**Skills:**
+- `n8n-skills-2.2.0` — primary reference for n8n node types, Gmail node, Google Sheets node configuration
+- `create-implementation-plan` — required for writing the Plan phase artifact
+- `sequential-thinking` — useful for working through parsing logic, field mapping, and edge cases (duplicate runs, missing fields)
+
 ---
 
 ## Phase 1 — Explore

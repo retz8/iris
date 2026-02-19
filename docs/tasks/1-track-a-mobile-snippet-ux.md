@@ -14,6 +14,10 @@
 - Changing the email layout or structure
 - Automating snippet selection
 
+**Skills:**
+- `prompt-architect` — the core deliverable is rewriting a selection prompt; use this to refine the wording precisely
+- `sequential-thinking` — useful for working through what "mobile-readable" means as a structured definition before committing to a rule
+
 ---
 
 ## Phase 1 — Explore
@@ -62,3 +66,8 @@ Apply the edit to `snippet/n8n-workflows/manual-content-generation.md`.
 Verification:
 - Re-read the updated Step 2 prompt and confirm the mobile-readability rule is clear and actionable for a human following the workflow
 - No other files should need changes
+
+
+--
+
+## Skills

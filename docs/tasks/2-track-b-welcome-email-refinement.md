@@ -14,6 +14,10 @@
 - The confirmation email sent before the subscriber clicks confirm
 - Changes to the confirmation workflow logic
 
+**Skills:**
+- `prompt-architect` — useful for refining the email copy: tone, structure, and messaging precision
+- `product-designer` — for evaluating the welcome email as a subscriber experience touchpoint
+
 ---
 
 ## Phase 1 — Explore

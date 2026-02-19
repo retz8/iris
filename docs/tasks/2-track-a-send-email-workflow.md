@@ -14,6 +14,11 @@
 - Changes to the subscriber schema
 - Changes to the email template
 
+**Skills:**
+- `n8n-skills-2.2.0` — primary reference for n8n node types, Gmail node, Google Sheets node, cron trigger configuration
+- `create-implementation-plan` — required for writing the Plan phase artifact
+- `sequential-thinking` — useful for reasoning through the send sequence, failure handling, and sheet update ordering
+
 ---
 
 ## Phase 1 — Explore
