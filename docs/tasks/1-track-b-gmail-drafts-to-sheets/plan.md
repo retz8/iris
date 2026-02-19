@@ -217,15 +217,20 @@ for (const item of gmailDrafts) {
   const fileIntent = subjectMatch[2].trim();
 
   // Decode HTML body (may be in body.data or inside parts)
+  // atob() is used instead of Buffer (not available in n8n sandbox).
+  // Gmail uses base64url — must convert - → + and _ → / before decoding.
+  const decodeBase64Url = str =>
+    atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+
   let htmlBody = '';
   const payload = draft.message?.payload;
 
   if (payload?.body?.data) {
-    htmlBody = Buffer.from(payload.body.data, 'base64url').toString('utf-8');
+    htmlBody = decodeBase64Url(payload.body.data);
   } else if (payload?.parts) {
     const htmlPart = payload.parts.find(p => p.mimeType === 'text/html');
     if (htmlPart?.body?.data) {
-      htmlBody = Buffer.from(htmlPart.body.data, 'base64url').toString('utf-8');
+      htmlBody = decodeBase64Url(htmlPart.body.data);
     }
   }
 
