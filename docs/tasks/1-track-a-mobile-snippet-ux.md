@@ -67,7 +67,3 @@ Verification:
 - Re-read the updated Step 2 prompt and confirm the mobile-readability rule is clear and actionable for a human following the workflow
 - No other files should need changes
 
-
---
-
-## Skills
