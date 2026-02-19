@@ -664,13 +664,13 @@ token_expires_at → (empty/null)
     <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #d0d7de; font-size: 14px; color: #57606a;">
       <p style="margin: 0;">
         Python, JS/TS, C/C++ |
-        <a href="https://iris-codes.com/unsubscribe?token={{ $json.unsubscribeToken }}" style="color: #0969da; text-decoration: none;">Unsubscribe</a>
+        <a href="https://iris-codes.com/snippet/unsubscribe?token={{ $json.unsubscribeToken }}" style="color: #0969da; text-decoration: none;">Unsubscribe</a>
       </p>
     </div>
 
-  </div>
+  </div>`
 </body>
-</html>
+</html>`
 ```
 
 **Note:** The unsubscribe link includes the newly generated `unsubscribeToken`.
