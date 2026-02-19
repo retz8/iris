@@ -28,11 +28,17 @@ For each repo you picked, copy the prompt below into Claude.ai (enable web searc
 ```
 Repo: https://github.com/[REPO_URL]
 
-Scan this GitHub repository. First explore the directory structure to understand the codebase layout. Then identify files that contain core logic worth reading — prefer implementation files (src/, lib/, core/, internal/) over tests, configs, entry points that only wire things together, or auto-generated code.
+Scan this GitHub repository using these exact steps:
 
-From those files, return 5 snippet candidates spread across different files. For each:
-- file_path: path within the repo
+1. Browse the directory structure to identify candidate files — prefer implementation files (src/, lib/, core/, internal/) over tests, configs, entry points that only wire things together, or auto-generated code.
+2. For each candidate file, navigate to and open the file on GitHub before extracting anything. Do not guess or reconstruct content from memory.
+3. Extract the snippet directly from the file content you see.
+
+Return 5 candidates spread across different files. For each:
+- file_path: path as it appears in the repo
 - snippet: a complete logical unit copied verbatim from the file (a single function, method, or tightly coupled block)
+
+Strict rule: only extract snippets that would take a developer at least 1 minute to fully understand — skip anything trivially obvious at a glance.
 
 No interpretation. No explanation of what the code does. File path and raw code only.
 ```
@@ -75,7 +81,59 @@ Summarize this conversation into two parts:
   "breakdown_clever": ""
 }
 
-Use only values established in this conversation. No placeholders. language must be exactly one of: Python, JS/TS, C/C++ (case sensitive).
+Use only values established in this conversation. No placeholders. language must be exactly one of: Python, JS/TS, C/C++ (case sensitive). Respond JSON output in copyable format.
 ```
 
 Copy the JSON output and use it to compose the Gmail draft.
+
+## Step 5: Generate HTML Email
+
+In the same conversation, send this prompt. The template is fixed — the LLM only fills in the placeholders from the JSON.
+
+```
+Fill in the HTML template below using the JSON from this conversation.
+Replace each {{FIELD}} with the corresponding value. Do not modify any HTML, CSS, or structure — only replace the placeholders. Only return html code that is easy to copy and paste. Reference image attached.
+
+Strict rule: do not fill in the code snippet. Remove the <pre> and <code> tags entirely and replace that block with exactly: <!-- PASTE_SNIPPET_HERE -->
+
+Subject: Can you read this #[ISSUE_NUMBER]: {{file_intent}}
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:600px;margin:0 auto;padding:20px 20px;">
+
+    <pre style="font-family:Consolas,Monaco,'Courier New',monospace;font-size:14px;line-height:1.6;background-color:#f6f8fa;padding:16px;border-left:3px solid #0969da;border-radius:6px;overflow-x:auto;color:#24292f;margin:0 0 24px 0;white-space:pre-wrap;word-wrap:break-word;"><code>PASTE_SNIPPET_HERE</code></pre>
+
+    <p style="margin:32px 0;font-size:20px;font-style:italic;text-align:center;">Before scrolling: what does this do?</p>
+
+    <div style="margin:24px 0;text-align:center;letter-spacing:8px;color:#d0d7de;font-size:20px;">• • •</div>
+
+    <h2 style="margin:0 0 16px 0;font-size:16px;font-weight:600;">The Breakdown</h2>
+    <ul style="margin:0 0 24px 0;padding-left:24px;line-height:1.8;">
+      <li style="margin-bottom:12px;font-size:16px;"><strong>What it does:</strong> {{breakdown_what}}</li>
+      <li style="margin-bottom:12px;font-size:16px;"><strong>Key responsibility:</strong> {{breakdown_responsibility}}</li>
+      <li style="margin-bottom:12px;font-size:16px;"><strong>The clever part:</strong> {{breakdown_clever}}</li>
+    </ul>
+
+    <hr style="margin:32px 0;border:none;border-top:1px solid #d0d7de;">
+
+    <h3 style="margin:0 0 8px 0;font-size:16px;font-weight:600;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:15px;color:#57606a;">
+      From <a href="https://github.com/{{repo_full_name}}" style="color:#0969da;text-decoration:none;">{{repo_full_name}}</a> — <a href="https://github.com/{{repo_full_name}}/blob/main/{{file_path}}" style="color:#0969da;text-decoration:none;">{{file_path}}</a>. {{repo_description}}
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      Python, JS/TS, C/C++ | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#0969da;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>
+```
+
+Copy the HTML output, open Gmail, create a new draft, switch to HTML mode, and paste. Replace `[ISSUE_NUMBER]` in the subject and paste your syntax-highlighted snippet over `PASTE_SNIPPET_HERE`.

@@ -2,6 +2,26 @@
 
 See @README.md for project overview, architecture, build commands, and local development setup.
 
+## Context Hygiene
+At the start of every response, output `[Context: ~X% used]` and estimate based on conversation length.
+
+### Thresholds
+
+0 to 30% Fresh context
+30 to 60% Normal
+60 to 80% Caution
+80% plus Danger
+Never auto compact. When context exceeds 70%, ask:
+
+> Context at ~70%. Want me to compact now, or continue? If we compact, I will preserve the current task state.
+
+Before any compaction, state
+
+What will be preserved
+What will be lost
+Ask for confirmation
+If the conversation goes sideways, use `Esc Esc` to roll back to a known good checkpoint.
+
 ## Key Architecture Gotchas
 
 - **Line numbers**: API response is ONE-based; VS Code is ZERO-based. Decoration manager handles conversion.
@@ -33,7 +53,7 @@ npm run watch            # Watch mode (from packages/iris-vscode/)
 - `POST /api/iris/analyze` — params: `filename`, `language`, `source_code`
 - `GET /api/iris/health` — no auth
 
-## Development Rules
+## CRITICAL Rules
 
 - **Do ONLY what is asked** — complete the requested step, then stop and report back. Do not jump ahead to the next phase or start building before being told to. When asked to explore, just explore. When asked to discuss, just discuss. When asked to build, then build.
 - **Fast iteration over perfect code** — prioritize working prototypes
