@@ -217,10 +217,22 @@ for (const item of gmailDrafts) {
   const fileIntent = subjectMatch[2].trim();
 
   // Decode HTML body (may be in body.data or inside parts)
-  // atob() is used instead of Buffer (not available in n8n sandbox).
-  // Gmail uses base64url — must convert - → + and _ → / before decoding.
-  const decodeBase64Url = str =>
-    atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+  // Pure JS base64url decoder — Buffer and atob() are not available
+  // in n8n's Code node sandbox.
+  const decodeBase64Url = str => {
+    const table = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    const b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+    let out = '';
+    for (let i = 0; i < b64.length; i += 4) {
+      const [a, b, c, d] = [b64[i], b64[i+1], b64[i+2], b64[i+3]]
+        .map(ch => ch ? table.indexOf(ch) : 0);
+      const n = (a << 18) | (b << 12) | (c << 6) | d;
+      out += String.fromCharCode((n >> 16) & 0xFF);
+      if (b64[i+2] && b64[i+2] !== '=') out += String.fromCharCode((n >> 8) & 0xFF);
+      if (b64[i+3] && b64[i+3] !== '=') out += String.fromCharCode(n & 0xFF);
+    }
+    try { return decodeURIComponent(escape(out)); } catch { return out; }
+  };
 
   let htmlBody = '';
   const payload = draft.message?.payload;
