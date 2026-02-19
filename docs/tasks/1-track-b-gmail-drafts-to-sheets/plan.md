@@ -72,16 +72,13 @@ n8n Form Trigger (issue_number)
    - **Resource:** Draft
    - **Operation:** Get Many
    - **Return All:** ON
-   - **Additional Fields → Format:** `Full`
+   - **Return All:** ON
 
-**Note on `Format: Full`:** Without this, `message.payload` (headers, body, internalDate) will not be populated in the response. Required for Node 3 to read subjects and for Node 6 to parse the HTML body.
-
-**Output:** One item per draft in the account. Each item contains:
-- `id` — the draft ID (e.g. `r-9182736450198273`), used as `gmail_draft_id`
-- `message.payload.headers` — array of `{name, value}` pairs; contains `Subject`
-- `message.payload.body.data` — base64url-encoded body (simple messages)
-- `message.payload.parts` — MIME parts array (multipart messages); `text/html` part holds the email body
-- `message.internalDate` — milliseconds-since-epoch string; used as `created_date`
+**Output:** One item per draft in the account. The n8n Gmail node pre-parses the message — each item is a flat JSON object with fields directly accessible:
+- `id` — the draft ID (e.g. `r4499414878237443801`), used as `gmail_draft_id`
+- `subject` — email subject string (e.g. `"Can you read this #1: Bash command validation hook"`)
+- `html` — fully decoded HTML body string
+- `date` — ISO 8601 date string (e.g. `"2026-02-19T09:50:37.000Z"`), used as `created_date`
 
 ---
 
@@ -103,10 +100,9 @@ const allDrafts = $input.all();
 const issueNumber = $('n8n Form Trigger').first().json['Issue Number'];
 const pattern = new RegExp(`Can you read this #${issueNumber}:`);
 
-// Filter to only this issue's drafts by subject
+// Filter to only this issue's drafts by subject (n8n Gmail node exposes subject directly)
 const issueDrafts = allDrafts.filter(item => {
-  const headers = item.json.message?.payload?.headers || [];
-  const subject = headers.find(h => h.name === 'Subject')?.value || '';
+  const subject = item.json.subject || '';
   return pattern.test(subject);
 });
 
@@ -179,12 +175,12 @@ return issueDrafts;
 ```javascript
 const allItems = $input.all();
 
-// Gmail draft items have a `message` field; Sheets rows do not
+// Gmail draft items have an `html` field; Sheets rows do not
 const gmailDrafts = allItems.filter(
-  item => item.json.message !== undefined
+  item => item.json.html !== undefined
 );
 const sheetsRows = allItems.filter(
-  item => item.json.message === undefined
+  item => item.json.html === undefined
 );
 
 // Build set of already-processed draft IDs from existing Sheets rows
@@ -202,12 +198,11 @@ for (const item of gmailDrafts) {
   // Skip if already in sheet
   if (existingIds.has(String(draft.id))) continue;
 
-  // Extract subject from message headers
-  const headers = draft.message?.payload?.headers || [];
-  const subjectHeader = headers.find(h => h.name === 'Subject');
-  const subject = subjectHeader?.value || '';
+  // n8n Gmail node exposes subject and html as top-level fields (pre-parsed, no decoding needed)
+  const subject = draft.subject || '';
+  const htmlBody = draft.html || '';
 
-  // Parse issue_number and file_intent
+  // Parse issue_number and file_intent from subject
   const subjectMatch = subject.match(/Can you read this #(\d+):\s*(.+)/);
   if (!subjectMatch) {
     throw new Error(`Unexpected subject format: "${subject}"`);
@@ -216,37 +211,7 @@ for (const item of gmailDrafts) {
   const issueNumber = parseInt(subjectMatch[1], 10);
   const fileIntent = subjectMatch[2].trim();
 
-  // Decode HTML body (may be in body.data or inside parts)
-  // Pure JS base64url decoder — Buffer and atob() are not available
-  // in n8n's Code node sandbox.
-  const decodeBase64Url = str => {
-    const table = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-    const b64 = str.replace(/-/g, '+').replace(/_/g, '/');
-    let out = '';
-    for (let i = 0; i < b64.length; i += 4) {
-      const [a, b, c, d] = [b64[i], b64[i+1], b64[i+2], b64[i+3]]
-        .map(ch => ch ? table.indexOf(ch) : 0);
-      const n = (a << 18) | (b << 12) | (c << 6) | d;
-      out += String.fromCharCode((n >> 16) & 0xFF);
-      if (b64[i+2] && b64[i+2] !== '=') out += String.fromCharCode((n >> 8) & 0xFF);
-      if (b64[i+3] && b64[i+3] !== '=') out += String.fromCharCode(n & 0xFF);
-    }
-    try { return decodeURIComponent(escape(out)); } catch { return out; }
-  };
-
-  let htmlBody = '';
-  const payload = draft.message?.payload;
-
-  if (payload?.body?.data) {
-    htmlBody = decodeBase64Url(payload.body.data);
-  } else if (payload?.parts) {
-    const htmlPart = payload.parts.find(p => p.mimeType === 'text/html');
-    if (htmlPart?.body?.data) {
-      htmlBody = decodeBase64Url(htmlPart.body.data);
-    }
-  }
-
-  // Parse repository fields from Project Context section
+  // Parse repository URL and name from Project Context section
   // HTML pattern: From <a href="https://github.com/owner/repo">owner/repo</a>
   const repoMatch = htmlBody.match(
     /From\s+<a[^>]+href="(https:\/\/github\.com\/([^"]+))"[^>]*>[^<]+<\/a>/
@@ -254,16 +219,17 @@ for (const item of gmailDrafts) {
   const repositoryUrl = repoMatch ? repoMatch[1] : '';
   const repositoryName = repoMatch ? repoMatch[2] : '';
 
-  // Parse description: text after the file_path anchor
+  // Parse description: text after the repo anchor, strip any remaining HTML tags
   const descMatch = htmlBody.match(
-    /href="https:\/\/github\.com\/[^"]+\/blob\/[^"]+">([^<]+)<\/a>\.\s*([^<]+)/
+    /From\s+<a[^>]*>[^<]+<\/a>[^.]*\.\s*([\s\S]+?)<\/p>/
   );
-  const repositoryDescription = descMatch ? descMatch[2].trim() : '';
+  const repositoryDescription = descMatch
+    ? descMatch[1].replace(/<[^>]+>/g, '').trim()
+    : '';
 
-  // created_date from internalDate (ms since epoch as string)
-  const internalDate = draft.message?.internalDate;
-  const createdDate = internalDate
-    ? new Date(parseInt(internalDate, 10)).toISOString()
+  // created_date from draft.date (n8n provides ISO 8601 string directly)
+  const createdDate = draft.date
+    ? new Date(draft.date).toISOString()
     : new Date().toISOString();
 
   newRows.push({
@@ -299,7 +265,7 @@ return newRows;
 | `repository_url` | HTML body | First GitHub href in Project Context |
 | `repository_name` | HTML body | Path portion of GitHub URL (`owner/repo`) |
 | `repository_description` | HTML body | Text after file_path anchor |
-| `created_date` | Gmail API | `message.internalDate` → ISO 8601 |
+| `created_date` | Gmail API | `draft.date` (ISO 8601, pre-parsed by n8n) |
 | `status` | Hardcoded | `"draft"` |
 | `source` | Hardcoded | `"manual"` |
 | `programming_language` | — | Left blank (human fills during Sunday review) |
@@ -405,9 +371,10 @@ Expected — three drafts per Sunday share the same `issue_number`. Each gets it
 
 **Expected result:**
 - Node 2 returns 3 items
-- Node 4 returns 3 rows (all 3 IDs match)
-- Merge returns 0 items
-- Nodes 6 and 7 do not execute
+- Node 4 returns 3 rows (all 3 IDs already in sheet)
+- Merge returns 6 items (3 Gmail + 3 Sheets)
+- Node 6 builds existingIds set of 3 IDs, skips all 3 Gmail drafts, returns 0 items
+- Node 7 does not execute
 - Sheet unchanged
 
 ### Test 4: Partial run (1 draft already in sheet)
