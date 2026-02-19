@@ -43,22 +43,32 @@ After reading, answer these questions:
 
 ## Phase 2 — Discuss
 
-Surface findings to the human engineer and make decisions together:
+**Decisions made:**
 
-1. Show which fields are parseable from the draft vs which need a decision.
-2. Discuss how the workflow identifies which drafts to process (subject pattern? time window? label?).
-3. Discuss how to handle `source` field — blank, default to `"manual"`, or something else.
-4. Discuss how `issue_number` should be determined — parsed from subject, read from sheet to get next value, or human-set.
-5. Confirm the trigger type (manual is fine for now if volume is low).
-6. Confirm whether the workflow should be idempotent — what happens if run twice on the same drafts?
+1. **Parseable fields:**
+   - From subject (`Can you read this #[ISSUE_NUMBER]: {{file_intent}}`): `issue_number`, `file_intent`
+   - From HTML body (Project Context section): `repository_name`, `repository_url`, `repository_description`
+   - From Gmail API metadata: `gmail_draft_id`, `created_date`
+   - Hardcoded at write time: `status = "draft"`, `source = "manual"`
+   - Left blank for human/Workflow 2: `programming_language`, `scheduled_day`, `sent_date`
 
-Do not proceed to Plan until the human engineer has answered these open questions.
+2. **Draft identification:** Filter by subject containing `"Can you read this #"`. Already-sent drafts are excluded naturally — Workflow 2 (Track A) will prepend `[SENT]` to the subject after sending, which falls outside this filter.
+
+3. **`source` field:** Default to `"manual"`.
+
+4. **`issue_number`:** Parsed from the subject line per draft. All 3 drafts for a given Sunday share the same issue number because the human writes them that way.
+
+5. **Trigger:** Manual button (n8n Execute Workflow trigger). Runs at most once per Sunday; low volume makes manual control preferable.
+
+6. **Idempotency:** Check `gmail_draft_id` against existing sheet rows before appending. Skip any draft whose ID is already present.
+
+7. **`programming_language`:** Left blank. Human fills this in the sheet alongside `scheduled_day` during Sunday review.
 
 ---
 
 ## Phase 3 — Plan
 
-Use the `create-implementation-plan` skill to write a plan to `docs/tasks/1-track-b-gmail-drafts-to-sheets/`.
+n8n workflow plan should follow the similar structure as snippet/n8n-workflows/workflow-confirmation
 
 The plan should cover:
 - Full n8n workflow node graph (trigger → Gmail fetch → parse → Sheet append)
