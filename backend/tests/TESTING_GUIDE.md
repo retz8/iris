@@ -1,6 +1,6 @@
-# Track B: Using Test Suites to Improve Agent Quality
+# Using Test Suites to Improve Agent Quality
 
-Step-by-step guide for iterating on IRIS analysis quality using the Track B test infrastructure.
+Step-by-step guide for iterating on IRIS analysis quality using the test infrastructure.
 
 ## The Iteration Loop
 
