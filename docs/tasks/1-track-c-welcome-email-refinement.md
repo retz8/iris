@@ -49,6 +49,35 @@ Present findings to the human engineer:
 
 Do not proceed to Plan until the human engineer approves the revised copy and structure.
 
+### Agreed Changes
+
+1. Subject: `Welcome to Snippet` (no "newsletter" label — subscriber just confirmed, has full context; body establishes format immediately)
+2. Remove "Smart move." — flattery, inconsistent with newsletter tone
+3. Merge AI sentence and ownership sentence into one paragraph (remove `<br>` between them)
+4. Remove challenge bullet ("Challenge: What's this actually doing?") — implicit from the format
+5. Remove "Copyable code. 2-minute read. Real skill-building." — redundant with bullets; "Real skill-building" is an unsubstantiated claim
+6. Remove "First one Monday." — schedule already covered by bullet header
+7. Elevate trending code language in snippet bullet: "One snippet from a repo engineers are reading this week (8–12 lines)"
+8. Add project context as third bullet: "Project context: where the code came from"
+
+### Approved Copy
+
+Subject: Welcome to Snippet
+
+You signed up for Snippet.
+
+AI generates code faster than you can read it. But you're still the one who reviews it, merges it, owns it.
+
+Can you read it well enough to trust it?
+
+Every Mon/Wed/Fri, 7am:
+- One snippet from a repo engineers are reading this week (8–12 lines)
+- Breakdown: The pattern you need to see faster
+- Project context: where the code came from
+
+Train your eye. Ship with confidence.
+Snippet
+
 ---
 
 ## Phase 3 — Plan
