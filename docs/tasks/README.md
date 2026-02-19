@@ -35,6 +35,32 @@ Only update `UPDATES.md` when explicitly told to. When updating, append an entry
 
 Before starting execution, check `UPDATES.md` for your listed dependencies. If a dependency is not marked complete, wait and ask the human engineer before proceeding.
 
+## Workflow Overview
+
+```
+Phase 1 (parallel)
+  1-A  Mobile Snippet UX          — add mobile-readability rule to snippet selection prompt
+  1-B  Gmail Drafts → Sheets      — n8n workflow: fetch manual Gmail drafts → populate Drafts sheet
+        |
+        ▼
+Phase 2 (parallel)
+  2-A  Send Email Workflow        — n8n workflow plan: cron → read drafts → send to subscribers
+  2-B  Welcome Email Refinement   — refine post-confirmation welcome email copy and HTML
+  2-C  Timezone Strategy          — decide how to handle multi-timezone send scheduling
+        |
+        ▼
+Phase 3 (parallel)
+  3-A  n8n Security Check         — full security audit of all workflows before go-live
+  3-B  Web App UX/UI Review       — final review and adjustments to the web/ frontend
+        |
+        ▼
+Phase 4 (parallel)
+  4-A  Deployment Guide           — step-by-step guide for deploying n8n workflows + web app
+  4-B  Distribution Strategy      — concrete plan for promoting Snippet and getting first subscribers
+```
+
+Each phase waits for all tracks in the previous phase to be marked COMPLETE in `UPDATES.md` before starting.
+
 ## Phases and Tracks
 
 Work is organized into phases. All tracks within a phase run in parallel. The next phase starts only after all tracks in the current phase are complete.
