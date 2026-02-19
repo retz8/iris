@@ -1,7 +1,7 @@
 # n8n Workflow: Gmail Drafts to Newsletter Drafts Sheet
 
 **Workflow Name:** Gmail Drafts to Sheets
-**Trigger Type:** Manual
+**Trigger Type:** Manual (n8n Form Trigger)
 **Purpose:** Fetch manually-written Gmail drafts matching the newsletter subject pattern and append one row per draft to the Newsletter Drafts Google Sheet, skipping any draft already present.
 
 ## Prerequisites
@@ -14,34 +14,32 @@
 
 ## Workflow Overview
 
+The workflow fans out from the Form Trigger into two parallel branches that rejoin at a Merge node. This is required because when a draft is not yet in the sheet, the Google Sheets lookup returns 0 items — making it impossible to use a simple IF node (0 items means the branch never executes). The Merge node's "Keep Non-Matches" mode handles this correctly.
+
 ```
-Form Trigger (human enters issue_number, e.g. 42)
-    ↓
-Gmail: Get Drafts
-(q: subject:"Can you read this #{{ issue_number }}")
-    ↓
-Code: Validate Draft Count
-(throws error and halts if count ≠ 3)
-    ↓
-Google Sheets: Get Row(s)
-(filter: gmail_draft_id = {{ $json.id }} — runs once per draft)
-    ↓
-IF: Row returned? (duplicate check)
-    ├─ TRUE  → (end — draft already in sheet, skip)
-    └─ FALSE → Code: Parse Draft
-                    ↓
-               Google Sheets: Append Row
+n8n Form Trigger (issue_number)
+    │
+    ├─── Branch A ──→ Gmail: Get Drafts ──→ Code: Validate Count ──→ Merge (Input 1)
+    │                                                                      │
+    └─── Branch B ──→ Google Sheets: Get All Rows ─────────────────→ Merge (Input 2)
+                                                                           │
+                                                           Merge: Keep Non-Matching Drafts
+                                                           (Input 1 id ≠ Input 2 gmail_draft_id)
+                                                                           │
+                                                                  Code: Parse Draft
+                                                                           │
+                                                               Google Sheets: Append Row
 ```
 
 ## Node-by-Node Configuration
 
-### Node 1: Form Trigger
+### Node 1: n8n Form Trigger
 
-**Node Type:** `Form Trigger`
-**Purpose:** Present a form to the human before the workflow runs. The human enters the issue number for the current week's drafts (e.g. `42`). This scopes the Gmail search to only that issue's 3 drafts rather than all newsletter drafts ever written.
+**Node Type:** `n8n Form Trigger`
+**Purpose:** Present a form to the human before the workflow runs. The human enters the issue number for the current week's drafts (e.g. `42`). This scopes the Gmail search to exactly that issue's 3 drafts.
 
 **Configuration:**
-1. Add Form Trigger node to canvas
+1. Add n8n Form Trigger node to canvas
 2. Configure parameters:
    - **Form Title:** `Gmail Drafts to Sheets`
    - **Form Description:** `Enter the issue number for this week's drafts.`
@@ -50,44 +48,51 @@ IF: Row returned? (duplicate check)
        - **Field Label:** `Issue Number`
        - **Field Type:** Number
        - **Required:** ON
-3. Set **Response Mode:** `On form submission`
+   - **Response Mode:** `Form Is Submitted` (value: `onReceived`)
 
-**Output:** `{ "Issue Number": 42 }` (field name matches the label)
+**Output:** `{ "Issue Number": 42 }` (field name matches the label exactly — use `$json['Issue Number']` to reference it)
 
-**Trigger URL:** Provided by n8n after saving — open this URL in the browser each Sunday to launch the form.
+**Fan-out:** This node connects to two downstream nodes simultaneously — Node 2 (Branch A) and Node 4 (Branch B).
+
+**Trigger URL:** Provided by n8n after activation — open in browser each Sunday to run.
 
 ---
 
-### Node 2: Gmail - Get Drafts
+### Node 2: Gmail - Get Drafts (Branch A)
 
 **Node Type:** `Gmail`
-**Purpose:** Fetch all Gmail drafts for the specified issue number. Scoped to exactly the 3 drafts for that issue.
+**Purpose:** Fetch all Gmail drafts for the specified issue number. Scoped to exactly the 3 drafts written this week.
 
 **Configuration:**
-1. Add Gmail node after Form Trigger
+1. Add Gmail node connected from n8n Form Trigger (Branch A)
 2. Configure parameters:
    - **Credential:** Gmail OAuth2
    - **Resource:** Draft
    - **Operation:** Get Many
    - **Return All:** ON
    - **Filters > Query (q):** `subject:"Can you read this #{{ $json['Issue Number'] }}"`
+   - **Additional Fields → Format:** `Full`
+
+**Note on `Format: Full`:** Without this, `message.payload` (headers, body, internalDate) will not be populated in the response. Setting Format to Full ensures the complete message content is returned.
+
+**Note on Draft resource:** If the `Draft` resource is not available in the Gmail node version on your n8n instance, use `Resource: Message, Operation: Get Many` with query `in:draft subject:"Can you read this #{{ $json['Issue Number'] }}"` instead. In this case, use `message.id` as the dedup key throughout the workflow.
 
 **Output:** One item per matching draft. Each item contains:
 - `id` — the draft ID (e.g. `r-9182736450198273`), used as `gmail_draft_id`
 - `message.payload.headers` — array of `{name, value}` pairs; contains `Subject`
-- `message.payload.body.data` — base64url-encoded body for simple messages
-- `message.payload.parts` — array of MIME parts for multipart messages; `text/html` part holds the email body
+- `message.payload.body.data` — base64url-encoded body (simple messages)
+- `message.payload.parts` — MIME parts array (multipart messages); `text/html` part holds the email body
 - `message.internalDate` — milliseconds-since-epoch string; used as `created_date`
 
 ---
 
-### Node 3: Code - Validate Draft Count
+### Node 3: Code - Validate Draft Count (Branch A)
 
 **Node Type:** `Code`
-**Purpose:** Confirm exactly 3 drafts were returned for the given issue number. If the count is anything other than 3, throw an error to halt the workflow before touching the sheet. This catches missing drafts (e.g. one was not saved) or subject line typos before any writes happen.
+**Purpose:** Confirm exactly 3 drafts were returned. If not, halt before any sheet writes.
 
 **Configuration:**
-1. Add Code node after Gmail node
+1. Add Code node connected after Gmail node
 2. Set parameters:
    - **Mode:** Run Once for All Items
    - **Language:** JavaScript
@@ -96,7 +101,7 @@ IF: Row returned? (duplicate check)
 
 ```javascript
 const drafts = $input.all();
-const issueNumber = $('Form Trigger').first().json['Issue Number'];
+const issueNumber = $('n8n Form Trigger').first().json['Issue Number'];
 
 if (drafts.length !== 3) {
   throw new Error(
@@ -108,55 +113,65 @@ if (drafts.length !== 3) {
 return drafts;
 ```
 
-**Output:** Passes all 3 items through unchanged if count is exactly 3. Throws and halts otherwise.
+**Output:** Passes all 3 Gmail draft items through unchanged.
+
+**Connects to:** Merge node as **Input 1**.
 
 ---
 
-### Node 4: Google Sheets - Get Row(s) by Draft ID
+### Node 4: Google Sheets - Get All Rows (Branch B)
 
 **Node Type:** `Google Sheets`
-**Purpose:** Check whether the current draft is already in the sheet. Runs once per draft item.
+**Purpose:** Fetch all existing rows from the Newsletter Drafts sheet. Used by the Merge node to identify which drafts are already present.
 
 **Configuration:**
-1. Add Google Sheets node after Code - Validate Draft Count
+1. Add Google Sheets node connected from n8n Form Trigger (Branch B — separate connection from Node 1, NOT from the Gmail branch)
 2. Configure parameters:
    - **Credential:** Google OAuth2
-   - **Operation:** Get Many Rows
+   - **Operation:** `Get Row(s)` (value: `read`)
    - **Document:** "Newsletter Drafts"
    - **Sheet:** "Newsletter Drafts"
-   - **Filters:**
-     - Add filter: column `gmail_draft_id` equals `{{ $json.id }}`
-   - **Return All:** OFF (first match is enough — IDs are unique)
-   - **RAW Data:** OFF
+   - **Filters:** (none — return all rows)
+   - **Options → Return All:** ON
 
-**Output:** 0 rows (draft not in sheet) or 1 row (already present). The IF node uses this to decide whether to proceed.
+**Output:** All existing rows. Each row includes a `gmail_draft_id` field. Returns 0 items when the sheet is empty (first run) — handled correctly by the Merge node.
+
+**Connects to:** Merge node as **Input 2**.
 
 ---
 
-### Node 5: IF - Duplicate Check
+### Node 5: Merge - Keep Non-Matching Drafts
 
-**Node Type:** `IF`
-**Purpose:** Skip drafts already in the sheet; proceed only with new ones.
+**Node Type:** `Merge`
+**Purpose:** Find Gmail drafts that are NOT yet in the sheet. Replaces the IF + per-item Sheets lookup pattern, which fails silently when no match is found (0 items returned = IF never fires).
 
 **Configuration:**
-1. Add IF node after Google Sheets node
-2. Set condition:
-   - **Value 1:** `{{ $json.gmail_draft_id }}`
-   - **Operation:** `Is Empty`
+1. Add Merge node to canvas
+2. Connect **Node 3** (Validate Count) to **Input 1**
+3. Connect **Node 4** (Sheets Get All) to **Input 2**
+4. Configure parameters:
+   - **Mode:** `Keep Non-Matches`
+   - **Input 1 Field:** `id`
+   - **Input 2 Field:** `gmail_draft_id`
 
-**Outputs:**
-- **TRUE branch:** No row returned — draft is new, proceed to parse
-- **FALSE branch:** Row returned — draft already in sheet, end branch (no further nodes)
+**How it works:**
+- Compares `id` from each Gmail draft (Input 1) against `gmail_draft_id` in all Sheets rows (Input 2)
+- Outputs only Gmail draft items that have no matching Sheets row = new drafts
+- When sheet is empty (0 Input 2 items): all 3 drafts pass through ✓
+- When all 3 already in sheet: 0 items pass through, Append never runs ✓
+- When 1 of 3 already in sheet: 2 items pass through ✓
+
+**Output:** 0–3 Gmail draft items representing new (unprocessed) drafts. Item structure is the same as the Gmail node output — `$input.item.json` in Node 6 directly gives the draft.
 
 ---
 
 ### Node 6: Code - Parse Draft
 
 **Node Type:** `Code`
-**Purpose:** Parse `issue_number`, `file_intent`, repository fields, and `created_date` from the current draft. Runs once per new draft item.
+**Purpose:** Parse `issue_number`, `file_intent`, repository fields, and `created_date` from the current draft. Runs once per new draft.
 
 **Configuration:**
-1. Add Code node to TRUE branch of IF - Duplicate Check node
+1. Add Code node after Merge node
 2. Set parameters:
    - **Mode:** Run Once for Each Item
    - **Language:** JavaScript
@@ -164,7 +179,8 @@ return drafts;
 3. JavaScript code:
 
 ```javascript
-const draft = $('Gmail - Get Drafts').item.json;
+// $input.item.json is the Gmail draft directly — no cross-node reference needed
+const draft = $input.item.json;
 
 // Extract subject from message headers
 const headers = draft.message?.payload?.headers || [];
@@ -263,12 +279,12 @@ return {
 1. Add Google Sheets node after Code node
 2. Configure parameters:
    - **Credential:** Google OAuth2
-   - **Operation:** Append Row
+   - **Operation:** `Append Row` (value: `append`)
    - **Document:** "Newsletter Drafts"
    - **Sheet:** "Newsletter Drafts"
-   - **Data Mode:** Map Each Column Manually
+   - **Columns > Mapping Mode:** `Define Below` (value: `defineBelow`)
 
-**Column Mapping:**
+**Column Mapping (under Define Below):**
 
 | Sheet Column | Value |
 |---|---|
@@ -290,88 +306,89 @@ return {
 ## Edge Cases
 
 **Wrong number of drafts found (not 3):**
-Node 3 throws an error and halts the entire workflow before any sheet writes. The error message states the issue number and actual count found. Human should check Gmail drafts, correct the subject lines, and re-run.
+Node 3 throws and halts the entire workflow before any sheet writes. The error message states the issue number and actual count. Human should check Gmail drafts, fix subject lines, and re-run.
 
 **No matching drafts found:**
 Node 2 returns zero items. Node 3 immediately throws (0 ≠ 3). Workflow halts cleanly.
 
 **All drafts already in sheet (duplicate run):**
-Node 3 passes all 3 through. Every draft takes the FALSE branch at Node 5. Nodes 6 and 7 do not execute. Sheet unchanged.
+Merge outputs 0 items — all 3 drafts matched existing rows. Nodes 6 and 7 do not execute. Sheet unchanged.
+
+**Sheet is empty (first run):**
+Node 4 returns 0 rows. Merge receives empty Input 2 — all 3 Gmail drafts have no match and pass through. All 3 are appended. ✓
 
 **Subject line does not match expected format:**
-Node 6 throws an error for that item. n8n marks the execution as failed for that item. Other drafts in the same run still process. Human should inspect the subject and correct it.
+Node 6 throws for that item. n8n marks it as failed. Human should inspect and correct the subject line.
 
 **HTML body cannot be decoded or parsed:**
-Repository fields (`repository_name`, `repository_url`, `repository_description`) are set to empty string. The row is still appended with whatever was successfully parsed. Human can correct in the sheet during review.
+Repository fields are set to empty string. The row is still appended with what was successfully parsed. Human corrects in sheet during Sunday review.
 
 **Multiple drafts with same `issue_number`:**
-Expected — three drafts per Sunday share the same `issue_number`. Each gets its own row in the sheet, per the schema.
+Expected — three drafts per Sunday share the same `issue_number`. Each gets its own row, per the schema.
 
 ---
 
 ## Workflow Testing
 
-### Test 1: First run with 3 new drafts
+### Test 1: First run with 3 new drafts (empty sheet)
 
-**Setup:**
-1. Write 3 Gmail drafts following the format in `manual-content-generation.md` with subjects:
-   - `Can you read this #1: Bash command validation hook`
-   - `Can you read this #1: HTTP retry backoff scheduler`
-   - `Can you read this #1: Memory arena allocator`
+**Setup:** Write 3 Gmail drafts with subjects:
+- `Can you read this #1: Bash command validation hook`
+- `Can you read this #1: HTTP retry backoff scheduler`
+- `Can you read this #1: Memory arena allocator`
 
-**Execute:** Click "Test workflow" in n8n
+**Execute:** Open Form Trigger URL, enter `1`, submit.
 
 **Expected result:**
 - Node 2 returns 3 items
-- Node 3 passes all 3 through (count = 3)
-- Node 4 returns 0 rows for each (no matches in sheet)
-- Node 5 routes all 3 to TRUE branch
+- Node 3 passes all 3 (count = 3)
+- Node 4 returns 0 rows (empty sheet)
+- Merge returns all 3 (no matches in empty Input 2)
 - Node 6 parses each draft
-- Node 7 appends 3 rows to the sheet
-- Rows have `status = "draft"`, `source = "manual"`, correct `issue_number`, `file_intent`, `repository_*` fields populated
+- Node 7 appends 3 rows
+- Rows have `status = "draft"`, `source = "manual"`, correct `issue_number`, `file_intent`, `repository_*` populated
 
 ### Test 2: Wrong draft count
 
-**Setup:** Only 2 drafts exist in Gmail for the entered issue number (one was not saved or has a typo in the subject).
+**Setup:** Only 2 drafts exist for the issue number (one not saved or subject typo).
 
-**Execute:** Submit form with the issue number
+**Execute:** Submit form with the issue number.
 
 **Expected result:**
 - Node 2 returns 2 items
-- Node 3 throws: `"Expected 3 drafts for issue #X, found 2. Check Gmail..."`
+- Node 3 throws: `"Expected 3 drafts for issue #1, found 2..."`
 - Workflow halts — no sheet writes
 
 ### Test 3: Re-run (idempotency check)
 
-**Setup:** Sheet already has the 3 rows from Test 1. Same Gmail drafts still present.
+**Setup:** Sheet has 3 rows from Test 1. Same Gmail drafts still present.
 
-**Execute:** Submit form again with the same issue number
+**Execute:** Submit form again with the same issue number.
 
 **Expected result:**
 - Node 2 returns 3 items
-- Node 3 passes all 3 through
-- Node 4 returns 1 row for each (ID found in sheet)
-- Node 5 routes all 3 to FALSE branch
+- Node 4 returns 3 rows (all 3 IDs match)
+- Merge returns 0 items
 - Nodes 6 and 7 do not execute
 - Sheet unchanged
 
-### Test 4: Partial re-run (one new draft added)
+### Test 4: Partial run (1 draft already in sheet)
 
-**Setup:** Sheet has 3 rows. Human adds a 4th Gmail draft for the same issue number.
+**Setup:** Sheet has 1 row from a partial previous run. 2 drafts remain unprocessed.
 
-**Execute:** Submit form
+**Execute:** Submit form.
 
 **Expected result:**
-- Node 2 returns 4 items
-- Node 3 throws: `"Expected 3 drafts for issue #X, found 4"`
-- Workflow halts — human should investigate the extra draft
+- Merge returns 2 items (1 matched, 2 didn't)
+- Node 7 appends 2 rows
+- Sheet has 3 rows total
 
 ---
 
 ## Workflow Activation
 
 1. Save workflow
-2. Click "Activate" toggle (required for Form Trigger to serve the form URL)
+2. Click "Activate" toggle (required for Form Trigger URL to be served)
 3. Copy the Form Trigger URL from the node settings
-4. Each Sunday after writing drafts: open the form URL in the browser, enter the issue number, submit
-5. Verify rows appear in Newsletter Drafts sheet before doing Sunday review
+4. Each Sunday after writing drafts: open URL in browser, enter the issue number, submit
+5. Verify rows appear in Newsletter Drafts sheet before Sunday review
