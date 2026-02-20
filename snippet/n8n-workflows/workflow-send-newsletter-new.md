@@ -17,9 +17,9 @@ Why this works:
 
 ## Prerequisites
 
-- Google Sheets: "Newsletter Drafts" (`google-sheets-drafts-schema.md`)
-- Google Sheets: "Newsletter Subscribers" (`google-sheets-subscribers-schema.md`)
-- Google Sheets: "Send Errors" (`google-sheets-send-errors-schema.md`)
+- Google Sheets: "Newsletter Drafts" (`../schema/google-sheets-drafts-schema.md`)
+- Google Sheets: "Newsletter Subscribers" (`../schema/google-sheets-subscribers-schema.md`)
+- Google Sheets: "Send Errors" (`../schema/google-sheets-send-errors-schema.md`)
 - Google OAuth2 credentials in n8n
 - Gmail OAuth2 credentials in n8n
 - Gmail draft HTML contains literal placeholder: `UNSUBSCRIBE_TOKEN`

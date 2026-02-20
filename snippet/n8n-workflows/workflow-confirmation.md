@@ -6,7 +6,7 @@
 
 ## Prerequisites
 
-- Google Sheets spreadsheet: "Newsletter Subscribers" (see `google-sheets-subscribers-schema.md`)
+- Google Sheets spreadsheet: "Newsletter Subscribers" (see `../schema/google-sheets-subscribers-schema.md`)
 - Google OAuth2 credentials configured in n8n
 - Gmail/SMTP credentials configured in n8n (for welcome email)
 - n8n instance accessible at retz8.app.n8n.cloud

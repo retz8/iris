@@ -6,7 +6,7 @@
 
 ## Prerequisites
 
-- Google Sheets spreadsheet: "Newsletter Drafts" (see `snippet/n8n-workflows/google-sheets-drafts-schema.md`)
+- Google Sheets spreadsheet: "Newsletter Drafts" (see `snippet/schema/google-sheets-drafts-schema.md`)
 - Google OAuth2 credentials configured in n8n
 - Gmail OAuth2 credentials configured in n8n
 - n8n instance accessible at retz8.app.n8n.cloud

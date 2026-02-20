@@ -6,7 +6,7 @@
 
 ## Prerequisites
 
-- Google Sheets spreadsheet: "Newsletter Subscribers" (see `google-sheets-subscribers-schema.md`)
+- Google Sheets spreadsheet: "Newsletter Subscribers" (see `../schema/google-sheets-subscribers-schema.md`)
 - Google OAuth2 credentials configured in n8n
 - n8n instance accessible at n8n.iris-codes.com
 

@@ -6,9 +6,9 @@
 
 ## Prerequisites
 
-- Google Sheets spreadsheet: "Newsletter Drafts" (see `google-sheets-drafts-schema.md`)
-- Google Sheets spreadsheet: "Newsletter Subscribers" (see `google-sheets-subscribers-schema.md`)
-- Google Sheets spreadsheet: "Send Errors" (see `google-sheets-send-errors-schema.md`)
+- Google Sheets spreadsheet: "Newsletter Drafts" (see `../schema/google-sheets-drafts-schema.md`)
+- Google Sheets spreadsheet: "Newsletter Subscribers" (see `../schema/google-sheets-subscribers-schema.md`)
+- Google Sheets spreadsheet: "Send Errors" (see `../schema/google-sheets-send-errors-schema.md`)
 - Google OAuth2 credentials configured in n8n
 - Gmail OAuth2 credentials configured in n8n
 - Gmail drafts contain `{{unsubscribe_token}}` as a literal placeholder in the HTML body (Code node replaces this per subscriber — n8n's expression engine does not process this directly)
