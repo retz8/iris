@@ -188,8 +188,6 @@ return [{ json: { today } }];
 3. JavaScript code:
 
 ```javascript
-const { Buffer } = require('buffer'); // Buffer is not a global in n8n's Code node sandbox
-
 const item = $input.first();
 const draftResponse = item.json;
 
@@ -246,10 +244,15 @@ if (!rawBase64) {
 
 try {
   // Decode base64url → UTF-8 string
-  const draftHtml = Buffer.from(
-    rawBase64.replace(/-/g, '+').replace(/_/g, '/'),
-    'base64'
-  ).toString('utf-8');
+  // atob() is available as a global in n8n's Code node (Node.js 18+)
+  // decodeURIComponent handles multi-byte UTF-8 characters in the HTML
+  const base64 = rawBase64.replace(/-/g, '+').replace(/_/g, '/');
+  const draftHtml = decodeURIComponent(
+    atob(base64)
+      .split('')
+      .map(c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0'))
+      .join('')
+  );
 
   if (!draftHtml || draftHtml.trim() === '') {
     return [{
