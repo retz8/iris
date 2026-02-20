@@ -20,6 +20,5 @@ snippet/
     ├── workflow-confirmation.md              # Email confirmation and welcome email
     ├── workflow-unsubscribe-token-based.md   # Token-based unsubscribe handler
     ├── workflow-gmail-drafts-to-sheet.md     # Gmail drafts → Newsletter Drafts sheet
-    ├── workflow-send-newsletter.md           # Scheduled newsletter send (original)
-    └── workflow-send-newsletter-new.md       # Scheduled newsletter send (simplified)
+    └── workflow-send-newsletter.md           # Scheduled newsletter send
 ```
