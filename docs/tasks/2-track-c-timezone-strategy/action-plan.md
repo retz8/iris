@@ -6,7 +6,7 @@ There are 3 things to do: change the n8n instance timezone, update the welcome e
 
 ---
 
-## Step 1 — Change n8n Instance Timezone
+## Step 1 — Change n8n Instance Timezone [DONE]
 
 **Where:** n8n Cloud dashboard at `retz8.app.n8n.cloud`
 
@@ -23,7 +23,7 @@ There are 3 things to do: change the n8n instance timezone, update the welcome e
 
 ---
 
-## Step 2 — Update Welcome Email Copy
+## Step 2 — Update Welcome Email Copy [DONE]
 
 **Where:** n8n > Workflow: Newsletter Email Confirmation > Node 11 (Gmail - Send Welcome Email)
 

@@ -109,7 +109,7 @@ function ConfirmationPage() {
               <h1>You're confirmed!</h1>
               <p className="confirmation-text">
                 {email && <><strong>{email}</strong> — </>}
-                Your first Snippet arrives {nextDelivery} at 7am.
+                Your first Snippet arrives {nextDelivery} at 7am EST.
               </p>
               <Link to="/snippet" className="confirmation-home-link">Go to homepage</Link>
             </div>
