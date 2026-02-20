@@ -20,11 +20,6 @@
 - Track C: VSCode Marketplace setup
 - Release VSCode Extension
 
-### Completed
-- **Track H (Newsletter Design)** - ✅ Complete
-- **Track A (Extension UX)** - ✅ Complete
-- **Track B (Analysis Quality)** - ✅ Complete, will use it later for quality testing before release
-
 ## Quick Start
 
 All task execution is now organized under **`docs/tasks/`**. Start there.
