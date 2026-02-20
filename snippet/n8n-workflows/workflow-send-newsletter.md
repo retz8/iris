@@ -188,6 +188,8 @@ return [{ json: { today } }];
 3. JavaScript code:
 
 ```javascript
+const { Buffer } = require('buffer'); // Buffer is not a global in n8n's Code node sandbox
+
 const item = $input.first();
 const draftResponse = item.json;
 
