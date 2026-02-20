@@ -30,21 +30,18 @@ Loop Over Items: Loop Over Drafts (batchSize: 1)
     ↓ [loop output — one draft at a time]
 Gmail: Get Draft by ID
     ↓
-Code: Decode Draft HTML & Extract Metadata
+Code: Extract Draft HTML & Metadata
     ↓
 IF: Draft Decode Failed?
   ├─ TRUE  → Google Sheets: Append to Send Errors (error_type=draft_decode_failed) → (continue outer loop)
   └─ FALSE → Code: Filter by Language & Random Pick
     ↓
 Loop Over Items: Loop Over Subscribers (batchSize: 1)
-    ↓ [loop output — one subscriber at a time]
+    ↓ [loop output — one subscriber at a time, linear chain only]
 Code: Inject Unsubscribe Token
     ↓
 Gmail: Send Email (Continue on Error: ON)
-    ↓
-IF: Send Failed?
-  ├─ TRUE  → Google Sheets: Append to Send Errors (error_type=gmail_send_failed) → Loop Over Items (Subscribers): Next
-  └─ FALSE → Loop Over Items (Subscribers): Next
+    ↓ [iteration ends — loop automatically advances to next subscriber]
     ↓ [done output — all subscribers processed]
 Google Sheets: Update Draft Row to Sent
   ↓
@@ -54,6 +51,8 @@ IF: Draft Update Failed?
     ↓ [done output — all drafts processed]
 (workflow ends)
 ```
+
+**Why no IF inside the subscriber loop:** n8n's Loop Over Items only processes the first item when the loop body contains IF branching — the loop engine loses track of iteration completion when execution paths split. The inner loop must be a linear chain (no IF nodes). Gmail send failures are visible in n8n's Executions tab and do not stop the loop.
 
 ## Node-by-Node Configuration
 
@@ -414,52 +413,7 @@ return [{
 
 ---
 
-### Node 12: IF - Send Failed?
-
-**Node Type:** `IF`
-**Purpose:** Route to error logging if Gmail send failed, or continue loop silently on success
-
-**Configuration:**
-1. Add IF node after Gmail Send node
-2. Set condition:
-   - **Condition 1:**
-     - Value 1: `{{ $json.error }}`
-     - Operation: `is not empty`
-
-**Outputs:**
-- **TRUE branch:** Send failed — connect to Node 12a (error log)
-- **FALSE branch:** Send succeeded — explicitly connect back to Node 9 (Loop Over Items - Loop Over Subscribers) to continue
-
----
-
-### Node 12a: Google Sheets - Append Send Error (TRUE branch)
-
-**Node Type:** `nodes-base.googleSheets`
-**Purpose:** Log the failed send to the Send Errors sheet for manual recovery
-
-**Configuration:**
-1. Add Google Sheets node to TRUE branch of Node 12
-2. Configure parameters:
-   - **Credential:** Google OAuth2
-   - **Operation:** Append Row
-   - **Document:** "Send Errors"
-   - **Sheet:** "Send Errors"
-   - **Data Mode:** Define Below
-
-**Column Mapping:**
-```
-timestamp          → {{ new Date().toISOString() }}
-execution_id       → {{ $execution.id }}
-issue_number       → {{ $json.issue_number }}
-gmail_draft_id     → {{ $json.gmail_draft_id }}
-programming_language → {{ $json.programming_language }}
-subscriber_email   → {{ $json.email }}
-error_type         → gmail_send_failed
-error_message      → {{ $json.error.message || JSON.stringify($json.error) }}
-resolved           → (leave empty)
-```
-
-**Output:** Row appended to Send Errors sheet; explicitly connect output back to Node 9 (Loop Over Items - Loop Over Subscribers) to continue
+**Note on send error handling:** No IF node or branching exists inside the subscriber loop. n8n's Loop Over Items only iterates past the first item when the loop body is a linear chain — IF branching inside the loop causes it to stop after one iteration. Gmail send failures are captured by the Continue on Error setting and are visible in n8n's Executions tab (look for items with an `error` field). Future improvement: use n8n's Error Workflow feature to log per-subscriber failures to the Send Errors sheet without breaking the loop.
 
 ---
 
@@ -590,7 +544,7 @@ resolved             → (leave empty)
 
 **Expected Result:**
 - Workflow continues to next subscriber (does not stop)
-- Failed subscriber's row appended to Send Errors: `error_type = "gmail_send_failed"`, `resolved` empty
+- Failed subscriber's item visible in n8n Executions tab with an `error` field
 - Draft still marked `status = "sent"` after loop completes
 - Successful subscribers receive their email normally
 
@@ -613,8 +567,9 @@ resolved             → (leave empty)
 
 **Gmail Send Failure:**
 - Node 11 has Continue on Error enabled — workflow never stops mid-batch due to a send failure
-- Node 12 IF routes failed items to Send Errors sheet
+- No IF branching inside the subscriber loop (would break iteration) — failures are visible in n8n Executions tab on items with an `error` field
 - Draft is still marked sent after the batch completes
+- Future: use n8n Error Workflow to log per-subscriber failures to Send Errors sheet
 
 **Google Sheets Read Failure (Nodes 3 or 4):**
 - If either read fails, the workflow stops at that node
