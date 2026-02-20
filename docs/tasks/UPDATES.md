@@ -1,5 +1,11 @@
 # Task Updates
 
+## 2026-02-20
+
+**2-Track-C — Timezone Strategy** — Done
+
+Decided on US Eastern (`America/New_York`) as the single send timezone for the newsletter. n8n instance timezone must be changed from UTC to `America/New_York` in Settings. Two copy changes: welcome email Node 11 `7am` → `7am EST`, landing page schedule mention `7am` → `7am EST`. No schema changes, no workflow logic changes. See `docs/tasks/2-track-c-timezone-strategy/summary.md` for full rationale and `action-plan.md` for step-by-step manual instructions.
+
 ## 2026-02-19
 
 **1-Track-A — Mobile Snippet UX** — Done
