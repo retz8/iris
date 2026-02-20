@@ -174,10 +174,10 @@ return [{ json: { today } }];
 
 ---
 
-### Node 7: Code - Decode Draft HTML & Extract Metadata
+### Node 7: Code - Extract Draft HTML & Metadata
 
 **Node Type:** `Code`
-**Purpose:** Decode the base64-encoded Gmail draft body to raw HTML, extract the subject line, and carry forward draft metadata needed later in the subscriber loop
+**Purpose:** Pull the already-decoded HTML and subject directly from the Gmail node output, and carry forward draft metadata needed later in the subscriber loop. No base64 decoding needed — n8n's Gmail node provides `$json.html` and `$json.subject` ready to use.
 
 **Configuration:**
 1. Add Code node after Gmail Get Draft
@@ -189,7 +189,10 @@ return [{ json: { today } }];
 
 ```javascript
 const item = $input.first();
-const draftResponse = item.json;
+
+// Gmail node provides html and subject already decoded
+const draftHtml = item.json.html;
+const subject = item.json.subject;
 
 // Carry forward metadata from the outer loop
 const draftMeta = $('Loop Over Items - Loop Over Drafts').first().json;
@@ -197,44 +200,12 @@ const gmailDraftId = draftMeta.gmail_draft_id;
 const issueNumber = draftMeta.issue_number;
 const programmingLanguage = draftMeta.programming_language;
 
-// Navigate to message payload
-const message = draftResponse.message || draftResponse;
-const payload = message.payload || {};
-const headers = payload.headers || [];
-
-// Extract subject from headers
-const subjectHeader = headers.find(h => h.name && h.name.toLowerCase() === 'subject');
-const subject = subjectHeader ? subjectHeader.value : 'Snippet';
-
-// Recursively find HTML part in potentially multipart payload
-const findHtmlPart = (parts) => {
-  if (!parts) return null;
-  for (const part of parts) {
-    if (part.mimeType === 'text/html' && part.body && part.body.data) {
-      return part.body.data;
-    }
-    if (part.parts) {
-      const found = findHtmlPart(part.parts);
-      if (found) return found;
-    }
-  }
-  return null;
-};
-
-// Handle single-part (body.data) or multipart (parts[])
-let rawBase64 = '';
-if (payload.body && payload.body.data) {
-  rawBase64 = payload.body.data;
-} else {
-  rawBase64 = findHtmlPart(payload.parts) || '';
-}
-
-if (!rawBase64) {
+if (!draftHtml) {
   return [{
     json: {
       decode_success: false,
-      decode_error: 'Draft HTML part not found in Gmail payload',
-      subject,
+      decode_error: 'No HTML body found in Gmail draft',
+      subject: subject || '',
       gmail_draft_id: gmailDraftId,
       issue_number: issueNumber,
       programming_language: programmingLanguage
@@ -242,56 +213,19 @@ if (!rawBase64) {
   }];
 }
 
-try {
-  // Decode base64url → UTF-8 string
-  // atob() is available as a global in n8n's Code node (Node.js 18+)
-  // decodeURIComponent handles multi-byte UTF-8 characters in the HTML
-  const base64 = rawBase64.replace(/-/g, '+').replace(/_/g, '/');
-  const draftHtml = decodeURIComponent(
-    atob(base64)
-      .split('')
-      .map(c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0'))
-      .join('')
-  );
-
-  if (!draftHtml || draftHtml.trim() === '') {
-    return [{
-      json: {
-        decode_success: false,
-        decode_error: 'Draft HTML decoded to empty content',
-        subject,
-        gmail_draft_id: gmailDraftId,
-        issue_number: issueNumber,
-        programming_language: programmingLanguage
-      }
-    }];
+return [{
+  json: {
+    decode_success: true,
+    draftHtml,
+    subject,
+    gmail_draft_id: gmailDraftId,
+    issue_number: issueNumber,
+    programming_language: programmingLanguage
   }
-
-  return [{
-    json: {
-      decode_success: true,
-      draftHtml,
-      subject,
-      gmail_draft_id: gmailDraftId,
-      issue_number: issueNumber,
-      programming_language: programmingLanguage
-    }
-  }];
-} catch (error) {
-  return [{
-    json: {
-      decode_success: false,
-      decode_error: error.message || 'Unknown decode error',
-      subject,
-      gmail_draft_id: gmailDraftId,
-      issue_number: issueNumber,
-      programming_language: programmingLanguage
-    }
-  }];
-}
+}];
 ```
 
-**Output:** Either decoded draft payload (`decode_success = true`) or a structured decode failure (`decode_success = false`)
+**Output:** Either draft payload (`decode_success = true`) or a structured failure (`decode_success = false`)
 
 ---
 
@@ -426,9 +360,9 @@ return eligible;
 ### Node 10: Code - Inject Unsubscribe Token
 
 **Node Type:** `Code`
-**Purpose:** Replace the literal `{{unsubscribe_token}}` placeholder in the draft HTML with the current subscriber's actual token before sending
+**Purpose:** Replace the `UNSUBSCRIBE_TOKEN` placeholder in the draft HTML with the current subscriber's actual token before sending
 
-**Note:** Gmail draft HTML uses `{{unsubscribe_token}}` as a plain string placeholder. This replacement is done here in JavaScript — n8n's expression engine does not process the draft body content.
+**Note:** Gmail drafts use `UNSUBSCRIBE_TOKEN` as the literal placeholder string (confirmed from actual draft output). This replacement is done in JavaScript — n8n's expression engine does not process the draft body content.
 
 **Configuration:**
 1. Add Code node connected to **loop** output of Node 9
@@ -443,8 +377,8 @@ const item = $input.first();
 const html = item.json.draftHtml;
 const token = item.json.unsubscribe_token || '';
 
-// Replace all occurrences of the placeholder
-const personalizedHtml = html.replace(/\{\{unsubscribe_token\}\}/g, token);
+// Replace the placeholder with the subscriber's actual unsubscribe token
+const personalizedHtml = html.replace(/UNSUBSCRIBE_TOKEN/g, token);
 
 return [{
   json: {
@@ -718,10 +652,10 @@ resolved             → (leave empty)
 
 ## Gmail Draft Placeholder Convention
 
-The HTML body of every Gmail draft created by Workflow 1 must include the unsubscribe footer with the exact placeholder string:
+The HTML body of every Gmail draft created by Workflow 1 must include the unsubscribe footer with the exact placeholder string `UNSUBSCRIBE_TOKEN`:
 
 ```html
-<a href="https://iris-codes.com/snippet/unsubscribe?token={{unsubscribe_token}}" style="color: #0969da; text-decoration: none;">Unsubscribe</a>
+<a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color: #0969da; text-decoration: none;">Unsubscribe</a>
 ```
 
-Node 10 (Code - Inject Unsubscribe Token) replaces `{{unsubscribe_token}}` with the subscriber's actual `unsubscribe_token` value before sending. If the placeholder is missing or misspelled, the unsubscribe link will not be personalized.
+Node 10 (Code - Inject Unsubscribe Token) replaces `UNSUBSCRIBE_TOKEN` with the subscriber's actual `unsubscribe_token` value before sending. If the placeholder is missing or misspelled, the unsubscribe link will not be personalized.
