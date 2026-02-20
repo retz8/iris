@@ -1,12 +1,12 @@
 # IRIS — Task Execution Plan
 
-## TODO (right now)
+## TODO for review
 - **PHASE 2** (both tracks already done explore, start with /resume)
-- track a: new send email workflow n8n planning & implementation by myself
-- track c: time zone strategy
+- track a: new send email workflow n8n planning & implementation by myself [DONE, but need to check again, clean up doc as well, I was angry yesterday night]
+- track c: time zone strategy [DONE]
 - verify new welcome email (subscribe -> confirmation flow from UI)
 
-## TODO (BEFORE release NEWSLETTER)
+## TODO (RIGHT NOW)
 - **PHASE 3**
 - n8n security review
 - web app ux & security review
