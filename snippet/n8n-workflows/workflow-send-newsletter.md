@@ -36,12 +36,12 @@ IF: Draft Decode Failed?
   ├─ TRUE  → Google Sheets: Append to Send Errors (error_type=draft_decode_failed) → (continue outer loop)
   └─ FALSE → Code: Filter by Language & Random Pick
     ↓
-Loop Over Items: Loop Over Subscribers (batchSize: 1)
-    ↓ [loop output — one subscriber at a time, linear chain only]
+Split In Batches: Loop Over Subscribers (batchSize: 1)
+    ↓ [loop output — one subscriber at a time]
 Code: Inject Unsubscribe Token
     ↓
 Gmail: Send Email (Continue on Error: ON)
-    ↓ [iteration ends — loop automatically advances to next subscriber]
+    ↓ [reconnect back to Split In Batches to advance to next subscriber]
     ↓ [done output — all subscribers processed]
 Google Sheets: Update Draft Row to Sent
   ↓
@@ -52,7 +52,7 @@ IF: Draft Update Failed?
 (workflow ends)
 ```
 
-**Why no IF inside the subscriber loop:** n8n's Loop Over Items only processes the first item when the loop body contains IF branching — the loop engine loses track of iteration completion when execution paths split. The inner loop must be a linear chain (no IF nodes). Gmail send failures are visible in n8n's Executions tab and do not stop the loop.
+**Why Split In Batches (not Loop Over Items) for subscribers:** Loop Over Items sends all N items through the loop output in a single pass — only the first subscriber receives an email. Split In Batches with an explicit reconnect of the last node back to itself drives true sequential one-at-a-time iteration.
 
 ## Node-by-Node Configuration
 
@@ -340,19 +340,21 @@ return eligible;
 
 ---
 
-### Node 9: Loop Over Items - Loop Over Subscribers
+### Node 9: Split In Batches - Loop Over Subscribers
 
-**Node Type:** `Loop Over Items` (modern replacement for legacy Split In Batches)
-**Purpose:** Send to one subscriber at a time to allow per-subscriber error handling
+**Node Type:** `nodes-base.splitInBatches`
+**Purpose:** Send to one subscriber at a time via explicit reconnect iteration. Split In Batches is used here instead of Loop Over Items — Loop Over Items sends all items through in a single pass (not per-item), which causes only the first subscriber to receive an email.
 
 **Configuration:**
-1. Add Loop Over Items node after Code Filter node
+1. Add Split In Batches node after Code Filter node
 2. Configure parameters:
    - **Batch Size:** `1`
 
 **Outputs:**
-- **loop** (output 0): Current subscriber item — connect to Node 10
-- **done** (output 1): All subscribers processed — connect to Node 13
+- **loop** (output 1): Current subscriber item — connect to Node 10
+- **done** (output 0): All subscribers processed — connect to Node 13
+
+**Critical wiring:** Node 11 (Gmail Send) output must connect **back to Node 9 (Split In Batches input)** to advance to the next subscriber. This explicit reconnect is what drives sequential iteration in Split In Batches.
 
 ---
 
@@ -366,25 +368,23 @@ return eligible;
 **Configuration:**
 1. Add Code node connected to **loop** output of Node 9
 2. Set parameters:
-   - **Mode:** Run Once for All Items
+   - **Mode:** Run Once for Each Item
    - **Language:** JavaScript
 
 3. JavaScript code:
 
 ```javascript
-const item = $input.first();
-const html = item.json.draftHtml;
-const token = item.json.unsubscribe_token || '';
+const html = $json.draftHtml;
+const token = $json.unsubscribe_token || '';
 
-// Replace the placeholder with the subscriber's actual unsubscribe token
 const personalizedHtml = html.replace(/UNSUBSCRIBE_TOKEN/g, token);
 
-return [{
+return {
   json: {
-    ...item.json,
+    ...$json,
     personalizedHtml
   }
-}];
+};
 ```
 
 **Output:** All subscriber fields plus `personalizedHtml` with the token injected
@@ -407,13 +407,10 @@ return [{
    - **Email Type:** HTML
    - **Message:** `{{ $json.personalizedHtml }}`
 3. Under node **Settings**:
-   - **On Error:** Continue (allows the workflow to log the failure and continue to the next subscriber rather than stopping)
+   - **On Error:** Continue (allows the workflow to continue to the next subscriber on failure)
+4. **Connect Node 11's output back to Node 9 (Split In Batches)** — this drives the loop to advance to the next subscriber
 
-**Output:** Gmail send confirmation on success, or error data appended to the item on failure (due to Continue on Error setting)
-
----
-
-**Note on send error handling:** No IF node or branching exists inside the subscriber loop. n8n's Loop Over Items only iterates past the first item when the loop body is a linear chain — IF branching inside the loop causes it to stop after one iteration. Gmail send failures are captured by the Continue on Error setting and are visible in n8n's Executions tab (look for items with an `error` field). Future improvement: use n8n's Error Workflow feature to log per-subscriber failures to the Send Errors sheet without breaking the loop.
+**Output:** Reconnects to Node 9. Gmail send failures are visible in n8n's Executions tab on items with an `error` field.
 
 ---
 
@@ -422,7 +419,7 @@ return [{
 **Node Type:** `nodes-base.googleSheets`
 **Purpose:** Mark the draft as sent and record the send timestamp after all subscribers have been processed
 
-**Connected to:** **done** output (output 1) of Node 9 (Loop Over Items - Loop Over Subscribers)
+**Connected to:** **done** output (output 0) of Node 9 (Split In Batches - Loop Over Subscribers)
 
 **Configuration:**
 1. Add Google Sheets node connected to done output of Node 9
