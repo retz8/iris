@@ -1,11 +1,5 @@
 # Task Updates
 
-## 2026-02-21
-
-**2-Track-A — Send Email Workflow** — Done
-
-Designed and documented Workflow 2: the cron-triggered n8n pipeline that sends scheduled Gmail drafts to confirmed subscribers. Key decisions: `UNSUBSCRIBE_TOKEN` placeholder replaced per-subscriber via JS `.replace()`, multi-language subscribers get a random language pick per run, inner subscriber loop uses Split In Batches with explicit reconnect (not Loop Over Items, which sends all items in a single pass). Two new docs: `snippet/n8n-workflows/google-sheets-send-errors-schema.md` (Send Errors sheet schema) and `snippet/n8n-workflows/workflow-send-newsletter.md` (14-node implementation plan). See `docs/tasks/2-track-a-send-email-workflow/summary.md` for full decision log and technical issues resolved.
-
 ## 2026-02-20
 
 **2-Track-C — Timezone Strategy** — Done
