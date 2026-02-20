@@ -103,7 +103,7 @@ return [{ json: { today } }];
 **Purpose:** Fetch all active subscribers once per execution so each draft can filter in-memory without repeated sheet reads
 
 **Configuration:**
-1. Add Google Sheets node after Node 3
+1. Add Google Sheets node after Node 2
 2. Configure parameters:
    - **Credential:** Google OAuth2
    - **Operation:** Get Row(s)
@@ -351,10 +351,13 @@ return eligible;
    - **Batch Size:** `1`
 
 **Outputs:**
-- **loop** (output 1): Current subscriber item — connect to Node 10
-- **done** (output 0): All subscribers processed — connect to Node 13
+- **loop** (labeled `loop` in the UI): Current subscriber item — connect to Node 10
+- **done** (labeled `done` in the UI): All subscribers processed — connect to Node 13
 
-**Critical wiring:** Node 11 (Gmail Send) output must connect **back to Node 9 (Split In Batches input)** to advance to the next subscriber. This explicit reconnect is what drives sequential iteration in Split In Batches.
+**Critical wiring:**
+- Node 11 (Gmail Send) output must connect **back to Node 9 (Split In Batches input)** to advance to the next subscriber.
+- Node 9 `done` output must connect to Node 13.
+- Do **not** connect Node 11 directly to Node 13 (this skips loop advancement and causes first-item-only behavior).
 
 ---
 
@@ -419,7 +422,7 @@ return {
 **Node Type:** `nodes-base.googleSheets`
 **Purpose:** Mark the draft as sent and record the send timestamp after all subscribers have been processed
 
-**Connected to:** **done** output (output 0) of Node 9 (Split In Batches - Loop Over Subscribers)
+**Connected to:** **done** output (labeled `done`) of Node 9 (Split In Batches - Loop Over Subscribers)
 
 **Configuration:**
 1. Add Google Sheets node connected to done output of Node 9
@@ -567,6 +570,13 @@ resolved             → (leave empty)
 - No IF branching inside the subscriber loop (would break iteration) — failures are visible in n8n Executions tab on items with an `error` field
 - Draft is still marked sent after the batch completes
 - Future: use n8n Error Workflow to log per-subscriber failures to Send Errors sheet
+
+**Critical Loop Verification (prevents first-item-only sends):**
+- Node 9 must be `Split In Batches` with `Batch Size = 1`
+- Node 9 `loop` output → Node 10
+- Node 11 output → back to Node 9 input
+- Node 9 `done` output → Node 13
+- Node 10 must be `Run Once for Each Item`
 
 **Google Sheets Read Failure (Nodes 3 or 4):**
 - If either read fails, the workflow stops at that node
