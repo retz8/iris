@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /snippet
+Disallow: /snippet/confirm
+Disallow: /snippet/unsubscribe
+Sitemap: https://iris-codes.com/sitemap.xml
