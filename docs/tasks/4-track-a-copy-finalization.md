@@ -181,6 +181,17 @@ Rationale: "Code reading challenge newsletter" was a genre label that never appe
 
 Q1 resolved: Confirmation email carries light voice continuity in the subscriber-facing body. Functional elements (button, expiry, safety-net footer) stay neutral — the footer alone handles the "didn't sign up?" case without needing the whole email to be generic.
 
+### Decisions — Welcome email (workflow-confirmation.md Node 11)
+
+**LOCKED — Body copy** (subject, middle paragraphs, schedule header, bullet 1 & 3, footer unchanged)
+- Opener: `You're in.` (replaces `You signed up for Snippet.`)
+- Bullet 2: `Breakdown: The pattern you need to catch` (replaces `Breakdown: The pattern you need to see faster`)
+- Sign-off: `Train your eye.` (replaces `Train your eye. Ship with confidence.`)
+
+Rationale: Opener was a database-style confirmation of something the user already knew. "You're in." is short, earned, and doesn't demand anything. "The pattern you need to catch" is more concrete than "see faster" — implies something non-obvious worth finding. "Ship with confidence" cut as startup-poster language that diluted the stronger "Train your eye" line. Alex: "I'd open the first issue."
+
+Q3 resolved: Welcome email opener changed. Register: spare and direct, not warmer.
+
 ### Open questions for Discuss phase
 
 **Q1.** ~~What is the right tone for the confirmation email?~~ RESOLVED — see Decisions above.

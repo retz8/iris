@@ -644,7 +644,7 @@ token_expires_at → (empty/null)
   <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
 
     <div style="margin-bottom: 32px;">
-      <p style="margin: 0 0 16px 0;">You signed up for Snippet.</p>
+      <p style="margin: 0 0 16px 0;">You're in.</p>
 
       <p style="margin: 0 0 16px 0;">AI generates code faster than you can read it. But you're still the one who reviews it, merges it, owns it.</p>
 
@@ -653,11 +653,11 @@ token_expires_at → (empty/null)
       <p style="margin: 0 0 8px 0; font-weight: 600;">Every Mon/Wed/Fri, 7am:</p>
       <ul style="margin: 0 0 16px 0; padding-left: 24px;">
         <li>One snippet from a repo engineers are reading this week (8–12 lines)</li>
-        <li>Breakdown: The pattern you need to see faster</li>
+        <li>Breakdown: The pattern you need to catch</li>
         <li>Project context: where the code came from</li>
       </ul>
 
-      <p style="margin: 0 0 16px 0; font-weight: 600;">Train your eye. Ship with confidence.<br>
+      <p style="margin: 0 0 16px 0; font-weight: 600;">Train your eye.<br>
       Snippet</p>
     </div>
 
