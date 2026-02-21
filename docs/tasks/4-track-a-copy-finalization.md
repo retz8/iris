@@ -171,9 +171,21 @@ Rationale: "Complete your subscription" implied the user wasn't subscribed yet a
 
 Rationale: Leading with "Didn't receive it?" planted doubt before the user had a chance to check. Flipped to lead with a positive time expectation, spam advice as fallback.
 
+### Decisions — Confirmation email (workflow-subscription-double-optin.md Node 11)
+
+**LOCKED — Body copy** (subject, button, expiry, safety-net footer unchanged)
+- Para 1: `You're one click away.` (replaces "You signed up for Snippet, the code reading challenge newsletter.")
+- Para 2: `Confirm your email to start receiving snippets:` (replaces verbose instruction)
+
+Rationale: "Code reading challenge newsletter" was a genre label that never appeared on the landing page and created cognitive dissonance. The replacement echoes the landing page's short, direct register. Para 2 connects the action to the reward ("start receiving snippets") rather than describing the process. Subject unchanged — functional and clear. Alex clicked immediately, no hesitation.
+
+Q1 resolved: Confirmation email carries light voice continuity in the subscriber-facing body. Functional elements (button, expiry, safety-net footer) stay neutral — the footer alone handles the "didn't sign up?" case without needing the whole email to be generic.
+
 ### Open questions for Discuss phase
 
-**Q1.** What is the right tone for the confirmation email? Should it reflect the landing page's challenge framing, or stay intentionally neutral (since this email also serves as the "didn't sign up? ignore this" safety net)?
+**Q1.** ~~What is the right tone for the confirmation email?~~ RESOLVED — see Decisions above.
+
+**Q1 (original, resolved):** What is the right tone for the confirmation email? Should it reflect the landing page's challenge framing, or stay intentionally neutral (since this email also serves as the "didn't sign up? ignore this" safety net)?
 
 **Q2.** Should the schedule be stated consistently as `Mon/Wed/Fri at 7am EST` across all surfaces, or is variation acceptable?
 

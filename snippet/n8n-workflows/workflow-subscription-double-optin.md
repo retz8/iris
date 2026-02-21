@@ -603,9 +603,9 @@ unsubscribed_date → {{ $json.unsubscribed_date }}
 
     <h2 style="margin: 0 0 24px 0; font-size: 24px; font-weight: 600;">Confirm your subscription</h2>
 
-    <p style="margin: 0 0 16px 0;">You signed up for Snippet, the code reading challenge newsletter.</p>
+    <p style="margin: 0 0 24px 0;">You're one click away.</p>
 
-    <p style="margin: 0 0 24px 0;">Click the button below to confirm your email address and complete your subscription:</p>
+    <p style="margin: 0 0 24px 0;">Confirm your email to start receiving snippets:</p>
 
     <!-- Confirmation Button -->
     <div style="margin: 0 0 24px 0;">
