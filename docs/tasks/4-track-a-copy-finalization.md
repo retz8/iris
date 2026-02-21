@@ -145,6 +145,32 @@ Rationale: Concrete, product-specific, memorable. Alex: "a lot of CTAs say 'Get 
 
 **Note on I2 (schedule format):** The new subheadline standardizes to `Mon/Wed/Fri, 2 minutes` — no time of day. Other surfaces still vary. Will reconcile when welcome email and confirmation page are reviewed.
 
+### Decisions — SignupForm step 2
+
+**LOCKED — Step 2 CTA**
+- Button: `Send me snippets` (replaces `Complete subscription`)
+
+Rationale: Duplicate of step 1 CTA is intentional. Repeating the action felt natural to Alex — he didn't notice the repetition until prompted. "Complete subscription" read as paperwork; matching step 1 maintains momentum.
+
+**LOCKED — Step 2 privacy line**
+- Copy: `We'll match snippets to your selected languages.` (replaces `No spam. Unsubscribe anytime.`)
+
+Rationale: The spam disclaimer is boilerplate that gets skipped. This line answers Alex's implicit question — "why does a newsletter need my stack?" — and confirms the selection is meaningful. Step 1 retains `No spam. Unsubscribe anytime.` where it's relevant.
+
+### Decisions — Post-submit state (SignupForm success screen)
+
+**LOCKED — Body copy**
+- Before: `Click it to complete your subscription.`
+- After: `Click it to verify your address.`
+
+Rationale: "Complete your subscription" implied the user wasn't subscribed yet after clicking twice. "Verify your address" is accurate, low-stakes, and doesn't contradict the form momentum.
+
+**LOCKED — Hint text**
+- Before: `Didn't receive it? Check your spam folder.`
+- After: `Usually arrives in under a minute. Not there? Check your spam folder.`
+
+Rationale: Leading with "Didn't receive it?" planted doubt before the user had a chance to check. Flipped to lead with a positive time expectation, spam advice as fallback.
+
 ### Open questions for Discuss phase
 
 **Q1.** What is the right tone for the confirmation email? Should it reflect the landing page's challenge framing, or stay intentionally neutral (since this email also serves as the "didn't sign up? ignore this" safety net)?

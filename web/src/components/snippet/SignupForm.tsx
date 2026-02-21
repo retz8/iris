@@ -182,9 +182,9 @@ function SignupForm() {
             <div className="confirmation-icon" aria-hidden="true">✉</div>
             <h3>Check your email</h3>
             <p className="confirmation-body">
-              We sent a confirmation link to <strong>{formData.email}</strong>. Click it to complete your subscription.
+              We sent a confirmation link to <strong>{formData.email}</strong>. Click it to verify your address.
             </p>
-            <p className="confirmation-hint">Didn't receive it? Check your spam folder.</p>
+            <p className="confirmation-hint">Usually arrives in under a minute. Not there? Check your spam folder.</p>
           </div>
         </div>
       </section>
