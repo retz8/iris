@@ -18,6 +18,9 @@
 - Per-route meta tag management (only `/snippet` is indexable)
 - Paid search or analytics setup
 
+**Skills:**
+- use `/seo-audit` proactively
+
 ---
 
 ## Phase 1 — Explore

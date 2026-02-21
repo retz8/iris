@@ -21,6 +21,7 @@ dist/
 # .claude
 .claude/
 .agents/
+skills-lock.json
 
 # secrets
 backend/secrets.txt
