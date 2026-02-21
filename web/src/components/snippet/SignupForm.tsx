@@ -11,16 +11,6 @@ interface FormErrors {
   programmingLanguages?: string;
 }
 
-// Calculate next delivery day (Mon/Wed/Fri schedule)
-function getNextDeliveryDay(): string {
-  const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  if (today === 0 || today === 1) return 'Monday';
-  if (today === 2 || today === 3) return 'Wednesday';
-  return 'Monday'; // Thu/Fri/Sat → next Monday
-}
-
-// Exported for reuse in ConfirmationPage
-export { getNextDeliveryDay };
 
 function SignupForm() {
   const [formData, setFormData] = useState<FormData>({
@@ -34,7 +24,6 @@ function SignupForm() {
   const [showLanguageInputs, setShowLanguageInputs] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const sectionRef = useRef<HTMLElement>(null);
 
   // Cancel any in-flight request on unmount (TASK-033)
   useEffect(() => {
@@ -42,13 +31,6 @@ function SignupForm() {
       abortControllerRef.current?.abort();
     };
   }, []);
-
-  // Smooth scroll form into view when advancing to step 2 (issue #5)
-  useEffect(() => {
-    if (showLanguageInputs && sectionRef.current) {
-      sectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [showLanguageInputs]);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -194,7 +176,7 @@ function SignupForm() {
 
   if (isSuccess) {
     return (
-      <section className="subscribe" ref={sectionRef}>
+      <section className="subscribe">
         <div className="container">
           <div className="success-message pending-confirmation animate-fade-up">
             <div className="confirmation-icon" aria-hidden="true">✉</div>
@@ -210,7 +192,7 @@ function SignupForm() {
   }
 
   return (
-    <section className="subscribe" ref={sectionRef}>
+    <section className="subscribe">
       <div className="container">
         {!showLanguageInputs ? (
           <form onSubmit={handleEmailSubmit} className="signup-form" noValidate>
