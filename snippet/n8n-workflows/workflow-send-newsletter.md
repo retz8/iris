@@ -349,7 +349,7 @@ return [...failedRows, ...decodeFailureRows];
 **Configuration:**
 1. Add IF node after Node 9
 2. Set condition:
-   - **Value 1:** `{{ $items().length }}`
+   - **Value 1:** `{{ $input.all().length }}`
    - **Operation:** Greater than
    - **Value 2:** `0`
 
@@ -480,7 +480,7 @@ return rows;
 **Configuration:**
 1. Add IF node after Node 14
 2. Set condition:
-   - **Value 1:** `{{ $items().length }}`
+   - **Value 1:** `{{ $input.all().length }}`
    - **Operation:** Greater than
    - **Value 2:** `0`
 
