@@ -243,10 +243,10 @@ function SignupForm() {
               disabled={isSubmitting}
               style={{ marginTop: 'var(--space-sm)' }}
             >
-              {isSubmitting ? 'Subscribing...' : 'Complete subscription'}
+              {isSubmitting ? 'Subscribing...' : 'Send me snippets'}
             </button>
 
-            <p className="privacy-note">No spam. Unsubscribe anytime.</p>
+            <p className="privacy-note">We'll match snippets to your selected languages.</p>
           </form>
         )}
       </div>
