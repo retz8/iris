@@ -2,6 +2,14 @@
 
 ## 2026-02-21 (continued)
 
+**5-Track-A — SEO Optimization** — Done
+
+Full SEO pass on the Snippet landing page. JSON-LD structured data was discussed and rejected. All other deliverables completed across two commits.
+
+`web/index.html`: title updated to `Snippet — Code Reading Newsletter for Developers`; meta description rewritten to 140 chars targeting vibe coding, review bottleneck, code reading, and trending repos keywords; canonical link added pointing to `/snippet`; `og:url` corrected from root to `/snippet`; `og:site_name` added; `og:image` wired to `og-image.png`; Twitter Card added as `summary_large_image` with matching title, description, and image; full favicon link set added (favicon.ico, 32x32, 16x16, apple-touch-icon); `site.webmanifest` linked.
+
+`web/public/`: `robots.txt` created — allows `/snippet`, excludes `/snippet/confirm` and `/snippet/unsubscribe`, references sitemap; `sitemap.xml` created — declares `/snippet` as sole indexable URL; full favicon set added (favicon.ico, favicon-16x16.png, favicon-32x32.png, apple-touch-icon.png, android-chrome-192x192.png, android-chrome-512x512.png); `site.webmanifest` added with name and short_name filled in; `og-image.png` and `logo.svg`/`logo.png` added. `logo.svg` used in the page header alongside the "Snippet" wordmark.
+
 **4-Track-A — Copy Finalization** — Done
 
 Copy audit and rewrite across all subscriber-facing surfaces. Decisions were driven by simulated user testing using a `snippet-persona` sub-agent (Alex — mid-level engineer, 4yr, Python/TS, no prior Snippet knowledge). Each surface was shown cold in subscriber order; reactions synthesized into locked decisions.
