@@ -324,9 +324,6 @@ legend {
   font-family: var(--font-heading);
   text-align: center;
   padding: var(--space-2xl) var(--space-lg);
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
 }
 
 .success-message h3 {
@@ -342,15 +339,12 @@ legend {
 
 /* Pending Confirmation State */
 .pending-confirmation {
-  border-top: 3px solid var(--color-accent);
 }
 
 .confirmation-icon {
-  font-size: 2rem;
   display: block;
-  margin-bottom: var(--space-md);
+  margin: 0 auto var(--space-md);
   opacity: 0.5;
-  line-height: 1;
 }
 
 .confirmation-body {
