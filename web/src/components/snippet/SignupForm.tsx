@@ -32,9 +32,6 @@ function SignupForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showLanguageInputs, setShowLanguageInputs] = useState(false);
-  // Controls whether the email field is locked (readOnly) in step 2.
-  // Locked by default when entering step 2; unlocked when user clears to re-enter.
-  const [isEmailLocked, setIsEmailLocked] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
@@ -70,7 +67,6 @@ function SignupForm() {
       return;
     }
 
-    setIsEmailLocked(true);
     setShowLanguageInputs(true);
   };
 
@@ -79,7 +75,6 @@ function SignupForm() {
     setErrors({});
     setSubmitError(null);
 
-    // Re-validate email in case user cleared and re-entered it
     if (!formData.email || !validateEmail(formData.email)) {
       setErrors((prev) => ({
         ...prev,
@@ -147,6 +142,11 @@ function SignupForm() {
     if (submitError) setSubmitError(null);
   };
 
+  const handleEmailClear = () => {
+    setFormData((prev) => ({ ...prev, email: '' }));
+    setErrors((prev) => ({ ...prev, email: undefined }));
+  };
+
   const handleProgrammingLanguageToggle = (language: string) => {
     setFormData((prev) => {
       const isSelected = prev.programmingLanguages.includes(language);
@@ -162,14 +162,34 @@ function SignupForm() {
     }
   };
 
-  // Clears the email and unlocks the field so user can re-enter.
-  // Language selections are preserved.
-  const handleEmailClear = () => {
-    setFormData((prev) => ({ ...prev, email: '' }));
-    setIsEmailLocked(false);
-    setSubmitError(null);
-    setErrors({});
-  };
+  const emailInput = (
+    <div className="form-group">
+      <label htmlFor="email">Email</label>
+      <div className="input-clearable">
+        <input
+          type="email"
+          id="email"
+          name="email"
+          placeholder="your@email.com"
+          value={formData.email}
+          onChange={handleEmailChange}
+          className={errors.email ? 'error' : ''}
+          autoComplete="email"
+        />
+        {formData.email && (
+          <button
+            type="button"
+            className="input-clear-btn"
+            onClick={handleEmailClear}
+            aria-label="Clear email address"
+          >
+            ×
+          </button>
+        )}
+      </div>
+      {errors.email && <span className="error-msg">{errors.email}</span>}
+    </div>
+  );
 
   if (isSuccess) {
     return (
@@ -193,21 +213,7 @@ function SignupForm() {
       <div className="container">
         {!showLanguageInputs ? (
           <form onSubmit={handleEmailSubmit} className="signup-form" noValidate>
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                placeholder="your@email.com"
-                value={formData.email}
-                onChange={handleEmailChange}
-                className={errors.email ? 'error' : ''}
-                required
-                autoComplete="email"
-              />
-              {errors.email && <span className="error-msg">{errors.email}</span>}
-            </div>
+            {emailInput}
 
             <button type="submit" className="button-full-width">
               Subscribe
@@ -217,33 +223,7 @@ function SignupForm() {
           </form>
         ) : (
           <form onSubmit={handleFinalSubmit} className="signup-form" noValidate>
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <div className="input-clearable">
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  placeholder="your@email.com"
-                  value={formData.email}
-                  readOnly={isEmailLocked}
-                  onChange={handleEmailChange}
-                  className={errors.email ? 'error' : ''}
-                  autoComplete="email"
-                />
-                {isEmailLocked && (
-                  <button
-                    type="button"
-                    className="input-clear-btn"
-                    onClick={handleEmailClear}
-                    aria-label="Clear email address"
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-              {errors.email && <span className="error-msg">{errors.email}</span>}
-            </div>
+            {emailInput}
 
             <fieldset className="form-group">
               <legend>

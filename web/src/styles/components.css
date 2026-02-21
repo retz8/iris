@@ -274,15 +274,8 @@ legend {
   position: relative;
 }
 
-.input-clearable input[type="email"]:read-only {
+.input-clearable input[type="email"] {
   padding-right: 36px;
-  color: var(--color-text-secondary);
-  cursor: default;
-}
-
-.input-clearable input[type="email"]:read-only:focus {
-  border-color: var(--color-border-strong);
-  box-shadow: none;
 }
 
 .input-clear-btn {
