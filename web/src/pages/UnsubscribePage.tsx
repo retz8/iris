@@ -121,7 +121,7 @@ function UnsubscribePage() {
               <p className="unsubscribe-text">
                 Invalid unsubscribe link. Please use the link from your email.
               </p>
-              <Link to="/snippet" className="resubscribe-link">Go to homepage</Link>
+              <Link to="/snippet" className="confirmation-home-link">Go to homepage</Link>
             </div>
           </div>
         </section>
@@ -139,7 +139,7 @@ function UnsubscribePage() {
               <p className="unsubscribe-text">
                 This subscription was never confirmed and cannot be unsubscribed.
               </p>
-              <Link to="/snippet" className="resubscribe-link">Go to homepage</Link>
+              <Link to="/snippet" className="confirmation-home-link">Go to homepage</Link>
             </div>
           </div>
         </section>
@@ -157,7 +157,7 @@ function UnsubscribePage() {
               <p className="unsubscribe-text">
                 Invalid or already-used unsubscribe link.
               </p>
-              <Link to="/snippet" className="resubscribe-link">Go to homepage</Link>
+              <Link to="/snippet" className="confirmation-home-link">Go to homepage</Link>
             </div>
           </div>
         </section>
@@ -182,7 +182,7 @@ function UnsubscribePage() {
               >
                 Try again
               </button>
-              <Link to="/snippet" className="resubscribe-link">Go to homepage</Link>
+              <Link to="/snippet" className="confirmation-home-link">Go to homepage</Link>
             </div>
           </div>
         </section>

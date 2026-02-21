@@ -34,6 +34,7 @@ function SignupForm() {
   const [showLanguageInputs, setShowLanguageInputs] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
 
   // Cancel any in-flight request on unmount (TASK-033)
   useEffect(() => {
@@ -41,6 +42,13 @@ function SignupForm() {
       abortControllerRef.current?.abort();
     };
   }, []);
+
+  // Smooth scroll form into view when advancing to step 2 (issue #5)
+  useEffect(() => {
+    if (showLanguageInputs && sectionRef.current) {
+      sectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [showLanguageInputs]);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -141,9 +149,16 @@ function SignupForm() {
     }
   };
 
+  // Clears email and returns to step 1 so user can re-enter their address
+  const handleEmailClear = () => {
+    setShowLanguageInputs(false);
+    setSubmitError(null);
+    setErrors({});
+  };
+
   if (isSuccess) {
     return (
-      <section className="subscribe">
+      <section className="subscribe" ref={sectionRef}>
         <div className="container">
           <div className="success-message pending-confirmation animate-fade-up">
             <div className="confirmation-icon" aria-hidden="true">✉</div>
@@ -159,7 +174,7 @@ function SignupForm() {
   }
 
   return (
-    <section className="subscribe">
+    <section className="subscribe" ref={sectionRef}>
       <div className="container">
         {!showLanguageInputs ? (
           <form onSubmit={handleEmailSubmit} className="signup-form" noValidate>
@@ -189,14 +204,24 @@ function SignupForm() {
           <form onSubmit={handleFinalSubmit} className="signup-form" noValidate>
             <div className="form-group">
               <label htmlFor="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleEmailChange}
-                autoComplete="email"
-              />
+              <div className="input-clearable">
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  readOnly
+                  autoComplete="email"
+                />
+                <button
+                  type="button"
+                  className="input-clear-btn"
+                  onClick={handleEmailClear}
+                  aria-label="Edit email address"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
             <fieldset className="form-group">

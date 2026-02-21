@@ -269,6 +269,55 @@ legend {
   color: var(--color-code-comment);
 }
 
+/* Clearable Input (email readonly + clear button in step 2) */
+.input-clearable {
+  position: relative;
+}
+
+.input-clearable input[type="email"] {
+  padding-right: 36px;
+  color: var(--color-text-secondary);
+  cursor: default;
+}
+
+.input-clearable input[type="email"]:focus {
+  border-color: var(--color-border-strong);
+  box-shadow: none;
+}
+
+.input-clear-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  min-height: unset;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: color var(--transition-fast);
+}
+
+.input-clear-btn:hover {
+  background: none;
+  color: var(--color-text-secondary);
+  transform: translateY(-50%);
+  box-shadow: none;
+}
+
+.input-clear-btn:active {
+  transform: translateY(-50%);
+  box-shadow: none;
+}
+
 /* Privacy Note */
 .privacy-note {
   font-size: var(--text-sm);
