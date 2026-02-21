@@ -87,7 +87,6 @@ function SignupForm() {
         programming_languages: formData.programmingLanguages,
         source: 'landing_page',
         subscribed_date: new Date().toISOString(),
-        api_key: import.meta.env.VITE_WEBHOOK_SECRET,
       };
 
       const res = await fetch(`${WEBHOOK_BASE}/subscribe`, {
