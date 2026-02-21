@@ -122,6 +122,29 @@ The issue subject line is human-written per issue. No format has been decided. T
 **I5 — "Complete subscription" vs "Subscribe"**
 Step 1 says "Subscribe", step 2 says "Complete subscription". The two-step flow is functional but the CTA change on step 2 may feel like a new commitment rather than completing what was started.
 
+### Discuss methodology
+
+Instead of answering Q1-Q6 directly, decisions will be informed by a simulated user-testing session using the `snippet-persona` sub-agent (`.claude/agents/snippet-persona.md`).
+
+The persona is Alex, a mid-level software engineer with 4 years experience (Python/TS), who uses AI tools daily and has no prior knowledge of Snippet. The session walks Alex through each copy surface in subscriber order — landing page → form → post-submit → confirmation email → welcome email — asking open-ended first-impression questions. Reactions are synthesized into copy decisions that resolve Q1-Q6.
+
+### Decisions — Landing page (Hero + SignupForm)
+
+Resolved via Alex persona testing. Tested 5 headline/subheadline/CTA candidates, narrowed to C and A, then iterated subheadline variants to address medium signal and tone.
+
+**LOCKED — Hero copy**
+- Headline: `AI writes code faster than you can read it.`
+- Subheadline: `Close the gap. One real snippet from trending repos — Mon/Wed/Fri, 2 minutes.`
+
+Rationale: Statement framing (vs. question) converts better. "One real snippet" is specific enough that Alex could picture the format cold. "Close the gap" bridges the headline premise to the value prop without over-explaining. "Straight to your inbox" tested as filler and was cut — the email input field already signals medium.
+
+**LOCKED — SignupForm step 1 CTA**
+- Button: `Send me snippets` (replaces `Subscribe`)
+
+Rationale: Concrete, product-specific, memorable. Alex: "a lot of CTAs say 'Get started' and you forget what you signed up for — this one I'd remember." Step 2 CTA (currently `Complete subscription`) and privacy line (`No spam. Unsubscribe anytime.`) unchanged pending Q6 decision.
+
+**Note on I2 (schedule format):** The new subheadline standardizes to `Mon/Wed/Fri, 2 minutes` — no time of day. Other surfaces still vary. Will reconcile when welcome email and confirmation page are reviewed.
+
 ### Open questions for Discuss phase
 
 **Q1.** What is the right tone for the confirmation email? Should it reflect the landing page's challenge framing, or stay intentionally neutral (since this email also serves as the "didn't sign up? ignore this" safety net)?

@@ -3,12 +3,10 @@ function Hero() {
     <section className="hero animate-fade-up">
       <div className="container">
         <h1 className="hero-headline">
-          Can you read code faster than AI writes it?
+          AI writes code faster than you can read it.
         </h1>
         <p className="hero-subheadline">
-          Reading code from trending repos. Train your eyes
-          <br />
-          Mon/Wed/Fri mornings. 2 minutes.
+          Close the gap. One real snippet from trending repos — Mon/Wed/Fri, 2 minutes.
         </p>
       </div>
     </section>

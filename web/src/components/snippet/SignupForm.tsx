@@ -217,7 +217,7 @@ function SignupForm() {
             {emailInput}
 
             <button type="submit" className="button-full-width">
-              Subscribe
+              Send me snippets
             </button>
 
             <p className="privacy-note">No spam. Unsubscribe anytime.</p>
