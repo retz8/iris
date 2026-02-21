@@ -54,9 +54,13 @@ Phase 3 (parallel)
   3-B  Web App UX/UI Review       — final review and adjustments to the web/ frontend
         |
         ▼
-Phase 4 (parallel)
-  4-A  Deployment Guide           — step-by-step guide for deploying n8n workflows + web app
-  4-B  Distribution Strategy      — concrete plan for promoting Snippet and getting first subscribers
+Phase 4
+  4-A  Copy Finalization          — align wording across landing page, confirmation email, welcome email, newsletter email
+        |
+        ▼
+Phase 5 (parallel)
+  5-A  Deployment Guide           — step-by-step guide for deploying n8n workflows + web app
+  5-B  Distribution Strategy      — concrete plan for promoting Snippet and getting first subscribers
 ```
 
 Each phase waits for all tracks in the previous phase to be marked COMPLETE in `UPDATES.md` before starting.
