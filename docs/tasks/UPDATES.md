@@ -2,6 +2,20 @@
 
 ## 2026-02-21 (continued)
 
+**4-Track-A — Copy Finalization** — Done
+
+Copy audit and rewrite across all subscriber-facing surfaces. Decisions were driven by simulated user testing using a `snippet-persona` sub-agent (Alex — mid-level engineer, 4yr, Python/TS, no prior Snippet knowledge). Each surface was shown cold in subscriber order; reactions synthesized into locked decisions.
+
+Landing page hero: headline changed from question to statement framing ("AI writes code faster than you can read it."), subheadline rewritten to bridge the AI gap premise to the value prop ("Close the gap. One real snippet from trending repos — Mon/Wed/Fri, 2 minutes."). Step 1 CTA changed from "Subscribe" to "Send me snippets."
+
+SignupForm step 2: CTA changed from "Complete subscription" to "Send me snippets" (intentional repeat). Privacy line changed from "No spam. Unsubscribe anytime." to "We'll match snippets to your selected languages." — contextually relevant and explains why language selection matters.
+
+Post-submit state: body changed from "Click it to complete your subscription." to "Click it to verify your address." Hint text flipped to lead with time expectation ("Usually arrives in under a minute. Not there? Check your spam folder."). UI aligned with landing page aesthetic — card treatment removed, blue accent stripe removed, envelope emoji replaced with Heroicons SVG.
+
+Confirmation email (workflow-subscription-double-optin.md Node 11): para 1 changed from "You signed up for Snippet, the code reading challenge newsletter." to "You're one click away." Para 2 tightened to "Confirm your email to start receiving snippets." Subject, button, expiry, and safety-net footer unchanged.
+
+Welcome email (workflow-confirmation.md Node 11): opener changed from "You signed up for Snippet." to "You're in." Bullet 2 changed from "The pattern you need to see faster" to "The pattern you need to catch." Sign-off trimmed from "Train your eye. Ship with confidence." to "Train your eye." Middle paragraphs unchanged — they were the strongest part per Alex.
+
 **3-Track-A — n8n Security Check** — Done
 
 Full security review of all five n8n workflows before live deployment. Six issues found across Critical, High, and Low severity. Four fixed, two accepted as low risk at current scale.
