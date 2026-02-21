@@ -6,7 +6,7 @@ function FormatPreview() {
 
         <article className="email-card ">
           <p className="email-subject">
-            Can you read this #042: Bash command validation hook
+            Can you read this #042: Bash command validation
           </p>
 
           <pre className="code-block"><code>{`def _validate_command(command: str) -> list[str]:

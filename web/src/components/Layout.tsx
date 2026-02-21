@@ -9,7 +9,10 @@ function Layout({ children }: LayoutProps) {
     <div className="layout">
       <header className="header">
         <div className="container">
-          <span className="brand-mark">&gt;_ Snippet</span>
+          <div className="brand-mark">
+            <img src="/logo.svg" alt="" aria-hidden="true" className="brand-logo" />
+            <span>Snippet</span>
+          </div>
         </div>
       </header>
       <main className="main">
