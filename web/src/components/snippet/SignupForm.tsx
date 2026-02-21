@@ -248,7 +248,7 @@ function SignupForm() {
               {isSubmitting ? 'Subscribing...' : 'Send me snippets'}
             </button>
 
-            <p className="privacy-note">We'll match snippets to your selected languages.</p>
+            <p className="privacy-note">One daily snippet, randomly rotated across your languages.</p>
           </form>
         )}
       </div>
