@@ -32,20 +32,21 @@ function SignupForm() {
     };
   }, []);
 
-  const validateEmail = (email: string): boolean => {
+  const validateEmail = (email: string): string | null => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    if (!emailRegex.test(email)) return 'Please enter a valid email address.';
+    const domain = email.split('@')[1].toLowerCase();
+    if (domain.startsWith('gmail.') && domain !== 'gmail.com') return 'Did you mean @gmail.com?';
+    return null;
   };
 
   const handleEmailSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrors({});
 
-    if (!formData.email || !validateEmail(formData.email)) {
-      setErrors((prev) => ({
-        ...prev,
-        email: 'Please enter a valid email address.',
-      }));
+    const emailError = !formData.email ? 'Please enter a valid email address.' : validateEmail(formData.email);
+    if (emailError) {
+      setErrors((prev) => ({ ...prev, email: emailError }));
       return;
     }
 
@@ -57,11 +58,9 @@ function SignupForm() {
     setErrors({});
     setSubmitError(null);
 
-    if (!formData.email || !validateEmail(formData.email)) {
-      setErrors((prev) => ({
-        ...prev,
-        email: 'Please enter a valid email address.',
-      }));
+    const emailError = !formData.email ? 'Please enter a valid email address.' : validateEmail(formData.email);
+    if (emailError) {
+      setErrors((prev) => ({ ...prev, email: emailError }));
       return;
     }
 
