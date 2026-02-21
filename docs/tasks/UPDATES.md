@@ -1,5 +1,11 @@
 # Task Updates
 
+## 2026-02-21
+
+**2-Track-A — Send Email Workflow** — Done
+
+Built and fully tested the n8n workflow that sends scheduled newsletter emails to confirmed subscribers. Documented in `snippet/n8n-workflows/workflow-send-newsletter.md`. Workflow uses no loop nodes — a single Code node (Node 7) builds the full send queue by combining drafts and subscribers, then Gmail Send processes each item automatically. Key fixes during testing: switched from `$items()` to `$input.all()` for IF node conditions, resolved Gmail draft ID matching via fallback field detection, and simplified draft HTML normalization. Schema files relocated to `snippet/schema/` as part of a folder refactor done alongside this track.
+
 ## 2026-02-20
 
 **2-Track-C — Timezone Strategy** — Done
