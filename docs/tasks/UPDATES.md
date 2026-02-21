@@ -6,6 +6,8 @@
 
 Built and fully tested the n8n workflow that sends scheduled newsletter emails to confirmed subscribers. Documented in `snippet/n8n-workflows/workflow-send-newsletter.md`. Workflow uses no loop nodes — a single Code node (Node 7) builds the full send queue by combining drafts and subscribers, then Gmail Send processes each item automatically. Key fixes during testing: switched from `$items()` to `$input.all()` for IF node conditions, resolved Gmail draft ID matching via fallback field detection, and simplified draft HTML normalization. Schema files relocated to `snippet/schema/` as part of a folder refactor done alongside this track.
 
+Send failures are logged to a new "Send Errors" Google Sheet (schema: `snippet/schema/google-sheets-send-errors-schema.md`). Three error types are captured: `gmail_send_failed` (Gmail node failed to deliver to a subscriber), `draft_decode_failed` (Gmail API returned a draft with no HTML body), and `sheet_update_failed` (Sheets update node failed to mark a draft as sent). Each row includes `timestamp`, `execution_id`, `issue_number`, `gmail_draft_id`, `programming_language`, `subscriber_email`, `error_type`, `error_message`, and a human-managed `resolved` field. Recovery is manual: filter unresolved rows after each send run and handle per error type.
+
 ## 2026-02-20
 
 **2-Track-C — Timezone Strategy** — Done
