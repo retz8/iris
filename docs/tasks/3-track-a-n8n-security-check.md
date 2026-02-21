@@ -71,6 +71,42 @@ Present a structured findings report to the human engineer:
 
 Do not proceed to Plan until the human engineer confirms which issues to fix.
 
+### Phase 2 Findings & Decisions (2026-02-21)
+
+#### Critical
+
+**C1 — No rate limiting on `/subscribe` webhook**
+Public endpoint with no protection. Enables Gmail quota exhaustion and Sheets pollution via scripted abuse.
+**Decision: Fix before deploy.**
+Fix: Add origin header check (validate `Origin` matches `iris-codes.com`) in the Code - Validate Name node, AND require a shared `api_key` field in the POST body (static secret known to the frontend). Requests missing either are rejected before any processing.
+
+#### High
+
+**H1 — Email enumeration via 409 on `/subscribe`**
+The `409 "Email already subscribed"` response confirms whether an email is in the subscriber list. No rate limiting makes bulk enumeration trivial.
+**Decision: Fix before deploy.**
+Fix: Return a status-neutral 200 response for both new signups and already-confirmed emails. Message: "Thanks! If you're not already subscribed, a confirmation email is on its way." This eliminates the enumeration vector while giving users a reasonable UX signal. The confirmed-subscriber UX distinction is accepted as lost.
+
+**H2 — User-controlled `source` and `subscribed_date` written to Sheets**
+Frontend sends both fields; both are written to Sheets without override. Allows arbitrary string injection into internal records.
+**Decision: Fix before deploy.**
+Fix: In the Code - Validate Name node, ignore both fields from the request body. Hard-code `source: 'landing_page'` and set `subscribed_date: new Date().toISOString()` server-side.
+
+#### Low
+
+**L1 — Email echoed in `already_confirmed` and `already_unsubscribed` responses**
+Unnecessary data exposure — confirms the email associated with a token to the caller.
+**Decision: Fix before deploy.**
+Fix: Remove `email` field from the response bodies in the Format Already Confirmed Response and Format Already Unsubscribed Response Code nodes.
+
+**L2 — Unsubscribe token has no expiration**
+Token remains valid indefinitely. Low real-world risk at current scale.
+**Decision: Accepted risk. No fix.**
+
+**L3 — No CORS restriction on webhooks**
+n8n doesn't enforce CORS natively. Minimal practical impact since the endpoint is designed for browser calls.
+**Decision: Accepted risk. No fix.**
+
 ---
 
 ## Phase 3 — Plan
