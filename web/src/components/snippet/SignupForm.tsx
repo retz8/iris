@@ -184,9 +184,9 @@ function SignupForm() {
             </svg>
             <h3>Check your email</h3>
             <p className="confirmation-body">
-              We sent a confirmation link to<br /><strong>{formData.email}</strong>. Click it to verify your address.
+              We sent a confirmation link to<br /><strong>{formData.email}</strong>. <br/>Click it to verify your address.
             </p>
-            <p className="confirmation-hint">Usually arrives in under a minute. Not there? Check your spam folder.</p>
+            <p className="confirmation-hint">Usually arrives in under a minute. <br/>Not there? Check your spam folder.</p>
           </div>
         </div>
       </section>

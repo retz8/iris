@@ -361,8 +361,9 @@ legend {
 }
 
 .confirmation-hint {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm) !important;
   color: var(--color-text-tertiary);
+  opacity: 0.8;
   font-family: var(--font-sans);
   text-wrap: balance;
   margin-bottom: 0;
