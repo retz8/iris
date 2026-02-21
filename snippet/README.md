@@ -2,6 +2,8 @@
 
 Snippet is a newsletter product. This folder contains all operational documentation for the Snippet newsletter — workflows, schemas, and content generation guides.
 
+**Contact:** snippet.newsletter@gmail.com
+
 ## Folder Structure
 
 ```
