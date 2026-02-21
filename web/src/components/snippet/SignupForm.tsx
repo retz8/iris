@@ -157,6 +157,7 @@ function SignupForm() {
           value={formData.email}
           onChange={handleEmailChange}
           className={errors.email ? 'error' : ''}
+          disabled={showLanguageInputs && isSubmitting}
           autoComplete="email"
         />
         {formData.email && (
