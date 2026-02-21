@@ -324,9 +324,6 @@ legend {
   font-family: var(--font-heading);
   text-align: center;
   padding: var(--space-2xl) var(--space-lg);
-  max-width: 480px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .success-message h3 {
@@ -364,7 +361,7 @@ legend {
 }
 
 .confirmation-hint {
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   color: var(--color-text-tertiary);
   font-family: var(--font-sans);
   text-wrap: balance;
