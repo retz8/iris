@@ -29,12 +29,16 @@ IF: Validation Passed?
               Switch: Route by Action
                   ├─ "error_confirmed" → Code: Format Error → Respond to Webhook (409)
                   ├─ "error_pending" → Code: Format Response → Respond to Webhook (200)
-                  ├─ "update_resubscribe" → Code: Generate Token → Google Sheets: Update Row
-                  └─ "create_new" → Code: Generate Token → Google Sheets: Append Row
-                                          ↓
-                                      Gmail: Send Confirmation Email
-                                          ↓
-                                      Code: Format Success → Respond to Webhook (200)
+                  ├─ "update_resubscribe" → Code: Generate Token ─┐
+                  └─ "create_new"         → Code: Generate Token ─┘
+                                                    ↓
+                                            Gmail: Send Confirmation Email
+                                                    ├─ SUCCESS → Google Sheets: Append Row (create_new)
+                                                    │            Google Sheets: Update Row (update_resubscribe)
+                                                    │                ↓
+                                                    │            Code: Format Success → Respond to Webhook (200)
+                                                    │
+                                                    └─ ERROR → Code: Format Email Error → Respond to Webhook (500)
 ```
 
 ## Node-by-Node Configuration
@@ -508,78 +512,14 @@ return [
 
 ---
 
-### Node 10a: Google Sheets - Append New Subscriber (Rule 4 path)
-
-**Node Type:** `Google Sheets`
-**Purpose:** Add new pending subscriber to Google Sheets
-
-**Configuration:**
-1. Add Google Sheets node for create action
-2. Add IF/Filter before this node:
-   - Condition: `{{ $json.action }}` equals `create_new`
-3. Configure parameters:
-   - **Credential:** Google OAuth2
-   - **Operation:** Append Row
-   - **Document:** "Newsletter Subscribers"
-   - **Sheet:** "Newsletter Subscribers"
-   - **Data Mode:** Auto-Map Input Data to Columns
-   - **Columns:** Map all fields from Code node output
-
-**Column Mapping:**
-```
-email → {{ $json.email }}
-programming_languages → {{ $json.programming_languages }}
-status → {{ $json.status }}
-confirmation_token → {{ $json.confirmation_token }}
-token_expires_at → {{ $json.token_expires_at }}
-unsubscribe_token → {{ $json.unsubscribe_token }}
-created_date → {{ $json.created_date }}
-confirmed_date → {{ $json.confirmed_date }}
-unsubscribed_date → {{ $json.unsubscribed_date }}
-source → {{ $json.source }}
-```
-
----
-
-### Node 10b: Google Sheets - Update Existing Subscriber (Rule 3 path)
-
-**Node Type:** `Google Sheets`
-**Purpose:** Update existing row for re-subscription
-
-**Configuration:**
-1. Add Google Sheets node for update action
-2. Add IF/Filter before this node:
-   - Condition: `{{ $json.action }}` equals `update_resubscribe`
-3. Configure parameters:
-   - **Credential:** Google OAuth2
-   - **Operation:** Update Row
-   - **Document:** "Newsletter Subscribers"
-   - **Sheet:** "Newsletter Subscribers"
-   - **Data Mode:** Auto-Map Input Data to Columns
-   - **Row Number:** `{{ $json.existingRowIndex }}`
-   - **Columns:** Map updated fields only
-
-**Column Mapping (Updated Fields Only):**
-```
-status → {{ $json.status }}
-confirmation_token → {{ $json.confirmation_token }}
-token_expires_at → {{ $json.token_expires_at }}
-confirmed_date → {{ $json.confirmed_date }}
-unsubscribed_date → {{ $json.unsubscribed_date }}
-```
-
-**Note:** Keep `created_date` unchanged (original signup date)
-
----
-
-### Node 11: Gmail - Send Confirmation Email
+### Node 10: Gmail - Send Confirmation Email
 
 **Node Type:** `Gmail`
-**Purpose:** Send email with confirmation link
+**Purpose:** Send confirmation email with token link. Runs BEFORE writing to Google Sheets — if delivery fails, no phantom row is created and a proper error is returned to the frontend.
 
 **Configuration:**
-1. Add Gmail node after both Google Sheets operations
-   - **Note:** Connect both Node 10a and Node 10b outputs directly to this Gmail node. No explicit Merge node needed since only one path executes per run.
+1. Add Gmail node after Generate Token (Node 9)
+   - **Note:** Connect both Rule 3 (update_resubscribe) and Rule 4 (create_new) token generation outputs to this single Gmail node. Only one path executes per run so no Merge node is needed.
 2. Configure parameters:
    - **Credential:** Gmail OAuth2
    - **Resource:** Message
@@ -643,13 +583,122 @@ unsubscribed_date → {{ $json.unsubscribed_date }}
 
 ---
 
+### Node 10-err: Code - Format Gmail Error Response (Gmail ERROR branch)
+
+**Node Type:** `Code`
+**Purpose:** Format error response when Gmail fails to deliver the confirmation email. Triggered by the Gmail node's error output — no row is written to Google Sheets.
+
+**Configuration:**
+1. Enable **"Continue on Fail"** on the Gmail node (Settings tab → "Continue on Error" → ON), OR connect the Gmail node's error branch to this node.
+2. Add Code node on the error/fail output of the Gmail node.
+3. Set parameters:
+   - **Mode:** Run Once for All Items
+   - **Language:** JavaScript
+
+4. JavaScript code:
+
+```javascript
+return [
+  {
+    json: {
+      success: false,
+      error: "Failed to send confirmation email. Please double-check your email address and try again.",
+      statusCode: 500
+    }
+  }
+];
+```
+
+**Output:** Formatted 500 error response
+
+---
+
+### Node 10-err-1: Respond to Webhook - Gmail Error
+
+**Node Type:** `Respond to Webhook`
+**Purpose:** Send Gmail failure error back to frontend
+
+**Configuration:**
+1. Add "Respond to Webhook" node after Code formatting node
+2. Set parameters:
+   - **Respond With:** First Incoming Item
+   - **Response Code:** `{{ $json.statusCode }}`
+   - **Put Response in Field:** Leave empty
+
+---
+
+### Node 11a: Google Sheets - Append New Subscriber (create_new path)
+
+**Node Type:** `Google Sheets`
+**Purpose:** Add new pending subscriber to Google Sheets. Runs only after Gmail succeeds.
+
+**Configuration:**
+1. Add Google Sheets node on the Gmail SUCCESS output
+2. Add IF/Filter before this node:
+   - Condition: `{{ $json.action }}` equals `create_new`
+3. Configure parameters:
+   - **Credential:** Google OAuth2
+   - **Operation:** Append Row
+   - **Document:** "Newsletter Subscribers"
+   - **Sheet:** "Newsletter Subscribers"
+   - **Data Mode:** Auto-Map Input Data to Columns
+   - **Columns:** Map all fields from Code node output
+
+**Column Mapping:**
+```
+email → {{ $json.email }}
+programming_languages → {{ $json.programming_languages }}
+status → {{ $json.status }}
+confirmation_token → {{ $json.confirmation_token }}
+token_expires_at → {{ $json.token_expires_at }}
+unsubscribe_token → {{ $json.unsubscribe_token }}
+created_date → {{ $json.created_date }}
+confirmed_date → {{ $json.confirmed_date }}
+unsubscribed_date → {{ $json.unsubscribed_date }}
+source → {{ $json.source }}
+```
+
+---
+
+### Node 11b: Google Sheets - Update Existing Subscriber (update_resubscribe path)
+
+**Node Type:** `Google Sheets`
+**Purpose:** Update existing row for re-subscription. Runs only after Gmail succeeds.
+
+**Configuration:**
+1. Add Google Sheets node on the Gmail SUCCESS output
+2. Add IF/Filter before this node:
+   - Condition: `{{ $json.action }}` equals `update_resubscribe`
+3. Configure parameters:
+   - **Credential:** Google OAuth2
+   - **Operation:** Update Row
+   - **Document:** "Newsletter Subscribers"
+   - **Sheet:** "Newsletter Subscribers"
+   - **Data Mode:** Auto-Map Input Data to Columns
+   - **Row Number:** `{{ $json.existingRowIndex }}`
+   - **Columns:** Map updated fields only
+
+**Column Mapping (Updated Fields Only):**
+```
+status → {{ $json.status }}
+confirmation_token → {{ $json.confirmation_token }}
+token_expires_at → {{ $json.token_expires_at }}
+confirmed_date → {{ $json.confirmed_date }}
+unsubscribed_date → {{ $json.unsubscribed_date }}
+```
+
+**Note:** Keep `created_date` unchanged (original signup date)
+
+---
+
 ### Node 12: Code - Format Success Response
 
 **Node Type:** `Code`
-**Purpose:** Format success response after email sent
+**Purpose:** Format success response after Gmail sent and Google Sheets written
 
 **Configuration:**
-1. Add Code node after Gmail node
+1. Add Code node after both Google Sheets nodes (Node 11a and 11b)
+   - **Note:** Connect both outputs directly here. Only one path executes per run so no Merge node is needed.
 2. Set parameters:
    - **Mode:** Run Once for All Items
    - **Language:** JavaScript
@@ -816,9 +865,17 @@ curl -X POST https://retz8.app.n8n.cloud/webhook-test/subscribe \
 
 ## Error Handling
 
-**Network Errors:**
-- If Gmail fails to send: Log error, but still return success to user (email service degradation shouldn't block signup)
-- If Google Sheets fails: Return 500 error to user (critical failure)
+**Node Order — Gmail before Google Sheets:**
+Gmail runs before writing to Google Sheets. If Gmail fails, no phantom row is created and the frontend receives a proper error. If Gmail succeeds, the row is written and the user gets a success response.
+
+**Gmail Failure:**
+- Gmail error branch routes to Node 10-err → Respond to Webhook (500)
+- Response: `{ success: false, error: "Failed to send confirmation email. Please double-check your email address and try again." }`
+- Frontend `submitError` state is populated and displayed to the user
+
+**If Google Sheets fails after Gmail succeeds:**
+- Return 500 error to user (critical failure)
+- Email was already sent — user can contact support or retry (email dedup handles re-sends gracefully via the pending status path)
 
 **Token Generation:**
 - Always import crypto: `const { randomUUID } = require('crypto');`
