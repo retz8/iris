@@ -75,6 +75,63 @@ Use the `create-implementation-plan` skill to write a plan to `docs/tasks/3-trac
 
 ---
 
+## Phase 2 — Decisions Log
+
+### Layout and Structure
+
+**Issue 1 — Header/content horizontal misalignment**
+Decision: INTENTIONAL. Header brand mark is left-aligned at desktop widths by design. No change.
+
+**Issue 2 — Empty footer**
+Decision: FIXED. Option D selected — `© 2026 Snippet · snippet.newsletter@gmail.com`. Contact email is the strongest trust signal for a developer audience. Committed in `8550b86`.
+Files changed: `web/src/components/snippet/Footer.tsx`, `web/src/styles/components.css` (added `.footer-copy`), `snippet/README.md` (contact email added)
+
+### Signup Flow
+
+**Issue 5 — No scroll reset on step 1 → step 2 transition**
+Decision: FIXED. Added `useRef` on the subscribe section + `useEffect` that calls `scrollIntoView({ behavior: 'smooth', block: 'start' })` when `showLanguageInputs` becomes true. Committed in `90adf29`.
+File: `web/src/components/snippet/SignupForm.tsx`
+
+**Issue 6 — Email field in step 2 fully editable, no back path**
+Decision: FIXED. Standard clearable input pattern — `×` shows whenever the email field has any text (in both step 1 and step 2), hides when empty. Clicking `×` only clears the email value; no other state changes. Email is always editable. Language selections are not affected. Committed in `63ff484`.
+Files: `web/src/components/snippet/SignupForm.tsx`, `web/src/styles/components.css`
+
+### Copy and Messaging
+
+**Issue 7 — "Reading codes" grammatical error**
+Decision: FIXED. Changed to "Reading code from trending repos." Committed in `90adf29`.
+File: `web/src/components/snippet/Hero.tsx:9`
+
+**Issue 8 — Hard `<br />` in hero subheadline**
+Decision: KEEP. Current structure works fine at all tested widths. No change.
+
+### Visual Consistency
+
+**Issue 9 — Unsubscribe vs. confirmation error states inconsistent**
+Decision: FIXED. Unsubscribe error states (missing_token, not_confirmed, token_not_found, server_error) now use `.confirmation-home-link` for "Go to homepage" links. Success and already_unsubscribed states retain `.resubscribe-link` as a positive CTA. Committed in `90adf29`.
+File: `web/src/pages/UnsubscribePage.tsx`
+
+### Dead Code / Bugs
+
+**Issue 10 — Orphaned function in Layout.tsx**
+Decision: FIXED. Removed `enforceChatHistoryFinalBudget` function (lines 24–51) from Layout.tsx. Committed in `90adf29`.
+File: `web/src/components/Layout.tsx`
+
+**Issue 11 — App.css never imported**
+Decision: KEEP for now. May be needed later. Created `snippet/before-release.md` with favicon/logo configuration task tracked there. Committed in `90adf29`.
+
+### Typography and Spacing
+
+**Issue 3 — `--font-serif` undefined in `.success-message h3`**
+Decision: FIXED. Replaced with `--font-heading`. Committed in `9c51a21`.
+File: `web/src/styles/components.css:291`
+
+**Issue 4 — `--color-text-primary` undefined in `.email-subject`**
+Decision: FIXED. Replaced with `--color-text`. Committed in `9c51a21`.
+File: `web/src/styles/components.css:488`
+
+---
+
 ## Phase 4 — Execute
 
 Apply all agreed changes to `web/`.

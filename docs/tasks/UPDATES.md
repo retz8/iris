@@ -1,5 +1,19 @@
 # Task Updates
 
+## 2026-02-21 (continued)
+
+**3-Track-B — Web App UX/UI Review** — Done
+
+Full UX/UI review of the Snippet landing page (`web/`) before deployment. All agreed changes applied across 4 commits.
+
+CSS bug fixes (`9c51a21`): corrected two undefined CSS variable references — `--font-serif` → `--font-heading` in `.success-message h3`, and `--color-text-primary` → `--color-text` in `.email-subject`.
+
+Footer and contact (`8550b86`): added `© 2026 Snippet · snippet.newsletter@gmail.com` to the footer (previously empty). Contact email also added to `snippet/README.md`. `.footer-copy` style added.
+
+Signup flow, copy, consistency, dead code (`90adf29`): smooth `scrollIntoView` when advancing email → language step; hero subheadline copy fixed ("Reading codes" → "Reading code"); unsubscribe error states (`missing_token`, `not_confirmed`, `token_not_found`, `server_error`) now use `.confirmation-home-link` for "Go to homepage" links, matching confirmation page styling; orphaned `enforceChatHistoryFinalBudget` function removed from `Layout.tsx`; `snippet/before-release.md` created to track favicon/logo task before launch.
+
+Clearable email input (`63ff484`): standard clearable input pattern on the email field — `×` button appears when the field has text, hides when empty, clicking it only clears the value. Works in both signup step 1 and step 2. Decision log written to `docs/tasks/3-track-b-web-app-ux-review.md`.
+
 ## 2026-02-21
 
 **2-Track-A — Send Email Workflow** — Done
