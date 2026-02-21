@@ -2,6 +2,20 @@
 
 ## 2026-02-21 (continued)
 
+**3-Track-A — n8n Security Check** — Done
+
+Full security review of all five n8n workflows before live deployment. Six issues found across Critical, High, and Low severity. Four fixed, two accepted as low risk at current scale.
+
+Critical fix (C1): no rate limiting on `/subscribe` — resolved with a two-layer guard in the `Code - Validate Email & Required Fields` node: Origin header check (must match `https://iris-codes.com`) and `api_key` body field validation against `$vars.WEBHOOK_SECRET`. Frontend counterpart: `api_key: import.meta.env.VITE_WEBHOOK_SECRET` added to the POST payload in `web/src/components/snippet/SignupForm.tsx`.
+
+High fix (H1): email enumeration via 409 — the `"Email already subscribed"` 409 response is replaced with a status-neutral 200 matching the new-signup response. Removes subscriber list enumeration.
+
+High fix (H2): user-controlled `source` and `subscribed_date` written to Sheets — both fields are now hard-coded server-side in the Code node; client-supplied values ignored.
+
+Low fix (L1): `email` field removed from `already_confirmed` and `already_unsubscribed` response bodies in the Confirmation and Unsubscription workflows.
+
+Accepted risk: unsubscribe token has no expiration (UUID v4 space makes brute-force infeasible at scale); no CORS restriction (covered by Origin check in C1 fix). Full audit trail in `snippet/n8n-workflows/security-checklist.md`. Implementation plans and action plan in `docs/tasks/3-track-a-n8n-security-check/`.
+
 **3-Track-B — Web App UX/UI Review** — Done
 
 Full UX/UI review of the Snippet landing page (`web/`) before deployment. All agreed changes applied across 4 commits.
