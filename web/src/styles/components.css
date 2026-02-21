@@ -288,7 +288,7 @@ legend {
 }
 
 .success-message h3 {
-  font-family: var(--font-serif);
+  font-family: var(--font-heading);
   font-size: var(--text-3xl);
   margin-bottom: var(--space-sm);
 }
@@ -485,7 +485,7 @@ legend {
   font-family: var(--font-heading); /* Use Spectral for hierarchy */
   font-size: var(--text-lg);
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--color-text);
   line-height: 1.4;
 }
 
