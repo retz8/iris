@@ -24,14 +24,12 @@ If the file is empty (`{}`) or does not exist, continue with no warnings.
 
 Use WebSearch to find trending OSS repos for each language. Run multiple targeted queries across Hacker News, Reddit r/programming, GitHub Trending, and dev.to. Collect 5–7 real candidates per language.
 
-Use this search prompt adapted per language:
-
-> Today is {date}. Search developer news sources (Hacker News, Reddit r/programming, dev.to, tech blogs) and GitHub Trending for open-source {language} projects engineers are actively talking about this week. Focus on projects with a genuine news hook: new release, viral HN post, notable discussion, or notable GitHub activity.
+Use WebSearch freely across developer news sources — GitHub Trending, Reddit (r/programming, r/python, r/javascript, r/cpp), dev.to, tech blogs, release announcements, and anything else that surfaces active discussion. Do not limit yourself to a fixed list of sources.
 
 For each candidate collect:
 - `owner/repo`
 - What it does — one sentence
-- Why this week — the specific news hook (release version, HN story ID, etc.)
+- Why this week — the specific news hook (new release, notable discussion, viral post, etc.)
 
 Exclude: tutorials, blog posts, awesome-lists, aggregator repos, docs-only repos.
 
@@ -111,7 +109,7 @@ Date: {date}
 - source: HN #39812345
 ```
 
-`source` is either `HN #<story_id>` or `github_trending`.
+`source` is a short freeform note on where the repo surfaced (e.g. `GitHub Trending`, `Reddit r/python`, `release announcement`, etc.). It is informational only — no fixed format required.
 
 After writing, tell the human:
 
