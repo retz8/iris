@@ -62,8 +62,9 @@ Phase 5 (parallel)
   5-A  Deployment Guide           — step-by-step guide for deploying n8n workflows + web app
   5-B  Distribution Strategy      — concrete plan for promoting Snippet and getting first subscribers
 
-Hotfixes (out-of-band, between phases) [DONE]
-  hotfix-remove-issue-number-from-subject — remove #[ISSUE_NUMBER] from newsletter email subject line
+Hotfixes (out-of-band, between phases)
+  hotfix-remove-issue-number-from-subject — remove #[ISSUE_NUMBER] from newsletter email subject line [DONE]
+  hotfix-automate-content-generation — Claude Code skill to automate Sunday newsletter draft generation + JSON archive
 ```
 
 Each phase waits for all tracks in the previous phase to be marked COMPLETE in `UPDATES.md` before starting.
