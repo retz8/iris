@@ -53,6 +53,53 @@ Surface findings to the human engineer and make decisions together:
 
 Do not proceed to Plan until the human engineer confirms the skill's input/output contract and the JSON archive schema.
 
+## Decisions
+
+**Input contract:** The skill takes three inputs — `date`, `issue_number`, `language`. It runs once per language; the human runs it three times on Sunday (one invocation per language).
+
+**`drafts.json` schema** (`snippet/n8n-workflows/content/drafts.json`, append-only array):
+
+```json
+[
+  {
+    "issue_number": 42,
+    "language": "Python",
+    "week_date": "2026-02-22",
+    "repo_full_name": "owner/repo",
+    "repository_url": "https://github.com/owner/repo",
+    "repository_description": "Why this repo is trending this week",
+    "source": "HN #39872345",
+    "file_path": "src/core/parser.py",
+    "snippet_url": "https://github.com/owner/repo/blob/main/src/core/parser.py",
+    "file_intent": "Bash command validation hook",
+    "snippet": "def parse_args(...):\n    ...",
+    "breakdown_what": "...",
+    "breakdown_responsibility": "...",
+    "breakdown_clever": "...",
+    "project_context": "...",
+    "created_at": "2026-02-22T10:00:00Z"
+  }
+]
+```
+
+`snippet_url` is constructed by the skill from `repo_full_name` + `file_path`. Serves both Gmail HTML generation and the future React archive page.
+
+**`repos.json` schema** (`snippet/n8n-workflows/content/repos.json`, keyed object):
+
+```json
+{
+  "anthropics/claude-code": {
+    "count": 2,
+    "snippets": [
+      "anthropics/claude-code/blob/main/src/commands/parse.ts",
+      "anthropics/claude-code/blob/main/src/core/agent.ts"
+    ]
+  }
+}
+```
+
+Key is `owner/repo` (no `github.com/` prefix). Snippets use the same format — no domain prefix. Used by the skill to avoid re-featuring repos. Deduplication behavior (hard exclusion vs. soft warning) TBD.
+
 ---
 
 ## Phase 3 — Plan
