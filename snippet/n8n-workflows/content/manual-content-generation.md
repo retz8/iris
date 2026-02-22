@@ -159,3 +159,21 @@ Subject: Can you read this #[ISSUE_NUMBER] [LANGUAGE]: {{file_intent}}
 ```
 
 Copy the HTML output, open Gmail, create a new draft, switch to HTML mode, and paste. Replace `[ISSUE_NUMBER]` with the issue number and `[LANGUAGE]` with the language (Python, JS/TS, or C/C++) in the subject, then paste your syntax-highlighted snippet over `PASTE_SNIPPET_HERE`.
+
+## Step 7: Refine Copy
+
+Read the draft as a subscriber would — top to bottom, no skipping. Then use the prompt below to refine. Repeat until the breakdown and project context read naturally as prose, not generated text.
+
+```
+Read the breakdown and project context in the current draft as a subscriber would — someone who just finished reading the snippet and is looking for insight, not documentation.
+
+Rewrite any fields that feel generated, redundant, or hard to follow. Specific things to check:
+- breakdown_what: does it start with a strong verb and tell you something the code doesn't already say at a glance?
+- breakdown_responsibility: does it place this code in a real context, or does it just restate what it does?
+- breakdown_clever: is the insight genuinely non-obvious, or is it pointing at something a mid-level engineer would immediately notice?
+- project_context: does it read as a natural sentence, or does it feel copy-pasted from a README?
+
+Return only the fields that need changing, with the revised text. No explanations.
+```
+
+Apply the suggested rewrites to the JSON, then regenerate the HTML (repeat Step 6) with the updated values. Repeat Step 7 until the copy reads cleanly.
