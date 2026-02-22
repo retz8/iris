@@ -44,17 +44,17 @@ Phase 1 (parallel) [DONE]
   1-C  Welcome Email Refinement   — refine post-confirmation welcome email copy and HTML
         |
         ▼
-Phase 2 (parallel)
+Phase 2 (parallel) [DONE]
   2-A  Send Email Workflow        — n8n workflow plan: cron → read drafts → send to subscribers
   2-C  Timezone Strategy          — decide how to handle multi-timezone send scheduling
         |
         ▼
-Phase 3 (parallel)
+Phase 3 (parallel) [DONE]
   3-A  n8n Security Check         — full security audit of all workflows before go-live
   3-B  Web App UX/UI Review       — final review and adjustments to the web/ frontend
         |
         ▼
-Phase 4
+Phase 4 [DONE]
   4-A  Copy Finalization          — align wording across landing page, confirmation email, welcome email, newsletter email
         |
         ▼
@@ -62,7 +62,7 @@ Phase 5 (parallel)
   5-A  Deployment Guide           — step-by-step guide for deploying n8n workflows + web app
   5-B  Distribution Strategy      — concrete plan for promoting Snippet and getting first subscribers
 
-Hotfixes (out-of-band, between phases)
+Hotfixes (out-of-band, between phases) [DONE]
   hotfix-remove-issue-number-from-subject — remove #[ISSUE_NUMBER] from newsletter email subject line
 ```
 
