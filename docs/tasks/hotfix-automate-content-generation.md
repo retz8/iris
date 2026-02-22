@@ -55,9 +55,12 @@ Do not proceed to Plan until the human engineer confirms the skill's input/outpu
 
 ## Decisions
 
-**Two skills, not one:**
-- **Skill A** (`discover-oss-candidates`): Steps 1–2. Input: `(date, issue_number)`. Output: temp OSS selection file at `snippet/n8n-workflows/content/oss-selections/YYYY-MM-DD.md`.
-- **Skill B** (`generate-snippet-draft`): Steps 3–9. Input: the OSS selection markdown file path. Output: 3 Gmail drafts + appends to `drafts.json` + updates `repos.json`.
+**Three skills:**
+- **Skill A** (`discover-oss-candidates`): Steps 1–2. Input: `(date, issue_number)`. Finds trending repos, presents candidates with prior usage counts from `repos.json`, human picks 3. Creates `snippet/n8n-workflows/content/snippet-selections/YYYY-MM-DD.md` with OSS decisions.
+- **Skill B** (`find-snippet-candidates`): Step 3. Input: the snippet-selections file. Runs 3 parallel sub-agents to explore each repo, returns ranked candidates, human picks 1 per repo. Appends snippet decisions to the same `snippet-selections/YYYY-MM-DD.md` file.
+- **Skill C** (`generate-snippet-draft`): Steps 4–9. Input: the completed snippet-selections file. Reformats snippets, researches repos, generates breakdowns, human reviews, HTML sub-agent generates emails, writes 3 Gmail drafts. Appends to `drafts.json` and updates `repos.json`.
+
+**Handoff artifact:** Single file `snippet/n8n-workflows/content/snippet-selections/YYYY-MM-DD.md` — Skill A creates it, Skill B appends to it, Skill C reads it.
 
 **`repos.json` deduplication:** Soft warning — Skill A shows usage count next to each candidate, human decides. No hard exclusion.
 
