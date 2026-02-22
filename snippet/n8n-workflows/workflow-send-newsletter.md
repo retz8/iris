@@ -183,11 +183,12 @@ const draftMeta = {
 
 const html = inItem.html || '';
 
-// Strip internal "#[N] [LANG]:" prefix — subscriber sees "Can you read this: {file_intent}"
+// Strip internal "#[N] [LANG]:" prefix — subscriber sees "[Language] Can you read this: {file_intent}"
 const rawSubject = inItem.subject || 'Snippet';
 const subjectPrefixMatch = rawSubject.match(/Can you read this #\d+ [^:]+:\s*(.+)/);
+const langPrefix = draftMeta.programming_language ? `[${draftMeta.programming_language}] ` : '';
 const subject = subjectPrefixMatch
-  ? `Can you read this: ${subjectPrefixMatch[1].trim()}`
+  ? `${langPrefix}Can you read this: ${subjectPrefixMatch[1].trim()}`
   : rawSubject;
 
 if (!html) {
