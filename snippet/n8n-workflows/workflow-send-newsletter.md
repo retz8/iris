@@ -12,6 +12,7 @@
 - Google OAuth2 credentials configured in n8n
 - Gmail OAuth2 credentials configured in n8n
 - Gmail draft HTML contains the literal placeholder `UNSUBSCRIBE_TOKEN` (replaced per subscriber by Code node)
+- Gmail draft HTML contains the literal placeholder `LANGUAGES_LIST` (replaced per subscriber with their selected languages, e.g. `python, javascript`)
 - n8n instance timezone set to `America/New_York`
 
 ## Workflow Overview
@@ -248,10 +249,9 @@ for (const sub of subscribers) {
 
   // One email per eligible language — subscriber may receive multiple emails per day
   for (const draft of eligibleDrafts) {
-    const personalizedHtml = (draft.draftHtml || '').replace(
-      /UNSUBSCRIBE_TOKEN/g,
-      sub.unsubscribe_token || ''
-    );
+    const personalizedHtml = (draft.draftHtml || '')
+      .replace(/UNSUBSCRIBE_TOKEN/g, sub.unsubscribe_token || '')
+      .replace(/LANGUAGES_LIST/g, langs.join(', '));
 
     sendItems.push({
       json: {
