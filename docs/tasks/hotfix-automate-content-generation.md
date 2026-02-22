@@ -55,7 +55,17 @@ Do not proceed to Plan until the human engineer confirms the skill's input/outpu
 
 ## Decisions
 
-**Input contract:** The skill takes three inputs — `date`, `issue_number`, `language`. It runs once per language; the human runs it three times on Sunday (one invocation per language).
+**Two skills, not one:**
+- **Skill A** (`discover-oss-candidates`): Steps 1–2. Input: `(date, issue_number)`. Output: temp OSS selection file at `snippet/n8n-workflows/content/oss-selections/YYYY-MM-DD.md`.
+- **Skill B** (`generate-snippet-draft`): Steps 3–9. Input: the OSS selection markdown file path. Output: 3 Gmail drafts + appends to `drafts.json` + updates `repos.json`.
+
+**`repos.json` deduplication:** Soft warning — Skill A shows usage count next to each candidate, human decides. No hard exclusion.
+
+**Write timing:** Both `drafts.json` and `repos.json` are updated after Step 7 human confirmation.
+
+**Gmail precondition:** Gmail Draft tab must already be open before running Skill B.
+
+**Step 8 HTML sub-agent:** Single-responsibility sub-agent generates the HTML email including syntax-highlighted code (inline `<span>` tags per the VS Code-style example at the bottom of `manual-content-generation.md`). Returns a fully completed HTML email.
 
 **`drafts.json` schema** (`snippet/n8n-workflows/content/drafts.json`, append-only array):
 
@@ -82,7 +92,7 @@ Do not proceed to Plan until the human engineer confirms the skill's input/outpu
 ]
 ```
 
-`snippet_url` is constructed by the skill from `repo_full_name` + `file_path`. Serves both Gmail HTML generation and the future React archive page.
+`snippet_url` is constructed from `repo_full_name` + `file_path`. Serves both Gmail HTML generation and the future React archive page.
 
 **`repos.json` schema** (`snippet/n8n-workflows/content/repos.json`, keyed object):
 
@@ -98,7 +108,7 @@ Do not proceed to Plan until the human engineer confirms the skill's input/outpu
 }
 ```
 
-Key is `owner/repo` (no `github.com/` prefix). Snippets use the same format — no domain prefix. Used by the skill to avoid re-featuring repos. Deduplication behavior (hard exclusion vs. soft warning) TBD.
+Key is `owner/repo` (no `github.com/` prefix). Snippets use the same path format — no domain prefix.
 
 ---
 
