@@ -26,4 +26,4 @@ skills-lock.json
 # secrets
 backend/secrets.txt
 
-snippets/n8n-workflows/content
+snippet/n8n-workflows/content
