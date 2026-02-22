@@ -313,7 +313,7 @@ const failedRows = sentResults
   .filter(r => !!r.error)
   .map(r => ({
     json: {
-      timestamp: new Date().toISOString(),
+      timestamp: new `Date().toISOString(),
       execution_id: $execution.id,
       issue_number: r.issue_number,
       gmail_draft_id: r.gmail_draft_id,

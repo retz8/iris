@@ -177,3 +177,36 @@ Return only the fields that need changing, with the revised text. No explanation
 ```
 
 Apply the suggested rewrites to the JSON, then regenerate the HTML (repeat Step 6) with the updated values. Repeat Step 7 until the copy reads cleanly.
+
+
+by only looking at this gmail without knowing anything about the project before, do you think it is fully understandable ?
+
+```html
+<div style="font-family: 'Consolas', Verdana; font-size: 13px; line-height: 1.5; color: #000000; white-space: pre;">
+<span style="color: #0000ff;">function</span> <span style="color: #795e26;">consumeLongOptionToken</span>(
+  <span style="color: #001080;">args</span>: <span style="color: #267f99;">string</span>[],
+  <span style="color: #001080;">index</span>: <span style="color: #267f99;">number</span>,
+  <span style="color: #001080;">flag</span>: <span style="color: #267f99;">string</span>,
+  <span style="color: #001080;">inlineValue</span>: <span style="color: #267f99;">string</span> | <span style="color: #0000ff;">undefined</span>,
+  <span style="color: #001080;">allowedValueFlags</span>: <span style="color: #267f99;">ReadonlySet</span>&lt;<span style="color: #267f99;">string</span>&gt;,
+  <span style="color: #001080;">deniedFlags</span>: <span style="color: #267f99;">ReadonlySet</span>&lt;<span style="color: #267f99;">string</span>&gt;
+): <span style="color: #267f99;">number</span> {
+  <span style="color: #af00db;">if</span> (<span style="color: #001080;">deniedFlags</span>.<span style="color: #795e26;">has</span>(<span style="color: #001080;">flag</span>)) {
+    <span style="color: #af00db;">return</span> -<span style="color: #098658;">1</span>;
+  }
+
+  <span style="color: #af00db;">if</span> (<span style="color: #001080;">inlineValue</span> !== <span style="color: #0000ff;">undefined</span>) {
+    <span style="color: #af00db;">return</span> <span style="color: #795e26;">isSafeLiteralToken</span>(<span style="color: #001080;">inlineValue</span>)
+      ? <span style="color: #001080;">index</span> + <span style="color: #098658;">1</span>
+      : -<span style="color: #098658;">1</span>;
+  }
+
+  <span style="color: #af00db;">if</span> (!<span style="color: #001080;">allowedValueFlags</span>.<span style="color: #795e26;">has</span>(<span style="color: #001080;">flag</span>)) {
+    <span style="color: #af00db;">return</span> <span style="color: #001080;">index</span> + <span style="color: #098658;">1</span>;
+  }
+
+  <span style="color: #af00db;">return</span> <span style="color: #795e26;">isInvalidValueToken</span>(<span style="color: #001080;">args</span>[<span style="color: #001080;">index</span> + <span style="color: #098658;">1</span>])
+    ? -<span style="color: #098658;">1</span>
+    : <span style="color: #001080;">index</span> + <span style="color: #098658;">2</span>;
+}</div>
+```
