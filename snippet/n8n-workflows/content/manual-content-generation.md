@@ -112,7 +112,7 @@ Replace each {{FIELD}} with the corresponding value. Do not modify any HTML, CSS
 
 Strict rule: do not fill in the code snippet. Remove the <pre> and <code> tags entirely and replace that block with exactly: <!-- PASTE_SNIPPET_HERE -->
 
-Subject: Can you read this #[ISSUE_NUMBER]: {{file_intent}}
+Subject: Can you read this #[ISSUE_NUMBER] [LANGUAGE]: {{file_intent}}
 
 <!DOCTYPE html>
 <html>
@@ -152,4 +152,4 @@ Subject: Can you read this #[ISSUE_NUMBER]: {{file_intent}}
 </html>
 ```
 
-Copy the HTML output, open Gmail, create a new draft, switch to HTML mode, and paste. Replace `[ISSUE_NUMBER]` in the subject and paste your syntax-highlighted snippet over `PASTE_SNIPPET_HERE`.
+Copy the HTML output, open Gmail, create a new draft, switch to HTML mode, and paste. Replace `[ISSUE_NUMBER]` with the issue number and `[LANGUAGE]` with the language (Python, JS/TS, or C/C++) in the subject, then paste your syntax-highlighted snippet over `PASTE_SNIPPET_HERE`.

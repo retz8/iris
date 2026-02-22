@@ -17,7 +17,7 @@
 The workflow fans out from the Form Trigger into two parallel branches that rejoin at a Merge node. This is required because when a draft is not yet in the sheet, Google Sheets returns 0 items — making it impossible to use a simple IF node (0 items means the branch never executes). The Merge node appends both inputs together so Node 6 always receives the Gmail items regardless of whether Sheets returned anything.
 
 ```
-n8n Form Trigger (issue_number)
+n8n Form Trigger (issue_number, language)
     │
     ├─── Branch A ──→ Gmail: Get All Drafts ──→ Code: Filter by Issue & Validate ──→ Merge (Input 1)
     │                                                                                       │
@@ -38,21 +38,26 @@ n8n Form Trigger (issue_number)
 ### Node 1: n8n Form Trigger
 
 **Node Type:** `n8n Form Trigger`
-**Purpose:** Present a form to the human before the workflow runs. The human enters the issue number for the current week's drafts (e.g. `42`). This scopes the Gmail search to exactly that issue's 3 drafts.
+**Purpose:** Present a form to the human before the workflow runs. The human enters the issue number and language for the current run. This scopes the Gmail search to exactly 3 drafts for that issue and language.
 
 **Configuration:**
 1. Add n8n Form Trigger node to canvas
 2. Configure parameters:
    - **Form Title:** `Gmail Drafts to Sheets`
-   - **Form Description:** `Enter the issue number for this week's drafts.`
+   - **Form Description:** `Enter the issue number and language for this week's drafts.`
    - **Form Fields:**
      - **Field 1:**
        - **Field Label:** `Issue Number`
        - **Field Type:** Number
        - **Required:** ON
+     - **Field 2:**
+       - **Field Label:** `Language`
+       - **Field Type:** Dropdown List
+       - **Required:** ON
+       - **Field Options:** `Python`, `JS/TS`, `C/C++`
    - **Response Mode:** `Form Is Submitted` (value: `onReceived`)
 
-**Output:** `{ "Issue Number": 42 }` (field name matches the label exactly — use `$json['Issue Number']` to reference it)
+**Output:** `{ "Issue Number": 42, "Language": "Python" }` (field names match labels exactly — use `$json['Issue Number']` and `$json['Language']` to reference them)
 
 **Fan-out:** This node connects to two downstream nodes simultaneously — Node 2 (Branch A) and Node 4 (Branch B).
 
@@ -76,7 +81,7 @@ n8n Form Trigger (issue_number)
 
 **Output:** One item per draft in the account. The n8n Gmail node pre-parses the message — each item is a flat JSON object with fields directly accessible:
 - `id` — the draft ID (e.g. `r4499414878237443801`), used as `gmail_draft_id`
-- `subject` — email subject string (e.g. `"Can you read this #1: Bash command validation hook"`)
+- `subject` — email subject string (e.g. `"Can you read this #1 Python: Bash command validation hook"`)
 - `html` — fully decoded HTML body string
 - `date` — ISO 8601 date string (e.g. `"2026-02-19T09:50:37.000Z"`), used as `created_date`
 
@@ -85,7 +90,7 @@ n8n Form Trigger (issue_number)
 ### Node 3: Code - Filter by Issue & Validate Count (Branch A)
 
 **Node Type:** `Code`
-**Purpose:** Filter the full drafts list down to only the current issue's 3 drafts by matching the subject pattern, then validate exactly 3 were found. Combines filtering (since the Gmail node has no subject filter) and count validation into one step.
+**Purpose:** Filter the full drafts list down to exactly 3 drafts matching the current issue number and language. Validates exactly 3 were found. Each workflow run is language-scoped — with 9 total drafts per Sunday (3 languages × 3 days), this node isolates the 3 for the selected language.
 
 **Configuration:**
 1. Add Code node connected after Gmail node
@@ -98,9 +103,11 @@ n8n Form Trigger (issue_number)
 ```javascript
 const allDrafts = $input.all();
 const issueNumber = $('n8n Form Trigger').first().json['Issue Number'];
-const pattern = new RegExp(`Can you read this #${issueNumber}:`);
+const language = $('n8n Form Trigger').first().json['Language'];
+const pattern = new RegExp(
+  `Can you read this #${issueNumber} ${language}:`
+);
 
-// Filter to only this issue's drafts by subject (n8n Gmail node exposes subject directly)
 const issueDrafts = allDrafts.filter(item => {
   const subject = item.json.subject || '';
   return pattern.test(subject);
@@ -108,7 +115,8 @@ const issueDrafts = allDrafts.filter(item => {
 
 if (issueDrafts.length !== 3) {
   throw new Error(
-    `Expected 3 drafts for issue #${issueNumber}, found ${issueDrafts.length}. ` +
+    `Expected 3 drafts for issue #${issueNumber} (${language}), ` +
+    `found ${issueDrafts.length}. ` +
     `Check Gmail and ensure all 3 drafts have the correct subject format.`
   );
 }
@@ -116,7 +124,7 @@ if (issueDrafts.length !== 3) {
 return issueDrafts;
 ```
 
-**Output:** Exactly 3 Gmail draft items for the given issue number. Throws and halts if count is not 3.
+**Output:** Exactly 3 Gmail draft items for the given issue number and language. Throws and halts if count is not 3.
 
 **Connects to:** Merge node as **Input 1**.
 
@@ -190,6 +198,10 @@ const existingIds = new Set(
     .map(r => String(r.json.gmail_draft_id))
 );
 
+// Read issue_number and language from Form Trigger
+const issueNumber = $('n8n Form Trigger').first().json['Issue Number'];
+const programmingLanguage = $('n8n Form Trigger').first().json['Language'];
+
 const newRows = [];
 
 for (const item of gmailDrafts) {
@@ -198,18 +210,19 @@ for (const item of gmailDrafts) {
   // Skip if already in sheet
   if (existingIds.has(String(draft.id))) continue;
 
-  // n8n Gmail node exposes subject and html as top-level fields (pre-parsed, no decoding needed)
   const subject = draft.subject || '';
   const htmlBody = draft.html || '';
 
-  // Parse issue_number and file_intent from subject
-  const subjectMatch = subject.match(/Can you read this #(\d+):\s*(.+)/);
+  // Parse file_intent from subject
+  // Format: "Can you read this #42 Python: Bash command validation hook"
+  const subjectMatch = subject.match(
+    /Can you read this #\d+ [^:]+:\s*(.+)/
+  );
   if (!subjectMatch) {
     throw new Error(`Unexpected subject format: "${subject}"`);
   }
 
-  const issueNumber = parseInt(subjectMatch[1], 10);
-  const fileIntent = subjectMatch[2].trim();
+  const fileIntent = subjectMatch[1].trim();
 
   // Parse repository URL and name from Project Context section
   // HTML pattern: From <a href="https://github.com/owner/repo">owner/repo</a>
@@ -241,7 +254,7 @@ for (const item of gmailDrafts) {
       repository_name: repositoryName,
       repository_url: repositoryUrl,
       repository_description: repositoryDescription,
-      programming_language: '',
+      programming_language: programmingLanguage,
       source: 'manual',
       created_date: createdDate,
       scheduled_day: '',
@@ -259,8 +272,8 @@ return newRows;
 
 | Sheet Column | Source | Method |
 |---|---|---|
-| `issue_number` | Subject line | Regex `#(\d+)` |
-| `file_intent` | Subject line | Regex after `: ` |
+| `issue_number` | Form Trigger | `$('n8n Form Trigger').first().json['Issue Number']` |
+| `file_intent` | Subject line | Regex `/Can you read this #\d+ [^:]+:\s*(.+)/` group 1 |
 | `gmail_draft_id` | Gmail API | `draft.id` |
 | `repository_url` | HTML body | First GitHub href in Project Context |
 | `repository_name` | HTML body | Path portion of GitHub URL (`owner/repo`) |
@@ -268,7 +281,7 @@ return newRows;
 | `created_date` | Gmail API | `draft.date` (ISO 8601, pre-parsed by n8n) |
 | `status` | Hardcoded | `"draft"` |
 | `source` | Hardcoded | `"manual"` |
-| `programming_language` | — | Left blank (human fills during Sunday review) |
+| `programming_language` | Form Trigger | `$('n8n Form Trigger').first().json['Language']` |
 | `scheduled_day` | — | Left blank (human fills during Sunday review) |
 | `sent_date` | — | Left blank (Workflow 2 fills after sending) |
 
@@ -310,10 +323,10 @@ return newRows;
 ## Edge Cases
 
 **Wrong number of drafts found (not 3):**
-Node 3 throws and halts the entire workflow before any sheet writes. The error message states the issue number and actual count. Human should check Gmail drafts, fix subject lines, and re-run.
+Node 3 throws and halts the entire workflow before any sheet writes. The error message states the issue number, language, and actual count. Human should check Gmail drafts, fix subject lines to match `Can you read this #[N] [LANG]: ...`, and re-run.
 
 **No matching drafts found:**
-Node 2 returns zero items. Node 3 immediately throws (0 ≠ 3). Workflow halts cleanly.
+Node 3 immediately throws (0 ≠ 3). Workflow halts cleanly. Check that the issue number and language entered in the form exactly match the draft subject lines.
 
 **All drafts already in sheet (duplicate run):**
 Node 6 builds a set of all 3 existing IDs and skips all Gmail drafts. Returns 0 items. Node 7 does not execute. Sheet unchanged.
@@ -327,8 +340,8 @@ Node 6 throws for that item. n8n marks it as failed. Human should inspect and co
 **HTML body cannot be decoded or parsed:**
 Repository fields are set to empty string. The row is still appended with what was successfully parsed. Human corrects in sheet during Sunday review.
 
-**Multiple drafts with same `issue_number`:**
-Expected — three drafts per Sunday share the same `issue_number`. Each gets its own row, per the schema.
+**Multiple drafts with same `issue_number` and language:**
+Expected — three drafts per language per Sunday share the same `issue_number` and `programming_language`. Each gets its own row, per the schema. The workflow is run once per language (3 runs total each Sunday).
 
 ---
 
@@ -337,11 +350,11 @@ Expected — three drafts per Sunday share the same `issue_number`. Each gets it
 ### Test 1: First run with 3 new drafts (empty sheet)
 
 **Setup:** Write 3 Gmail drafts with subjects:
-- `Can you read this #1: Bash command validation hook`
-- `Can you read this #1: HTTP retry backoff scheduler`
-- `Can you read this #1: Memory arena allocator`
+- `Can you read this #1 Python: Bash command validation hook`
+- `Can you read this #1 Python: HTTP retry backoff scheduler`
+- `Can you read this #1 Python: Memory arena allocator`
 
-**Execute:** Open Form Trigger URL, enter `1`, submit.
+**Execute:** Open Form Trigger URL, enter Issue Number `1`, select Language `Python`, submit.
 
 **Expected result:**
 - Node 2 returns 3 items
@@ -350,17 +363,16 @@ Expected — three drafts per Sunday share the same `issue_number`. Each gets it
 - Merge returns all 3 (no matches in empty Input 2)
 - Node 6 parses each draft
 - Node 7 appends 3 rows
-- Rows have `status = "draft"`, `source = "manual"`, correct `issue_number`, `file_intent`, `repository_*` populated
+- Rows have `status = "draft"`, `source = "manual"`, `issue_number = 1`, `programming_language = "Python"`, correct `file_intent`, `repository_*` populated
 
 ### Test 2: Wrong draft count
 
-**Setup:** Only 2 drafts exist for the issue number (one not saved or subject typo).
+**Setup:** Only 2 drafts exist for the issue number and language (one not saved or subject typo).
 
-**Execute:** Submit form with the issue number.
+**Execute:** Submit form with Issue Number and Language.
 
 **Expected result:**
-- Node 2 returns 2 items
-- Node 3 throws: `"Expected 3 drafts for issue #1, found 2..."`
+- Node 3 throws: `"Expected 3 drafts for issue #1 (Python), found 2..."`
 - Workflow halts — no sheet writes
 
 ### Test 3: Re-run (idempotency check)
@@ -395,5 +407,5 @@ Expected — three drafts per Sunday share the same `issue_number`. Each gets it
 1. Save workflow
 2. Click "Activate" toggle (required for Form Trigger URL to be served)
 3. Copy the Form Trigger URL from the node settings
-4. Each Sunday after writing drafts: open URL in browser, enter the issue number, submit
+4. Each Sunday after writing drafts: open URL in browser, enter the issue number and select the language, submit — run once per language (3 runs total)
 5. Verify rows appear in Newsletter Drafts sheet before Sunday review

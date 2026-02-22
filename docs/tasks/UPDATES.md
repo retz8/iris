@@ -1,5 +1,19 @@
 # Task Updates
 
+## 2026-02-22
+
+**Hotfix — Remove Issue Number from Subscriber-Facing Email Subject** — Done
+
+Removed `#[ISSUE_NUMBER]` from the subscriber-facing email subject while keeping it in the internal Gmail draft subject for workflow scoping. Also fixed the draft count validation to support the correct 9-draft-per-Sunday cadence (3 languages × 3 days).
+
+Draft subject format changed to `Can you read this #[ISSUE_NUMBER] [LANGUAGE]: {{file_intent}}` — language added so the Gmail Drafts to Sheets workflow can scope to exactly 3 drafts per run. The workflow is now run once per language (3 runs each Sunday). `manual-content-generation.md` Step 6 template and instruction updated accordingly.
+
+`workflow-gmail-drafts-to-sheet.md`: Node 1 Form Trigger gains a Language dropdown (Python / JS/TS / C/C++). Node 3 filter pattern updated from `#${issueNumber}:` to `#${issueNumber} ${language}:`, count check stays at exactly 3. Node 6 reads `issue_number` and `programming_language` from the Form Trigger instead of parsing from the subject — `programming_language` column is now auto-populated (no longer blank after import). Subject regex updated for the new format.
+
+`workflow-send-newsletter.md`: Node 6 (Normalize Draft Content) strips the internal `#[N] [LANG]:` prefix from the subject before sending — subscribers receive `Can you read this: {file_intent}`.
+
+`FormatPreview.tsx`: landing page preview updated to `Can you read this: Bash command validation` to reflect the subscriber-facing format.
+
 ## 2026-02-21 (continued)
 
 **5-Track-A — SEO Optimization** — Done

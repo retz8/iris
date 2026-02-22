@@ -182,7 +182,13 @@ const draftMeta = {
 };
 
 const html = inItem.html || '';
-const subject = inItem.subject || 'Snippet';
+
+// Strip internal "#[N] [LANG]:" prefix — subscriber sees "Can you read this: {file_intent}"
+const rawSubject = inItem.subject || 'Snippet';
+const subjectPrefixMatch = rawSubject.match(/Can you read this #\d+ [^:]+:\s*(.+)/);
+const subject = subjectPrefixMatch
+  ? `Can you read this: ${subjectPrefixMatch[1].trim()}`
+  : rawSubject;
 
 if (!html) {
   return {
