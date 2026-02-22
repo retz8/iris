@@ -2,6 +2,18 @@
 
 ## 2026-02-22
 
+**Hotfix — Automate Newsletter Content Generation** — Done
+
+Replaced the Sunday manual 7-step content generation workflow with three Claude Code skills and two sub-agents. The pipeline runs across three separate sessions with human decision gates between each. See `docs/tasks/hotfix-automate-content-generation/summary.md` for full architecture notes.
+
+Skill A (`discover-oss-candidates`): uses WebSearch to find trending OSS repos for Python, JS/TS, and C/C++, validates all URLs via browser, shows prior usage counts, and asks the human to pick one per language. Writes `snippet-selections/YYYY-MM-DD.md`.
+
+Skill B (`find-snippet-candidates`): spawns 3 parallel `snippet-repo-explorer` sub-agents to browse each GitHub repo, returns ranked snippet candidates, verifies selected URLs, and appends picks to the same handoff file.
+
+Skill C (`generate-snippet-draft`): reformats snippets for mobile, researches repos for project context, generates and self-refines breakdowns (including subscriber comprehension check), gets human confirmation, writes `drafts.json` and `repos.json`, spawns 3 parallel `snippet-html-generator` sub-agents for HTML generation, and writes 3 Gmail drafts via browser JS injection.
+
+`snippet/n8n-workflows/content/drafts.json` and `repos.json` created. `manual-content-generation.md` marked as automated with links to all three skills.
+
 **Hotfix — Remove Issue Number from Subscriber-Facing Email Subject** — Done
 
 Removed `#[ISSUE_NUMBER]` from the subscriber-facing email subject while keeping it in the internal Gmail draft subject for workflow scoping. Also fixed the draft count validation to support the correct 9-draft-per-Sunday cadence (3 languages × 3 days).
