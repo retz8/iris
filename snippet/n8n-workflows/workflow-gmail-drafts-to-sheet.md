@@ -104,8 +104,9 @@ n8n Form Trigger (issue_number, language)
 const allDrafts = $input.all();
 const issueNumber = $('n8n Form Trigger').first().json['Issue Number'];
 const language = $('n8n Form Trigger').first().json['Language'];
+const escapedLanguage = language.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const pattern = new RegExp(
-  `Can you read this #${issueNumber} ${language}:`
+  `Can you read this #${issueNumber} ${escapedLanguage}:`
 );
 
 const issueDrafts = allDrafts.filter(item => {
