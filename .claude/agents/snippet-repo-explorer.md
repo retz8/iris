@@ -33,12 +33,11 @@ Avoid:
 
 For each candidate file, navigate to and open the actual file on GitHub before extracting anything. Do not guess or reconstruct content from memory.
 
-Extract a complete logical unit from each file — a single function, method, or tightly coupled block. The snippet must:
+Extract a complete logical unit from each file — a single function, method, or tightly coupled block. A snippet is not a full file. The snippet must:
 - Take a developer at least 1 minute to fully understand
 - Not be trivially obvious at a glance
 - Come from a different file than the other candidates
-
-Formatting preference (not a hard rule): lines under 65 characters, nesting depth 3 levels or fewer. These read cleanly on mobile.
+- Have no line exceeding 65 characters and nesting depth of 3 levels or fewer — these read cleanly on mobile without wrapping. If a candidate file has no snippet that fits these constraints, skip it and find another file.
 
 Collect exactly 3 candidates from 3 different files.
 
