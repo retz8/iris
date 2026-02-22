@@ -89,7 +89,7 @@ Summarize this conversation into two parts:
 {
   "language": "",
   "repo_full_name": "",
-  "repo_description": "",
+  "project_context": "",
   "file_path": "",
   "file_intent": "",
   "breakdown_what": "",
@@ -110,6 +110,8 @@ In the same conversation as Step 4, send this prompt. The template is fixed — 
 Fill in the HTML template below using the JSON from this conversation.
 Replace each {{FIELD}} with the corresponding value. Do not modify any HTML, CSS, or structure — only replace the placeholders. Only return html code that is easy to copy and paste. Reference image attached.
 
+For {{project_context}}: write 1-2 sentences describing what this repo is and how it is used in the real world — who uses it, in what contexts, and what problem it solves. Do not fabricate.
+
 Strict rule: do not fill in the code snippet. Remove the <pre> and <code> tags entirely and replace that block with exactly: <!-- PASTE_SNIPPET_HERE -->
 
 Subject: Can you read this #[ISSUE_NUMBER] [LANGUAGE]: {{file_intent}}
@@ -120,31 +122,35 @@ Subject: Can you read this #[ISSUE_NUMBER] [LANGUAGE]: {{file_intent}}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
-  <div style="max-width:600px;margin:0 auto;padding:20px 20px;">
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
 
-    <pre style="font-family:Consolas,Monaco,'Courier New',monospace;font-size:14px;line-height:1.6;background-color:#f6f8fa;padding:16px;border-left:3px solid #0969da;border-radius:6px;overflow-x:auto;color:#24292f;margin:0 0 24px 0;white-space:pre-wrap;word-wrap:break-word;"><code>PASTE_SNIPPET_HERE</code></pre>
+    <pre style="font-family:Consolas,Monaco,'Courier New',monospace;font-size:13px;line-height:1.6;background-color:#f6f8fa;padding:24px;border:1px solid #d0d7de;border-radius:6px;overflow-x:auto;color:#24292f;box-shadow:0 4px 12px rgba(0,0,0,0.15);margin:0 0 24px 0;white-space:pre-wrap;word-wrap:break-word;"><code>PASTE_SNIPPET_HERE</code></pre>
 
-    <p style="margin:32px 0;font-size:20px;font-style:italic;text-align:center;">Before scrolling: what does this do?</p>
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
 
-    <div style="margin:24px 0;text-align:center;letter-spacing:8px;color:#d0d7de;font-size:20px;">• • •</div>
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
 
-    <h2 style="margin:0 0 16px 0;font-size:16px;font-weight:600;">The Breakdown</h2>
-    <ul style="margin:0 0 24px 0;padding-left:24px;line-height:1.8;">
-      <li style="margin-bottom:12px;font-size:16px;"><strong>What it does:</strong> {{breakdown_what}}</li>
-      <li style="margin-bottom:12px;font-size:16px;"><strong>Key responsibility:</strong> {{breakdown_responsibility}}</li>
-      <li style="margin-bottom:12px;font-size:16px;"><strong>The clever part:</strong> {{breakdown_clever}}</li>
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> {{breakdown_what}}</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> {{breakdown_responsibility}}</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> {{breakdown_clever}}</li>
     </ul>
 
-    <hr style="margin:32px 0;border:none;border-top:1px solid #d0d7de;">
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
 
-    <h3 style="margin:0 0 8px 0;font-size:16px;font-weight:600;">Project Context</h3>
-    <p style="margin:0 0 32px 0;font-size:15px;color:#57606a;">
-      From <a href="https://github.com/{{repo_full_name}}" style="color:#0969da;text-decoration:none;">{{repo_full_name}}</a> — <a href="https://github.com/{{repo_full_name}}/blob/main/{{file_path}}" style="color:#0969da;text-decoration:none;">{{file_path}}</a>. {{repo_description}}
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/{{repo_full_name}}" style="color:#0969da;text-decoration:none;">{{repo_full_name}}</a> — <a href="https://github.com/{{repo_full_name}}/blob/main/{{file_path}}" style="color:#0969da;text-decoration:none;">{{file_path}}</a>. {{project_context}}
     </p>
 
     <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
-      Python, JS/TS, C/C++ | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#0969da;text-decoration:none;">Unsubscribe</a>
+      Python, JS/TS, C/C++ | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
     </div>
 
   </div>
