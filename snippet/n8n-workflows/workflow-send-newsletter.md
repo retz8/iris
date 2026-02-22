@@ -30,7 +30,7 @@ Code: Get Today Key (mon|wed|fri)
 Code: Build Send Queue (Run Once for All Items)
   - reads all normalized drafts + all confirmed subscribers
   - matches by programming language
-  - picks one eligible draft per subscriber
+  - sends one email per eligible language per subscriber
   - injects UNSUBSCRIBE_TOKEN per subscriber
   - outputs one send item per subscriber
             ↓
@@ -245,31 +245,31 @@ for (const sub of subscribers) {
   const eligibleDrafts = validDrafts.filter(d => langs.includes(d.programming_language));
   if (eligibleDrafts.length === 0) continue;
 
-  // Exactly one email per subscriber per day
-  const selectedDraft = eligibleDrafts[Math.floor(Math.random() * eligibleDrafts.length)];
+  // One email per eligible language — subscriber may receive multiple emails per day
+  for (const draft of eligibleDrafts) {
+    const personalizedHtml = (draft.draftHtml || '').replace(
+      /UNSUBSCRIBE_TOKEN/g,
+      sub.unsubscribe_token || ''
+    );
 
-  const personalizedHtml = (selectedDraft.draftHtml || '').replace(
-    /UNSUBSCRIBE_TOKEN/g,
-    sub.unsubscribe_token || ''
-  );
-
-  sendItems.push({
-    json: {
-      subscriber_email: sub.email,
-      unsubscribe_token: sub.unsubscribe_token || '',
-      issue_number: selectedDraft.issue_number,
-      gmail_draft_id: selectedDraft.gmail_draft_id,
-      programming_language: selectedDraft.programming_language,
-      subject: selectedDraft.subject,
-      personalizedHtml
-    }
-  });
+    sendItems.push({
+      json: {
+        subscriber_email: sub.email,
+        unsubscribe_token: sub.unsubscribe_token || '',
+        issue_number: draft.issue_number,
+        gmail_draft_id: draft.gmail_draft_id,
+        programming_language: draft.programming_language,
+        subject: draft.subject,
+        personalizedHtml
+      }
+    });
+  }
 }
 
 return sendItems;
 ```
 
-**Output:** One item per subscriber selected for today's send. Item count equals the number of emails that will be sent.
+**Output:** One item per (subscriber × eligible language) pair. A subscriber with multiple selected languages receives one email per language that has a draft scheduled today.
 
 ---
 
@@ -517,7 +517,7 @@ return rows;
 - Gmail send failures are captured per subscriber with **Continue on Error** — a failed send for one subscriber does not stop the rest of the run. Check Send Errors for `error_type: gmail_send_failed`.
 - Draft decode failures (no HTML body in Gmail response) are logged in Send Errors with `error_type: draft_decode_failed`. The affected draft's subscribers receive no email for that run.
 - Sheet update failures are captured per draft with **Continue on Error**. Check Send Errors for `error_type: sheet_update_failed` and manually update the affected draft rows to `status=sent`.
-- Exactly one email per subscriber per day is enforced in Node 7 — no subscriber receives more than one email per run regardless of how many eligible drafts exist.
+- A subscriber receives one email per language they have selected that has a draft scheduled today — multiple emails per day is expected and intentional.
 
 ## Workflow Testing
 
