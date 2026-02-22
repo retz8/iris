@@ -159,3 +159,5 @@ After all 3 drafts are saved, report:
 > - Can you read this #{issue_number} Python: {file_intent}
 > - Can you read this #{issue_number} JS/TS: {file_intent}
 > - Can you read this #{issue_number} C/C++: {file_intent}
+>
+> Next: open Google Sheets → Newsletter Drafts tab. For each of the 3 new rows, set `scheduled_day` to `mon`, `wed`, or `fri` and change `status` to `scheduled` when ready.

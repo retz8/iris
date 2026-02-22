@@ -22,9 +22,7 @@ If the file is empty (`{}`) or does not exist, continue with no warnings.
 
 ## Step 2 — Search for Trending OSS
 
-Use WebSearch to find trending OSS repos for each language. Run multiple targeted queries across Hacker News, Reddit r/programming, GitHub Trending, and dev.to. Collect 5–7 real candidates per language.
-
-Use WebSearch freely across developer news sources — GitHub Trending, Reddit (r/programming, r/python, r/javascript, r/cpp), dev.to, tech blogs, release announcements, and anything else that surfaces active discussion. Do not limit yourself to a fixed list of sources.
+Use WebSearch freely across developer news sources — GitHub Trending, Reddit (r/programming, r/python, r/javascript, r/cpp), dev.to, tech blogs, release announcements, and anything else that surfaces active discussion. Collect 5–7 real candidates per language.
 
 For each candidate collect:
 - `owner/repo`
