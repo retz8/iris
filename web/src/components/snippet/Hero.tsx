@@ -6,7 +6,7 @@ function Hero() {
           AI writes code faster than you can read it.
         </h1>
         <p className="hero-subheadline">
-          Close the gap. One real snippet from trending repos.<br></br>Tue/Thu, 2 minutes.
+          Close the gap. One real snippet from trending repos.<br></br>Every Tue/Thu, 2 minutes.
         </p>
       </div>
     </section>
