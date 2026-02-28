@@ -2,6 +2,10 @@
 
 ## 2026-02-28
 
+**5-Track-B — Distribution Strategy** — Done
+
+Distribution strategy scoped to LinkedIn as the first launch channel. Created `docs/tasks/5-track-b-distribution-strategy/linkedin-post.md` — a LinkedIn post draft framing the AI code review bottleneck, positioning Snippet as a deliberate reading practice (Duolingo analogy), with hashtags #VibeCoding #ClaudeCode #CodeReview.
+
 **Hotfix — Reduce Send Cadence to Tue/Thu** — Done
 
 Reduced the newsletter send schedule from Mon/Wed/Fri (9 drafts/week) to Tue/Thu (6 drafts/week). All subscriber-facing surfaces and content generation skills updated.
