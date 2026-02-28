@@ -14,9 +14,9 @@ type ConfirmState =
 
 function getNextDeliveryDay(): string {
   const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  if (today === 0 || today === 1) return 'Monday';
-  if (today === 2 || today === 3) return 'Wednesday';
-  return 'Monday'; // Thu/Fri/Sat → next Monday
+  if (today <= 2) return 'Tuesday';  // Sun/Mon/Tue → Tuesday
+  if (today <= 4) return 'Thursday'; // Wed/Thu → Thursday
+  return 'Tuesday'; // Fri/Sat → next Tuesday
 }
 
 function ConfirmationPage() {

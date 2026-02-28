@@ -2,7 +2,7 @@
 
 **Workflow Name:** Newsletter Send
 **Trigger Type:** Schedule (Cron)
-**Purpose:** On Mon/Wed/Fri at 7am EST, read today's scheduled drafts and confirmed subscribers, build a one-email-per-subscriber send queue in a Code node, send directly via Gmail (no loop nodes), and mark drafts as sent.
+**Purpose:** On Tue/Thu at 7am EST, read today's scheduled drafts and confirmed subscribers, build a one-email-per-subscriber send queue in a Code node, send directly via Gmail (no loop nodes), and mark drafts as sent.
 
 ## Prerequisites
 
@@ -18,7 +18,7 @@
 ## Workflow Overview
 
 ```text
-Schedule Trigger (Mon/Wed/Fri 7:00 EST)
+Schedule Trigger (Tue/Thu 7:00 EST)
   ↓
 Code: Get Today Key (mon|wed|fri)
   ├─→ Google Sheets: Get Confirmed Subscribers
@@ -62,20 +62,20 @@ IF: Any Sheet Update Failures?
 ### Node 1: Schedule Trigger
 
 **Node Type:** `Schedule Trigger`
-**Purpose:** Fire on Mon/Wed/Fri at 7am EST
+**Purpose:** Fire on Tue/Thu at 7am EST
 
 **Configuration:**
 1. Add Schedule Trigger node to canvas
 2. Configure parameters:
    - **Trigger Rule:** Cron
-   - **Expression:** `0 7 * * 1,3,5`
+   - **Expression:** `0 7 * * 2,4`
 
 ---
 
 ### Node 2: Code - Get Today Key
 
 **Node Type:** `Code`
-**Purpose:** Produce the day key (`mon`, `wed`, or `fri`) used by the draft filter downstream
+**Purpose:** Produce the day key (`tue` or `thu`) used by the draft filter downstream
 
 **Configuration:**
 1. Add Code node after Node 1
@@ -90,7 +90,7 @@ const today = days[new Date().getDay()];
 return [{ json: { today, run_ts: new Date().toISOString() } }];
 ```
 
-**Output:** `{ today: "mon" | "wed" | "fri", run_ts: "<ISO timestamp>" }`
+**Output:** `{ today: "tue" | "thu", run_ts: "<ISO timestamp>" }`
 
 ---
 

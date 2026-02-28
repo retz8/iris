@@ -247,7 +247,7 @@ function SignupForm() {
               {isSubmitting ? 'Subscribing...' : 'Send me snippets'}
             </button>
 
-            <p className="privacy-note">A snippet per language, three times a week.</p>
+            <p className="privacy-note">A snippet per language, twice a week.</p>
           </form>
         )}
       </div>

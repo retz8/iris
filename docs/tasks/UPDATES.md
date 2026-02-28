@@ -1,5 +1,17 @@
 # Task Updates
 
+## 2026-02-28
+
+**Hotfix — Reduce Send Cadence to Tue/Thu** — Done
+
+Reduced the newsletter send schedule from Mon/Wed/Fri (9 drafts/week) to Tue/Thu (6 drafts/week). All subscriber-facing surfaces and content generation skills updated.
+
+Landing page (`web/`): `Hero.tsx` subheadline updated to `Tue/Thu`; `SignupForm.tsx` privacy note changed to `twice a week`; `index.html` meta descriptions (3 tags) changed to `twice a week`; `ConfirmationPage.tsx` `getNextDeliveryDay()` logic updated to return `Tuesday`/`Thursday`.
+
+Skills A/B/C updated to reflect 2 repos per language (6 total) instead of 3 (9 total): `discover-oss-candidates` description, Step 4 pick prompts, and Step 5 file format trimmed to 2 repos; `find-snippet-candidates` sub-agent count and display template trimmed to 2 repos; `generate-snippet-draft` all per-repo counts, Step 7 preview, Step 8/9/10, and Completion block updated to 2. Sub-agents (`snippet-repo-explorer`, `snippet-html-generator`) unchanged — both are per-item and need no modification.
+
+`workflow-send-newsletter.md`: Node 1 cron expression changed from `0 7 * * 1,3,5` to `0 7 * * 2,4`; all documentation references to Mon/Wed/Fri updated to Tue/Thu; Node 2 output comment updated to `"tue" | "thu"`. Node 6 and Node 7 code unchanged — both are schedule-agnostic and process whatever drafts are scheduled for the current day.
+
 ## 2026-02-22
 
 **Hotfix — Automate Newsletter Content Generation** — Done

@@ -65,6 +65,7 @@ Phase 5 (parallel)
 Hotfixes (out-of-band, between phases)
   hotfix-remove-issue-number-from-subject — remove #[ISSUE_NUMBER] from newsletter email subject line [DONE]
   hotfix-automate-content-generation — Claude Code skill to automate Sunday newsletter draft generation + JSON archive
+  hotfix-reduce-send-cadence — reduce newsletter send days from Mon/Wed/Fri to Tue/Thu (6 drafts/week instead of 9) [DONE]
 ```
 
 Each phase waits for all tracks in the previous phase to be marked COMPLETE in `UPDATES.md` before starting.
