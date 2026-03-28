@@ -1,0 +1,200 @@
+{
+  "rowboatlabs/rowboat": {
+    "count": 1,
+    "snippets": [
+      "rowboatlabs/rowboat/blob/main/apps/x/packages/core/src/knowledge/graph_state.ts"
+    ]
+  },
+  "ChromeDevTools/chrome-devtools-mcp": {
+    "count": 1,
+    "snippets": [
+      "ChromeDevTools/chrome-devtools-mcp/blob/main/src/WaitForHelper.ts"
+    ]
+  },
+  "ComposioHQ/composio": {
+    "count": 1,
+    "snippets": [
+      "ComposioHQ/composio/blob/next/ts/packages/core/src/utils/crypto.ts"
+    ]
+  },
+  "p-e-w/heretic": {
+    "count": 1,
+    "snippets": [
+      "p-e-w/heretic/blob/master/src/heretic/evaluator.py"
+    ]
+  },
+  "freemocap/freemocap": {
+    "count": 1,
+    "snippets": [
+      "freemocap/freemocap/blob/main/freemocap/core_processes/capture_volume_calibration/by_camera_reprojection_filtering.py"
+    ]
+  },
+  "roboflow/trackers": {
+    "count": 1,
+    "snippets": [
+      "roboflow/trackers/blob/develop/trackers/core/bytetrack/tracker.py"
+    ]
+  },
+  "alibaba/zvec": {
+    "count": 1,
+    "snippets": [
+      "alibaba/zvec/blob/main/src/ailego/container/bloom_filter.h"
+    ]
+  },
+  "ggml-org/llama.cpp": {
+    "count": 1,
+    "snippets": [
+      "ggml-org/llama.cpp/blob/master/src/llama-kv-cells.h"
+    ]
+  },
+  "simdjson/simdjson": {
+    "count": 1,
+    "snippets": [
+      "simdjson/simdjson/blob/master/src/from_chars.cpp"
+    ]
+  },
+  "elysiajs/elysia": {
+    "count": 1,
+    "snippets": [
+      "elysiajs/elysia/blob/main/src/compose.ts"
+    ]
+  },
+  "web-infra-dev/rspack": {
+    "count": 1,
+    "snippets": [
+      "web-infra-dev/rspack/blob/main/packages/rspack/src/builtin-plugin/DefinePlugin.ts"
+    ]
+  },
+  "LadybirdBrowser/ladybird": {
+    "count": 1,
+    "snippets": [
+      "LadybirdBrowser/ladybird/blob/master/AK/BitmapView.h"
+    ]
+  },
+  "ClickHouse/ClickHouse": {
+    "count": 1,
+    "snippets": [
+      "ClickHouse/ClickHouse/blob/master/src/AggregateFunctions/AggregateFunctionAnyHeavy.cpp"
+    ]
+  },
+  "astral-sh/ty": {
+    "count": 1,
+    "snippets": [
+      "astral-sh/ty/blob/main/python/ty/__main__.py"
+    ]
+  },
+  "block/goose": {
+    "count": 1,
+    "snippets": [
+      "block/goose/blob/main/scripts/provider-error-proxy/proxy.py"
+    ]
+  },
+  "alibaba/OpenSandbox": {
+    "count": 1,
+    "snippets": [
+      "alibaba/OpenSandbox/blob/main/sdks/sandbox/python/src/opensandbox/adapters/converter/sandbox_model_converter.py"
+    ]
+  },
+  "LMCache/LMCache": {
+    "count": 1,
+    "snippets": [
+      "LMCache/LMCache/blob/dev/lmcache/v1/token_database.py"
+    ]
+  },
+  "grab/cursor-talk-to-figma-mcp": {
+    "count": 1,
+    "snippets": [
+      "grab/cursor-talk-to-figma-mcp/blob/main/src/talk_to_figma_mcp/server.ts"
+    ]
+  },
+  "FlowiseAI/Flowise": {
+    "count": 1,
+    "snippets": [
+      "FlowiseAI/Flowise/blob/main/packages/server/src/utils/domainValidation.ts"
+    ]
+  },
+  "NVlabs/GR00T-WholeBodyControl": {
+    "count": 1,
+    "snippets": [
+      "NVlabs/GR00T-WholeBodyControl/blob/main/gear_sonic_deploy/src/g1/g1_deploy_onnx_ref/src/state_logger.cpp"
+    ]
+  },
+  "ml-explore/mlx": {
+    "count": 1,
+    "snippets": [
+      "ml-explore/mlx/blob/main/mlx/graph_utils.cpp"
+    ]
+  },
+  "microsoft/BitNet": {
+    "count": 1,
+    "snippets": [
+      "microsoft/BitNet/blob/main/utils/generate-dummy-bitnet-model.py"
+    ]
+  },
+  "inclusionAI/AReaL": {
+    "count": 1,
+    "snippets": [
+      "inclusionAI/AReaL/blob/main/areal/infra/rpc/rtensor.py"
+    ]
+  },
+  "promptfoo/promptfoo": {
+    "count": 1,
+    "snippets": [
+      "promptfoo/promptfoo/blob/main/src/assertions/ngrams.ts"
+    ]
+  },
+  "web-infra-dev/midscene": {
+    "count": 1,
+    "snippets": [
+      "web-infra-dev/midscene/blob/main/packages/core/src/ai-model/conversation-history.ts"
+    ]
+  },
+  "google/flatbuffers": {
+    "count": 1,
+    "snippets": [
+      "google/flatbuffers/blob/master/include/flatbuffers/verifier.h"
+    ]
+  },
+  "ai-dynamo/nixl": {
+    "count": 1,
+    "snippets": [
+      "ai-dynamo/nixl/blob/main/src/infra/nixl_descriptors.cpp"
+    ]
+  },
+  "cloudflare/workerd": {
+    "count": 1,
+    "snippets": [
+      "cloudflare/workerd/blob/main/src/workerd/io/io-gate.c++"
+    ]
+  },
+  "google/googletest": {
+    "count": 1,
+    "snippets": [
+      "google/googletest/blob/main/googlemock/src/gmock-spec-builders.cc"
+    ]
+  },
+  "microsoft/TypeScript": {
+    "count": 1,
+    "snippets": [
+      "microsoft/TypeScript/blob/main/src/compiler/symbolWalker.ts"
+    ]
+  },
+  "n8n-io/n8n": {
+    "count": 1,
+    "snippets": [
+      "n8n-io/n8n/blob/master/packages/workflow/src/workflow-checksum.ts"
+    ]
+  },
+  "karpathy/autoresearch": {
+    "count": 1,
+    "snippets": [
+      "karpathy/autoresearch/blob/master/prepare.py"
+    ]
+  },
+  "bytedance/deer-flow": {
+    "count": 1,
+    "snippets": [
+      "bytedance/deer-flow/blob/main/backend/app/channels/manager.py"
+    ]
+  }
+}

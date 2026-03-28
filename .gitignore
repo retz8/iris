@@ -18,12 +18,14 @@ dist/
 .github/prompts
 .github/skills
 
-# .claude
-.claude/
+# .claude — ignore local settings, track skills and agents
+.claude/settings.local.json
 .agents/
 skills-lock.json
 
 # secrets
 backend/secrets.txt
 
-snippet/n8n-workflows/content
+# snippet content — ignore generated output, track pipeline files
+snippet/n8n-workflows/content/html-drafts/
+snippet/n8n-workflows/content/drafts.json
