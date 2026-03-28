@@ -3,7 +3,7 @@
 Issue: #7
 Date: 2026-03-28
 Language: C_Cpp
-Status: PENDING_SELECTION
+Status: COMPLETED
 
 ## Repo 1 — duckdb/duckdb
 
