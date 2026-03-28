@@ -196,5 +196,41 @@
     "snippets": [
       "bytedance/deer-flow/blob/main/backend/app/channels/manager.py"
     ]
+  },
+  "TauricResearch/TradingAgents": {
+    "count": 1,
+    "snippets": [
+      "TauricResearch/TradingAgents/blob/main/tradingagents/agents/utils/memory.py"
+    ]
+  },
+  "666ghj/MiroFish": {
+    "count": 1,
+    "snippets": [
+      "666ghj/MiroFish/blob/main/backend/app/utils/retry.py"
+    ]
+  },
+  "supermemoryai/supermemory": {
+    "count": 1,
+    "snippets": [
+      "supermemoryai/supermemory/blob/main/apps/web/hooks/use-document-mutations.ts"
+    ]
+  },
+  "ruvnet/ruflo": {
+    "count": 1,
+    "snippets": [
+      "ruvnet/ruflo/blob/main/v3/src/task-execution/domain/Task.ts"
+    ]
+  },
+  "duckdb/duckdb": {
+    "count": 1,
+    "snippets": [
+      "duckdb/duckdb/blob/main/src/execution/aggregate_hashtable.cpp"
+    ]
+  },
+  "systemd/systemd": {
+    "count": 1,
+    "snippets": [
+      "systemd/systemd/blob/main/src/core/job.c"
+    ]
   }
 }
