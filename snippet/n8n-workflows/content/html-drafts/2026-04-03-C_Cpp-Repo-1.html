@@ -1,0 +1,137 @@
+Subject: Can you read this #8 C/C++: Symmetric 3x3 eigendecomposition solver
+
+---
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;">[[<span style="color:#795e26;">nodiscard</span>]] <span style="color:#267f99;">Eigen3x3</span>
+<span style="color:#795e26;">eigen_symmetric_3x3_jacobi</span>(
+    <span style="color:#0000ff;">const</span> std::<span style="color:#267f99;">array</span>&lt;<span style="color:#267f99;">float</span>, 9&gt;&amp; <span style="color:#001080;">Ain</span>) {
+
+    std::<span style="color:#267f99;">array</span>&lt;<span style="color:#267f99;">float</span>, 9&gt; <span style="color:#001080;">A</span> = <span style="color:#001080;">Ain</span>;
+    std::<span style="color:#267f99;">array</span>&lt;<span style="color:#267f99;">float</span>, 9&gt; <span style="color:#001080;">V</span> = {
+        <span style="color:#098658;">1.0f</span>, <span style="color:#098658;">0.0f</span>, <span style="color:#098658;">0.0f</span>,
+        <span style="color:#098658;">0.0f</span>, <span style="color:#098658;">1.0f</span>, <span style="color:#098658;">0.0f</span>,
+        <span style="color:#098658;">0.0f</span>, <span style="color:#098658;">0.0f</span>, <span style="color:#098658;">1.0f</span>,
+    };
+
+    <span style="color:#af00db;">for</span> (<span style="color:#0000ff;">int</span> <span style="color:#001080;">iter</span> = <span style="color:#098658;">0</span>;
+         <span style="color:#001080;">iter</span> &lt; <span style="color:#001080;">kJacobiIterations</span>;
+         ++<span style="color:#001080;">iter</span>) {
+        <span style="color:#6a9955;">// find largest off-diagonal entry</span>
+        <span style="color:#0000ff;">int</span> <span style="color:#001080;">p</span> = <span style="color:#098658;">0</span>, <span style="color:#001080;">q</span> = <span style="color:#098658;">1</span>;
+        <span style="color:#267f99;">float</span> <span style="color:#001080;">max_abs</span> = std::<span style="color:#795e26;">abs</span>(<span style="color:#001080;">A</span>[<span style="color:#098658;">1</span>]);
+        <span style="color:#af00db;">if</span> (std::<span style="color:#795e26;">abs</span>(<span style="color:#001080;">A</span>[<span style="color:#098658;">2</span>]) &gt; <span style="color:#001080;">max_abs</span>) {
+            <span style="color:#001080;">p</span> = <span style="color:#098658;">0</span>; <span style="color:#001080;">q</span> = <span style="color:#098658;">2</span>;
+            <span style="color:#001080;">max_abs</span> = std::<span style="color:#795e26;">abs</span>(<span style="color:#001080;">A</span>[<span style="color:#098658;">2</span>]);
+        }
+        <span style="color:#af00db;">if</span> (std::<span style="color:#795e26;">abs</span>(<span style="color:#001080;">A</span>[<span style="color:#098658;">5</span>]) &gt; <span style="color:#001080;">max_abs</span>) {
+            <span style="color:#001080;">p</span> = <span style="color:#098658;">1</span>; <span style="color:#001080;">q</span> = <span style="color:#098658;">2</span>;
+            <span style="color:#001080;">max_abs</span> = std::<span style="color:#795e26;">abs</span>(<span style="color:#001080;">A</span>[<span style="color:#098658;">5</span>]);
+        }
+        <span style="color:#af00db;">if</span> (<span style="color:#001080;">max_abs</span> &lt; <span style="color:#098658;">1e-12f</span>)
+            <span style="color:#af00db;">break</span>;
+
+        <span style="color:#0000ff;">const</span> <span style="color:#0000ff;">int</span> <span style="color:#001080;">pp</span> = <span style="color:#098658;">3</span> * <span style="color:#001080;">p</span> + <span style="color:#001080;">p</span>;
+        <span style="color:#0000ff;">const</span> <span style="color:#0000ff;">int</span> <span style="color:#001080;">qq</span> = <span style="color:#098658;">3</span> * <span style="color:#001080;">q</span> + <span style="color:#001080;">q</span>;
+        <span style="color:#0000ff;">const</span> <span style="color:#0000ff;">int</span> <span style="color:#001080;">pq</span> = <span style="color:#098658;">3</span> * <span style="color:#001080;">p</span> + <span style="color:#001080;">q</span>;
+        <span style="color:#0000ff;">const</span> <span style="color:#267f99;">float</span> <span style="color:#001080;">app</span> = <span style="color:#001080;">A</span>[<span style="color:#001080;">pp</span>];
+        <span style="color:#0000ff;">const</span> <span style="color:#267f99;">float</span> <span style="color:#001080;">aqq</span> = <span style="color:#001080;">A</span>[<span style="color:#001080;">qq</span>];
+        <span style="color:#0000ff;">const</span> <span style="color:#267f99;">float</span> <span style="color:#001080;">apq</span> = <span style="color:#001080;">A</span>[<span style="color:#001080;">pq</span>];
+
+        <span style="color:#6a9955;">// numerically stable Givens angle</span>
+        <span style="color:#0000ff;">const</span> <span style="color:#267f99;">float</span> <span style="color:#001080;">tau</span> =
+            (<span style="color:#001080;">aqq</span> - <span style="color:#001080;">app</span>) / (<span style="color:#098658;">2.0f</span> * <span style="color:#001080;">apq</span>);
+        <span style="color:#0000ff;">const</span> <span style="color:#267f99;">float</span> <span style="color:#001080;">t</span> =
+            std::<span style="color:#795e26;">copysign</span>(<span style="color:#098658;">1.0f</span>, <span style="color:#001080;">tau</span>)
+            / (std::<span style="color:#795e26;">abs</span>(<span style="color:#001080;">tau</span>)
+               + std::<span style="color:#795e26;">sqrt</span>(
+                   <span style="color:#098658;">1.0f</span> + <span style="color:#001080;">tau</span> * <span style="color:#001080;">tau</span>));
+        <span style="color:#0000ff;">const</span> <span style="color:#267f99;">float</span> <span style="color:#001080;">c</span> =
+            <span style="color:#098658;">1.0f</span>
+            / std::<span style="color:#795e26;">sqrt</span>(<span style="color:#098658;">1.0f</span> + <span style="color:#001080;">t</span> * <span style="color:#001080;">t</span>);
+        <span style="color:#0000ff;">const</span> <span style="color:#267f99;">float</span> <span style="color:#001080;">s</span> = <span style="color:#001080;">t</span> * <span style="color:#001080;">c</span>;
+
+        <span style="color:#6a9955;">// update off-diagonal rows</span>
+        <span style="color:#af00db;">for</span> (<span style="color:#0000ff;">int</span> <span style="color:#001080;">k</span> = <span style="color:#098658;">0</span>; <span style="color:#001080;">k</span> &lt; <span style="color:#098658;">3</span>; ++<span style="color:#001080;">k</span>) {
+            <span style="color:#af00db;">if</span> (<span style="color:#001080;">k</span> == <span style="color:#001080;">p</span> || <span style="color:#001080;">k</span> == <span style="color:#001080;">q</span>)
+                <span style="color:#af00db;">continue</span>;
+            <span style="color:#0000ff;">const</span> <span style="color:#267f99;">float</span> <span style="color:#001080;">akp</span> =
+                <span style="color:#001080;">A</span>[<span style="color:#098658;">3</span>*<span style="color:#001080;">k</span> + <span style="color:#001080;">p</span>];
+            <span style="color:#0000ff;">const</span> <span style="color:#267f99;">float</span> <span style="color:#001080;">akq</span> =
+                <span style="color:#001080;">A</span>[<span style="color:#098658;">3</span>*<span style="color:#001080;">k</span> + <span style="color:#001080;">q</span>];
+            <span style="color:#001080;">A</span>[<span style="color:#098658;">3</span>*<span style="color:#001080;">k</span> + <span style="color:#001080;">p</span>] =
+                <span style="color:#001080;">c</span>*<span style="color:#001080;">akp</span> - <span style="color:#001080;">s</span>*<span style="color:#001080;">akq</span>;
+            <span style="color:#001080;">A</span>[<span style="color:#098658;">3</span>*<span style="color:#001080;">p</span> + <span style="color:#001080;">k</span>] = <span style="color:#001080;">A</span>[<span style="color:#098658;">3</span>*<span style="color:#001080;">k</span> + <span style="color:#001080;">p</span>];
+            <span style="color:#001080;">A</span>[<span style="color:#098658;">3</span>*<span style="color:#001080;">k</span> + <span style="color:#001080;">q</span>] =
+                <span style="color:#001080;">s</span>*<span style="color:#001080;">akp</span> + <span style="color:#001080;">c</span>*<span style="color:#001080;">akq</span>;
+            <span style="color:#001080;">A</span>[<span style="color:#098658;">3</span>*<span style="color:#001080;">q</span> + <span style="color:#001080;">k</span>] = <span style="color:#001080;">A</span>[<span style="color:#098658;">3</span>*<span style="color:#001080;">k</span> + <span style="color:#001080;">q</span>];
+        }
+
+        <span style="color:#6a9955;">// update diagonal entries</span>
+        <span style="color:#001080;">A</span>[<span style="color:#001080;">pp</span>] = <span style="color:#001080;">c</span>*<span style="color:#001080;">c</span>*<span style="color:#001080;">app</span>
+            - <span style="color:#098658;">2.0f</span>*<span style="color:#001080;">s</span>*<span style="color:#001080;">c</span>*<span style="color:#001080;">apq</span>
+            + <span style="color:#001080;">s</span>*<span style="color:#001080;">s</span>*<span style="color:#001080;">aqq</span>;
+        <span style="color:#001080;">A</span>[<span style="color:#001080;">qq</span>] = <span style="color:#001080;">s</span>*<span style="color:#001080;">s</span>*<span style="color:#001080;">app</span>
+            + <span style="color:#098658;">2.0f</span>*<span style="color:#001080;">s</span>*<span style="color:#001080;">c</span>*<span style="color:#001080;">apq</span>
+            + <span style="color:#001080;">c</span>*<span style="color:#001080;">c</span>*<span style="color:#001080;">aqq</span>;
+        <span style="color:#001080;">A</span>[<span style="color:#001080;">pq</span>] = <span style="color:#098658;">0.0f</span>;
+        <span style="color:#001080;">A</span>[<span style="color:#098658;">3</span>*<span style="color:#001080;">q</span> + <span style="color:#001080;">p</span>] = <span style="color:#098658;">0.0f</span>;
+
+        <span style="color:#6a9955;">// accumulate rotation in V</span>
+        <span style="color:#af00db;">for</span> (<span style="color:#0000ff;">int</span> <span style="color:#001080;">k</span> = <span style="color:#098658;">0</span>; <span style="color:#001080;">k</span> &lt; <span style="color:#098658;">3</span>; ++<span style="color:#001080;">k</span>) {
+            <span style="color:#0000ff;">const</span> <span style="color:#267f99;">float</span> <span style="color:#001080;">vkp</span> =
+                <span style="color:#001080;">V</span>[<span style="color:#098658;">3</span>*<span style="color:#001080;">k</span> + <span style="color:#001080;">p</span>];
+            <span style="color:#0000ff;">const</span> <span style="color:#267f99;">float</span> <span style="color:#001080;">vkq</span> =
+                <span style="color:#001080;">V</span>[<span style="color:#098658;">3</span>*<span style="color:#001080;">k</span> + <span style="color:#001080;">q</span>];
+            <span style="color:#001080;">V</span>[<span style="color:#098658;">3</span>*<span style="color:#001080;">k</span> + <span style="color:#001080;">p</span>] =
+                <span style="color:#001080;">c</span>*<span style="color:#001080;">vkp</span> - <span style="color:#001080;">s</span>*<span style="color:#001080;">vkq</span>;
+            <span style="color:#001080;">V</span>[<span style="color:#098658;">3</span>*<span style="color:#001080;">k</span> + <span style="color:#001080;">q</span>] =
+                <span style="color:#001080;">s</span>*<span style="color:#001080;">vkp</span> + <span style="color:#001080;">c</span>*<span style="color:#001080;">vkq</span>;
+        }
+    }
+
+    <span style="color:#267f99;">Eigen3x3</span> <span style="color:#001080;">out</span>;
+    <span style="color:#001080;">out</span>.<span style="color:#001080;">values</span>  = {<span style="color:#001080;">A</span>[<span style="color:#098658;">0</span>], <span style="color:#001080;">A</span>[<span style="color:#098658;">4</span>], <span style="color:#001080;">A</span>[<span style="color:#098658;">8</span>]};
+    <span style="color:#001080;">out</span>.<span style="color:#001080;">vectors</span> = <span style="color:#001080;">V</span>;
+    <span style="color:#af00db;">return</span> <span style="color:#795e26;">sort_eigendecomposition</span>(<span style="color:#001080;">out</span>);
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Iteratively diagonalizes a 3x3 symmetric matrix by locating the largest off-diagonal element each sweep, computing a numerically stable Givens rotation angle, applying the rotation to zero that element, and accumulating rotations into an eigenvector matrix.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Decomposes each Gaussian splat's 3x3 covariance matrix into eigenvalues and eigenvectors during scene simplification — the eigenvalues encode the splat's scale along each axis, which the simplifier uses to decide which splats can be merged or removed.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The Givens angle uses copysign(1, tau) / (|tau| + sqrt(1 + tau^2)) instead of the textbook atan2 formula — this avoids catastrophic cancellation when two diagonal entries are nearly equal, which is the common case for near-spherical Gaussian splats.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/MrNeRF/LichtFeld-Studio" style="color:#0969da;text-decoration:none;">MrNeRF/LichtFeld-Studio</a> — <a href="https://github.com/MrNeRF/LichtFeld-Studio/blob/master/src/core/splat_simplify.cpp" style="color:#0969da;text-decoration:none;">src/core/splat_simplify.cpp</a>. A native desktop application for training, inspecting, editing, and exporting 3D Gaussian Splatting scenes — used by researchers and 3D artists to reconstruct photorealistic 3D environments from photograph collections using modern GPU-accelerated splatting techniques.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

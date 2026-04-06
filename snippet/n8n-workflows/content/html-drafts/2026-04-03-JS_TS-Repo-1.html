@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">export</span> <span style="color:#0000ff;">function</span> <span style="color:#795e26;">checkMergeConflicts</span>(
+  <span style="color:#001080;">workerBranch</span>: <span style="color:#267f99;">string</span>,
+  <span style="color:#001080;">baseBranch</span>: <span style="color:#267f99;">string</span>,
+  <span style="color:#001080;">repoRoot</span>: <span style="color:#267f99;">string</span>
+): <span style="color:#267f99;">string</span>[] {
+  <span style="color:#795e26;">validateBranchName</span>(<span style="color:#001080;">workerBranch</span>);
+  <span style="color:#795e26;">validateBranchName</span>(<span style="color:#001080;">baseBranch</span>);
+
+  <span style="color:#af00db;">try</span> {
+    <span style="color:#795e26;">execFileSync</span>(
+      <span style="color:#a31515;">'git'</span>,
+      [
+        <span style="color:#a31515;">'merge-tree'</span>, <span style="color:#a31515;">'--write-tree'</span>,
+        <span style="color:#001080;">baseBranch</span>, <span style="color:#001080;">workerBranch</span>,
+      ],
+      {
+        cwd: <span style="color:#001080;">repoRoot</span>,
+        encoding: <span style="color:#a31515;">'utf-8'</span>,
+        stdio: [<span style="color:#a31515;">'pipe'</span>, <span style="color:#a31515;">'pipe'</span>, <span style="color:#a31515;">'pipe'</span>],
+      }
+    );
+    <span style="color:#af00db;">return</span> [];
+  } <span style="color:#af00db;">catch</span> (<span style="color:#001080;">err</span>: <span style="color:#0000ff;">unknown</span>) {
+    <span style="color:#0000ff;">const</span> <span style="color:#001080;">error</span> = <span style="color:#001080;">err</span> <span style="color:#0000ff;">as</span> {
+      status?: <span style="color:#267f99;">number</span>;
+      stdout?: <span style="color:#267f99;">string</span>;
+    };
+    <span style="color:#af00db;">if</span> (
+      <span style="color:#001080;">error</span>.status === <span style="color:#098658;">1</span> &amp;&amp;
+      <span style="color:#0000ff;">typeof</span> <span style="color:#001080;">error</span>.stdout === <span style="color:#a31515;">'string'</span>
+    ) {
+      <span style="color:#0000ff;">const</span> <span style="color:#001080;">lines</span> =
+        <span style="color:#001080;">error</span>.stdout.<span style="color:#795e26;">split</span>(<span style="color:#a31515;">'\n'</span>);
+      <span style="color:#0000ff;">const</span> <span style="color:#001080;">conflicts</span>: <span style="color:#267f99;">string</span>[] = [];
+      <span style="color:#af00db;">for</span> (<span style="color:#0000ff;">const</span> <span style="color:#001080;">line</span> <span style="color:#0000ff;">of</span> <span style="color:#001080;">lines</span>) {
+        <span style="color:#0000ff;">const</span> <span style="color:#001080;">match</span> = <span style="color:#001080;">line</span>.<span style="color:#795e26;">match</span>(
+          /^CONFLICT\s.*?:\s+.*?\s+in\s+(.+)$/
+        );
+        <span style="color:#af00db;">if</span> (<span style="color:#001080;">match</span>)
+          <span style="color:#001080;">conflicts</span>.<span style="color:#795e26;">push</span>(<span style="color:#001080;">match</span>[<span style="color:#098658;">1</span>].<span style="color:#795e26;">trim</span>());
+      }
+      <span style="color:#af00db;">return</span> <span style="color:#001080;">conflicts</span>.length &gt; <span style="color:#098658;">0</span>
+        ? <span style="color:#001080;">conflicts</span>
+        : [<span style="color:#a31515;">'(merge-tree reported conflicts)'</span>];
+    }
+    <span style="color:#6a9955;">// fall through to heuristic</span>
+  }
+
+  <span style="color:#6a9955;">// Fallback: file-overlap heuristic</span>
+  <span style="color:#6a9955;">// for Git &lt; 2.38</span>
+  <span style="color:#0000ff;">const</span> <span style="color:#001080;">mergeBase</span> = <span style="color:#795e26;">execFileSync</span>(
+    <span style="color:#a31515;">'git'</span>,
+    [
+      <span style="color:#a31515;">'merge-base'</span>,
+      <span style="color:#001080;">baseBranch</span>, <span style="color:#001080;">workerBranch</span>,
+    ],
+    {
+      cwd: <span style="color:#001080;">repoRoot</span>,
+      encoding: <span style="color:#a31515;">'utf-8'</span>,
+      stdio: [<span style="color:#a31515;">'pipe'</span>, <span style="color:#a31515;">'pipe'</span>, <span style="color:#a31515;">'pipe'</span>],
+    }
+  ).<span style="color:#795e26;">trim</span>();
+
+  <span style="color:#0000ff;">const</span> <span style="color:#001080;">baseDiff</span> = <span style="color:#795e26;">execFileSync</span>(
+    <span style="color:#a31515;">'git'</span>,
+    [
+      <span style="color:#a31515;">'diff'</span>, <span style="color:#a31515;">'--name-only'</span>,
+      <span style="color:#001080;">mergeBase</span>, <span style="color:#001080;">baseBranch</span>,
+    ],
+    {
+      cwd: <span style="color:#001080;">repoRoot</span>,
+      encoding: <span style="color:#a31515;">'utf-8'</span>,
+      stdio: [<span style="color:#a31515;">'pipe'</span>, <span style="color:#a31515;">'pipe'</span>, <span style="color:#a31515;">'pipe'</span>],
+    }
+  ).<span style="color:#795e26;">trim</span>();
+
+  <span style="color:#0000ff;">const</span> <span style="color:#001080;">workerDiff</span> = <span style="color:#795e26;">execFileSync</span>(
+    <span style="color:#a31515;">'git'</span>,
+    [
+      <span style="color:#a31515;">'diff'</span>, <span style="color:#a31515;">'--name-only'</span>,
+      <span style="color:#001080;">mergeBase</span>, <span style="color:#001080;">workerBranch</span>,
+    ],
+    {
+      cwd: <span style="color:#001080;">repoRoot</span>,
+      encoding: <span style="color:#a31515;">'utf-8'</span>,
+      stdio: [<span style="color:#a31515;">'pipe'</span>, <span style="color:#a31515;">'pipe'</span>, <span style="color:#a31515;">'pipe'</span>],
+    }
+  ).<span style="color:#795e26;">trim</span>();
+
+  <span style="color:#af00db;">if</span> (!<span style="color:#001080;">baseDiff</span> || !<span style="color:#001080;">workerDiff</span>) <span style="color:#af00db;">return</span> [];
+
+  <span style="color:#0000ff;">const</span> <span style="color:#001080;">baseFiles</span> = <span style="color:#0000ff;">new</span> <span style="color:#267f99;">Set</span>(
+    <span style="color:#001080;">baseDiff</span>.<span style="color:#795e26;">split</span>(<span style="color:#a31515;">'\n'</span>).<span style="color:#795e26;">filter</span>(<span style="color:#001080;">f</span> => <span style="color:#001080;">f</span>)
+  );
+  <span style="color:#0000ff;">const</span> <span style="color:#001080;">workerFiles</span> = <span style="color:#001080;">workerDiff</span>
+    .<span style="color:#795e26;">split</span>(<span style="color:#a31515;">'\n'</span>)
+    .<span style="color:#795e26;">filter</span>(<span style="color:#001080;">f</span> => <span style="color:#001080;">f</span>);
+
+  <span style="color:#af00db;">return</span> <span style="color:#001080;">workerFiles</span>.<span style="color:#795e26;">filter</span>(
+    <span style="color:#001080;">f</span> => <span style="color:#001080;">baseFiles</span>.<span style="color:#795e26;">has</span>(<span style="color:#001080;">f</span>)
+  );
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Probes two branches for merge conflicts using git merge-tree --write-tree, parses CONFLICT lines from its stderr-like exit output, and falls back to a file-overlap heuristic via git merge-base and git diff --name-only when the host Git version lacks the newer command.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Guards the multi-agent merge step — before the orchestrator integrates a worker branch back into the base, this function decides whether an automatic merge is safe or whether the conflict list should block the merge and trigger manual resolution.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> When merge-tree exits with status 1 but its stdout contains no parseable CONFLICT lines, the function returns a synthetic sentinel string instead of an empty array, preventing a silent false-negative that would let a genuinely conflicting merge slip through uncaught.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/Yeachan-Heo/oh-my-claudecode" style="color:#0969da;text-decoration:none;">Yeachan-Heo/oh-my-claudecode</a> — <a href="https://github.com/Yeachan-Heo/oh-my-claudecode/blob/main/src/team/merge-coordinator.ts" style="color:#0969da;text-decoration:none;">src/team/merge-coordinator.ts</a>. A teams-first multi-agent orchestration plugin for Claude Code that coordinates parallel AI agents across git branches, letting developers run autonomous multi-step coding workflows from a single high-level prompt.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

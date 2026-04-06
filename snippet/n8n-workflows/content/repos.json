@@ -232,5 +232,41 @@
     "snippets": [
       "systemd/systemd/blob/main/src/core/job.c"
     ]
+  },
+  "microsoft/VibeVoice": {
+    "count": 1,
+    "snippets": [
+      "microsoft/VibeVoice/blob/main/vibevoice/modular/modeling_vibevoice_streaming_inference.py"
+    ]
+  },
+  "SakanaAI/AI-Scientist-v2": {
+    "count": 1,
+    "snippets": [
+      "SakanaAI/AI-Scientist-v2/blob/main/ai_scientist/treesearch/journal.py"
+    ]
+  },
+  "Yeachan-Heo/oh-my-claudecode": {
+    "count": 1,
+    "snippets": [
+      "Yeachan-Heo/oh-my-claudecode/blob/main/src/team/merge-coordinator.ts"
+    ]
+  },
+  "siddharthvaddem/openscreen": {
+    "count": 1,
+    "snippets": [
+      "siddharthvaddem/openscreen/blob/main/src/components/video-editor/videoPlayback/cursorFollowUtils.ts"
+    ]
+  },
+  "MrNeRF/LichtFeld-Studio": {
+    "count": 1,
+    "snippets": [
+      "MrNeRF/LichtFeld-Studio/blob/master/src/core/splat_simplify.cpp"
+    ]
+  },
+  "FreeCAD/FreeCAD": {
+    "count": 1,
+    "snippets": [
+      "FreeCAD/FreeCAD/blob/main/src/Base/Matrix.cpp"
+    ]
   }
 }

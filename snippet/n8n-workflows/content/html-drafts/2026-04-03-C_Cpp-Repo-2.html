@@ -1,0 +1,122 @@
+Subject: Can you read this #8 C/C++: Transformation matrix scale classifier
+
+---
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#267f99;">ScaleType</span> <span style="color:#795e26;">Matrix4D::hasScale</span>(
+    <span style="color:#267f99;">double</span> <span style="color:#001080;">tol</span>) <span style="color:#0000ff;">const</span>
+{
+    <span style="color:#0000ff;">const</span> <span style="color:#267f99;">double</span> <span style="color:#001080;">defaultTolerance</span> =
+        <span style="color:#098658;">1e-9</span>;
+    <span style="color:#6a9955;">// check for uniform scaling</span>
+    <span style="color:#6a9955;">//</span>
+    <span style="color:#6a9955;">// For a scaled rotation matrix it</span>
+    <span style="color:#6a9955;">// matters whether the scaling was</span>
+    <span style="color:#6a9955;">// applied from the left or right</span>
+    <span style="color:#6a9955;">// side. Only in case of uniform</span>
+    <span style="color:#6a9955;">// scaling it doesn't matter.</span>
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">tol</span> == <span style="color:#098658;">0.0</span>) {
+        <span style="color:#001080;">tol</span> = <span style="color:#001080;">defaultTolerance</span>;
+    }
+
+    <span style="color:#6a9955;">// check if absolute values are</span>
+    <span style="color:#6a9955;">// proportionally close</span>
+    <span style="color:#0000ff;">auto</span> <span style="color:#001080;">closeAbs</span> =
+        [&](<span style="color:#267f99;">double</span> <span style="color:#001080;">val_a</span>, <span style="color:#267f99;">double</span> <span style="color:#001080;">val_b</span>)
+    {
+        <span style="color:#267f99;">double</span> <span style="color:#001080;">abs_a</span> = <span style="color:#795e26;">fabs</span>(<span style="color:#001080;">val_a</span>);
+        <span style="color:#267f99;">double</span> <span style="color:#001080;">abs_b</span> = <span style="color:#795e26;">fabs</span>(<span style="color:#001080;">val_b</span>);
+        <span style="color:#af00db;">if</span> (<span style="color:#001080;">abs_b</span> > <span style="color:#001080;">abs_a</span>) {
+            <span style="color:#af00db;">return</span> (<span style="color:#001080;">abs_b</span> - <span style="color:#001080;">abs_a</span>)
+                / <span style="color:#001080;">abs_b</span> <= <span style="color:#001080;">tol</span>;
+        }
+        <span style="color:#af00db;">if</span> (<span style="color:#001080;">abs_a</span> > <span style="color:#001080;">abs_b</span>) {
+            <span style="color:#af00db;">return</span> (<span style="color:#001080;">abs_a</span> - <span style="color:#001080;">abs_b</span>)
+                / <span style="color:#001080;">abs_a</span> <= <span style="color:#001080;">tol</span>;
+        }
+        <span style="color:#af00db;">return</span> <span style="color:#0000ff;">true</span>;
+    };
+
+    <span style="color:#6a9955;">// get column vectors</span>
+    <span style="color:#267f99;">double</span> <span style="color:#001080;">dx</span> = <span style="color:#795e26;">getCol</span>(<span style="color:#098658;">0</span>).<span style="color:#795e26;">Sqr</span>();
+    <span style="color:#267f99;">double</span> <span style="color:#001080;">dy</span> = <span style="color:#795e26;">getCol</span>(<span style="color:#098658;">1</span>).<span style="color:#795e26;">Sqr</span>();
+    <span style="color:#267f99;">double</span> <span style="color:#001080;">dz</span> = <span style="color:#795e26;">getCol</span>(<span style="color:#098658;">2</span>).<span style="color:#795e26;">Sqr</span>();
+    <span style="color:#267f99;">double</span> <span style="color:#001080;">dxyz</span> =
+        <span style="color:#795e26;">sqrt</span>(<span style="color:#001080;">dx</span> * <span style="color:#001080;">dy</span> * <span style="color:#001080;">dz</span>);
+
+    <span style="color:#6a9955;">// get row vectors</span>
+    <span style="color:#267f99;">double</span> <span style="color:#001080;">du</span> = <span style="color:#795e26;">getRow</span>(<span style="color:#098658;">0</span>).<span style="color:#795e26;">Sqr</span>();
+    <span style="color:#267f99;">double</span> <span style="color:#001080;">dv</span> = <span style="color:#795e26;">getRow</span>(<span style="color:#098658;">1</span>).<span style="color:#795e26;">Sqr</span>();
+    <span style="color:#267f99;">double</span> <span style="color:#001080;">dw</span> = <span style="color:#795e26;">getRow</span>(<span style="color:#098658;">2</span>).<span style="color:#795e26;">Sqr</span>();
+    <span style="color:#267f99;">double</span> <span style="color:#001080;">duvw</span> =
+        <span style="color:#795e26;">sqrt</span>(<span style="color:#001080;">du</span> * <span style="color:#001080;">dv</span> * <span style="color:#001080;">dw</span>);
+
+    <span style="color:#267f99;">double</span> <span style="color:#001080;">d3</span> = <span style="color:#795e26;">determinant3</span>();
+
+    <span style="color:#6a9955;">// This could be e.g. a projection,</span>
+    <span style="color:#6a9955;">// shearing, etc.</span>
+    <span style="color:#af00db;">if</span> (!<span style="color:#795e26;">closeAbs</span>(<span style="color:#001080;">dxyz</span>, <span style="color:#001080;">d3</span>)
+        && !<span style="color:#795e26;">closeAbs</span>(<span style="color:#001080;">duvw</span>, <span style="color:#001080;">d3</span>)) {
+        <span style="color:#af00db;">return</span> <span style="color:#267f99;">ScaleType</span>::<span style="color:#001080;">Other</span>;
+    }
+
+    <span style="color:#af00db;">if</span> (<span style="color:#795e26;">closeAbs</span>(<span style="color:#001080;">duvw</span>, <span style="color:#001080;">d3</span>)
+        && (!<span style="color:#795e26;">closeAbs</span>(<span style="color:#001080;">du</span>, <span style="color:#001080;">dv</span>)
+            || !<span style="color:#795e26;">closeAbs</span>(<span style="color:#001080;">dv</span>, <span style="color:#001080;">dw</span>))) {
+        <span style="color:#af00db;">return</span>
+            <span style="color:#267f99;">ScaleType</span>::<span style="color:#001080;">NonUniformLeft</span>;
+    }
+
+    <span style="color:#af00db;">if</span> (<span style="color:#795e26;">closeAbs</span>(<span style="color:#001080;">dxyz</span>, <span style="color:#001080;">d3</span>)
+        && (!<span style="color:#795e26;">closeAbs</span>(<span style="color:#001080;">dx</span>, <span style="color:#001080;">dy</span>)
+            || !<span style="color:#795e26;">closeAbs</span>(<span style="color:#001080;">dy</span>, <span style="color:#001080;">dz</span>))) {
+        <span style="color:#af00db;">return</span>
+            <span style="color:#267f99;">ScaleType</span>::<span style="color:#001080;">NonUniformRight</span>;
+    }
+
+    <span style="color:#af00db;">if</span> (<span style="color:#795e26;">fabs</span>(<span style="color:#001080;">d3</span> - <span style="color:#098658;">1.0</span>) > <span style="color:#001080;">tol</span>) {
+        <span style="color:#af00db;">return</span> <span style="color:#267f99;">ScaleType</span>::<span style="color:#001080;">Uniform</span>;
+    }
+
+    <span style="color:#af00db;">return</span> <span style="color:#267f99;">ScaleType</span>::<span style="color:#001080;">NoScaling</span>;
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Classifies a 4D transformation matrix's scaling type by comparing column and row vector magnitudes against the 3x3 determinant, distinguishing uniform scaling, left-applied non-uniform, right-applied non-uniform, projection/shear, or no scaling at all.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Gates FreeCAD's geometry pipeline so downstream operations like Boolean cuts and fillet computations can choose the correct algorithm path — uniform scaling allows fast shortcuts, while non-uniform or shear scaling requires expensive general-case handling.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> Left vs. right non-uniform scaling is detected by checking whether row vectors or column vectors match the determinant — because M = R * S distorts columns while M = S * R distorts rows, so comparing sqrt(dx*dy*dz) against sqrt(du*dv*dw) reveals which side the scale was applied from.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/FreeCAD/FreeCAD" style="color:#0969da;text-decoration:none;">FreeCAD/FreeCAD</a> — <a href="https://github.com/FreeCAD/FreeCAD/blob/main/src/Base/Matrix.cpp" style="color:#0969da;text-decoration:none;">src/Base/Matrix.cpp</a>. The leading open-source parametric 3D CAD modeler used by mechanical engineers, architects, and hobbyists as a free alternative to SolidWorks and Fusion 360 — supports part design, assembly, FEM simulation, and BIM across all major operating systems.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

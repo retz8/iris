@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;margin:0 0 24px 0;"><span style="color:#6a9955;">@torch.no_grad()</span>
+<span style="color:#0000ff;">def</span> <span style="color:#795e26;">sample_speech_tokens</span>(
+    <span style="color:#0000ff;">self</span>, <span style="color:#001080;">condition</span>, <span style="color:#001080;">neg_condition</span>,
+    <span style="color:#001080;">cfg_scale</span>=<span style="color:#098658;">3.0</span>,
+):
+    <span style="color:#0000ff;">self</span>.<span style="color:#001080;">model</span>.<span style="color:#001080;">noise_scheduler</span>.<span style="color:#795e26;">set_timesteps</span>(
+        <span style="color:#0000ff;">self</span>.<span style="color:#001080;">ddpm_inference_steps</span>
+    )
+    <span style="color:#001080;">condition</span> = <span style="color:#001080;">torch</span>.<span style="color:#795e26;">cat</span>(
+        [<span style="color:#001080;">condition</span>, <span style="color:#001080;">neg_condition</span>], <span style="color:#001080;">dim</span>=<span style="color:#098658;">0</span>
+    ).<span style="color:#795e26;">to</span>(<span style="color:#0000ff;">self</span>.<span style="color:#001080;">model</span>.<span style="color:#001080;">prediction_head</span>.<span style="color:#001080;">device</span>)
+    <span style="color:#001080;">speech</span> = <span style="color:#001080;">torch</span>.<span style="color:#795e26;">randn</span>(
+        <span style="color:#001080;">condition</span>.<span style="color:#001080;">shape</span>[<span style="color:#098658;">0</span>],
+        <span style="color:#0000ff;">self</span>.<span style="color:#001080;">config</span>.<span style="color:#001080;">acoustic_vae_dim</span>,
+    ).<span style="color:#795e26;">to</span>(<span style="color:#001080;">condition</span>)
+
+    <span style="color:#af00db;">for</span> <span style="color:#001080;">t</span> <span style="color:#af00db;">in</span> (
+        <span style="color:#0000ff;">self</span>.<span style="color:#001080;">model</span>.<span style="color:#001080;">noise_scheduler</span>.<span style="color:#001080;">timesteps</span>
+    ):
+        <span style="color:#001080;">half</span> = <span style="color:#001080;">speech</span>[: <span style="color:#795e26;">len</span>(<span style="color:#001080;">speech</span>) // <span style="color:#098658;">2</span>]
+        <span style="color:#001080;">combined</span> = <span style="color:#001080;">torch</span>.<span style="color:#795e26;">cat</span>(
+            [<span style="color:#001080;">half</span>, <span style="color:#001080;">half</span>], <span style="color:#001080;">dim</span>=<span style="color:#098658;">0</span>
+        )
+        <span style="color:#001080;">eps</span> = <span style="color:#0000ff;">self</span>.<span style="color:#001080;">model</span>.<span style="color:#795e26;">prediction_head</span>(
+            <span style="color:#001080;">combined</span>,
+            <span style="color:#001080;">t</span>.<span style="color:#795e26;">repeat</span>(<span style="color:#001080;">combined</span>.<span style="color:#001080;">shape</span>[<span style="color:#098658;">0</span>]).<span style="color:#795e26;">to</span>(
+                <span style="color:#001080;">combined</span>
+            ),
+            <span style="color:#001080;">condition</span>=<span style="color:#001080;">condition</span>,
+        )
+        <span style="color:#001080;">cond_eps</span>, <span style="color:#001080;">uncond_eps</span> = <span style="color:#001080;">torch</span>.<span style="color:#795e26;">split</span>(
+            <span style="color:#001080;">eps</span>, <span style="color:#795e26;">len</span>(<span style="color:#001080;">eps</span>) // <span style="color:#098658;">2</span>, <span style="color:#001080;">dim</span>=<span style="color:#098658;">0</span>
+        )
+        <span style="color:#001080;">half_eps</span> = (
+            <span style="color:#001080;">uncond_eps</span>
+            + <span style="color:#001080;">cfg_scale</span> * (<span style="color:#001080;">cond_eps</span> - <span style="color:#001080;">uncond_eps</span>)
+        )
+        <span style="color:#001080;">eps</span> = <span style="color:#001080;">torch</span>.<span style="color:#795e26;">cat</span>(
+            [<span style="color:#001080;">half_eps</span>, <span style="color:#001080;">half_eps</span>], <span style="color:#001080;">dim</span>=<span style="color:#098658;">0</span>
+        )
+        <span style="color:#001080;">speech</span> = (
+            <span style="color:#0000ff;">self</span>.<span style="color:#001080;">model</span>.<span style="color:#001080;">noise_scheduler</span>.<span style="color:#795e26;">step</span>(
+                <span style="color:#001080;">eps</span>, <span style="color:#001080;">t</span>, <span style="color:#001080;">speech</span>
+            ).<span style="color:#001080;">prev_sample</span>
+        )
+
+    <span style="color:#af00db;">return</span> <span style="color:#001080;">speech</span>[: <span style="color:#795e26;">len</span>(<span style="color:#001080;">speech</span>) // <span style="color:#098658;">2</span>]</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Runs a full DDPM denoising loop with classifier-free guidance, blending conditional and unconditional noise predictions at each timestep to steer random Gaussian noise toward a coherent speech token embedding.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Bridges the text-understanding backbone and the acoustic decoder — once the model encodes a text prompt into a condition vector, this method generates the continuous speech tokens that the downstream vocoder converts into audible waveforms.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The tensor is doubled along the batch dimension so conditional and unconditional forward passes share a single prediction_head call, halving kernel-launch overhead on GPU — but only the first half of the final output is returned, silently discarding the duplicated unconditional trajectory.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/microsoft/VibeVoice" style="color:#0969da;text-decoration:none;">microsoft/VibeVoice</a> — <a href="https://github.com/microsoft/VibeVoice/blob/main/vibevoice/modular/modeling_vibevoice_streaming_inference.py" style="color:#0969da;text-decoration:none;">vibevoice/modular/modeling_vibevoice_streaming_inference.py</a>. Microsoft's open-source frontier voice AI family that includes TTS and ASR models operating at an ultra-low 7.5 Hz frame rate; it powers real-time voice applications and has drawn attention for its ability to synthesize multi-speaker speech up to 90 minutes long.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

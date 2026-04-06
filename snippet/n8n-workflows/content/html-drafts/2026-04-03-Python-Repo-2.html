@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">def</span> <span style="color:#795e26;">get_best_node</span>(
+    <span style="color:#001080;">self</span>,
+    <span style="color:#001080;">only_good</span>=<span style="color:#0000ff;">True</span>,
+    <span style="color:#001080;">use_val_metric_only</span>=<span style="color:#0000ff;">False</span>,
+    <span style="color:#001080;">cfg</span>=<span style="color:#0000ff;">None</span>,
+) -> <span style="color:#0000ff;">None</span> | <span style="color:#267f99;">Node</span>:
+    <span style="color:#a31515;">"""Return the best solution found
+    so far."""</span>
+    <span style="color:#af00db;">if</span> <span style="color:#001080;">only_good</span>:
+        <span style="color:#001080;">nodes</span> = <span style="color:#001080;">self</span>.<span style="color:#001080;">good_nodes</span>
+        <span style="color:#af00db;">if</span> <span style="color:#af00db;">not</span> <span style="color:#001080;">nodes</span>:
+            <span style="color:#af00db;">return</span> <span style="color:#0000ff;">None</span>
+    <span style="color:#af00db;">else</span>:
+        <span style="color:#001080;">nodes</span> = <span style="color:#001080;">self</span>.<span style="color:#001080;">nodes</span>
+
+    <span style="color:#af00db;">if</span> <span style="color:#001080;">use_val_metric_only</span>:
+        <span style="color:#af00db;">return</span> <span style="color:#795e26;">max</span>(
+            <span style="color:#001080;">nodes</span>, <span style="color:#001080;">key</span>=<span style="color:#0000ff;">lambda</span> <span style="color:#001080;">n</span>: <span style="color:#001080;">n</span>.<span style="color:#001080;">metric</span>
+        )
+
+    <span style="color:#af00db;">if</span> <span style="color:#795e26;">len</span>(<span style="color:#001080;">nodes</span>) == <span style="color:#098658;">1</span>:
+        <span style="color:#af00db;">return</span> <span style="color:#001080;">nodes</span>[<span style="color:#098658;">0</span>]
+
+    <span style="color:#6a9955;"># Create evaluation prompt for LLM</span>
+    <span style="color:#001080;">prompt</span> = {
+        <span style="color:#a31515;">"Introduction"</span>: (
+            <span style="color:#a31515;">"You are an experienced AI "</span>
+            <span style="color:#a31515;">"researcher evaluating different "</span>
+            <span style="color:#a31515;">"implementations of an experiment "</span>
+            <span style="color:#a31515;">"to select the best one. You "</span>
+            <span style="color:#a31515;">"should consider all aspects "</span>
+            <span style="color:#a31515;">"including performance metrics, "</span>
+            <span style="color:#a31515;">"training dynamics, generated "</span>
+            <span style="color:#a31515;">"plots quality."</span>
+        ),
+        <span style="color:#a31515;">"Task"</span>: (
+            <span style="color:#a31515;">"Select the best implementation "</span>
+            <span style="color:#a31515;">"from the candidates below, "</span>
+            <span style="color:#a31515;">"considering all available "</span>
+            <span style="color:#a31515;">"evidence. Avoid relying too "</span>
+            <span style="color:#a31515;">"heavily on the validation loss "</span>
+            <span style="color:#a31515;">"alone, because it may not be "</span>
+            <span style="color:#a31515;">"directly comparable across "</span>
+            <span style="color:#a31515;">"different objective functions "</span>
+            <span style="color:#a31515;">"or training details."</span>
+        ),
+        <span style="color:#a31515;">"Candidates"</span>: <span style="color:#a31515;">""</span>,
+    }
+    <span style="color:#af00db;">for</span> <span style="color:#001080;">node</span> <span style="color:#af00db;">in</span> <span style="color:#001080;">nodes</span>:
+        <span style="color:#af00db;">if</span> <span style="color:#af00db;">not</span> <span style="color:#001080;">node</span>.<span style="color:#001080;">is_seed_node</span>:
+            <span style="color:#001080;">candidate_info</span> = (
+                <span style="color:#a31515;">f"ID: </span>{<span style="color:#001080;">node</span>.<span style="color:#001080;">id</span>}<span style="color:#a31515;">\n"</span>
+                <span style="color:#a31515;">f"Metric: </span>{<span style="color:#795e26;">str</span>(<span style="color:#001080;">node</span>.<span style="color:#001080;">metric</span>)}<span style="color:#a31515;">\n"</span>
+                <span style="color:#af00db;">if</span> <span style="color:#001080;">node</span>.<span style="color:#001080;">metric</span>
+                <span style="color:#af00db;">else</span> (
+                    <span style="color:#a31515;">"N/A\n"</span>
+                    <span style="color:#a31515;">"Training Analysis: "</span>
+                    <span style="color:#a31515;">f"</span>{<span style="color:#001080;">node</span>.<span style="color:#001080;">analysis</span>}<span style="color:#a31515;">\n"</span>
+                    <span style="color:#af00db;">if</span> <span style="color:#795e26;">hasattr</span>(<span style="color:#001080;">node</span>, <span style="color:#a31515;">"analysis"</span>)
+                    <span style="color:#af00db;">else</span> <span style="color:#a31515;">"N/A\n"</span>
+                )
+            )
+            <span style="color:#001080;">prompt</span>[<span style="color:#a31515;">"Candidates"</span>] += (
+                <span style="color:#001080;">candidate_info</span>
+            )
+
+    <span style="color:#af00db;">try</span>:
+        <span style="color:#af00db;">if</span> <span style="color:#001080;">cfg</span> <span style="color:#af00db;">is</span> <span style="color:#0000ff;">None</span> <span style="color:#af00db;">or</span> <span style="color:#001080;">cfg</span>.<span style="color:#001080;">agent</span>.<span style="color:#795e26;">get</span>(
+            <span style="color:#a31515;">"select_node"</span>, <span style="color:#0000ff;">None</span>
+        ) <span style="color:#af00db;">is</span> <span style="color:#0000ff;">None</span>:
+            <span style="color:#001080;">model</span> = <span style="color:#a31515;">"gpt-4o"</span>
+            <span style="color:#001080;">temperature</span> = <span style="color:#098658;">0.3</span>
+        <span style="color:#af00db;">else</span>:
+            <span style="color:#001080;">model</span> = <span style="color:#001080;">cfg</span>.<span style="color:#001080;">agent</span>.<span style="color:#001080;">select_node</span>.<span style="color:#001080;">model</span>
+            <span style="color:#001080;">temperature</span> = (
+                <span style="color:#001080;">cfg</span>.<span style="color:#001080;">agent</span>.<span style="color:#001080;">select_node</span>.<span style="color:#001080;">temp</span>
+            )
+        <span style="color:#001080;">selection</span> = <span style="color:#795e26;">query</span>(
+            <span style="color:#001080;">system_message</span>=<span style="color:#001080;">prompt</span>,
+            <span style="color:#001080;">user_message</span>=<span style="color:#0000ff;">None</span>,
+            <span style="color:#001080;">func_spec</span>=<span style="color:#001080;">node_selection_spec</span>,
+            <span style="color:#001080;">model</span>=<span style="color:#001080;">model</span>,
+            <span style="color:#001080;">temperature</span>=<span style="color:#001080;">temperature</span>,
+        )
+        <span style="color:#001080;">selected_node</span> = <span style="color:#795e26;">next</span>(
+            (
+                <span style="color:#001080;">node</span>
+                <span style="color:#af00db;">for</span> <span style="color:#001080;">node</span> <span style="color:#af00db;">in</span> <span style="color:#001080;">nodes</span>
+                <span style="color:#af00db;">if</span> <span style="color:#795e26;">str</span>(<span style="color:#001080;">node</span>.<span style="color:#001080;">id</span>)
+                == <span style="color:#001080;">selection</span>[<span style="color:#a31515;">"selected_id"</span>]
+            ),
+            <span style="color:#0000ff;">None</span>,
+        )
+        <span style="color:#af00db;">if</span> <span style="color:#001080;">selected_node</span>:
+            <span style="color:#af00db;">return</span> <span style="color:#001080;">selected_node</span>
+        <span style="color:#af00db;">else</span>:
+            <span style="color:#af00db;">return</span> <span style="color:#795e26;">max</span>(
+                <span style="color:#001080;">nodes</span>,
+                <span style="color:#001080;">key</span>=<span style="color:#0000ff;">lambda</span> <span style="color:#001080;">n</span>: <span style="color:#001080;">n</span>.<span style="color:#001080;">metric</span>,
+            )
+    <span style="color:#af00db;">except</span> <span style="color:#267f99;">Exception</span> <span style="color:#af00db;">as</span> <span style="color:#001080;">e</span>:
+        <span style="color:#001080;">logger</span>.<span style="color:#795e26;">error</span>(
+            <span style="color:#a31515;">f"Error in LLM selection: </span>{<span style="color:#001080;">e</span>}<span style="color:#a31515;">"</span>
+        )
+        <span style="color:#af00db;">return</span> <span style="color:#795e26;">max</span>(
+            <span style="color:#001080;">nodes</span>, <span style="color:#001080;">key</span>=<span style="color:#0000ff;">lambda</span> <span style="color:#001080;">n</span>: <span style="color:#001080;">n</span>.<span style="color:#001080;">metric</span>
+        )</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Selects the highest-quality experiment node from a tree search journal by first attempting LLM-based multi-criteria evaluation of all candidates, then falling back to a simple metric-based maximum if the LLM call fails or returns an unrecognized ID.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Acts as the decision gate between exploration and exploitation in the agentic tree search — the experiment manager agent calls this to decide which prior run to branch from or report as the final result of a research campaign.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The LLM prompt explicitly warns against over-relying on validation loss because different candidate nodes may use different objective functions, meaning raw metric comparison across nodes is unreliable — so the fallback max(nodes, key=lambda n: n.metric) is intentionally a last resort, not the preferred strategy.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/SakanaAI/AI-Scientist-v2" style="color:#0969da;text-decoration:none;">SakanaAI/AI-Scientist-v2</a> — <a href="https://github.com/SakanaAI/AI-Scientist-v2/blob/main/ai_scientist/treesearch/journal.py" style="color:#0969da;text-decoration:none;">ai_scientist/treesearch/journal.py</a>. Sakana AI's end-to-end agentic system that autonomously generates hypotheses, runs experiments, and writes scientific papers; its v2 tree-search approach produced the first fully AI-authored paper accepted through peer review at an ICLR workshop.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>
