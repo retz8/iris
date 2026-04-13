@@ -268,5 +268,41 @@
     "snippets": [
       "FreeCAD/FreeCAD/blob/main/src/Base/Matrix.cpp"
     ]
+  },
+  "NousResearch/hermes-agent": {
+    "count": 1,
+    "snippets": [
+      "NousResearch/hermes-agent/blob/main/agent/retry_utils.py"
+    ]
+  },
+  "punitarani/fli": {
+    "count": 1,
+    "snippets": [
+      "punitarani/fli/blob/main/fli/search/flights.py"
+    ]
+  },
+  "immich-app/immich": {
+    "count": 1,
+    "snippets": [
+      "immich-app/immich/blob/main/server/src/services/smart-info.service.ts"
+    ]
+  },
+  "obsidianmd/obsidian-clipper": {
+    "count": 1,
+    "snippets": [
+      "obsidianmd/obsidian-clipper/blob/main/src/utils/resolver.ts"
+    ]
+  },
+  "google-ai-edge/LiteRT-LM": {
+    "count": 1,
+    "snippets": [
+      "google-ai-edge/LiteRT-LM/blob/main/runtime/components/constrained_decoding/constrained_decoder.cc"
+    ]
+  },
+  "mozilla-ai/llamafile": {
+    "count": 1,
+    "snippets": [
+      "mozilla-ai/llamafile/blob/main/llamafile/zip.c"
+    ]
   }
 }
