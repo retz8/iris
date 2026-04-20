@@ -304,5 +304,36 @@
     "snippets": [
       "mozilla-ai/llamafile/blob/main/llamafile/zip.c"
     ]
+  },
+  "shiyu-coder/Kronos": {
+    "count": 1,
+    "snippets": [
+      "shiyu-coder/Kronos/blob/master/model/module.py"
+    ]
+  },
+  "microsoft/markitdown": {
+    "count": 1,
+    "snippets": [
+      "microsoft/markitdown/blob/main/packages/markitdown/src/markitdown/converter_utils/docx/math/omml.py"
+    ]
+  },
+  "thedotmack/claude-mem": {
+    "count": 2,
+    "snippets": [
+      "thedotmack/claude-mem/blob/main/src/services/sync/ChromaSync.ts",
+      "thedotmack/claude-mem/blob/main/src/services/domain/ModeManager.ts"
+    ]
+  },
+  "imputnet/helium": {
+    "count": 1,
+    "snippets": [
+      "imputnet/helium/blob/main/patches/helium/core/add-native-bangs.patch"
+    ]
+  },
+  "nvidia-isaac/cuVSLAM": {
+    "count": 1,
+    "snippets": [
+      "nvidia-isaac/cuVSLAM/blob/main/libs/odometry/pose_prediction.cpp"
+    ]
   }
 }
