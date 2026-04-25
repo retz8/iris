@@ -3,7 +3,7 @@
 Issue: #11
 Date: 2026-04-24
 Language: C_Cpp
-Status: PENDING_SELECTION
+Status: COMPLETED
 
 ## Repo 1 — redpanda-data/redpanda
 
