@@ -335,5 +335,41 @@
     "snippets": [
       "nvidia-isaac/cuVSLAM/blob/main/libs/odometry/pose_prediction.cpp"
     ]
+  },
+  "google/adk-python": {
+    "count": 1,
+    "snippets": [
+      "google/adk-python/blob/main/src/google/adk/tools/_automatic_function_calling_util.py"
+    ]
+  },
+  "HKUDS/RAG-Anything": {
+    "count": 1,
+    "snippets": [
+      "HKUDS/RAG-Anything/blob/main/raganything/resilience.py"
+    ]
+  },
+  "onlook-dev/onlook": {
+    "count": 1,
+    "snippets": [
+      "onlook-dev/onlook/blob/main/packages/parser/src/template-node/map.ts"
+    ]
+  },
+  "KeygraphHQ/shannon": {
+    "count": 1,
+    "snippets": [
+      "KeygraphHQ/shannon/blob/main/apps/worker/src/temporal/workflows.ts"
+    ]
+  },
+  "redpanda-data/redpanda": {
+    "count": 1,
+    "snippets": [
+      "redpanda-data/redpanda/blob/dev/src/v/storage/batch_cache.cc"
+    ]
+  },
+  "google-deepmind/mujoco": {
+    "count": 1,
+    "snippets": [
+      "google-deepmind/mujoco/blob/main/src/engine/engine_util_sparse.c"
+    ]
   }
 }
