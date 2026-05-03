@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">function</span> <span style="color:#795e26;">escapeSandboxPath</span>(<span style="color:#001080;">path</span>: <span style="color:#267f99;">string</span>): <span style="color:#267f99;">string</span> {
+  <span style="color:#af00db;">return</span> <span style="color:#001080;">path</span>
+    .<span style="color:#795e26;">replace</span>(<span style="color:#a31515;">/\\/g</span>, <span style="color:#a31515;">'\\\\'</span>)
+    .<span style="color:#795e26;">replace</span>(<span style="color:#a31515;">/"/g</span>, <span style="color:#a31515;">'\"'</span>);
+}
+
+<span style="color:#0000ff;">export</span> <span style="color:#0000ff;">function</span> <span style="color:#795e26;">buildDarwinSandboxProfile</span>(
+  <span style="color:#001080;">sessionDir</span>: <span style="color:#267f99;">string</span>,
+  <span style="color:#001080;">options</span>?: <span style="color:#267f99;">FilesystemIsolationOptions</span>,
+): <span style="color:#267f99;">string</span> {
+  <span style="color:#0000ff;">const</span> <span style="color:#001080;">escapedRoot</span> =
+    <span style="color:#795e26;">escapeSandboxPath</span>(<span style="color:#795e26;">resolve</span>(<span style="color:#001080;">sessionDir</span>));
+  <span style="color:#0000ff;">const</span> <span style="color:#001080;">profileParts</span> = [
+    <span style="color:#a31515;">'(version 1)'</span>,
+    <span style="color:#a31515;">'(deny default)'</span>,
+    <span style="color:#a31515;">'(allow process*)'</span>,
+    <span style="color:#a31515;">'(allow sysctl-read)'</span>,
+    <span style="color:#a31515;">'(allow file-read*)'</span>,
+    <span style="color:#a31515;">'(deny file-write*)'</span>,
+    `<span style="color:#a31515;">(allow file-write* (subpath "${</span><span style="color:#001080;">escapedRoot</span><span style="color:#a31515;">}"))</span>`,
+  ];
+
+  <span style="color:#af00db;">if</span> (<span style="color:#001080;">options</span>?.<span style="color:#001080;">includeNetworkDeny</span>) {
+    <span style="color:#001080;">profileParts</span>.<span style="color:#795e26;">push</span>(<span style="color:#a31515;">'(deny network*)'</span>);
+  }
+
+  <span style="color:#af00db;">return</span> <span style="color:#001080;">profileParts</span>.<span style="color:#795e26;">join</span>(<span style="color:#a31515;">' '</span>);
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Generates a macOS <code>sandbox-exec</code> profile string that denies all writes by default, grants write access to a single session directory, and optionally appends a full network deny rule — joining all rules into a single-line profile.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Enforces the write perimeter for each AI agent session running on macOS in craft-agents-oss — any tool the agent executes is sandbox-jailed to its session directory, preventing runaway writes to the broader filesystem or home directory.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The profile allows <code>file-read*</code> globally but restricts <code>file-write*</code> to the session subpath — a read-anywhere, write-confined model that lets the agent read system libraries and config files without requiring an explicit allowlist of every path it might need to read.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/lukilabs/craft-agents-oss" style="color:#0969da;text-decoration:none;">lukilabs/craft-agents-oss</a> — <a href="https://github.com/lukilabs/craft-agents-oss/blob/main/packages/session-tools-core/src/runtime/filesystem-isolation.ts" style="color:#0969da;text-decoration:none;">packages/session-tools-core/src/runtime/filesystem-isolation.ts</a>. Craft Agents is an open-source AI agent framework built on Anthropic's Claude Agent SDK that connects GitHub, Linear, Slack, and local files through a desktop app with a document-centric workflow. Released by Lukilabs in May 2026 under Apache 2.0, it supports Claude, GPT-4, and other LLM providers.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

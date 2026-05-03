@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#001080;">_PATH</span> = <span style="color:#001080;">pathlib</span>.<span style="color:#001080;">Path</span>.<span style="color:#795e26;">home</span>() / <span style="color:#a31515;">"ga_keychain.enc"</span>
+<span style="color:#af00db;">try</span>: <span style="color:#001080;">_user</span> = <span style="color:#001080;">os</span>.<span style="color:#795e26;">getlogin</span>()
+<span style="color:#af00db;">except</span> <span style="color:#267f99;">OSError</span>: <span style="color:#001080;">_user</span> = <span style="color:#001080;">getpass</span>.<span style="color:#795e26;">getuser</span>()
+<span style="color:#001080;">_MASK</span> = <span style="color:#001080;">hashlib</span>.<span style="color:#795e26;">sha256</span>(
+    <span style="color:#0000ff;">f</span><span style="color:#a31515;">"{_user}@ga_keychain"</span>.<span style="color:#795e26;">encode</span>()).<span style="color:#795e26;">digest</span>()
+
+<span style="color:#0000ff;">def</span> <span style="color:#795e26;">_xor</span>(<span style="color:#001080;">data</span>: <span style="color:#267f99;">bytes</span>) -> <span style="color:#267f99;">bytes</span>:
+    <span style="color:#af00db;">return</span> <span style="color:#267f99;">bytes</span>(
+        <span style="color:#001080;">b</span> ^ <span style="color:#001080;">_MASK</span>[<span style="color:#001080;">i</span> % <span style="color:#795e26;">len</span>(<span style="color:#001080;">_MASK</span>)]
+        <span style="color:#af00db;">for</span> <span style="color:#001080;">i</span>, <span style="color:#001080;">b</span> <span style="color:#0000ff;">in</span> <span style="color:#795e26;">enumerate</span>(<span style="color:#001080;">data</span>))
+
+<span style="color:#0000ff;">class</span> <span style="color:#267f99;">SecretStr</span>:
+    <span style="color:#0000ff;">def</span> <span style="color:#795e26;">__init__</span>(<span style="color:#0000ff;">self</span>, <span style="color:#001080;">name</span>: <span style="color:#267f99;">str</span>, <span style="color:#001080;">val</span>: <span style="color:#267f99;">str</span>):
+        <span style="color:#0000ff;">self</span>.<span style="color:#001080;">_name</span>, <span style="color:#0000ff;">self</span>.<span style="color:#001080;">_val</span> = <span style="color:#001080;">name</span>, <span style="color:#001080;">val</span>
+    <span style="color:#0000ff;">def</span> <span style="color:#795e26;">use</span>(<span style="color:#0000ff;">self</span>) -> <span style="color:#267f99;">str</span>:
+        <span style="color:#af00db;">return</span> <span style="color:#0000ff;">self</span>.<span style="color:#001080;">_val</span>
+    <span style="color:#0000ff;">def</span> <span style="color:#795e26;">__repr__</span>(<span style="color:#0000ff;">self</span>):
+        <span style="color:#001080;">n</span> = <span style="color:#795e26;">len</span>(<span style="color:#0000ff;">self</span>.<span style="color:#001080;">_val</span>)
+        <span style="color:#af00db;">if</span> <span style="color:#001080;">n</span> <= <span style="color:#098658;">4</span>:    <span style="color:#001080;">preview</span> = <span style="color:#a31515;">'***'</span>
+        <span style="color:#af00db;">elif</span> <span style="color:#001080;">n</span> <= <span style="color:#098658;">16</span>: <span style="color:#001080;">preview</span> = (
+            <span style="color:#0000ff;">f</span><span style="color:#a31515;">"{self._val[:3]}···{self._val[-3:]}"</span>)
+        <span style="color:#af00db;">elif</span> <span style="color:#001080;">n</span> <= <span style="color:#098658;">40</span>: <span style="color:#001080;">preview</span> = (
+            <span style="color:#0000ff;">f</span><span style="color:#a31515;">"{self._val[:6]}···{self._val[-6:]} len={n}"</span>)
+        <span style="color:#af00db;">else</span>:         <span style="color:#001080;">preview</span> = (
+            <span style="color:#0000ff;">f</span><span style="color:#a31515;">"{self._val[:10]}···{self._val[-6:]} len={n}"</span>)
+        <span style="color:#af00db;">return</span> (<span style="color:#0000ff;">f</span><span style="color:#a31515;">"SecretStr({self._name}={preview})"</span>
+                <span style="color:#0000ff;">f</span><span style="color:#a31515;">" # .use() to get raw, do not print raw value"</span>)
+    <span style="color:#001080;">__str__</span> = <span style="color:#001080;">__repr__</span>
+
+<span style="color:#0000ff;">class</span> <span style="color:#267f99;">_Keys</span>:
+    <span style="color:#0000ff;">def</span> <span style="color:#795e26;">__init__</span>(<span style="color:#0000ff;">self</span>):
+        <span style="color:#0000ff;">self</span>.<span style="color:#001080;">_d</span> = {}
+        <span style="color:#af00db;">if</span> <span style="color:#001080;">_PATH</span>.<span style="color:#795e26;">exists</span>():
+            <span style="color:#af00db;">try</span>:
+                <span style="color:#0000ff;">self</span>.<span style="color:#001080;">_d</span> = <span style="color:#001080;">json</span>.<span style="color:#795e26;">loads</span>(
+                    <span style="color:#795e26;">_xor</span>(<span style="color:#001080;">_PATH</span>.<span style="color:#795e26;">read_bytes</span>()))
+            <span style="color:#af00db;">except</span> <span style="color:#267f99;">Exception</span> <span style="color:#0000ff;">as</span> <span style="color:#001080;">e</span>:
+                <span style="color:#795e26;">print</span>(<span style="color:#0000ff;">f</span><span style="color:#a31515;">"[keychain] WARNING: "</span>
+                      <span style="color:#0000ff;">f</span><span style="color:#a31515;">"failed to load {_PATH}: {e}"</span>)
+                <span style="color:#001080;">_PATH</span>.<span style="color:#795e26;">rename</span>(<span style="color:#001080;">_PATH</span>.<span style="color:#795e26;">with_suffix</span>(<span style="color:#a31515;">'.enc.bak'</span>))
+    <span style="color:#0000ff;">def</span> <span style="color:#795e26;">__getattr__</span>(<span style="color:#0000ff;">self</span>, <span style="color:#001080;">k</span>):
+        <span style="color:#af00db;">if</span> <span style="color:#001080;">k</span>.<span style="color:#795e26;">startswith</span>(<span style="color:#a31515;">'_'</span>): <span style="color:#af00db;">raise</span> <span style="color:#267f99;">AttributeError</span>(<span style="color:#001080;">k</span>)
+        <span style="color:#af00db;">if</span> <span style="color:#001080;">k</span> <span style="color:#0000ff;">not in</span> <span style="color:#0000ff;">self</span>.<span style="color:#001080;">_d</span>:
+            <span style="color:#af00db;">raise</span> <span style="color:#267f99;">KeyError</span>(<span style="color:#0000ff;">f</span><span style="color:#a31515;">"No secret: {k}"</span>)
+        <span style="color:#af00db;">return</span> <span style="color:#267f99;">SecretStr</span>(<span style="color:#001080;">k</span>, <span style="color:#0000ff;">self</span>.<span style="color:#001080;">_d</span>[<span style="color:#001080;">k</span>])
+    <span style="color:#0000ff;">def</span> <span style="color:#795e26;">set</span>(<span style="color:#0000ff;">self</span>, <span style="color:#001080;">k</span>, <span style="color:#001080;">v</span>=<span style="color:#0000ff;">None</span>, *, <span style="color:#001080;">file</span>=<span style="color:#0000ff;">None</span>):
+        <span style="color:#af00db;">if</span> <span style="color:#001080;">file</span>: <span style="color:#001080;">v</span> = <span style="color:#001080;">pathlib</span>.<span style="color:#267f99;">Path</span>(<span style="color:#001080;">file</span>).<span style="color:#795e26;">read_text</span>().<span style="color:#795e26;">strip</span>()
+        <span style="color:#0000ff;">self</span>.<span style="color:#001080;">_d</span>[<span style="color:#001080;">k</span>] = <span style="color:#001080;">v</span>
+        <span style="color:#001080;">_PATH</span>.<span style="color:#795e26;">write_bytes</span>(
+            <span style="color:#795e26;">_xor</span>(<span style="color:#001080;">json</span>.<span style="color:#795e26;">dumps</span>(<span style="color:#0000ff;">self</span>.<span style="color:#001080;">_d</span>).<span style="color:#795e26;">encode</span>()))
+    <span style="color:#0000ff;">def</span> <span style="color:#795e26;">ls</span>(<span style="color:#0000ff;">self</span>): <span style="color:#af00db;">return</span> <span style="color:#795e26;">list</span>(<span style="color:#0000ff;">self</span>.<span style="color:#001080;">_d</span>.<span style="color:#795e26;">keys</span>())
+
+<span style="color:#001080;">keys</span> = <span style="color:#267f99;">_Keys</span>()</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Encrypts named secrets to disk using XOR with a username-derived SHA-256 key mask, wraps each retrieved value in a <code>SecretStr</code> that redacts itself in repr based on secret length, and persists the store to <code>~/ga_keychain.enc</code>.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Keeps API keys off environment variables and out of log output for GenericAgent's tool calls — any LLM tool that needs a credential calls <code>.use()</code> to get the raw value without ever printing it.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The four length tiers in <code>SecretStr.__repr__</code> are calibrated to key type — short PINs show only <code>***</code>, medium tokens show head/tail chars, long API keys show head+tail+length — enough to visually identify a key without exposing enough characters to reconstruct it.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/lsdefine/GenericAgent" style="color:#0969da;text-decoration:none;">lsdefine/GenericAgent</a> — <a href="https://github.com/lsdefine/GenericAgent/blob/main/memory/keychain.py" style="color:#0969da;text-decoration:none;">memory/keychain.py</a>. GenericAgent is a self-evolving AI agent that grows a personal skill tree from a 3,300-line seed, achieving full local system control with 6× less token consumption than comparable frameworks. Developers use it to give an LLM persistent, reusable skills that accumulate across sessions.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

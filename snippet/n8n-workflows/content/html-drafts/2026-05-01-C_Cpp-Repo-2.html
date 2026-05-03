@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">inline</span> <span style="color:#0000ff;">void</span> <span style="color:#795e26;">runWalkPose</span>() {
+  <span style="color:#267f99;">Serial</span>.<span style="color:#795e26;">println</span>(<span style="color:#267f99;">F</span>(<span style="color:#a31515;">"WALK FWD"</span>));
+  <span style="color:#795e26;">setFaceWithMode</span>(<span style="color:#a31515;">"walk"</span>, <span style="color:#001080;">FACE_ANIM_ONCE</span>);
+  <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">R3</span>, <span style="color:#098658;">135</span>); <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">L3</span>, <span style="color:#098658;">45</span>);
+  <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">R2</span>, <span style="color:#098658;">100</span>); <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">L1</span>, <span style="color:#098658;">25</span>);
+  <span style="color:#af00db;">if</span> (!<span style="color:#795e26;">pressingCheck</span>(<span style="color:#a31515;">"forward"</span>, <span style="color:#001080;">frameDelay</span>)) <span style="color:#af00db;">return</span>;
+
+  <span style="color:#af00db;">for</span> (<span style="color:#0000ff;">int</span> <span style="color:#001080;">i</span> = <span style="color:#098658;">0</span>; <span style="color:#001080;">i</span> &lt; <span style="color:#001080;">walkCycles</span>; <span style="color:#001080;">i</span>++) {
+    <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">R3</span>, <span style="color:#098658;">135</span>); <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">L3</span>, <span style="color:#098658;">0</span>);
+    <span style="color:#af00db;">if</span> (!<span style="color:#795e26;">pressingCheck</span>(<span style="color:#a31515;">"forward"</span>, <span style="color:#001080;">frameDelay</span>)) <span style="color:#af00db;">return</span>;
+    <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">L4</span>, <span style="color:#098658;">135</span>); <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">L2</span>, <span style="color:#098658;">90</span>);
+    <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">R4</span>, <span style="color:#098658;">0</span>); <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">R1</span>, <span style="color:#098658;">180</span>);
+    <span style="color:#af00db;">if</span> (!<span style="color:#795e26;">pressingCheck</span>(<span style="color:#a31515;">"forward"</span>, <span style="color:#001080;">frameDelay</span>)) <span style="color:#af00db;">return</span>;
+    <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">R2</span>, <span style="color:#098658;">45</span>); <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">L1</span>, <span style="color:#098658;">90</span>);
+    <span style="color:#af00db;">if</span> (!<span style="color:#795e26;">pressingCheck</span>(<span style="color:#a31515;">"forward"</span>, <span style="color:#001080;">frameDelay</span>)) <span style="color:#af00db;">return</span>;
+    <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">R4</span>, <span style="color:#098658;">45</span>); <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">L4</span>, <span style="color:#098658;">180</span>);
+    <span style="color:#af00db;">if</span> (!<span style="color:#795e26;">pressingCheck</span>(<span style="color:#a31515;">"forward"</span>, <span style="color:#001080;">frameDelay</span>)) <span style="color:#af00db;">return</span>;
+    <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">R3</span>, <span style="color:#098658;">180</span>); <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">L3</span>, <span style="color:#098658;">45</span>);
+    <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">R2</span>, <span style="color:#098658;">90</span>); <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">L1</span>, <span style="color:#098658;">0</span>);
+    <span style="color:#af00db;">if</span> (!<span style="color:#795e26;">pressingCheck</span>(<span style="color:#a31515;">"forward"</span>, <span style="color:#001080;">frameDelay</span>)) <span style="color:#af00db;">return</span>;
+    <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">L2</span>, <span style="color:#098658;">135</span>); <span style="color:#795e26;">setServoAngle</span>(<span style="color:#001080;">R1</span>, <span style="color:#098658;">90</span>);
+    <span style="color:#af00db;">if</span> (!<span style="color:#795e26;">pressingCheck</span>(<span style="color:#a31515;">"forward"</span>, <span style="color:#001080;">frameDelay</span>)) <span style="color:#af00db;">return</span>;
+  }
+  <span style="color:#795e26;">runStandPose</span>(<span style="color:#098658;">1</span>);
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Drives all eight leg servos through a timed forward-walk cycle — setting each servo to a specific angle per gait frame, with a <code>pressingCheck</code> call between every frame that aborts the entire sequence if the forward input stops.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Encodes the physical walking gait as a choreographed sequence of servo positions for Sesame's four legs — each call moves a specific joint, and the overall interleaved pattern implements a trotting stride that lifts diagonal leg pairs in alternation.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> Every <code>pressingCheck</code> fires between individual servo-angle assignments rather than between full cycles — so if the user releases the forward button mid-stride, the gait halts at the nearest frame boundary rather than finishing the cycle, keeping the robot's pose from landing in an unstable intermediate state.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/dorianborian/sesame-robot" style="color:#0969da;text-decoration:none;">dorianborian/sesame-robot</a> — <a href="https://github.com/dorianborian/sesame-robot/blob/main/firmware/movement-sequences.h" style="color:#0969da;text-decoration:none;">firmware/movement-sequences.h</a>. Sesame is an open-source mini quadruped robot built on an ESP32 with eight servos, 3D-printed parts, WiFi control, and a total build cost around $60. Hobbyists and robotics learners use it as an affordable entry point for hands-on servo control, gait programming, and physical robotics experimentation.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

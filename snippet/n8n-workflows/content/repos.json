@@ -371,5 +371,41 @@
     "snippets": [
       "google-deepmind/mujoco/blob/main/src/engine/engine_util_sparse.c"
     ]
+  },
+  "lsdefine/GenericAgent": {
+    "count": 1,
+    "snippets": [
+      "lsdefine/GenericAgent/blob/main/memory/keychain.py"
+    ]
+  },
+  "AIDC-AI/Pixelle-Video": {
+    "count": 1,
+    "snippets": [
+      "AIDC-AI/Pixelle-Video/blob/main/pixelle_video/services/llm_service.py"
+    ]
+  },
+  "abhigyanpatwari/GitNexus": {
+    "count": 1,
+    "snippets": [
+      "abhigyanpatwari/GitNexus/blob/main/gitnexus/src/core/graph/graph.ts"
+    ]
+  },
+  "lukilabs/craft-agents-oss": {
+    "count": 1,
+    "snippets": [
+      "lukilabs/craft-agents-oss/blob/main/packages/session-tools-core/src/runtime/filesystem-isolation.ts"
+    ]
+  },
+  "FastFlowLM/FastFlowLM": {
+    "count": 1,
+    "snippets": [
+      "FastFlowLM/FastFlowLM/blob/main/src/include/prompt_cache.hpp"
+    ]
+  },
+  "dorianborian/sesame-robot": {
+    "count": 1,
+    "snippets": [
+      "dorianborian/sesame-robot/blob/main/firmware/movement-sequences.h"
+    ]
   }
 }
