@@ -1,1 +1,19 @@
-see_local_file
+[
+  {
+    "issue_number": 1,
+    "language": "JS/TS",
+    "week_date": "2026-02-22",
+    "repo_full_name": "rowboatlabs/rowboat",
+    "repository_url": "https://github.com/rowboatlabs/rowboat",
+    "repository_description": "Open-source AI coworker with persistent memory — riding the AI agents wave as the #1 trending TypeScript repo with 1,866 stars this week",
+    "source": "GitHub Trending TypeScript (this week)",
+    "file_path": "apps/x/packages/core/src/knowledge/graph_state.ts",
+    "snippet_url": "https://github.com/rowboatlabs/rowboat/blob/main/apps/x/packages/core/src/knowledge/graph_state.ts",
+    "file_intent": "Changed markdown file scanner",
+    "snippet": "export function getFilesToProcess(\n  sourceDir: string,\n  state: GraphState\n): string[] {\n  if (!fs.existsSync(sourceDir)) {\n    return [];\n  }\n\n  const filesToProcess: string[] = [];\n\n  // Recursive function to traverse directories\n  function traverseDirectory(dir: string) {\n    const entries = fs.readdirSync(dir);\n    for (const entry of entries) {\n      const fullPath = path.join(dir, entry);\n      const stat = fs.statSync(fullPath);\n      if (stat.isDirectory()) {\n        // Recurse into subdirectories\n        traverseDirectory(fullPath);\n      } else if (stat.isFile() && entry.endsWith('.md')) {\n        if (hasFileChanged(fullPath, state)) {\n          filesToProcess.push(fullPath);\n        }\n      }\n    }\n  }\n\n  traverseDirectory(sourceDir);\n  return filesToProcess;\n}",
+    "breakdown_what": "Recursively walks a source directory and returns only `.md` files where `hasFileChanged` returns true, skipping unchanged files to avoid redundant downstream work.",
+    "breakdown_responsibility": "Acts as the gating layer before knowledge graph ingestion — only files that changed since the last graph snapshot get re-indexed, keeping incremental sync cheap regardless of vault size.",
+    "breakdown_clever": "The function owns traversal but delegates change detection entirely to `hasFileChanged` — meaning the definition of \"changed\" (hash, timestamp, or content diff) is swappable without touching this traversal code.",
+    "project_context": "Rowboat is an open-source desktop AI coworker that turns your local Markdown notes into a persistent knowledge graph, using that accumulated context to automate tasks like email drafting and meeting prep.",
+    "created_at": "2026-02-23T10:25:40Z"
+  }]
