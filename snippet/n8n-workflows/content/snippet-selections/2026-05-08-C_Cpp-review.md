@@ -3,7 +3,7 @@
 Issue: #13
 Date: 2026-05-08
 Language: C/C++
-Status: PENDING_APPROVAL
+Status: COMPLETED
 
 ## Repo 1 — hyprwm/Hyprland
 

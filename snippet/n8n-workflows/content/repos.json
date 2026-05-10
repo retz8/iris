@@ -407,5 +407,41 @@
     "snippets": [
       "dorianborian/sesame-robot/blob/main/firmware/movement-sequences.h"
     ]
+  },
+  "cocoindex-io/cocoindex": {
+    "count": 1,
+    "snippets": [
+      "cocoindex-io/cocoindex/blob/main/python/cocoindex/_internal/runner.py"
+    ]
+  },
+  "Q00/ouroboros": {
+    "count": 1,
+    "snippets": [
+      "Q00/ouroboros/blob/main/src/ouroboros/orchestrator/policy.py"
+    ]
+  },
+  "bytedance/UI-TARS-desktop": {
+    "count": 1,
+    "snippets": [
+      "bytedance/UI-TARS-desktop/blob/main/packages/agent-infra/browser-use/src/dom/service.ts"
+    ]
+  },
+  "InsForge/InsForge": {
+    "count": 1,
+    "snippets": [
+      "InsForge/InsForge/blob/main/backend/src/services/auth/oauth-pkce.service.ts"
+    ]
+  },
+  "hyprwm/Hyprland": {
+    "count": 1,
+    "snippets": [
+      "hyprwm/Hyprland/blob/main/src/managers/animation/AnimationManager.cpp"
+    ]
+  },
+  "ikawrakow/ik_llama.cpp": {
+    "count": 1,
+    "snippets": [
+      "ikawrakow/ik_llama.cpp/blob/main/ggml/src/iqk/iqk_cpu_ops.cpp"
+    ]
   }
 }
