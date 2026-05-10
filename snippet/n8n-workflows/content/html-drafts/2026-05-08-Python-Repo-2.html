@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">def</span> <span style="color:#795e26;">evaluate_capability_policy</span>(
+    <span style="color:#001080;">graph</span>: <span style="color:#267f99;">CapabilityGraph</span>,
+    <span style="color:#001080;">context</span>: <span style="color:#267f99;">PolicyContext</span>,
+) -> <span style="color:#267f99;">tuple</span>[<span style="color:#267f99;">PolicyDecision</span>, ...]:
+    <span style="color:#a31515;">"""Evaluate visible/executable capability decisions."""</span>
+    <span style="color:#001080;">profile</span> = <span style="color:#001080;">_ROLE_PROFILES</span>[<span style="color:#001080;">context</span>.<span style="color:#001080;">session_role</span>]
+    <span style="color:#001080;">decisions</span>: <span style="color:#267f99;">list</span>[<span style="color:#267f99;">PolicyDecision</span>] = []
+
+    <span style="color:#af00db;">for</span> <span style="color:#001080;">descriptor</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">graph</span>.<span style="color:#001080;">capabilities</span>:
+        <span style="color:#001080;">reasons</span>: <span style="color:#267f99;">list</span>[<span style="color:#267f99;">str</span>] = []
+        <span style="color:#001080;">visible</span> = <span style="color:#795e26;">_is_mutation_allowed</span>(<span style="color:#001080;">descriptor</span>, <span style="color:#001080;">profile</span>)
+        <span style="color:#001080;">executable</span> = <span style="color:#001080;">visible</span>
+
+        <span style="color:#af00db;">if</span> <span style="color:#001080;">visible</span> <span style="color:#0000ff;">and</span> <span style="color:#0000ff;">not</span> <span style="color:#795e26;">_matches_role_selector</span>(
+            <span style="color:#001080;">descriptor</span>, <span style="color:#001080;">profile</span>
+        ):
+            <span style="color:#001080;">visible</span> = <span style="color:#0000ff;">False</span>
+            <span style="color:#001080;">executable</span> = <span style="color:#0000ff;">False</span>
+            <span style="color:#001080;">reasons</span>.<span style="color:#795e26;">append</span>(
+                <span style="color:#a31515;">f"{context.session_role.value} profile "</span>
+                <span style="color:#a31515;">f"does not include {descriptor.name}"</span>
+            )
+        <span style="color:#af00db;">elif</span> <span style="color:#0000ff;">not</span> <span style="color:#001080;">visible</span>:
+            <span style="color:#001080;">reasons</span>.<span style="color:#795e26;">append</span>(
+                <span style="color:#a31515;">f"mutation_class "</span>
+                <span style="color:#a31515;">f"{descriptor.semantics.mutation_class.value}"</span>
+                <span style="color:#a31515;">f" exceeds {context.session_role.value} policy"</span>
+            )
+
+        <span style="color:#af00db;">if</span> <span style="color:#001080;">descriptor</span>.<span style="color:#001080;">source_kind</span> <span style="color:#0000ff;">in</span> (
+            <span style="color:#001080;">_NON_EXECUTABLE_SOURCE_KINDS</span>
+        ):
+            <span style="color:#001080;">executable</span> = <span style="color:#0000ff;">False</span>
+            <span style="color:#001080;">reasons</span>.<span style="color:#795e26;">append</span>(
+                <span style="color:#a31515;">f"{descriptor.source_kind} requires live "</span>
+                <span style="color:#a31515;">f"provider discovery before execution"</span>
+            )
+
+        <span style="color:#001080;">decisions</span>.<span style="color:#795e26;">append</span>(
+            <span style="color:#795e26;">PolicyDecision</span>(
+                <span style="color:#001080;">stable_id</span>=<span style="color:#001080;">descriptor</span>.<span style="color:#001080;">stable_id</span>,
+                <span style="color:#001080;">name</span>=<span style="color:#001080;">descriptor</span>.<span style="color:#001080;">name</span>,
+                <span style="color:#001080;">visible</span>=<span style="color:#001080;">visible</span>,
+                <span style="color:#001080;">executable</span>=<span style="color:#001080;">executable</span>,
+                <span style="color:#001080;">approval_class</span>=(
+                    <span style="color:#001080;">descriptor</span>.<span style="color:#001080;">semantics</span>.<span style="color:#001080;">approval_class</span>
+                ),
+                <span style="color:#001080;">reasons</span>=<span style="color:#795e26;">tuple</span>(<span style="color:#001080;">reasons</span>),
+            )
+        )
+
+    <span style="color:#af00db;">return</span> <span style="color:#795e26;">tuple</span>(<span style="color:#001080;">decisions</span>)</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Iterates all capabilities in a graph, checking each against the session role's mutation policy and selector rules to produce a tuple of decisions flagging each capability as visible and/or executable.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Acts as the authorization gate between ouroboros's structured specification workflow and its AI runtime backends — ensuring agents see only the tools their role permits and cannot execute capabilities requiring runtime provider discovery.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> <code>visible</code> and <code>executable</code> start equal but can diverge: a capability that needs live provider discovery stays visible but non-executable, with a reason attached. The system surfaces restricted tools as inactive rather than hiding them — so the agent understands what exists but isn't available yet.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/Q00/ouroboros" style="color:#0969da;text-decoration:none;">Q00/ouroboros</a> — <a href="https://github.com/Q00/ouroboros/blob/main/src/ouroboros/orchestrator/policy.py" style="color:#0969da;text-decoration:none;">src/ouroboros/orchestrator/policy.py</a>. Ouroboros is a specification-first orchestration layer used by developers who want structured, reviewable AI agent workflows — it wraps runtimes like Claude Code or Codex CLI with an interview-seed-execute-evaluate loop that enforces intent clarity before any code gets written.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

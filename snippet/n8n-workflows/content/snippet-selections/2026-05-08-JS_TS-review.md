@@ -3,7 +3,7 @@
 Issue: #13
 Date: 2026-05-08
 Language: JS/TS
-Status: PENDING_APPROVAL
+Status: COMPLETED
 
 ## Repo 1 — bytedance/UI-TARS-desktop
 

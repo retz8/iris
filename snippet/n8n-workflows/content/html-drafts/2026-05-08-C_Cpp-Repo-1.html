@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">static</span> <span style="color:#267f99;">void</span> <span style="color:#795e26;">updateColorVariable</span>(
+    <span style="color:#267f99;">CAnimatedVariable</span>&lt;<span style="color:#267f99;">CHyprColor</span>&gt;&amp; <span style="color:#001080;">av</span>,
+    <span style="color:#0000ff;">const</span> <span style="color:#267f99;">float</span> <span style="color:#001080;">POINTY</span>,
+    <span style="color:#267f99;">bool</span> <span style="color:#001080;">warp</span> = <span style="color:#0000ff;">false</span>
+) {
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">warp</span> || <span style="color:#001080;">av</span>.<span style="color:#795e26;">value</span>() == <span style="color:#001080;">av</span>.<span style="color:#795e26;">goal</span>()) {
+        <span style="color:#001080;">av</span>.<span style="color:#795e26;">warp</span>(<span style="color:#0000ff;">true</span>, <span style="color:#0000ff;">false</span>);
+        <span style="color:#af00db;">return</span>;
+    }
+
+    <span style="color:#0000ff;">const</span> <span style="color:#0000ff;">auto</span>&amp; <span style="color:#001080;">L1</span> = <span style="color:#001080;">av</span>.<span style="color:#795e26;">begun</span>().<span style="color:#795e26;">asOkLab</span>();
+    <span style="color:#0000ff;">const</span> <span style="color:#0000ff;">auto</span>&amp; <span style="color:#001080;">L2</span> = <span style="color:#001080;">av</span>.<span style="color:#795e26;">goal</span>().<span style="color:#795e26;">asOkLab</span>();
+
+    <span style="color:#0000ff;">static</span> <span style="color:#0000ff;">const</span> <span style="color:#0000ff;">auto</span> <span style="color:#001080;">lerp</span> = [](
+        <span style="color:#0000ff;">const</span> <span style="color:#267f99;">float</span> <span style="color:#001080;">one</span>,
+        <span style="color:#0000ff;">const</span> <span style="color:#267f99;">float</span> <span style="color:#001080;">two</span>,
+        <span style="color:#0000ff;">const</span> <span style="color:#267f99;">float</span> <span style="color:#001080;">progress</span>
+    ) -&gt; <span style="color:#267f99;">float</span> {
+        <span style="color:#af00db;">return</span> <span style="color:#001080;">one</span> + ((<span style="color:#001080;">two</span> - <span style="color:#001080;">one</span>) * <span style="color:#001080;">progress</span>);
+    };
+
+    <span style="color:#0000ff;">const</span> <span style="color:#267f99;">Hyprgraphics::CColor</span> <span style="color:#001080;">lerped</span> =
+        <span style="color:#267f99;">Hyprgraphics::CColor::SOkLab</span>{
+            .<span style="color:#001080;">l</span> = <span style="color:#795e26;">lerp</span>(<span style="color:#001080;">L1</span>.<span style="color:#001080;">l</span>, <span style="color:#001080;">L2</span>.<span style="color:#001080;">l</span>, <span style="color:#001080;">POINTY</span>),
+            .<span style="color:#001080;">a</span> = <span style="color:#795e26;">lerp</span>(<span style="color:#001080;">L1</span>.<span style="color:#001080;">a</span>, <span style="color:#001080;">L2</span>.<span style="color:#001080;">a</span>, <span style="color:#001080;">POINTY</span>),
+            .<span style="color:#001080;">b</span> = <span style="color:#795e26;">lerp</span>(<span style="color:#001080;">L1</span>.<span style="color:#001080;">b</span>, <span style="color:#001080;">L2</span>.<span style="color:#001080;">b</span>, <span style="color:#001080;">POINTY</span>),
+        };
+
+    <span style="color:#001080;">av</span>.<span style="color:#795e26;">value</span>() = {
+        <span style="color:#001080;">lerped</span>,
+        <span style="color:#795e26;">lerp</span>(<span style="color:#001080;">av</span>.<span style="color:#795e26;">begun</span>().<span style="color:#001080;">a</span>, <span style="color:#001080;">av</span>.<span style="color:#795e26;">goal</span>().<span style="color:#001080;">a</span>, <span style="color:#001080;">POINTY</span>)
+    };
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Linearly blends an animated color from its starting value to its goal by interpolating L, a, b channels in OkLab perceptual color space and alpha separately, snapping immediately to goal if warp mode is active.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Drives color transitions for Hyprland's compositor animations — window tint fades, border color changes, and visual effects — ensuring each animation frame advances smoothly toward the target without abrupt jumps.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> Blending in OkLab rather than sRGB or HSL is the key choice. OkLab is perceptually uniform — equal numeric deltas produce equal perceived brightness shifts — so animated transitions avoid the mid-fade darkening or hue distortion that sRGB lerping causes on saturated UI colors.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/hyprwm/Hyprland" style="color:#0969da;text-decoration:none;">hyprwm/Hyprland</a> — <a href="https://github.com/hyprwm/Hyprland/blob/main/src/managers/animation/AnimationManager.cpp" style="color:#0969da;text-decoration:none;">src/managers/animation/AnimationManager.cpp</a>. Hyprland is a Wayland compositor used by Linux power users and ricing enthusiasts who want a dynamic tiling workflow with fluid animations and visual effects — it ranked second in desktop preference among Arch Linux users in the 2025 Arch survey, behind only KDE Plasma.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>
