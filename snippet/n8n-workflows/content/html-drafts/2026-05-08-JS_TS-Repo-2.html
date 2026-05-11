@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff">public</span> <span style="color:#0000ff">async</span> <span style="color:#795e26">exchangeCode</span>(
+  <span style="color:#001080">code</span>: <span style="color:#267f99">string</span>,
+  <span style="color:#001080">codeVerifier</span>: <span style="color:#267f99">string</span>
+): <span style="color:#267f99">Promise</span>&lt;<span style="color:#267f99">CreateSessionResponse</span>&gt; {
+  <span style="color:#0000ff">const</span> <span style="color:#001080">data</span> = <span style="color:#0000ff">this</span>.<span style="color:#001080">pkceCodes</span>.<span style="color:#795e26">get</span>(<span style="color:#001080">code</span>);
+  <span style="color:#af00db">if</span> (!<span style="color:#001080">data</span>) {
+    <span style="color:#001080">logger</span>.<span style="color:#795e26">warn</span>(
+      <span style="color:#a31515">'OAuth PKCE code not found or already used'</span>
+    );
+    <span style="color:#af00db">throw</span> <span style="color:#0000ff">new</span> <span style="color:#795e26">AppError</span>(
+      <span style="color:#a31515">'Invalid or expired code'</span>,
+      <span style="color:#098658">400</span>,
+      <span style="color:#001080">ERROR_CODES</span>.<span style="color:#001080">INVALID_INPUT</span>
+    );
+  }
+  <span style="color:#0000ff">this</span>.<span style="color:#001080">pkceCodes</span>.<span style="color:#795e26">delete</span>(<span style="color:#001080">code</span>);
+
+  <span style="color:#af00db">if</span> (<span style="color:#0000ff">new</span> <span style="color:#267f99">Date</span>() &gt; <span style="color:#001080">data</span>.<span style="color:#001080">expiresAt</span>) {
+    <span style="color:#001080">logger</span>.<span style="color:#795e26">warn</span>(<span style="color:#a31515">'OAuth PKCE code expired'</span>, {
+      <span style="color:#001080">provider</span>: <span style="color:#001080">data</span>.<span style="color:#001080">provider</span>,
+    });
+    <span style="color:#af00db">throw</span> <span style="color:#0000ff">new</span> <span style="color:#795e26">AppError</span>(
+      <span style="color:#a31515">'Invalid or expired code'</span>,
+      <span style="color:#098658">400</span>,
+      <span style="color:#001080">ERROR_CODES</span>.<span style="color:#001080">INVALID_INPUT</span>
+    );
+  }
+
+  <span style="color:#0000ff">const</span> <span style="color:#001080">computedChallenge</span> = <span style="color:#001080">crypto</span>
+    .<span style="color:#795e26">createHash</span>(<span style="color:#a31515">'sha256'</span>)
+    .<span style="color:#795e26">update</span>(<span style="color:#001080">codeVerifier</span>)
+    .<span style="color:#795e26">digest</span>(<span style="color:#a31515">'base64url'</span>);
+
+  <span style="color:#af00db">if</span> (<span style="color:#001080">computedChallenge</span> !== <span style="color:#001080">data</span>.<span style="color:#001080">codeChallenge</span>) {
+    <span style="color:#001080">logger</span>.<span style="color:#795e26">warn</span>(<span style="color:#a31515">'PKCE validation failed'</span>, {
+      <span style="color:#001080">provider</span>: <span style="color:#001080">data</span>.<span style="color:#001080">provider</span>,
+    });
+    <span style="color:#af00db">throw</span> <span style="color:#0000ff">new</span> <span style="color:#795e26">AppError</span>(
+      <span style="color:#a31515">'PKCE verification failed'</span>,
+      <span style="color:#098658">400</span>,
+      <span style="color:#001080">ERROR_CODES</span>.<span style="color:#001080">AUTH_UNAUTHORIZED</span>
+    );
+  }
+
+  <span style="color:#0000ff">const</span> <span style="color:#001080">authService</span> = <span style="color:#267f99">AuthService</span>.<span style="color:#795e26">getInstance</span>();
+  <span style="color:#0000ff">const</span> <span style="color:#001080">tokenManager</span> = <span style="color:#267f99">TokenManager</span>.<span style="color:#795e26">getInstance</span>();
+  <span style="color:#0000ff">const</span> <span style="color:#001080">user</span> = <span style="color:#af00db">await</span> <span style="color:#001080">authService</span>.<span style="color:#795e26">getUserSchemaById</span>(
+    <span style="color:#001080">data</span>.<span style="color:#001080">userId</span>
+  );
+  <span style="color:#af00db">if</span> (!<span style="color:#001080">user</span>) {
+    <span style="color:#001080">logger</span>.<span style="color:#795e26">error</span>(
+      <span style="color:#a31515">'User not found during PKCE exchange'</span>,
+      { <span style="color:#001080">userId</span>: <span style="color:#001080">data</span>.<span style="color:#001080">userId</span> }
+    );
+    <span style="color:#af00db">throw</span> <span style="color:#0000ff">new</span> <span style="color:#795e26">AppError</span>(
+      <span style="color:#a31515">'User not found'</span>,
+      <span style="color:#098658">404</span>,
+      <span style="color:#001080">ERROR_CODES</span>.<span style="color:#001080">NOT_FOUND</span>
+    );
+  }
+
+  <span style="color:#0000ff">const</span> <span style="color:#001080">accessToken</span> =
+    <span style="color:#001080">tokenManager</span>.<span style="color:#795e26">generateAccessToken</span>({
+      <span style="color:#001080">sub</span>: <span style="color:#001080">user</span>.<span style="color:#001080">id</span>,
+      <span style="color:#001080">email</span>: <span style="color:#001080">user</span>.<span style="color:#001080">email</span>,
+      <span style="color:#001080">role</span>: <span style="color:#a31515">'authenticated'</span>,
+    });
+
+  <span style="color:#001080">logger</span>.<span style="color:#795e26">info</span>(
+    <span style="color:#a31515">'OAuth PKCE code successfully exchanged'</span>,
+    { <span style="color:#001080">provider</span>: <span style="color:#001080">data</span>.<span style="color:#001080">provider</span> }
+  );
+  <span style="color:#af00db">return</span> { <span style="color:#001080">user</span>, <span style="color:#001080">accessToken</span> };
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Consumes an OAuth PKCE authorization code in one shot: deletes it on first access to prevent replay, checks expiry, recomputes the SHA-256 code challenge from the verifier, then issues a signed access token on success.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Implements the PKCE verification layer for InsForge's agent-facing auth flow, preventing authorization code interception attacks in agentic environments where a compromised redirect URI could hand an attacker a valid code.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> Deletion happens before the expiry check — an expired code is consumed and can never be replayed, even on failure. Reversing the order would open a window where an attacker with a known expired code could race parallel exchange requests against the deletion.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/InsForge/InsForge" style="color:#0969da;text-decoration:none;">InsForge/InsForge</a> — <a href="https://github.com/InsForge/InsForge/blob/main/backend/src/services/auth/oauth-pkce.service.ts" style="color:#0969da;text-decoration:none;">backend/src/services/auth/oauth-pkce.service.ts</a>. InsForge is an open-source, all-in-one backend platform built for coding agents — it gives AI agents structured MCP access to database provisioning, auth, storage, and compute so they can ship full-stack apps end-to-end without human intervention on backend setup.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>
