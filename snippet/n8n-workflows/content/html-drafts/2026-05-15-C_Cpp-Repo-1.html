@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#267f99;">int32_t</span> <span style="color:#267f99;">KeyMap</span>::<span style="color:#795e26;">findBestKey</span>(
+    <span style="color:#0000ff;">const</span> <span style="color:#267f99;">KeyEntryList</span> &amp;<span style="color:#001080;">entryList</span>,
+    <span style="color:#267f99;">KeyModifierMask</span> <span style="color:#001080;">desiredState</span>
+) <span style="color:#0000ff;">const</span>
+{
+  <span style="color:#6a9955;">// check for an item that can accommodate</span>
+  <span style="color:#6a9955;">// the desiredState exactly</span>
+  <span style="color:#af00db;">for</span> (<span style="color:#267f99;">int32_t</span> <span style="color:#001080;">i</span> = <span style="color:#098658;">0</span>;
+       <span style="color:#001080;">i</span> &lt; (<span style="color:#267f99;">int32_t</span>)<span style="color:#001080;">entryList</span>.<span style="color:#795e26;">size</span>(); ++<span style="color:#001080;">i</span>) {
+    <span style="color:#0000ff;">const</span> <span style="color:#267f99;">KeyItem</span> &amp;<span style="color:#001080;">item</span> = <span style="color:#001080;">entryList</span>[<span style="color:#001080;">i</span>].<span style="color:#795e26;">back</span>();
+    <span style="color:#af00db;">if</span> ((<span style="color:#001080;">item</span>.<span style="color:#001080;">m_required</span> &amp; <span style="color:#001080;">desiredState</span>)
+            == <span style="color:#001080;">item</span>.<span style="color:#001080;">m_required</span> &amp;&amp;
+        (<span style="color:#001080;">item</span>.<span style="color:#001080;">m_required</span> &amp; <span style="color:#001080;">desiredState</span>)
+            == (<span style="color:#001080;">item</span>.<span style="color:#001080;">m_sensitive</span> &amp; <span style="color:#001080;">desiredState</span>)) {
+      <span style="color:#af00db;">return</span> <span style="color:#001080;">i</span>;
+    }
+  }
+
+  <span style="color:#6a9955;">// choose the item that requires the fewest</span>
+  <span style="color:#6a9955;">// modifier changes</span>
+  <span style="color:#267f99;">int32_t</span> <span style="color:#001080;">bestCount</span> = <span style="color:#098658;">32</span>;
+  <span style="color:#267f99;">int32_t</span> <span style="color:#001080;">bestIndex</span> = -<span style="color:#098658;">1</span>;
+  <span style="color:#af00db;">for</span> (<span style="color:#267f99;">int32_t</span> <span style="color:#001080;">i</span> = <span style="color:#098658;">0</span>;
+       <span style="color:#001080;">i</span> &lt; (<span style="color:#267f99;">int32_t</span>)<span style="color:#001080;">entryList</span>.<span style="color:#795e26;">size</span>(); ++<span style="color:#001080;">i</span>) {
+    <span style="color:#0000ff;">const</span> <span style="color:#267f99;">KeyItem</span> &amp;<span style="color:#001080;">item</span> = <span style="color:#001080;">entryList</span>[<span style="color:#001080;">i</span>].<span style="color:#795e26;">back</span>();
+    <span style="color:#267f99;">KeyModifierMask</span> <span style="color:#001080;">change</span> =
+        ((<span style="color:#001080;">item</span>.<span style="color:#001080;">m_required</span> ^ <span style="color:#001080;">desiredState</span>)
+         &amp; <span style="color:#001080;">item</span>.<span style="color:#001080;">m_sensitive</span>);
+    <span style="color:#267f99;">int32_t</span> <span style="color:#001080;">n</span> = <span style="color:#795e26;">getNumModifiers</span>(<span style="color:#001080;">change</span>);
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">n</span> &lt; <span style="color:#001080;">bestCount</span>) {
+      <span style="color:#001080;">bestCount</span> = <span style="color:#001080;">n</span>;
+      <span style="color:#001080;">bestIndex</span> = <span style="color:#001080;">i</span>;
+    }
+  }
+
+  <span style="color:#af00db;">return</span> <span style="color:#001080;">bestIndex</span>;
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Searches a list of key-binding candidates for the best match to a target modifier state — first seeking a zero-cost exact match where required modifiers are already satisfied, then falling back to the candidate needing the fewest modifier-key transitions.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Used by Deskflow's input routing to pick which physical key sequence to synthesize when sending a keypress to a remote machine — choosing wrong here would inject unexpected Shift, Alt, or Control presses into the target computer's input stream.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The cost formula <code>(m_required ^ desiredState) &amp; m_sensitive</code> computes divergence with XOR, then masks to <code>m_sensitive</code> — so only modifier keys this binding actually cares about factor into the score. NumLock or ScrollLock state never inflates the fallback cost.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/deskflow/deskflow" style="color:#0969da;text-decoration:none;">deskflow/deskflow</a> — <a href="https://github.com/deskflow/deskflow/blob/master/src/lib/deskflow/KeyMap.cpp" style="color:#0969da;text-decoration:none;">src/lib/deskflow/KeyMap.cpp</a>. Deskflow is the open-source upstream of Synergy, a software KVM that lets one keyboard and mouse control multiple computers across Windows, macOS, and Linux over a local network. First created in 2001, it is used by developers who work with multiple machines on the same desk without needing hardware KVM switches.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

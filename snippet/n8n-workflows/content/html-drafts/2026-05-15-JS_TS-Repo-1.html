@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff">function</span> <span style="color:#795e26">getConditions</span>(
+  <span style="color:#001080">conditions</span>: <span style="color:#267f99">string</span>[],
+  <span style="color:#001080">isProduction</span>: <span style="color:#267f99">boolean</span>,
+  <span style="color:#001080">isRequire</span>: <span style="color:#267f99">boolean</span> | <span style="color:#0000ff">undefined</span>,
+) {
+  <span style="color:#0000ff">const</span> <span style="color:#001080">resolvedConditions</span> = <span style="color:#001080">conditions</span>.<span style="color:#795e26">map</span>(
+    (<span style="color:#001080">condition</span>) => {
+      <span style="color:#af00db">if</span> (<span style="color:#001080">condition</span> === <span style="color:#001080">DEV_PROD_CONDITION</span>) {
+        <span style="color:#af00db">return</span> <span style="color:#001080">isProduction</span>
+          ? <span style="color:#a31515">'production'</span>
+          : <span style="color:#a31515">'development'</span>
+      }
+      <span style="color:#af00db">return</span> <span style="color:#001080">condition</span>
+    },
+  )
+
+  <span style="color:#af00db">if</span> (<span style="color:#001080">isRequire</span>) {
+    <span style="color:#001080">resolvedConditions</span>.<span style="color:#795e26">push</span>(<span style="color:#a31515">'require'</span>)
+  } <span style="color:#af00db">else</span> {
+    <span style="color:#001080">resolvedConditions</span>.<span style="color:#795e26">push</span>(<span style="color:#a31515">'import'</span>)
+  }
+
+  <span style="color:#af00db">return</span> <span style="color:#001080">resolvedConditions</span>
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Expands a list of package resolution conditions by substituting the <code>DEV_PROD_CONDITION</code> placeholder with <code>'production'</code> or <code>'development'</code> based on build mode, then appends <code>'require'</code> or <code>'import'</code> based on the calling module format.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Called inside Vite's Rolldown resolver to build the exact condition array that determines which export map entry a package exposes — conditions decide whether a dependency serves its ESM or CJS build and whether dev or production code paths activate.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The <code>DEV_PROD_CONDITION</code> placeholder lets plugin authors write a single, environment-agnostic condition string. The expansion from placeholder to real value happens here at resolve time, invisible to the consumer — Vite plugin configs never need separate dev/prod condition lists.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/vitejs/vite" style="color:#0969da;text-decoration:none;">vitejs/vite</a> — <a href="https://github.com/vitejs/vite/blob/main/packages/vite/src/node/plugins/resolve.ts" style="color:#0969da;text-decoration:none;">packages/vite/src/node/plugins/resolve.ts</a>. Vite is the dominant JavaScript build tool for Vue, React, and Svelte ecosystems. Version 8 replaced both esbuild and Rollup with Rolldown, a Rust-based bundler delivering 10–30x faster builds while maintaining full backward compatibility with the Rollup plugin ecosystem.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

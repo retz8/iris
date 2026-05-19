@@ -443,5 +443,41 @@
     "snippets": [
       "ikawrakow/ik_llama.cpp/blob/main/ggml/src/iqk/iqk_cpu_ops.cpp"
     ]
+  },
+  "anthropics/financial-services": {
+    "count": 1,
+    "snippets": [
+      "anthropics/financial-services/blob/main/scripts/check.py"
+    ]
+  },
+  "github/spec-kit": {
+    "count": 1,
+    "snippets": [
+      "github/spec-kit/blob/main/src/specify_cli/workflows/expressions.py"
+    ]
+  },
+  "vitejs/vite": {
+    "count": 1,
+    "snippets": [
+      "vitejs/vite/blob/main/packages/vite/src/node/plugins/resolve.ts"
+    ]
+  },
+  "thesysdev/openui": {
+    "count": 1,
+    "snippets": [
+      "thesysdev/openui/blob/main/packages/lang-core/src/runtime/queryManager.ts"
+    ]
+  },
+  "deskflow/deskflow": {
+    "count": 1,
+    "snippets": [
+      "deskflow/deskflow/blob/master/src/lib/deskflow/KeyMap.cpp"
+    ]
+  },
+  "microsoft/WSL": {
+    "count": 1,
+    "snippets": [
+      "microsoft/WSL/blob/master/src/linux/plan9/p9scheduler.cpp"
+    ]
   }
 }

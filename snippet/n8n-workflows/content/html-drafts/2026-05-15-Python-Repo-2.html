@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">def</span> <span style="color:#795e26;">_resolve_dot_path</span>(<span style="color:#001080;">obj</span>: <span style="color:#267f99;">Any</span>, <span style="color:#001080;">path</span>: <span style="color:#267f99;">str</span>) -> <span style="color:#267f99;">Any</span>:
+    <span style="color:#a31515;">"""Resolve a dotted path like
+    ``steps.specify.output.file`` against *obj*.
+
+    Supports dict key access and list indexing
+    (e.g., ``task_list[0]``).
+    """</span>
+    <span style="color:#001080;">parts</span> = <span style="color:#001080;">path</span>.<span style="color:#795e26;">split</span>(<span style="color:#a31515;">"."</span>)
+    <span style="color:#001080;">current</span> = <span style="color:#001080;">obj</span>
+    <span style="color:#af00db;">for</span> <span style="color:#001080;">part</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">parts</span>:
+        <span style="color:#6a9955"># Handle list indexing: name[0]</span>
+        <span style="color:#001080;">idx_match</span> = <span style="color:#001080;">re</span>.<span style="color:#795e26;">match</span>(
+            <span style="color:#a31515;">r"^([\w-]+)\[(\d+)\]$"</span>, <span style="color:#001080;">part</span>
+        )
+        <span style="color:#af00db;">if</span> <span style="color:#001080;">idx_match</span>:
+            <span style="color:#001080;">key</span> = <span style="color:#001080;">idx_match</span>.<span style="color:#795e26;">group</span>(<span style="color:#098658;">1</span>)
+            <span style="color:#001080;">idx</span> = <span style="color:#795e26;">int</span>(<span style="color:#001080;">idx_match</span>.<span style="color:#795e26;">group</span>(<span style="color:#098658;">2</span>))
+            <span style="color:#af00db;">if</span> <span style="color:#0000ff;">isinstance</span>(<span style="color:#001080;">current</span>, <span style="color:#267f99;">dict</span>):
+                <span style="color:#001080;">current</span> = <span style="color:#001080;">current</span>.<span style="color:#795e26;">get</span>(<span style="color:#001080;">key</span>)
+            <span style="color:#af00db;">else</span>:
+                <span style="color:#af00db;">return</span> <span style="color:#0000ff;">None</span>
+            <span style="color:#af00db;">if</span> (
+                <span style="color:#0000ff;">isinstance</span>(<span style="color:#001080;">current</span>, <span style="color:#267f99;">list</span>)
+                <span style="color:#0000ff;">and</span> <span style="color:#098658;">0</span> <= <span style="color:#001080;">idx</span> < <span style="color:#795e26;">len</span>(<span style="color:#001080;">current</span>)
+            ):
+                <span style="color:#001080;">current</span> = <span style="color:#001080;">current</span>[<span style="color:#001080;">idx</span>]
+            <span style="color:#af00db;">else</span>:
+                <span style="color:#af00db;">return</span> <span style="color:#0000ff;">None</span>
+        <span style="color:#af00db;">elif</span> <span style="color:#0000ff;">isinstance</span>(<span style="color:#001080;">current</span>, <span style="color:#267f99;">dict</span>):
+            <span style="color:#001080;">current</span> = <span style="color:#001080;">current</span>.<span style="color:#795e26;">get</span>(<span style="color:#001080;">part</span>)
+        <span style="color:#af00db;">else</span>:
+            <span style="color:#af00db;">return</span> <span style="color:#0000ff;">None</span>
+        <span style="color:#af00db;">if</span> <span style="color:#001080;">current</span> <span style="color:#0000ff;">is</span> <span style="color:#0000ff;">None</span>:
+            <span style="color:#af00db;">return</span> <span style="color:#0000ff;">None</span>
+    <span style="color:#af00db;">return</span> <span style="color:#001080;">current</span></div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Resolves dotted accessor strings like <code>steps.specify.output.file</code> against a nested dict/list object, splitting on dots, detecting bracket-indexed arrays via regex, and returning <code>None</code> cleanly at any miss rather than raising an exception.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Powers the Specify CLI's cross-step data binding — when a later workflow phase references <code>steps.specify.output.file</code>, this function translates that string into the actual value from the execution context, letting spec phases chain outputs as inputs without manual wiring.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> Every error branch — missing key, wrong type, out-of-range index — returns <code>None</code> rather than raising. This is a deliberate contract: callers in the workflow evaluator can chain multiple path lookups with plain <code>if</code> checks, with no try/except wrapping needed at any call site.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/github/spec-kit" style="color:#0969da;text-decoration:none;">github/spec-kit</a> — <a href="https://github.com/github/spec-kit/blob/main/src/specify_cli/workflows/expressions.py" style="color:#0969da;text-decoration:none;">src/specify_cli/workflows/expressions.py</a>. GitHub Spec-Kit is an open-source toolkit for Spec-Driven Development, a methodology that puts formal specifications at the center of AI-assisted coding. The Specify CLI drives a Spec → Plan → Tasks → Implement workflow that integrates with GitHub Copilot, Claude, and 30 other AI coding agents — positioning specs as the source of truth rather than ad-hoc prompts.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

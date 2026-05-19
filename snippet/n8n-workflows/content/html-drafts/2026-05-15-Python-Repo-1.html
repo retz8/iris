@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">def</span> <span style="color:#795e26;">check_refs</span>(<span style="color:#001080;">yml</span>: <span style="color:#267f99;">Path</span>) -> <span style="color:#0000ff;">None</span>:
+    <span style="color:#af00db;">try</span>:
+        <span style="color:#001080;">data</span> = <span style="color:#795e26;">yaml.safe_load</span>(<span style="color:#001080;">yml</span>.<span style="color:#795e26;">read_text</span>()) <span style="color:#0000ff;">or</span> {}
+    <span style="color:#af00db;">except</span> <span style="color:#267f99;">yaml.YAMLError</span>:
+        <span style="color:#af00db;">return</span>
+    <span style="color:#001080;">base</span> = <span style="color:#001080;">yml</span>.parent
+
+    <span style="color:#001080;">sys_spec</span> = <span style="color:#001080;">data</span>.<span style="color:#795e26;">get</span>(<span style="color:#a31515;">"system"</span>)
+    <span style="color:#af00db;">if</span> <span style="color:#795e26;">isinstance</span>(<span style="color:#001080;">sys_spec</span>, <span style="color:#267f99;">dict</span>) <span style="color:#0000ff;">and</span> <span style="color:#a31515;">"file"</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">sys_spec</span>:
+        <span style="color:#001080;">p</span> = (<span style="color:#001080;">base</span> / <span style="color:#001080;">sys_spec</span>[<span style="color:#a31515;">"file"</span>]).<span style="color:#795e26;">resolve</span>()
+        <span style="color:#af00db;">if</span> <span style="color:#0000ff;">not</span> <span style="color:#001080;">p</span>.<span style="color:#795e26;">is_file</span>():
+            <span style="color:#795e26;">err</span>(
+                <span style="color:#a31515;">f"ref: {<span style="color:#001080;">rel</span>(<span style="color:#001080;">yml</span>)}: system.file"</span>
+                <span style="color:#a31515;">f" -> {<span style="color:#001080;">sys_spec</span>[<span style="color:#a31515;">'file'</span>]} (not found)"</span>
+            )
+
+    <span style="color:#af00db;">for</span> <span style="color:#001080;">s</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">data</span>.<span style="color:#795e26;">get</span>(<span style="color:#a31515;">"skills"</span>) <span style="color:#0000ff;">or</span> []:
+        <span style="color:#af00db;">if</span> <span style="color:#795e26;">isinstance</span>(<span style="color:#001080;">s</span>, <span style="color:#267f99;">dict</span>) <span style="color:#0000ff;">and</span> <span style="color:#a31515;">"path"</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">s</span>:
+            <span style="color:#001080;">p</span> = (<span style="color:#001080;">base</span> / <span style="color:#001080;">s</span>[<span style="color:#a31515;">"path"</span>]).<span style="color:#795e26;">resolve</span>()
+            <span style="color:#af00db;">if</span> <span style="color:#0000ff;">not</span> <span style="color:#001080;">p</span>.<span style="color:#795e26;">exists</span>():
+                <span style="color:#795e26;">err</span>(
+                    <span style="color:#a31515;">f"ref: {<span style="color:#001080;">rel</span>(<span style="color:#001080;">yml</span>)}: skills.path"</span>
+                    <span style="color:#a31515;">f" -> {<span style="color:#001080;">s</span>[<span style="color:#a31515;">'path'</span>]} (not found)"</span>
+                )
+        <span style="color:#af00db;">if</span> <span style="color:#795e26;">isinstance</span>(<span style="color:#001080;">s</span>, <span style="color:#267f99;">dict</span>) <span style="color:#0000ff;">and</span> <span style="color:#a31515;">"from_plugin"</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">s</span>:
+            <span style="color:#001080;">p</span> = (<span style="color:#001080;">base</span> / <span style="color:#001080;">s</span>[<span style="color:#a31515;">"from_plugin"</span>]).<span style="color:#795e26;">resolve</span>()
+            <span style="color:#af00db;">if</span> <span style="color:#0000ff;">not</span> (<span style="color:#001080;">p</span> / <span style="color:#a31515;">"skills"</span>).<span style="color:#795e26;">is_dir</span>():
+                <span style="color:#795e26;">err</span>(
+                    <span style="color:#a31515;">f"ref: {<span style="color:#001080;">rel</span>(<span style="color:#001080;">yml</span>)}: skills.from_plugin"</span>
+                    <span style="color:#a31515;">f" -> {<span style="color:#001080;">s</span>[<span style="color:#a31515;">'from_plugin'</span>]} (no skills/ dir)"</span>
+                )
+
+    <span style="color:#af00db;">for</span> <span style="color:#001080;">c</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">data</span>.<span style="color:#795e26;">get</span>(<span style="color:#a31515;">"callable_agents"</span>) <span style="color:#0000ff;">or</span> []:
+        <span style="color:#af00db;">if</span> <span style="color:#795e26;">isinstance</span>(<span style="color:#001080;">c</span>, <span style="color:#267f99;">dict</span>) <span style="color:#0000ff;">and</span> <span style="color:#a31515;">"manifest"</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">c</span>:
+            <span style="color:#001080;">p</span> = (<span style="color:#001080;">base</span> / <span style="color:#001080;">c</span>[<span style="color:#a31515;">"manifest"</span>]).<span style="color:#795e26;">resolve</span>()
+            <span style="color:#af00db;">if</span> <span style="color:#0000ff;">not</span> <span style="color:#001080;">p</span>.<span style="color:#795e26;">is_file</span>():
+                <span style="color:#795e26;">err</span>(
+                    <span style="color:#a31515;">f"ref: {<span style="color:#001080;">rel</span>(<span style="color:#001080;">yml</span>)}: callable_agents"</span>
+                    <span style="color:#a31515;">f".manifest -> {<span style="color:#001080;">c</span>[<span style="color:#a31515;">'manifest'</span>]}"</span>
+                    <span style="color:#a31515;">f" (not found)"</span>
+                )
+
+
+<span style="color:#6a9955"># bundled-skill drift detection</span>
+<span style="color:#001080;">src_by_name</span> = {
+    <span style="color:#001080;">p</span>.name: <span style="color:#001080;">p</span>
+    <span style="color:#af00db;">for</span> <span style="color:#001080;">p</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">PLUGINS</span>.<span style="color:#795e26;">glob</span>(
+        <span style="color:#a31515;">"vertical-plugins/*/skills/*"</span>
+    )
+    <span style="color:#af00db;">if</span> <span style="color:#001080;">p</span>.<span style="color:#795e26;">is_dir</span>()
+}
+<span style="color:#af00db;">for</span> <span style="color:#001080;">bundled</span> <span style="color:#0000ff;">in</span> <span style="color:#795e26;">sorted</span>(
+    <span style="color:#001080;">PLUGINS</span>.<span style="color:#795e26;">glob</span>(<span style="color:#a31515;">"agent-plugins/*/skills/*"</span>)
+):
+    <span style="color:#af00db;">if</span> <span style="color:#0000ff;">not</span> <span style="color:#001080;">bundled</span>.<span style="color:#795e26;">is_dir</span>():
+        <span style="color:#af00db;">continue</span>
+    <span style="color:#001080;">src</span> = <span style="color:#001080;">src_by_name</span>.<span style="color:#795e26;">get</span>(<span style="color:#001080;">bundled</span>.name)
+    <span style="color:#af00db;">if</span> <span style="color:#0000ff;">not</span> <span style="color:#001080;">src</span>:
+        <span style="color:#795e26;">err</span>(
+            <span style="color:#a31515;">f"bundled-skill: {<span style="color:#001080;">rel</span>(<span style="color:#001080;">bundled</span>)}: "</span>
+            <span style="color:#a31515;">f"no vertical-plugins source named"</span>
+            <span style="color:#a31515;">f" '{<span style="color:#001080;">bundled</span>.name}'"</span>
+        )
+        <span style="color:#af00db;">continue</span>
+    <span style="color:#001080;">cmp</span> = <span style="color:#795e26;">filecmp.dircmp</span>(<span style="color:#001080;">src</span>, <span style="color:#001080;">bundled</span>)
+    <span style="color:#af00db;">if</span> <span style="color:#001080;">cmp</span>.diff_files <span style="color:#0000ff;">or</span> <span style="color:#001080;">cmp</span>.left_only <span style="color:#0000ff;">or</span> <span style="color:#001080;">cmp</span>.right_only:
+        <span style="color:#795e26;">err</span>(
+            <span style="color:#a31515;">f"bundled-skill: {<span style="color:#001080;">rel</span>(<span style="color:#001080;">bundled</span>)}:"</span>
+            <span style="color:#a31515;">f" drifted from {<span style="color:#001080;">rel</span>(<span style="color:#001080;">src</span>)}"</span>
+            <span style="color:#a31515;">f" (run scripts/sync-agent-skills.py)"</span>
+        )</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Walks agent YAML configs to verify every referenced path — system prompts, skill directories, plugin bundles, and callable-agent manifests — actually exists on disk, reporting each broken reference with a precise location-tagged error message.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Acts as the pre-flight gate in the financial-services CI pipeline, catching dangling config references before agents are deployed — preventing silent failures in live investment banking workflows where a missing file path would break an MCP data connection mid-analysis.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The second half uses <code>filecmp.dircmp</code> to flag when a skill bundled into <code>agent-plugins/</code> has diverged from its canonical source in <code>vertical-plugins/</code>. Skills edited in the wrong directory drift silently; this surfaces that divergence at commit time instead of in a live financial workflow.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/anthropics/financial-services" style="color:#0969da;text-decoration:none;">anthropics/financial-services</a> — <a href="https://github.com/anthropics/financial-services/blob/main/scripts/check.py" style="color:#0969da;text-decoration:none;">scripts/check.py</a>. Anthropic's financial-services repo is a complete AI agent kit for investment banking, equity research, and wealth management, shipping as plugins for Claude Cowork and Claude Code. It connects to eleven financial data providers — FactSet, Morningstar, PitchBook, and S&P Global among them — via MCP connectors, enabling Claude to run DCF models, draft pitchbooks, and screen KYC files against live data.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>
