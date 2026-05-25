@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">def</span> <span style="color:#795e26;">_install_strategy</span>(<span style="color:#001080;">cli</span>):
+    <span style="color:#001080;">strategy</span> = <span style="color:#001080;">cli</span>.<span style="color:#795e26;">get</span>(<span style="color:#a31515;">"install_strategy"</span>)
+    <span style="color:#af00db;">if</span> <span style="color:#001080;">strategy</span>:
+        <span style="color:#af00db;">return</span> <span style="color:#001080;">strategy</span>
+    <span style="color:#af00db;">if</span> <span style="color:#001080;">cli</span>.<span style="color:#795e26;">get</span>(<span style="color:#a31515;">"_source"</span>, <span style="color:#a31515;">"harness"</span>) == <span style="color:#a31515;">"harness"</span>:
+        <span style="color:#af00db;">return</span> <span style="color:#a31515;">"pip"</span>
+    <span style="color:#af00db;">if</span> <span style="color:#001080;">cli</span>.<span style="color:#795e26;">get</span>(<span style="color:#a31515;">"npm_package"</span>) <span style="color:#0000ff;">or</span> \
+            <span style="color:#001080;">cli</span>.<span style="color:#795e26;">get</span>(<span style="color:#a31515;">"package_manager"</span>) == <span style="color:#a31515;">"npm"</span>:
+        <span style="color:#af00db;">return</span> <span style="color:#a31515;">"npm"</span>
+    <span style="color:#af00db;">if</span> <span style="color:#001080;">cli</span>.<span style="color:#795e26;">get</span>(<span style="color:#a31515;">"package_manager"</span>) == <span style="color:#a31515;">"uv"</span>:
+        <span style="color:#af00db;">return</span> <span style="color:#a31515;">"uv"</span>
+    <span style="color:#af00db;">if</span> <span style="color:#001080;">cli</span>.<span style="color:#795e26;">get</span>(<span style="color:#a31515;">"package_manager"</span>) == <span style="color:#a31515;">"bundled"</span>:
+        <span style="color:#af00db;">return</span> <span style="color:#a31515;">"bundled"</span>
+    <span style="color:#af00db;">return</span> <span style="color:#a31515;">"command"</span>
+
+
+<span style="color:#0000ff;">def</span> <span style="color:#795e26;">_perform_action</span>(<span style="color:#001080;">cli</span>, <span style="color:#001080;">action</span>):
+    <span style="color:#001080;">strategy</span> = <span style="color:#795e26;">_install_strategy</span>(<span style="color:#001080;">cli</span>)
+    <span style="color:#001080;">actions</span> = {
+        <span style="color:#a31515;">"pip"</span>: {
+            <span style="color:#a31515;">"install"</span>: <span style="color:#001080;">_pip_install</span>,
+            <span style="color:#a31515;">"uninstall"</span>: <span style="color:#001080;">_pip_uninstall</span>,
+            <span style="color:#a31515;">"update"</span>: <span style="color:#001080;">_pip_update</span>,
+        },
+        <span style="color:#a31515;">"npm"</span>: {
+            <span style="color:#a31515;">"install"</span>: <span style="color:#001080;">_npm_install</span>,
+            <span style="color:#a31515;">"uninstall"</span>: <span style="color:#001080;">_npm_uninstall</span>,
+            <span style="color:#a31515;">"update"</span>: <span style="color:#001080;">_npm_update</span>,
+        },
+        <span style="color:#a31515;">"uv"</span>: {
+            <span style="color:#a31515;">"install"</span>: <span style="color:#001080;">_uv_install</span>,
+            <span style="color:#a31515;">"uninstall"</span>: <span style="color:#001080;">_uv_uninstall</span>,
+            <span style="color:#a31515;">"update"</span>: <span style="color:#001080;">_uv_update</span>,
+        },
+        <span style="color:#a31515;">"command"</span>: {
+            <span style="color:#a31515;">"install"</span>: <span style="color:#001080;">_generic_install</span>,
+            <span style="color:#a31515;">"uninstall"</span>: <span style="color:#001080;">_generic_uninstall</span>,
+            <span style="color:#a31515;">"update"</span>: <span style="color:#001080;">_generic_update</span>,
+        },
+        <span style="color:#a31515;">"bundled"</span>: {
+            <span style="color:#a31515;">"install"</span>: <span style="color:#001080;">_bundled_install</span>,
+            <span style="color:#a31515;">"uninstall"</span>: <span style="color:#001080;">_bundled_uninstall</span>,
+            <span style="color:#a31515;">"update"</span>: <span style="color:#001080;">_bundled_update</span>,
+        },
+    }
+    <span style="color:#001080;">handler</span> = <span style="color:#001080;">actions</span>.<span style="color:#795e26;">get</span>(
+        <span style="color:#001080;">strategy</span>, <span style="color:#001080;">actions</span>[<span style="color:#a31515;">"command"</span>]
+    ).<span style="color:#795e26;">get</span>(<span style="color:#001080;">action</span>)
+    <span style="color:#af00db;">return</span> <span style="color:#001080;">strategy</span>, <span style="color:#795e26;">handler</span>(<span style="color:#001080;">cli</span>)</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Resolves which package manager (pip, npm, uv, bundled, or command) a CLI entry requires, then dispatches the appropriate install/uninstall/update handler and returns both the resolved strategy and the handler's result.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Sits at the core of CLI-Anything's multi-ecosystem install layer — every time a user installs, updates, or removes a generated CLI, this code decides which toolchain owns that operation and delegates accordingly.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The dispatch table is keyed by strategy then action, so adding a new package manager requires one new dict entry and zero changes to dispatch logic. The fallback to actions["command"] silently routes unrecognized strategies through the generic handler instead of failing.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/HKUDS/CLI-Anything" style="color:#0969da;text-decoration:none;">HKUDS/CLI-Anything</a> — <a href="https://github.com/HKUDS/CLI-Anything/blob/main/cli-hub/cli_hub/installer.py" style="color:#0969da;text-decoration:none;">cli-hub/cli_hub/installer.py</a>. CLI-Anything auto-generates structured CLI wrappers for desktop apps like GIMP and Blender, making them operable by AI agents without GUI automation. It's used by developers building agent workflows that need to control existing software via structured, JSON-outputting commands.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

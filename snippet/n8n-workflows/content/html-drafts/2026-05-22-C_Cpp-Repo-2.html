@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#267f99;">void</span> <span style="color:#267f99;">AudioService</span>::<span style="color:#795e26;">AudioInputTask</span>() {
+  <span style="color:#af00db;">while</span> (<span style="color:#0000ff;">true</span>) {
+    <span style="color:#267f99;">EventBits_t</span> <span style="color:#001080;">bits</span> = <span style="color:#795e26;">xEventGroupWaitBits</span>(
+      <span style="color:#001080;">event_group_</span>,
+      <span style="color:#001080;">AS_EVENT_AUDIO_TESTING_RUNNING</span> |
+      <span style="color:#001080;">AS_EVENT_WAKE_WORD_RUNNING</span> |
+      <span style="color:#001080;">AS_EVENT_AUDIO_PROCESSOR_RUNNING</span>,
+      <span style="color:#001080;">pdFALSE</span>, <span style="color:#001080;">pdFALSE</span>, <span style="color:#001080;">portMAX_DELAY</span>);
+
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">service_stopped_</span>) <span style="color:#af00db;">break</span>;
+
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">audio_input_need_warmup_</span>) {
+      <span style="color:#001080;">audio_input_need_warmup_</span> = <span style="color:#0000ff;">false</span>;
+      <span style="color:#795e26;">vTaskDelay</span>(<span style="color:#795e26;">pdMS_TO_TICKS</span>(<span style="color:#098658;">120</span>));
+      <span style="color:#af00db;">continue</span>;
+    }
+
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">bits</span> &amp; <span style="color:#001080;">AS_EVENT_AUDIO_TESTING_RUNNING</span>) {
+      <span style="color:#0000ff;">int</span> <span style="color:#001080;">max</span> = <span style="color:#001080;">AUDIO_TESTING_MAX_DURATION_MS</span>
+                / <span style="color:#001080;">OPUS_FRAME_DURATION_MS</span>;
+      <span style="color:#af00db;">if</span> (<span style="color:#001080;">audio_testing_queue_</span>.<span style="color:#795e26;">size</span>() >= <span style="color:#001080;">max</span>) {
+        <span style="color:#795e26;">EnableAudioTesting</span>(<span style="color:#0000ff;">false</span>);
+        <span style="color:#af00db;">continue</span>;
+      }
+      <span style="color:#0000ff;">int</span> <span style="color:#001080;">samples</span> =
+        <span style="color:#001080;">OPUS_FRAME_DURATION_MS</span> * <span style="color:#098658;">16000</span> / <span style="color:#098658;">1000</span>;
+      <span style="color:#001080;">std</span>::<span style="color:#267f99;">vector</span>&lt;<span style="color:#267f99;">int16_t</span>&gt; <span style="color:#001080;">data</span>;
+      <span style="color:#af00db;">if</span> (<span style="color:#795e26;">ReadAudioData</span>(<span style="color:#001080;">data</span>, <span style="color:#098658;">16000</span>, <span style="color:#001080;">samples</span>)) {
+        <span style="color:#795e26;">PushTaskToEncodeQueue</span>(
+          <span style="color:#001080;">kAudioTaskTypeEncodeToTestingQueue</span>,
+          <span style="color:#001080;">std</span>::<span style="color:#795e26;">move</span>(<span style="color:#001080;">data</span>));
+        <span style="color:#af00db;">continue</span>;
+      }
+    }
+
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">bits</span> &amp; (<span style="color:#001080;">AS_EVENT_WAKE_WORD_RUNNING</span> |
+                <span style="color:#001080;">AS_EVENT_AUDIO_PROCESSOR_RUNNING</span>)) {
+      <span style="color:#001080;">std</span>::<span style="color:#267f99;">vector</span>&lt;<span style="color:#267f99;">int16_t</span>&gt; <span style="color:#001080;">data</span>;
+      <span style="color:#af00db;">if</span> (<span style="color:#795e26;">ReadAudioData</span>(<span style="color:#001080;">data</span>, <span style="color:#098658;">16000</span>, <span style="color:#098658;">160</span>)) {
+        <span style="color:#af00db;">if</span> (<span style="color:#001080;">bits</span> &amp; <span style="color:#001080;">AS_EVENT_WAKE_WORD_RUNNING</span>)
+          <span style="color:#001080;">wake_word_</span>-&gt;<span style="color:#795e26;">Feed</span>(<span style="color:#001080;">data</span>);
+        <span style="color:#af00db;">if</span> (<span style="color:#001080;">bits</span> &amp; <span style="color:#001080;">AS_EVENT_AUDIO_PROCESSOR_RUNNING</span>)
+          <span style="color:#001080;">audio_processor_</span>-&gt;<span style="color:#795e26;">Feed</span>(<span style="color:#001080;">std</span>::<span style="color:#795e26;">move</span>(<span style="color:#001080;">data</span>));
+        <span style="color:#af00db;">continue</span>;
+      }
+    }
+
+    <span style="color:#795e26;">vTaskDelay</span>(<span style="color:#795e26;">pdMS_TO_TICKS</span>(<span style="color:#098658;">10</span>));
+  }
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Runs a FreeRTOS task that blocks on an event group until an audio mode activates, then routes captured PCM frames to the appropriate consumer — test encode queue, wake-word detector, or audio processor — with a 120ms warmup on first activation.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Serves as the single audio input demultiplexer for the ESP32 device, separating test recording, wake-word detection, and streaming ASR paths without duplicating the hardware read call — keeping the mic abstraction clean for all three consumers.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The branch priority is semantically significant: audio testing gets first pick and always continues, so test frames are never accidentally fed to the wake-word or LLM paths during recording — a silent safety gate on a device with no UI to surface unexpected behavior.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/78/xiaozhi-esp32" style="color:#0969da;text-decoration:none;">78/xiaozhi-esp32</a> — <a href="https://github.com/78/xiaozhi-esp32/blob/main/main/audio/audio_service.cc" style="color:#0969da;text-decoration:none;">main/audio/audio_service.cc</a>. xiaozhi-esp32 is a Chinese open-source project that turns ESP32 microcontrollers into voice AI chatbots connected to LLMs like Qwen and DeepSeek via MCP protocol. It's popular in the maker community for building low-cost physical AI assistants with smart home control and multilingual voice interaction.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

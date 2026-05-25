@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#001080;">flags</span> = [
+    {<span style="color:#001080;">c</span>.<span style="color:#001080;">identifier_in_scene</span>: <span style="color:#0000ff;">False</span>
+     <span style="color:#af00db;">for</span> <span style="color:#001080;">c</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">s</span>.<span style="color:#001080;">characters</span>}
+    <span style="color:#af00db;">for</span> <span style="color:#001080;">s</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">scenes</span>
+]
+
+<span style="color:#af00db;">for</span> <span style="color:#001080;">character</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">characters_in_event</span>:
+    <span style="color:#af00db;">for</span> <span style="color:#001080;">scene_idx</span>, <span style="color:#001080;">identifier_in_scene</span> \
+            <span style="color:#0000ff;">in</span> <span style="color:#001080;">character</span>.<span style="color:#001080;">active_scenes</span>.<span style="color:#795e26;">items</span>():
+        <span style="color:#001080;">scene_chars</span> = [
+            <span style="color:#001080;">c</span>.<span style="color:#001080;">identifier_in_scene</span>
+            <span style="color:#af00db;">for</span> <span style="color:#001080;">c</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">scenes</span>[<span style="color:#001080;">scene_idx</span>].<span style="color:#001080;">characters</span>
+        ]
+        <span style="color:#af00db;">if</span> <span style="color:#001080;">identifier_in_scene</span> \
+                <span style="color:#0000ff;">not</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">scene_chars</span>:
+            <span style="color:#af00db;">raise</span> <span style="color:#267f99;">ValueError</span>(
+                <span style="color:#a31515;">f"Character "</span>
+                <span style="color:#a31515;">f"{identifier_in_scene} "</span>
+                <span style="color:#a31515;">f"not found in scene "</span>
+                <span style="color:#a31515;">f"{scene_idx} of event "</span>
+                <span style="color:#a31515;">f"{event_idx}"</span>
+            )
+        <span style="color:#af00db;">else</span>:
+            <span style="color:#001080;">flags</span>[<span style="color:#001080;">scene_idx</span>][
+                <span style="color:#001080;">identifier_in_scene</span>
+            ] = <span style="color:#0000ff;">True</span>
+
+<span style="color:#af00db;">for</span> <span style="color:#001080;">scene_idx</span>, <span style="color:#001080;">flag</span> <span style="color:#0000ff;">in</span> <span style="color:#795e26;">enumerate</span>(<span style="color:#001080;">flags</span>):
+    <span style="color:#af00db;">for</span> <span style="color:#001080;">identifier_in_scene</span>, <span style="color:#001080;">included</span> \
+            <span style="color:#0000ff;">in</span> <span style="color:#001080;">flag</span>.<span style="color:#795e26;">items</span>():
+        <span style="color:#af00db;">if</span> <span style="color:#0000ff;">not</span> <span style="color:#001080;">included</span>:
+            <span style="color:#af00db;">raise</span> <span style="color:#267f99;">ValueError</span>(
+                <span style="color:#a31515;">f"Character "</span>
+                <span style="color:#a31515;">f"{identifier_in_scene} "</span>
+                <span style="color:#a31515;">f"in scene {scene_idx} of "</span>
+                <span style="color:#a31515;">f"event {event_idx} not "</span>
+                <span style="color:#a31515;">f"included in merged "</span>
+                <span style="color:#a31515;">f"characters"</span>
+            )
+
+<span style="color:#af00db;">return</span> <span style="color:#001080;">characters_in_event</span></div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Builds a per-scene presence map, verifies each character's declared active scenes against the scene roster, then confirms no scene character was omitted from the merged set — raising a descriptive ValueError on the first inconsistency found.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Acts as an integrity gate in ViMax's multi-agent planning pipeline, ensuring the Director and Producer agents agree on which characters appear in each scene before video generation begins — preventing silent mismatches from propagating into rendered frames.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The two-pass structure separates cross-reference errors (a character points to a scene that doesn't list them) from omission errors (a scene's character was never claimed) — two failure modes a single loop would conflate into the same check.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/HKUDS/ViMax" style="color:#0969da;text-decoration:none;">HKUDS/ViMax</a> — <a href="https://github.com/HKUDS/ViMax/blob/main/agents/global_information_planner.py" style="color:#0969da;text-decoration:none;">agents/global_information_planner.py</a>. ViMax is a multi-agent video generation framework from HKUDS that automates the full pipeline from story to rendered video using distinct Director, Screenwriter, Producer, and Generator roles. It's used by researchers and creators who want end-to-end AI-driven video production from a text narrative.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;margin:0 0 24px 0;"><span style="color:#0000ff;">export</span> <span style="color:#0000ff;">function</span> <span style="color:#795e26;">findCutPoint</span>(
+  <span style="color:#001080;">entries</span>: <span style="color:#267f99;">SessionEntry</span>[],
+  <span style="color:#001080;">startIndex</span>: <span style="color:#267f99;">number</span>,
+  <span style="color:#001080;">endIndex</span>: <span style="color:#267f99;">number</span>,
+  <span style="color:#001080;">keepRecentTokens</span>: <span style="color:#267f99;">number</span>,
+): <span style="color:#267f99;">CutPointResult</span> {
+  <span style="color:#0000ff;">const</span> <span style="color:#001080;">cutPoints</span> = <span style="color:#795e26;">findValidCutPoints</span>(
+    <span style="color:#001080;">entries</span>, <span style="color:#001080;">startIndex</span>, <span style="color:#001080;">endIndex</span>
+  );
+
+  <span style="color:#af00db;">if</span> (<span style="color:#001080;">cutPoints</span>.<span style="color:#001080;">length</span> === <span style="color:#098658;">0</span>) {
+    <span style="color:#af00db;">return</span> {
+      <span style="color:#001080;">firstKeptEntryIndex</span>: <span style="color:#001080;">startIndex</span>,
+      <span style="color:#001080;">turnStartIndex</span>: -<span style="color:#098658;">1</span>,
+      <span style="color:#001080;">isSplitTurn</span>: <span style="color:#0000ff;">false</span>,
+    };
+  }
+
+  <span style="color:#0000ff;">let</span> <span style="color:#001080;">accumulatedTokens</span> = <span style="color:#098658;">0</span>;
+  <span style="color:#0000ff;">let</span> <span style="color:#001080;">cutIndex</span> = <span style="color:#001080;">cutPoints</span>[<span style="color:#098658;">0</span>];
+
+  <span style="color:#af00db;">for</span> (<span style="color:#0000ff;">let</span> <span style="color:#001080;">i</span> = <span style="color:#001080;">endIndex</span> - <span style="color:#098658;">1</span>; <span style="color:#001080;">i</span> >= <span style="color:#001080;">startIndex</span>; <span style="color:#001080;">i</span>--) {
+    <span style="color:#0000ff;">const</span> <span style="color:#001080;">entry</span> = <span style="color:#001080;">entries</span>[<span style="color:#001080;">i</span>];
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">entry</span>.<span style="color:#001080;">type</span> !== <span style="color:#a31515;">"message"</span>) <span style="color:#af00db;">continue</span>;
+
+    <span style="color:#0000ff;">const</span> <span style="color:#001080;">messageTokens</span> =
+      <span style="color:#795e26;">estimateTokens</span>(<span style="color:#001080;">entry</span>.<span style="color:#001080;">message</span>);
+    <span style="color:#001080;">accumulatedTokens</span> += <span style="color:#001080;">messageTokens</span>;
+
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">accumulatedTokens</span> >= <span style="color:#001080;">keepRecentTokens</span>) {
+      <span style="color:#af00db;">for</span> (<span style="color:#0000ff;">let</span> <span style="color:#001080;">c</span> = <span style="color:#098658;">0</span>; <span style="color:#001080;">c</span> &lt; <span style="color:#001080;">cutPoints</span>.<span style="color:#001080;">length</span>; <span style="color:#001080;">c</span>++) {
+        <span style="color:#af00db;">if</span> (<span style="color:#001080;">cutPoints</span>[<span style="color:#001080;">c</span>] >= <span style="color:#001080;">i</span>) {
+          <span style="color:#001080;">cutIndex</span> = <span style="color:#001080;">cutPoints</span>[<span style="color:#001080;">c</span>];
+          <span style="color:#af00db;">break</span>;
+        }
+      }
+      <span style="color:#af00db;">break</span>;
+    }
+  }
+
+  <span style="color:#af00db;">while</span> (<span style="color:#001080;">cutIndex</span> > <span style="color:#001080;">startIndex</span>) {
+    <span style="color:#0000ff;">const</span> <span style="color:#001080;">prevEntry</span> = <span style="color:#001080;">entries</span>[<span style="color:#001080;">cutIndex</span> - <span style="color:#098658;">1</span>];
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">prevEntry</span>.<span style="color:#001080;">type</span> === <span style="color:#a31515;">"compaction"</span>) <span style="color:#af00db;">break</span>;
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">prevEntry</span>.<span style="color:#001080;">type</span> === <span style="color:#a31515;">"message"</span>) <span style="color:#af00db;">break</span>;
+    <span style="color:#001080;">cutIndex</span>--;
+  }
+
+  <span style="color:#0000ff;">const</span> <span style="color:#001080;">cutEntry</span> = <span style="color:#001080;">entries</span>[<span style="color:#001080;">cutIndex</span>];
+  <span style="color:#0000ff;">const</span> <span style="color:#001080;">isUserMessage</span> =
+    <span style="color:#001080;">cutEntry</span>.<span style="color:#001080;">type</span> === <span style="color:#a31515;">"message"</span> &&
+    <span style="color:#001080;">cutEntry</span>.<span style="color:#001080;">message</span>.<span style="color:#001080;">role</span> === <span style="color:#a31515;">"user"</span>;
+  <span style="color:#0000ff;">const</span> <span style="color:#001080;">turnStartIndex</span> = <span style="color:#001080;">isUserMessage</span>
+    ? -<span style="color:#098658;">1</span>
+    : <span style="color:#795e26;">findTurnStartIndex</span>(
+        <span style="color:#001080;">entries</span>, <span style="color:#001080;">cutIndex</span>, <span style="color:#001080;">startIndex</span>
+      );
+
+  <span style="color:#af00db;">return</span> {
+    <span style="color:#001080;">firstKeptEntryIndex</span>: <span style="color:#001080;">cutIndex</span>,
+    <span style="color:#001080;">turnStartIndex</span>,
+    <span style="color:#001080;">isSplitTurn</span>:
+      !<span style="color:#001080;">isUserMessage</span> && <span style="color:#001080;">turnStartIndex</span> !== -<span style="color:#098658;">1</span>,
+  };
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Scans valid cut boundaries in a session window, walks backwards accumulating token estimates until a recency budget is met, then picks the earliest valid cut point at or after that position — adjusting for mid-turn splits and compaction markers.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Decides exactly where to truncate session history when oh-my-pi's context window fills, balancing recency against the constraint that cuts must land on clean message or compaction boundaries rather than mid-turn.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> Token accumulation walks backward to find the minimum cut depth, but the cut-point selection then scans forward to the earliest valid boundary at that depth — recovering as much early context as possible while still honoring the recency budget.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/can1357/oh-my-pi" style="color:#0969da;text-decoration:none;">can1357/oh-my-pi</a> — <a href="https://github.com/can1357/oh-my-pi/blob/main/packages/agent/src/compaction/compaction.ts" style="color:#0969da;text-decoration:none;">packages/agent/src/compaction/compaction.ts</a>. oh-my-pi is a terminal AI coding agent with hash-anchored edits and LSP integration, designed to eliminate the whitespace conflicts and string-not-found loops common in other agents. Engineers use it as a drop-in alternative to Claude Code or Codex CLI with stronger edit reliability.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

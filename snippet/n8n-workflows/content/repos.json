@@ -479,5 +479,41 @@
     "snippets": [
       "microsoft/WSL/blob/master/src/linux/plan9/p9scheduler.cpp"
     ]
+  },
+  "HKUDS/CLI-Anything": {
+    "count": 1,
+    "snippets": [
+      "HKUDS/CLI-Anything/blob/main/cli-hub/cli_hub/installer.py"
+    ]
+  },
+  "HKUDS/ViMax": {
+    "count": 1,
+    "snippets": [
+      "HKUDS/ViMax/blob/main/agents/global_information_planner.py"
+    ]
+  },
+  "colbymchenry/codegraph": {
+    "count": 1,
+    "snippets": [
+      "colbymchenry/codegraph/blob/main/src/search/query-parser.ts"
+    ]
+  },
+  "can1357/oh-my-pi": {
+    "count": 1,
+    "snippets": [
+      "can1357/oh-my-pi/blob/main/packages/agent/src/compaction/compaction.ts"
+    ]
+  },
+  "lemonade-sdk/lemonade": {
+    "count": 1,
+    "snippets": [
+      "lemonade-sdk/lemonade/blob/main/src/cpp/server/router.cpp"
+    ]
+  },
+  "78/xiaozhi-esp32": {
+    "count": 1,
+    "snippets": [
+      "78/xiaozhi-esp32/blob/main/main/audio/audio_service.cc"
+    ]
   }
 }
