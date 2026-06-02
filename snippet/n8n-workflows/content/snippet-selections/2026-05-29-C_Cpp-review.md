@@ -3,7 +3,7 @@
 Issue: #16
 Date: 2026-05-29
 Language: C_Cpp
-Status: PENDING_APPROVAL
+Status: COMPLETED
 
 ## Repo 1 — alibaba/MNN
 
