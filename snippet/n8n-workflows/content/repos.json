@@ -515,5 +515,41 @@
     "snippets": [
       "78/xiaozhi-esp32/blob/main/main/audio/audio_service.cc"
     ]
+  },
+  "dograh-hq/dograh": {
+    "count": 1,
+    "snippets": [
+      "dograh-hq/dograh/blob/main/api/services/campaign/circuit_breaker.py"
+    ]
+  },
+  "st-tech/ppf-contact-solver": {
+    "count": 1,
+    "snippets": [
+      "st-tech/ppf-contact-solver/blob/main/frontend/_scene_.py"
+    ]
+  },
+  "Lum1104/Understand-Anything": {
+    "count": 1,
+    "snippets": [
+      "Lum1104/Understand-Anything/blob/main/understand-anything-plugin/packages/core/src/staleness.ts"
+    ]
+  },
+  "twentyhq/twenty": {
+    "count": 1,
+    "snippets": [
+      "twentyhq/twenty/blob/main/packages/twenty-server/src/engine/api/graphql/graphql-query-runner/helpers/object-records-to-graphql-connection.helper.ts"
+    ]
+  },
+  "alibaba/MNN": {
+    "count": 1,
+    "snippets": [
+      "alibaba/MNN/blob/master/source/core/TensorUtils.cpp"
+    ]
+  },
+  "opentoonz/opentoonz": {
+    "count": 1,
+    "snippets": [
+      "opentoonz/opentoonz/blob/master/toonz/sources/toonzlib/ikjacobian.cpp"
+    ]
   }
 }
