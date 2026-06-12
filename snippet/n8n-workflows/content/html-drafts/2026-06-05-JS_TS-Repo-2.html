@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#a31515">'use client'</span>
+
+<span style="color:#0000ff">import</span> {
+  <span style="color:#001080">useRouter</span>,
+  <span style="color:#001080">useSearchParams</span>,
+  <span style="color:#001080">usePathname</span>
+} <span style="color:#0000ff">from</span> <span style="color:#a31515">'next/navigation'</span>
+
+<span style="color:#0000ff">export</span> <span style="color:#0000ff">type</span> <span style="color:#267f99">ModalType</span> = <span style="color:#a31515">'source'</span> | <span style="color:#a31515">'note'</span> | <span style="color:#a31515">'insight'</span>
+
+<span style="color:#0000ff">export</span> <span style="color:#0000ff">function</span> <span style="color:#795e26">useModalManager</span>() {
+  <span style="color:#0000ff">const</span> <span style="color:#001080">router</span> = <span style="color:#795e26">useRouter</span>()
+  <span style="color:#0000ff">const</span> <span style="color:#001080">searchParams</span> = <span style="color:#795e26">useSearchParams</span>()
+  <span style="color:#0000ff">const</span> <span style="color:#001080">pathname</span> = <span style="color:#795e26">usePathname</span>()
+
+  <span style="color:#0000ff">const</span> <span style="color:#001080">modalType</span> =
+    <span style="color:#001080">searchParams</span>?.<span style="color:#795e26">get</span>(<span style="color:#a31515">'modal'</span>) <span style="color:#0000ff">as</span> <span style="color:#267f99">ModalType</span> | <span style="color:#0000ff">null</span>
+  <span style="color:#0000ff">const</span> <span style="color:#001080">modalId</span> = <span style="color:#001080">searchParams</span>?.<span style="color:#795e26">get</span>(<span style="color:#a31515">'id'</span>)
+
+  <span style="color:#0000ff">const</span> <span style="color:#795e26">openModal</span> = (<span style="color:#001080">type</span>: <span style="color:#267f99">ModalType</span>, <span style="color:#001080">id</span>: <span style="color:#267f99">string</span>) => {
+    <span style="color:#0000ff">const</span> <span style="color:#001080">params</span> = <span style="color:#0000ff">new</span> <span style="color:#267f99">URLSearchParams</span>(
+      <span style="color:#001080">searchParams</span>?.<span style="color:#795e26">toString</span>() || <span style="color:#a31515">''</span>
+    )
+    <span style="color:#001080">params</span>.<span style="color:#795e26">set</span>(<span style="color:#a31515">'modal'</span>, <span style="color:#001080">type</span>)
+    <span style="color:#001080">params</span>.<span style="color:#795e26">set</span>(<span style="color:#a31515">'id'</span>, <span style="color:#001080">id</span>)
+    <span style="color:#001080">router</span>.<span style="color:#795e26">push</span>(
+      `${<span style="color:#001080">pathname</span>}?${<span style="color:#001080">params</span>.<span style="color:#795e26">toString</span>()}`,
+      { <span style="color:#001080">scroll</span>: <span style="color:#0000ff">false</span> }
+    )
+  }
+
+  <span style="color:#0000ff">const</span> <span style="color:#795e26">closeModal</span> = () => {
+    <span style="color:#0000ff">const</span> <span style="color:#001080">params</span> = <span style="color:#0000ff">new</span> <span style="color:#267f99">URLSearchParams</span>(
+      <span style="color:#001080">searchParams</span>?.<span style="color:#795e26">toString</span>() || <span style="color:#a31515">''</span>
+    )
+    <span style="color:#001080">params</span>.<span style="color:#795e26">delete</span>(<span style="color:#a31515">'modal'</span>)
+    <span style="color:#001080">params</span>.<span style="color:#795e26">delete</span>(<span style="color:#a31515">'id'</span>)
+    <span style="color:#001080">router</span>.<span style="color:#795e26">push</span>(
+      `${<span style="color:#001080">pathname</span>}?${<span style="color:#001080">params</span>.<span style="color:#795e26">toString</span>()}`,
+      { <span style="color:#001080">scroll</span>: <span style="color:#0000ff">false</span> }
+    )
+  }
+
+  <span style="color:#af00db">return</span> {
+    <span style="color:#001080">modalType</span>,
+    <span style="color:#001080">modalId</span>,
+    <span style="color:#001080">openModal</span>,
+    <span style="color:#001080">closeModal</span>,
+    <span style="color:#001080">isOpen</span>: !!<span style="color:#001080">modalType</span> && !!<span style="color:#001080">modalId</span>
+  }
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Manages modal open/close state entirely through URL search parameters, so navigating to <code>?modal=source&amp;id=42</code> opens a source modal and closing it navigates back to the clean URL — making every modal state deep-linkable and browser-back-compatible without component-level state.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Centralizes modal routing for the three main content types (source, note, insight) into one hook consumed across the notebook UI; adding a new modal type or changing the URL scheme is a single edit rather than hunting through component state.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> By encoding both <code>modal</code> and <code>id</code> into the URL, the hook makes every open notebook item bookmarkable and shareable — collaborators can paste a link and land directly on the same source or insight view without any session state reconstruction.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/lfnovo/open-notebook" style="color:#0969da;text-decoration:none;">lfnovo/open-notebook</a> — <a href="https://github.com/lfnovo/open-notebook/blob/main/frontend/src/lib/hooks/use-modal-manager.ts" style="color:#0969da;text-decoration:none;">frontend/src/lib/hooks/use-modal-manager.ts</a>. Open Notebook is a self-hosted, open-source alternative to Google NotebookLM that supports 16+ AI providers (including Anthropic, OpenAI, Ollama, and Google), processes PDFs, video, audio, and webpages, and runs entirely on your own hardware via Docker — your research data never leaves your machine.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

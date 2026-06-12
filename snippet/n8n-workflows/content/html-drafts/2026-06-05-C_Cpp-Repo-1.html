@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;margin:0 0 24px 0;"><span style="color:#267f99;">bool</span> <span style="color:#267f99;">NetworkUtilities</span>::<span style="color:#795e26;">checkIpSubnetFormat</span>(
+    <span style="color:#0000ff;">const</span> <span style="color:#267f99;">QString</span> &amp;<span style="color:#001080;">ip</span>)
+{
+    <span style="color:#af00db;">if</span> (!<span style="color:#001080;">ip</span>.<span style="color:#795e26;">contains</span>(<span style="color:#a31515;">"/"</span>))
+        <span style="color:#af00db;">return</span> <span style="color:#795e26;">checkIPv4Format</span>(<span style="color:#001080;">ip</span>);
+
+    <span style="color:#267f99;">QStringList</span> <span style="color:#001080;">parts</span> = <span style="color:#001080;">ip</span>.<span style="color:#795e26;">split</span>(<span style="color:#a31515;">"/"</span>);
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">parts</span>.<span style="color:#795e26;">size</span>() != <span style="color:#098658;">2</span>)
+        <span style="color:#af00db;">return</span> <span style="color:#0000ff;">false</span>;
+
+    <span style="color:#267f99;">bool</span> <span style="color:#001080;">ok</span>;
+    <span style="color:#267f99;">int</span> <span style="color:#001080;">subnet</span> = <span style="color:#001080;">parts</span>.<span style="color:#795e26;">at</span>(<span style="color:#098658;">1</span>).<span style="color:#795e26;">toInt</span>(&amp;<span style="color:#001080;">ok</span>);
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">subnet</span> >= <span style="color:#098658;">0</span> &amp;&amp; <span style="color:#001080;">subnet</span> <= <span style="color:#098658;">32</span> &amp;&amp; <span style="color:#001080;">ok</span>)
+        <span style="color:#af00db;">return</span> <span style="color:#795e26;">checkIPv4Format</span>(<span style="color:#001080;">parts</span>.<span style="color:#795e26;">at</span>(<span style="color:#098658;">0</span>));
+    <span style="color:#af00db;">else</span>
+        <span style="color:#af00db;">return</span> <span style="color:#0000ff;">false</span>;
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Validates a string as either a bare IPv4 address or a CIDR block: splits on the slash, checks the prefix is an integer in [0, 32], then delegates to <code>checkIPv4Format</code> — bare addresses without a slash skip straight to that check without branching.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Used to validate peer IP configurations typed into VPN tunnel setup forms before they're written to WireGuard or OpenVPN config files — prevents invalid CIDR strings from reaching the network layer and causing silent tunnel failures or routing table corruption.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> <code>toInt(&amp;ok)</code> returns 0 on parse failure, which is also a valid CIDR prefix — so the <code>ok</code> flag is essential as a third condition; without it, <code>"192.168.1.0/abc"</code> would silently pass as a <code>/0</code> route covering the entire IPv4 address space.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/amnezia-vpn/amnezia-client" style="color:#0969da;text-decoration:none;">amnezia-vpn/amnezia-client</a> — <a href="https://github.com/amnezia-vpn/amnezia-client/blob/dev/client/core/utils/networkUtilities.cpp" style="color:#0969da;text-decoration:none;">client/core/utils/networkUtilities.cpp</a>. Amnezia is a cross-platform, self-hosted VPN client that goes beyond standard WireGuard by actively disguising encrypted traffic as ordinary UDP protocols (DNS, QUIC, SIP) to evade deep packet inspection. It's used primarily by people in countries with active DPI-based censorship, and its AmneziaWG 2.0 protocol uses randomized headers and padding to defeat traffic fingerprinting.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

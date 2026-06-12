@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">def</span> <span style="color:#795e26;">_extract_with_regex</span>(
+    <span style="color:#001080;">self</span>,
+    <span style="color:#001080;">content</span>: <span style="color:#267f99;">str</span>,
+    <span style="color:#001080;">tokens</span>: <span style="color:#267f99;">list</span>[<span style="color:#267f99;">str</span>],
+    <span style="color:#001080;">language</span>: <span style="color:#267f99;">str</span>,
+) -> <span style="color:#267f99;">HandlerResult</span>:
+    <span style="color:#001080;">spans</span>: <span style="color:#267f99;">list</span>[<span style="color:#267f99;">CodeSpan</span>] = []
+
+    <span style="color:#001080;">import_pattern</span> = <span style="color:#001080;">_IMPORT_PATTERNS</span>.<span style="color:#795e26;">get</span>(<span style="color:#001080;">language</span>)
+    <span style="color:#af00db;">if</span> <span style="color:#001080;">import_pattern</span>:
+        <span style="color:#af00db;">for</span> <span style="color:#001080;">match</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">import_pattern</span>.<span style="color:#795e26;">finditer</span>(<span style="color:#001080;">content</span>):
+            <span style="color:#001080;">end</span> = <span style="color:#001080;">content</span>.<span style="color:#795e26;">find</span>(<span style="color:#a31515;">"\n"</span>, <span style="color:#001080;">match</span>.<span style="color:#795e26;">end</span>())
+            <span style="color:#af00db;">if</span> <span style="color:#001080;">end</span> == -<span style="color:#098658;">1</span>:
+                <span style="color:#001080;">end</span> = <span style="color:#795e26;">len</span>(<span style="color:#001080;">content</span>)
+            <span style="color:#001080;">spans</span>.<span style="color:#795e26;">append</span>(
+                <span style="color:#267f99;">CodeSpan</span>(
+                    <span style="color:#001080;">start</span>=<span style="color:#001080;">match</span>.<span style="color:#795e26;">start</span>(),
+                    <span style="color:#001080;">end</span>=<span style="color:#001080;">end</span>,
+                    <span style="color:#001080;">role</span>=<span style="color:#a31515;">"import"</span>,
+                    <span style="color:#001080;">is_structural</span>=<span style="color:#0000ff;">True</span>,
+                )
+            )
+
+    <span style="color:#001080;">signature_patterns</span> = <span style="color:#001080;">_SIGNATURE_PATTERNS</span>.<span style="color:#795e26;">get</span>(<span style="color:#001080;">language</span>, [])
+    <span style="color:#af00db;">for</span> <span style="color:#001080;">pattern</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">signature_patterns</span>:
+        <span style="color:#af00db;">for</span> <span style="color:#001080;">match</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">pattern</span>.<span style="color:#795e26;">finditer</span>(<span style="color:#001080;">content</span>):
+            <span style="color:#001080;">spans</span>.<span style="color:#795e26;">append</span>(
+                <span style="color:#267f99;">CodeSpan</span>(
+                    <span style="color:#001080;">start</span>=<span style="color:#001080;">match</span>.<span style="color:#795e26;">start</span>(),
+                    <span style="color:#001080;">end</span>=<span style="color:#001080;">match</span>.<span style="color:#795e26;">end</span>(),
+                    <span style="color:#001080;">role</span>=<span style="color:#a31515;">"signature"</span>,
+                    <span style="color:#001080;">is_structural</span>=<span style="color:#0000ff;">True</span>,
+                )
+            )
+
+    <span style="color:#001080;">mask</span> = <span style="color:#001080;">self</span>.<span style="color:#795e26;">_spans_to_mask</span>(<span style="color:#001080;">spans</span>, <span style="color:#795e26;">len</span>(<span style="color:#001080;">content</span>))
+
+    <span style="color:#af00db;">return</span> <span style="color:#267f99;">HandlerResult</span>(
+        <span style="color:#001080;">mask</span>=<span style="color:#267f99;">StructureMask</span>(<span style="color:#001080;">tokens</span>=<span style="color:#001080;">tokens</span>, <span style="color:#001080;">mask</span>=<span style="color:#001080;">mask</span>),
+        <span style="color:#001080;">handler_name</span>=<span style="color:#001080;">self</span>.<span style="color:#001080;">name</span>,
+        <span style="color:#001080;">confidence</span>=<span style="color:#098658;">0.7</span>,
+        <span style="color:#001080;">metadata</span>={
+            <span style="color:#a31515;">"language"</span>: <span style="color:#001080;">language</span>,
+            <span style="color:#a31515;">"parser"</span>: <span style="color:#a31515;">"regex"</span>,
+            <span style="color:#a31515;">"structural_spans"</span>: <span style="color:#795e26;">len</span>(<span style="color:#001080;">spans</span>),
+        },
+    )</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Scans source code with language-specific regex patterns to mark import statements and function signatures as CodeSpans, then converts the span list into a structure mask flagging which tokens are load-bearing.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Serves as the fallback handler when a Tree-sitter AST parse isn't available for a language; its 0.7 confidence score explicitly signals downstream logic that this analysis is heuristic rather than syntactically authoritative.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The 0.7 hardcoded confidence score is a first-class API contract, not a debug artifact — callers use it to decide whether to trust or override the mask, making the regex handler's imprecision explicitly negotiable at the call site.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/chopratejas/headroom" style="color:#0969da;text-decoration:none;">chopratejas/headroom</a> — <a href="https://github.com/chopratejas/headroom/blob/main/headroom/compression/handlers/code_handler.py" style="color:#0969da;text-decoration:none;">headroom/compression/handlers/code_handler.py</a>. Headroom sits between your application and the LLM, compressing tool outputs, logs, and source files before they reach the model. It cuts context token counts by 60–95% while keeping answers accurate — used by AI agent developers who pay per token and need to control what the model actually sees.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

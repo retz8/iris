@@ -3,7 +3,7 @@
 Issue: #17
 Date: 2026-06-05
 Language: C/C++
-Status: PENDING_APPROVAL
+Status: COMPLETED
 
 ## Repo 1 — amnezia-vpn/amnezia-client
 

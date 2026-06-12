@@ -551,5 +551,41 @@
     "snippets": [
       "opentoonz/opentoonz/blob/master/toonz/sources/toonzlib/ikjacobian.cpp"
     ]
+  },
+  "chopratejas/headroom": {
+    "count": 1,
+    "snippets": [
+      "chopratejas/headroom/blob/main/headroom/compression/handlers/code_handler.py"
+    ]
+  },
+  "microsoft/agent-governance-toolkit": {
+    "count": 1,
+    "snippets": [
+      "microsoft/agent-governance-toolkit/blob/main/agent-governance-python/agent-hypervisor/src/hypervisor/core.py"
+    ]
+  },
+  "DayuanJiang/next-ai-draw-io": {
+    "count": 1,
+    "snippets": [
+      "DayuanJiang/next-ai-draw-io/blob/main/lib/chat-helpers.ts"
+    ]
+  },
+  "lfnovo/open-notebook": {
+    "count": 1,
+    "snippets": [
+      "lfnovo/open-notebook/blob/main/frontend/src/lib/hooks/use-modal-manager.ts"
+    ]
+  },
+  "amnezia-vpn/amnezia-client": {
+    "count": 1,
+    "snippets": [
+      "amnezia-vpn/amnezia-client/blob/dev/client/core/utils/networkUtilities.cpp"
+    ]
+  },
+  "tenstorrent/tt-metal": {
+    "count": 1,
+    "snippets": [
+      "tenstorrent/tt-metal/blob/main/tt_metal/impl/graph/graph_tracking.cpp"
+    ]
   }
 }

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">export</span> <span style="color:#0000ff;">function</span> <span style="color:#795e26;">replaceHistoricalToolInputs</span>(
+    <span style="color:#001080;">messages</span>: <span style="color:#267f99;">any</span>[]
+): <span style="color:#267f99;">any</span>[] {
+    <span style="color:#af00db;">return</span> <span style="color:#001080;">messages</span>.<span style="color:#795e26;">map</span>((<span style="color:#001080;">msg</span>) => {
+        <span style="color:#af00db;">if</span> (
+            <span style="color:#001080;">msg</span>.<span style="color:#001080;">role</span> !== <span style="color:#a31515;">"assistant"</span> ||
+            !<span style="color:#267f99;">Array</span>.<span style="color:#795e26;">isArray</span>(<span style="color:#001080;">msg</span>.<span style="color:#001080;">content</span>)
+        ) {
+            <span style="color:#af00db;">return</span> <span style="color:#001080;">msg</span>
+        }
+        <span style="color:#0000ff;">const</span> <span style="color:#001080;">replacedContent</span> = <span style="color:#001080;">msg</span>.<span style="color:#001080;">content</span>
+            .<span style="color:#795e26;">map</span>((<span style="color:#001080;">part</span>: <span style="color:#267f99;">any</span>) => {
+                <span style="color:#af00db;">if</span> (<span style="color:#001080;">part</span>.<span style="color:#001080;">type</span> === <span style="color:#a31515;">"tool-call"</span>) {
+                    <span style="color:#0000ff;">const</span> <span style="color:#001080;">toolName</span> = <span style="color:#001080;">part</span>.<span style="color:#001080;">toolName</span>
+                    <span style="color:#af00db;">if</span> (
+                        !<span style="color:#001080;">part</span>.<span style="color:#001080;">input</span> ||
+                        <span style="color:#0000ff;">typeof</span> <span style="color:#001080;">part</span>.<span style="color:#001080;">input</span> !== <span style="color:#a31515;">"object"</span> ||
+                        <span style="color:#267f99;">Object</span>.<span style="color:#795e26;">keys</span>(<span style="color:#001080;">part</span>.<span style="color:#001080;">input</span>).<span style="color:#001080;">length</span> === <span style="color:#098658;">0</span>
+                    ) {
+                        <span style="color:#af00db;">return</span> <span style="color:#0000ff;">null</span>
+                    }
+                    <span style="color:#af00db;">if</span> (
+                        <span style="color:#001080;">toolName</span> === <span style="color:#a31515;">"display_diagram"</span> ||
+                        <span style="color:#001080;">toolName</span> === <span style="color:#a31515;">"edit_diagram"</span>
+                    ) {
+                        <span style="color:#af00db;">return</span> {
+                            ...<span style="color:#001080;">part</span>,
+                            <span style="color:#001080;">input</span>: {
+                                <span style="color:#001080;">placeholder</span>:
+                                    <span style="color:#a31515;">"[XML content replaced"</span> +
+                                    <span style="color:#a31515;">" - see current diagram"</span> +
+                                    <span style="color:#a31515;">" XML in system context]"</span>,
+                            },
+                        }
+                    }
+                }
+                <span style="color:#af00db;">return</span> <span style="color:#001080;">part</span>
+            })
+            .<span style="color:#795e26;">filter</span>(<span style="color:#267f99;">Boolean</span>)
+        <span style="color:#af00db;">return</span> { ...<span style="color:#001080;">msg</span>, <span style="color:#001080;">content</span>: <span style="color:#001080;">replacedContent</span> }
+    })
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Walks the chat history and replaces the XML payload in past <code>display_diagram</code> and <code>edit_diagram</code> tool calls with a short placeholder, telling the model to reference the current diagram in system context rather than re-reading stale XML on every turn.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Prevents diagram XML — which can be thousands of tokens of raw draw.io markup — from accumulating across a multi-turn conversation; called before every API request to keep the context window manageable as the user iterates on a diagram.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The empty-input guard (<code>Object.keys(part.input).length === 0</code>) skips tool calls that never completed — without it, replacing an empty input with a placeholder would fabricate a ghost diagram turn that the model could treat as real edit history.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/DayuanJiang/next-ai-draw-io" style="color:#0969da;text-decoration:none;">DayuanJiang/next-ai-draw-io</a> — <a href="https://github.com/DayuanJiang/next-ai-draw-io/blob/main/lib/chat-helpers.ts" style="color:#0969da;text-decoration:none;">lib/chat-helpers.ts</a>. next-ai-draw-io is a Next.js app that lets you describe, create, and revise draw.io diagrams in plain text — type "add a database node" or "rearrange the flow," and the AI edits the underlying XML directly. It also ships an MCP server so AI assistants like Claude Desktop can generate diagrams with a live browser preview.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

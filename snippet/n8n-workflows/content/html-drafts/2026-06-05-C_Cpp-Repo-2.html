@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">bool</span> <span style="color:#267f99;">GraphTracker</span>::<span style="color:#795e26;">hook_allocate</span>(
+    <span style="color:#0000ff;">const</span> <span style="color:#267f99;">Buffer</span>* <span style="color:#001080;">buffer</span>) {
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">hook</span> == <span style="color:#0000ff;">nullptr</span>) {
+        <span style="color:#af00db;">return</span> <span style="color:#0000ff;">false</span>;
+    }
+
+    <span style="color:#0000ff;">bool</span> <span style="color:#001080;">hooked</span> = <span style="color:#001080;">hook</span>-><span style="color:#795e26;">hook_allocate</span>(<span style="color:#001080;">buffer</span>);
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">hooked</span>) {
+        std::<span style="color:#267f99;">lock_guard</span>&lt;std::<span style="color:#267f99;">mutex</span>&gt; <span style="color:#001080;">lock</span>(
+            <span style="color:#001080;">hooked_buffers_mutex</span>);
+        <span style="color:#0000ff;">bool</span> <span style="color:#001080;">inserted</span> =
+            <span style="color:#001080;">hooked_buffers</span>.<span style="color:#795e26;">insert</span>(<span style="color:#001080;">buffer</span>).<span style="color:#001080;">second</span>;
+        <span style="color:#795e26;">TT_FATAL</span>(<span style="color:#001080;">inserted</span>,
+            <span style="color:#a31515;">"Can't hook allocation of a buffer "</span>
+            <span style="color:#a31515;">"which is already allocated"</span>);
+    }
+    <span style="color:#af00db;">return</span> <span style="color:#001080;">hooked</span>;
+}
+
+<span style="color:#0000ff;">bool</span> <span style="color:#267f99;">GraphTracker</span>::<span style="color:#795e26;">hook_deallocate</span>(
+    <span style="color:#267f99;">Buffer</span>* <span style="color:#001080;">buffer</span>) {
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">hook</span> == <span style="color:#0000ff;">nullptr</span>) {
+        <span style="color:#af00db;">return</span> <span style="color:#0000ff;">false</span>;
+    }
+
+    <span style="color:#0000ff;">bool</span> <span style="color:#001080;">hooked</span> = <span style="color:#001080;">hook</span>-><span style="color:#795e26;">hook_deallocate</span>(<span style="color:#001080;">buffer</span>);
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">hooked</span>) {
+        std::<span style="color:#267f99;">lock_guard</span>&lt;std::<span style="color:#267f99;">mutex</span>&gt; <span style="color:#001080;">lock</span>(
+            <span style="color:#001080;">hooked_buffers_mutex</span>);
+        <span style="color:#0000ff;">auto</span> <span style="color:#001080;">buffer_it</span> =
+            <span style="color:#001080;">hooked_buffers</span>.<span style="color:#795e26;">find</span>(<span style="color:#001080;">buffer</span>);
+        <span style="color:#af00db;">if</span> (<span style="color:#001080;">buffer_it</span> == <span style="color:#001080;">hooked_buffers</span>.<span style="color:#795e26;">end</span>()) {
+            <span style="color:#795e26;">log_warning</span>(tt::<span style="color:#001080;">LogMetal</span>,
+                <span style="color:#a31515;">"Can't hook deallocation of a "</span>
+                <span style="color:#a31515;">"buffer which allocation "</span>
+                <span style="color:#a31515;">"wasn't hooked"</span>);
+        } <span style="color:#af00db;">else</span> {
+            <span style="color:#001080;">hooked_buffers</span>.<span style="color:#795e26;">erase</span>(<span style="color:#001080;">buffer_it</span>);
+        }
+    }
+    <span style="color:#af00db;">return</span> <span style="color:#001080;">hooked</span>;
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Delegates buffer allocation and deallocation events to an external hook, then maintains a mutex-guarded set of tracked buffers; a duplicate allocation is a fatal error (<code>TT_FATAL</code>), but a deallocate on an untracked buffer is only a warning — by design.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Acts as the observability attachment point for the graph tracker — external instrumentation (profilers, memory tracers, correctness checkers) hooks into the kernel's buffer lifecycle here without modifying the core allocation path, keeping analysis code out of the critical path.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The asymmetry — fatal on duplicate alloc, warn on untracked dealloc — is intentional: double-hooking a live buffer is always a programming error, but deallocating a buffer that was never hooked is valid when instrumentation attaches mid-execution and misses earlier allocations.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/tenstorrent/tt-metal" style="color:#0969da;text-decoration:none;">tenstorrent/tt-metal</a> — <a href="https://github.com/tenstorrent/tt-metal/blob/main/tt_metal/impl/graph/graph_tracking.cpp" style="color:#0969da;text-decoration:none;">tt_metal/impl/graph/graph_tracking.cpp</a>. TT-Metal (TT-Metalium) is Tenstorrent's low-level C++ SDK for programming Tensix AI accelerator chips — it gives developers direct access to the RISC-V cores, NoC fabric, and matrix/vector compute engines inside each chip, similar to what CUDA gives GPU programmers but for open RISC-V-based hardware. It's the foundation layer for Tenstorrent's open-source AI stack, with active kernel work targeting DeepSeek and Llama models.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>
