@@ -587,5 +587,41 @@
     "snippets": [
       "tenstorrent/tt-metal/blob/main/tt_metal/impl/graph/graph_tracking.cpp"
     ]
+  },
+  "huggingface/OpenEnv": {
+    "count": 1,
+    "snippets": [
+      "huggingface/OpenEnv/blob/main/src/openenv/core/harness/collect.py"
+    ]
+  },
+  "Panniantong/Agent-Reach": {
+    "count": 1,
+    "snippets": [
+      "Panniantong/Agent-Reach/blob/main/agent_reach/probe.py"
+    ]
+  },
+  "EveryInc/compound-engineering-plugin": {
+    "count": 1,
+    "snippets": [
+      "EveryInc/compound-engineering-plugin/blob/main/src/converters/claude-to-codex.ts"
+    ]
+  },
+  "activeloopai/hivemind": {
+    "count": 1,
+    "snippets": [
+      "activeloopai/hivemind/blob/main/src/graph/extract/go.ts"
+    ]
+  },
+  "geo-tp/ESP32-Bit-Pirate": {
+    "count": 1,
+    "snippets": [
+      "geo-tp/ESP32-Bit-Pirate/blob/pioarduino/src/Analyzers/PinAnalyzer.cpp"
+    ]
+  },
+  "leejet/stable-diffusion.cpp": {
+    "count": 1,
+    "snippets": [
+      "leejet/stable-diffusion.cpp/blob/master/src/runtime/denoiser.hpp"
+    ]
   }
 }
