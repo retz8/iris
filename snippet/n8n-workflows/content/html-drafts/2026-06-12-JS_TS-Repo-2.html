@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">function</span> <span style="color:#795e26;">collectCalls</span>(
+  <span style="color:#001080;">node</span>: <span style="color:#267f99;">TSNode</span>,
+  <span style="color:#001080;">result</span>: <span style="color:#267f99;">FileExtraction</span>,
+  <span style="color:#001080;">declByName</span>: <span style="color:#267f99;">Map</span>&lt;<span style="color:#267f99;">string</span>, <span style="color:#267f99;">GraphNode</span>&gt;,
+): <span style="color:#267f99;">void</span> {
+  <span style="color:#af00db;">if</span> (<span style="color:#001080;">node</span>.<span style="color:#001080;">type</span> === <span style="color:#a31515;">"call_expression"</span>) {
+    <span style="color:#0000ff;">const</span> <span style="color:#001080;">fn</span> = <span style="color:#001080;">node</span>.<span style="color:#795e26;">childForFieldName</span>(<span style="color:#a31515;">"function"</span>);
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">fn</span> !== <span style="color:#0000ff;">null</span> &amp;&amp; <span style="color:#001080;">fn</span>.<span style="color:#001080;">type</span> === <span style="color:#a31515;">"identifier"</span>) {
+      <span style="color:#0000ff;">const</span> <span style="color:#001080;">target</span> = <span style="color:#001080;">declByName</span>.<span style="color:#795e26;">get</span>(<span style="color:#001080;">fn</span>.<span style="color:#001080;">text</span>);
+      <span style="color:#0000ff;">const</span> <span style="color:#001080;">caller</span> = <span style="color:#795e26;">findEnclosingFn</span>(<span style="color:#001080;">node</span>, <span style="color:#001080;">declByName</span>);
+      <span style="color:#af00db;">if</span> (<span style="color:#001080;">target</span> !== <span style="color:#0000ff;">undefined</span> &amp;&amp; <span style="color:#001080;">caller</span> !== <span style="color:#0000ff;">null</span>) {
+        <span style="color:#001080;">result</span>.<span style="color:#001080;">edges</span>.<span style="color:#795e26;">push</span>({
+          <span style="color:#001080;">source</span>: <span style="color:#001080;">caller</span>.<span style="color:#001080;">id</span>,
+          <span style="color:#001080;">target</span>: <span style="color:#001080;">target</span>.<span style="color:#001080;">id</span>,
+          <span style="color:#001080;">relation</span>: <span style="color:#a31515;">"calls"</span>,
+          <span style="color:#001080;">confidence</span>: <span style="color:#a31515;">"EXTRACTED"</span>,
+        });
+      }
+    }
+  }
+  <span style="color:#af00db;">for</span> (<span style="color:#0000ff;">let</span> <span style="color:#001080;">i</span> = <span style="color:#098658;">0</span>; <span style="color:#001080;">i</span> &lt; <span style="color:#001080;">node</span>.<span style="color:#001080;">namedChildCount</span>; <span style="color:#001080;">i</span>++) {
+    <span style="color:#0000ff;">const</span> <span style="color:#001080;">child</span> = <span style="color:#001080;">node</span>.<span style="color:#795e26;">namedChild</span>(<span style="color:#001080;">i</span>);
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">child</span> !== <span style="color:#0000ff;">null</span>)
+      <span style="color:#795e26;">collectCalls</span>(<span style="color:#001080;">child</span>, <span style="color:#001080;">result</span>, <span style="color:#001080;">declByName</span>);
+  }
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Recursively walks a tree-sitter AST for Go source, identifies simple identifier call expressions, resolves both the callee and enclosing function against a declaration map, and appends a directed "calls" edge to the extraction result.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> This is the call-graph construction pass in Hivemind's Go language extractor — the edges it emits define which functions invoke which others, forming the backbone of the cross-agent semantic memory that Hivemind uses to avoid duplicate work across sessions.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> Edges are only recorded when both <code>target</code> and <code>caller</code> resolve in <code>declByName</code> — calls to external packages or anonymous functions are silently dropped. This keeps the graph to file-local relationships by design, meaning cross-package call chains are invisible to Hivemind's memory layer.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/activeloopai/hivemind" style="color:#0969da;text-decoration:none;">activeloopai/hivemind</a> — <a href="https://github.com/activeloopai/hivemind/blob/main/src/graph/extract/go.ts" style="color:#0969da;text-decoration:none;">src/graph/extract/go.ts</a>. Hivemind is Activeloop's shared memory layer for multi-agent AI teams, giving every agent in a session access to a persistent call graph and context store backed by DeepLake embeddings to prevent duplicate work across Claude Code, Codex, and Cursor. At the LoCoMo benchmark it reduced costs by 25% and cut agent turns by 31%.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

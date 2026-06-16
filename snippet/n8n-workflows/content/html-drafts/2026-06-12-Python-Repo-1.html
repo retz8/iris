@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">def</span> <span style="color:#795e26;">build_model_step</span>(
+    <span style="color:#001080;">llm_client</span>: <span style="color:#267f99;">LLMClient</span>,
+    *,
+    <span style="color:#001080;">system_prompt</span>: <span style="color:#267f99;">str</span> | <span style="color:#0000ff;">None</span> = <span style="color:#0000ff;">None</span>,
+) -&gt; <span style="color:#267f99;">ModelStep</span>:
+    <span style="color:#0000ff;">def</span> <span style="color:#795e26;">model_step</span>(
+        <span style="color:#001080;">messages</span>: <span style="color:#267f99;">list</span>[<span style="color:#267f99;">dict</span>[<span style="color:#267f99;">str</span>, <span style="color:#267f99;">Any</span>]],
+        <span style="color:#001080;">tools</span>: <span style="color:#267f99;">list</span>[<span style="color:#267f99;">Tool</span>],
+        <span style="color:#001080;">sampling</span>: <span style="color:#267f99;">dict</span>[<span style="color:#267f99;">str</span>, <span style="color:#267f99;">Any</span>],
+    ) -&gt; <span style="color:#267f99;">ModelStepResult</span>:
+        <span style="color:#001080;">effective_messages</span> = <span style="color:#795e26;">list</span>(<span style="color:#001080;">messages</span>)
+        <span style="color:#af00db;">if</span> <span style="color:#001080;">system_prompt</span> <span style="color:#0000ff;">and</span> <span style="color:#0000ff;">not</span> <span style="color:#795e26;">any</span>(
+            <span style="color:#001080;">m</span>.<span style="color:#795e26;">get</span>(<span style="color:#a31515;">"role"</span>) == <span style="color:#a31515;">"system"</span>
+            <span style="color:#af00db;">for</span> <span style="color:#001080;">m</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">effective_messages</span>
+        ):
+            <span style="color:#001080;">effective_messages</span>.<span style="color:#795e26;">insert</span>(
+                <span style="color:#098658;">0</span>, {<span style="color:#a31515;">"role"</span>: <span style="color:#a31515;">"system"</span>, <span style="color:#a31515;">"content"</span>: <span style="color:#001080;">system_prompt</span>}
+            )
+
+        <span style="color:#001080;">tool_dicts</span> = [<span style="color:#795e26;">_tool_to_mcp_dict</span>(<span style="color:#001080;">t</span>) <span style="color:#af00db;">for</span> <span style="color:#001080;">t</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">tools</span>]
+        <span style="color:#001080;">dropped_keys</span> = <span style="color:#795e26;">sorted</span>(
+            <span style="color:#795e26;">set</span>(<span style="color:#001080;">sampling</span>) - <span style="color:#001080;">_SUPPORTED_SAMPLING_KEYS</span>
+        )
+        <span style="color:#af00db;">if</span> <span style="color:#001080;">dropped_keys</span>:
+            <span style="color:#001080;">warnings</span>.<span style="color:#795e26;">warn</span>(
+                <span style="color:#a31515;">"Dropping unsupported sampling keys: "</span>
+                + <span style="color:#a31515;">", "</span>.<span style="color:#795e26;">join</span>(<span style="color:#001080;">dropped_keys</span>),
+                <span style="color:#267f99;">RuntimeWarning</span>,
+                <span style="color:#001080;">stacklevel</span>=<span style="color:#098658;">2</span>,
+            )
+        <span style="color:#001080;">filtered_sampling</span> = {
+            <span style="color:#001080;">k</span>: <span style="color:#001080;">v</span>
+            <span style="color:#af00db;">for</span> <span style="color:#001080;">k</span>, <span style="color:#001080;">v</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">sampling</span>.<span style="color:#795e26;">items</span>()
+            <span style="color:#af00db;">if</span> <span style="color:#001080;">k</span> <span style="color:#0000ff;">in</span> <span style="color:#001080;">_SUPPORTED_SAMPLING_KEYS</span>
+        }
+
+        <span style="color:#001080;">response</span> = <span style="color:#795e26;">run_async_safely</span>(
+            <span style="color:#001080;">llm_client</span>.<span style="color:#795e26;">complete_with_tools</span>(
+                <span style="color:#001080;">messages</span>=<span style="color:#001080;">effective_messages</span>,
+                <span style="color:#001080;">tools</span>=<span style="color:#001080;">tool_dicts</span>,
+                **<span style="color:#001080;">filtered_sampling</span>,
+            )
+        )
+        <span style="color:#af00db;">return</span> <span style="color:#267f99;">ModelStepResult</span>(<span style="color:#001080;">response</span>=<span style="color:#001080;">response</span>)
+
+    <span style="color:#af00db;">return</span> <span style="color:#001080;">model_step</span></div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Wraps an LLM client in a closure that validates sampling parameters, lazily injects a system prompt when none is present, and dispatches an async tool-capable inference call through a sync bridge.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Serves as the execution boundary between OpenEnv's harness orchestration layer and the underlying LLM provider, ensuring every model invocation arrives with consistent parameter contracts regardless of the upstream caller.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The closure binds <code>system_prompt</code> once at construction time but injects it lazily only when no system message already exists, so callers can silently override the default prompt by prepending their own without any explicit opt-out.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/huggingface/OpenEnv" style="color:#0969da;text-decoration:none;">huggingface/OpenEnv</a> — <a href="https://github.com/huggingface/OpenEnv/blob/main/src/openenv/core/harness/collect.py" style="color:#0969da;text-decoration:none;">src/openenv/core/harness/collect.py</a>. OpenEnv is a standardized Python framework for RL post-training that provides a uniform Gymnasium-style API for connecting any LLM to isolated training environments. Backed by HuggingFace, NVIDIA, and PyTorch, it's the execution substrate frameworks like TRL and GRPO use to run agents through environment loops.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>
