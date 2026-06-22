@@ -3,7 +3,7 @@
 Issue: #19
 Date: 2026-06-19
 Language: JS_TS
-Status: PENDING_SELECTION
+Status: COMPLETED
 
 ## Repo 1 — withastro/flue
 
