@@ -623,5 +623,41 @@
     "snippets": [
       "leejet/stable-diffusion.cpp/blob/master/src/runtime/denoiser.hpp"
     ]
+  },
+  "NVIDIA/SkillSpector": {
+    "count": 1,
+    "snippets": [
+      "NVIDIA/SkillSpector/blob/main/src/skillspector/nodes/analyzers/mcp_least_privilege.py"
+    ]
+  },
+  "calesthio/OpenMontage": {
+    "count": 1,
+    "snippets": [
+      "calesthio/OpenMontage/blob/main/.agents/skills/manimgl-best-practices/examples/attention_softmax_masking.py"
+    ]
+  },
+  "withastro/flue": {
+    "count": 1,
+    "snippets": [
+      "withastro/flue/blob/main/packages/runtime/src/session-history.ts"
+    ]
+  },
+  "makeplane/plane": {
+    "count": 1,
+    "snippets": [
+      "makeplane/plane/blob/preview/packages/editor/src/core/extensions/keymap.ts"
+    ]
+  },
+  "ocornut/imgui": {
+    "count": 1,
+    "snippets": [
+      "ocornut/imgui/blob/master/misc/cpp/imgui_stdlib.cpp"
+    ]
+  },
+  "EpicGames/raddebugger": {
+    "count": 1,
+    "snippets": [
+      "EpicGames/raddebugger/blob/master/src/base/base_core.c"
+    ]
   }
 }

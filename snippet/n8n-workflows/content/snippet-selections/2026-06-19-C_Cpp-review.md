@@ -3,7 +3,7 @@
 Issue: #19
 Date: 2026-06-19
 Language: C/C++
-Status: PENDING_APPROVAL
+Status: COMPLETED
 
 ## Repo 1 — ocornut/imgui
 
