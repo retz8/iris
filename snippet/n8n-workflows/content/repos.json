@@ -659,5 +659,41 @@
     "snippets": [
       "EpicGames/raddebugger/blob/master/src/base/base_core.c"
     ]
+  },
+  "ZhuLinsen/daily_stock_analysis": {
+    "count": 1,
+    "snippets": [
+      "ZhuLinsen/daily_stock_analysis/blob/main/src/core/backtest_engine.py"
+    ]
+  },
+  "interviewstreet/hiring-agent": {
+    "count": 1,
+    "snippets": [
+      "interviewstreet/hiring-agent/blob/main/evaluator.py"
+    ]
+  },
+  "koala73/worldmonitor": {
+    "count": 1,
+    "snippets": [
+      "koala73/worldmonitor/blob/main/src/utils/supplier-route-risk.ts"
+    ]
+  },
+  "google-labs-code/design.md": {
+    "count": 1,
+    "snippets": [
+      "google-labs-code/design.md/blob/main/packages/cli/src/linter/linter/rules/orphaned-tokens.ts"
+    ]
+  },
+  "optiscaler/OptiScaler": {
+    "count": 1,
+    "snippets": [
+      "optiscaler/OptiScaler/blob/master/OptiScaler/upscalers/IFeature.h"
+    ]
+  },
+  "NVIDIA-AI-Blueprints/video-search-and-summarization": {
+    "count": 1,
+    "snippets": [
+      "NVIDIA-AI-Blueprints/video-search-and-summarization/blob/main/services/vios/src/modules/rtsp_server/H264ByteStreamSource.cpp"
+    ]
   }
 }

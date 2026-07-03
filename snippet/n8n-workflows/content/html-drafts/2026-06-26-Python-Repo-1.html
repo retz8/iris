@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;">@<span style="color:#795e26">classmethod</span>
+<span style="color:#0000ff">def</span> <span style="color:#795e26">_classify_outcome</span>(
+    <span style="color:#001080">cls</span>,
+    *,
+    <span style="color:#001080">stock_return_pct</span>: <span style="color:#267f99">Optional</span>[<span style="color:#267f99">float</span>],
+    <span style="color:#001080">direction_expected</span>: <span style="color:#267f99">str</span>,
+    <span style="color:#001080">neutral_band_pct</span>: <span style="color:#267f99">float</span>,
+) -> <span style="color:#267f99">tuple</span>[<span style="color:#267f99">Optional</span>[<span style="color:#267f99">str</span>], <span style="color:#267f99">Optional</span>[<span style="color:#267f99">bool</span>]]:
+    <span style="color:#af00db">if</span> <span style="color:#001080">stock_return_pct</span> is <span style="color:#0000ff">None</span>:
+        <span style="color:#af00db">return</span> <span style="color:#0000ff">None</span>, <span style="color:#0000ff">None</span>
+
+    <span style="color:#001080">band</span> = <span style="color:#795e26">abs</span>(<span style="color:#795e26">float</span>(<span style="color:#001080">neutral_band_pct</span>))
+    <span style="color:#001080">r</span> = <span style="color:#795e26">float</span>(<span style="color:#001080">stock_return_pct</span>)
+
+    <span style="color:#af00db">if</span> <span style="color:#001080">direction_expected</span> == <span style="color:#a31515">"up"</span>:
+        <span style="color:#af00db">if</span> <span style="color:#001080">r</span> >= <span style="color:#001080">band</span>:
+            <span style="color:#af00db">return</span> <span style="color:#a31515">"win"</span>, <span style="color:#0000ff">True</span>
+        <span style="color:#af00db">if</span> <span style="color:#001080">r</span> <= -<span style="color:#001080">band</span>:
+            <span style="color:#af00db">return</span> <span style="color:#a31515">"loss"</span>, <span style="color:#0000ff">False</span>
+        <span style="color:#af00db">return</span> <span style="color:#a31515">"neutral"</span>, <span style="color:#0000ff">None</span>
+
+    <span style="color:#af00db">if</span> <span style="color:#001080">direction_expected</span> == <span style="color:#a31515">"down"</span>:
+        <span style="color:#af00db">if</span> <span style="color:#001080">r</span> <= -<span style="color:#001080">band</span>:
+            <span style="color:#af00db">return</span> <span style="color:#a31515">"win"</span>, <span style="color:#0000ff">True</span>
+        <span style="color:#af00db">if</span> <span style="color:#001080">r</span> >= <span style="color:#001080">band</span>:
+            <span style="color:#af00db">return</span> <span style="color:#a31515">"loss"</span>, <span style="color:#0000ff">False</span>
+        <span style="color:#af00db">return</span> <span style="color:#a31515">"neutral"</span>, <span style="color:#0000ff">None</span>
+
+    <span style="color:#af00db">if</span> <span style="color:#001080">direction_expected</span> == <span style="color:#a31515">"not_down"</span>:
+        <span style="color:#af00db">if</span> <span style="color:#001080">r</span> >= <span style="color:#098658">0</span>:
+            <span style="color:#af00db">return</span> <span style="color:#a31515">"win"</span>, <span style="color:#0000ff">True</span>
+        <span style="color:#af00db">if</span> <span style="color:#001080">r</span> <= -<span style="color:#001080">band</span>:
+            <span style="color:#af00db">return</span> <span style="color:#a31515">"loss"</span>, <span style="color:#0000ff">False</span>
+        <span style="color:#af00db">return</span> <span style="color:#a31515">"neutral"</span>, <span style="color:#0000ff">None</span>
+
+    <span style="color:#6a9955"># flat</span>
+    <span style="color:#af00db">if</span> <span style="color:#795e26">abs</span>(<span style="color:#001080">r</span>) <= <span style="color:#001080">band</span>:
+        <span style="color:#af00db">return</span> <span style="color:#a31515">"win"</span>, <span style="color:#0000ff">True</span>
+    <span style="color:#af00db">return</span> <span style="color:#a31515">"loss"</span>, <span style="color:#0000ff">False</span></div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Classifies a completed stock trade as win, loss, or neutral by comparing the actual return percentage against a configurable dead-band threshold, conditioned on whether the LLM predicted the stock would go up, down, stay flat, or avoid a drop.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> The core scoring primitive of the backtesting engine — it converts raw price return data into labeled outcomes that the engine aggregates into win-rate, expectancy, and accuracy metrics used to evaluate the LLM's directional predictions.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The `not_down` case captures an asymmetric prediction: any non-negative return wins, but a drop past the neutral band still loses. This represents 'floor but not direction' — the LLM forecasting support without committing to a rally.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/ZhuLinsen/daily_stock_analysis" style="color:#0969da;text-decoration:none;">ZhuLinsen/daily_stock_analysis</a> — <a href="https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/src/core/backtest_engine.py" style="color:#0969da;text-decoration:none;">src/core/backtest_engine.py</a>. An LLM-powered stock analysis tool that fetches multi-market data (A-shares, US, JP, ETFs) and real-time news daily, generates a decision dashboard with AI-summarized signals, and delivers it via WeChat Work, Telegram, Slack, or email — runnable for free on a GitHub Actions schedule.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

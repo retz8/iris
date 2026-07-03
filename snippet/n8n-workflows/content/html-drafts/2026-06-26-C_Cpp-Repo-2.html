@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#267f99">bool</span> <span style="color:#795e26">isContinuationSlice</span>(
+    <span style="color:#0000ff">const</span> <span style="color:#267f99">std::vector</span>&lt;<span style="color:#267f99">uint8_t</span>&gt; &amp;<span style="color:#001080">content</span>,
+    <span style="color:#267f99">uint8_t</span> <span style="color:#001080">nal_type</span>,
+    <span style="color:#0000ff">const</span> <span style="color:#267f99">std::string</span> &amp;<span style="color:#001080">codec</span>)
+{
+    <span style="color:#af00db">if</span> (<span style="color:#795e26">iequals</span>(<span style="color:#001080">codec</span>, <span style="color:#a31515">"h264"</span>))
+    {
+        <span style="color:#6a9955">/* Only nal_unit_type 1 (non-IDR slice) and 5 (IDR
+         * slice) are coded slices in H.264; anything else
+         * cannot be a continuation. */</span>
+        <span style="color:#af00db">if</span> (<span style="color:#001080">nal_type</span> != <span style="color:#267f99">NaluType</span>::<span style="color:#001080">kSlice</span>
+            &amp;&amp; <span style="color:#001080">nal_type</span> != <span style="color:#267f99">NaluType</span>::<span style="color:#001080">kIdr</span>)
+        {
+            <span style="color:#af00db">return</span> <span style="color:#0000ff">false</span>;
+        }
+        <span style="color:#6a9955">/* 1-byte NAL header + at least 1 slice-header byte. */</span>
+        <span style="color:#af00db">if</span> (<span style="color:#001080">content</span>.<span style="color:#795e26">size</span>() &lt; <span style="color:#098658">2</span>)
+        {
+            <span style="color:#af00db">return</span> <span style="color:#0000ff">false</span>;
+        }
+        <span style="color:#af00db">return</span> (<span style="color:#001080">content</span>[<span style="color:#098658">1</span>] &amp; <span style="color:#098658">0x80</span>) == <span style="color:#098658">0</span>;
+    }
+    <span style="color:#af00db">if</span> (<span style="color:#795e26">iequals</span>(<span style="color:#001080">codec</span>, <span style="color:#a31515">"h265"</span>))
+    {
+        <span style="color:#6a9955">/* HEVC VCL NAL units are types 0..31; everything
+         * 32+ is non-VCL (VPS/SPS/PPS/AUD/SEI/...). */</span>
+        <span style="color:#af00db">if</span> (<span style="color:#001080">nal_type</span> &gt; <span style="color:#098658">31</span>)
+        {
+            <span style="color:#af00db">return</span> <span style="color:#0000ff">false</span>;
+        }
+        <span style="color:#6a9955">/* 2-byte NAL header + at least 1 slice-header byte. */</span>
+        <span style="color:#af00db">if</span> (<span style="color:#001080">content</span>.<span style="color:#795e26">size</span>() &lt; <span style="color:#098658">3</span>)
+        {
+            <span style="color:#af00db">return</span> <span style="color:#0000ff">false</span>;
+        }
+        <span style="color:#af00db">return</span> (<span style="color:#001080">content</span>[<span style="color:#098658">2</span>] &amp; <span style="color:#098658">0x80</span>) == <span style="color:#098658">0</span>;
+    }
+    <span style="color:#af00db">return</span> <span style="color:#0000ff">false</span>;
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Determines whether a NAL unit represents a continuation slice (not the first in its frame) by parsing codec-specific slice header bits — the MSB of the post-header byte encodes `first_mb_in_slice` for H.264 and `first_slice_segment_in_pic_flag` for H.265.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> In the RTSP server, this gates frame boundary detection: continuation slices append to the current packet group instead of triggering a new frame, which is essential for correctly streaming high-resolution video that splits a single frame across multiple NAL units.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The `&amp; 0x80` check shortcuts Exp-Golomb decoding: value 0 always encodes as a leading `1`, so a leading `0` unambiguously means `first_mb_in_slice > 0` (H.264) or `first_slice_segment_in_pic_flag == 0` (H.265) — no variable-length decode needed, just one bitmask.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/NVIDIA-AI-Blueprints/video-search-and-summarization" style="color:#0969da;text-decoration:none;">NVIDIA-AI-Blueprints/video-search-and-summarization</a> — <a href="https://github.com/NVIDIA-AI-Blueprints/video-search-and-summarization/blob/main/services/vios/src/modules/rtsp_server/H264ByteStreamSource.cpp" style="color:#0969da;text-decoration:none;">services/vios/src/modules/rtsp_server/H264ByteStreamSource.cpp</a>. A GPU-accelerated reference architecture from NVIDIA for building AI video analytics agents that support natural-language video search, summarization, and visual Q&amp;A — backed by vision-language models and NVIDIA NIM microservices, it targets enterprise use cases like smart-space monitoring, warehouse automation, and SOP validation.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

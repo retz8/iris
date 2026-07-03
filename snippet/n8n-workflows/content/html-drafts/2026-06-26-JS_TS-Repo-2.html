@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;margin:0 0 24px 0;"><span style="color:#0000ff">function</span> <span style="color:#795e26">colorFamily</span>(<span style="color:#001080">name</span>: <span style="color:#267f99">string</span>): <span style="color:#267f99">string</span> {
+  <span style="color:#0000ff">let</span> <span style="color:#001080">n</span> = <span style="color:#001080">name</span>;
+  <span style="color:#001080">n</span> = <span style="color:#001080">n</span>.<span style="color:#795e26">replace</span>(/^on-/, <span style="color:#a31515">''</span>);
+  <span style="color:#001080">n</span> = <span style="color:#001080">n</span>.<span style="color:#795e26">replace</span>(/^inverse-/, <span style="color:#a31515">''</span>);
+  <span style="color:#001080">n</span> = <span style="color:#001080">n</span>.<span style="color:#795e26">replace</span>(/^on-/, <span style="color:#a31515">''</span>);
+  <span style="color:#001080">n</span> = <span style="color:#001080">n</span>.<span style="color:#795e26">replace</span>(/-container.*$/, <span style="color:#a31515">''</span>);
+  <span style="color:#001080">n</span> = <span style="color:#001080">n</span>.<span style="color:#795e26">replace</span>(/-fixed.*$/, <span style="color:#a31515">''</span>);
+  <span style="color:#001080">n</span> = <span style="color:#001080">n</span>.<span style="color:#795e26">replace</span>(/-(dim|bright|tint|variant)$/, <span style="color:#a31515">''</span>);
+  <span style="color:#af00db">return</span> <span style="color:#001080">n</span>;
+}
+
+<span style="color:#0000ff">const</span> <span style="color:#001080">MD3_STANDARD_FAMILIES</span> = <span style="color:#0000ff">new</span> <span style="color:#267f99">Set</span>([
+  <span style="color:#a31515">'primary'</span>, <span style="color:#a31515">'secondary'</span>, <span style="color:#a31515">'tertiary'</span>,
+  <span style="color:#a31515">'error'</span>, <span style="color:#a31515">'surface'</span>, <span style="color:#a31515">'background'</span>, <span style="color:#a31515">'outline'</span>,
+]);
+
+<span style="color:#0000ff">export</span> <span style="color:#0000ff">function</span> <span style="color:#795e26">orphanedTokens</span>(
+  <span style="color:#001080">state</span>: <span style="color:#267f99">DesignSystemState</span>
+): <span style="color:#267f99">RuleFinding</span>[] {
+  <span style="color:#af00db">if</span> (<span style="color:#001080">state</span>.<span style="color:#001080">components</span>.<span style="color:#001080">size</span> === <span style="color:#098658">0</span>) <span style="color:#af00db">return</span> [];
+
+  <span style="color:#0000ff">const</span> <span style="color:#001080">referencedPaths</span> = <span style="color:#0000ff">new</span> <span style="color:#267f99">Set</span>&lt;<span style="color:#267f99">string</span>&gt;();
+  <span style="color:#af00db">for</span> (<span style="color:#0000ff">const</span> [, <span style="color:#001080">comp</span>] of <span style="color:#001080">state</span>.<span style="color:#001080">components</span>) {
+    <span style="color:#af00db">for</span> (<span style="color:#0000ff">const</span> [, <span style="color:#001080">value</span>] of <span style="color:#001080">comp</span>.<span style="color:#001080">properties</span>) {
+      <span style="color:#af00db">if</span> (
+        <span style="color:#0000ff">typeof</span> <span style="color:#001080">value</span> === <span style="color:#a31515">'object'</span> &amp;&amp;
+        <span style="color:#001080">value</span> !== <span style="color:#0000ff">null</span> &amp;&amp;
+        <span style="color:#a31515">'type'</span> in <span style="color:#001080">value</span>
+      ) {
+        <span style="color:#af00db">for</span> (<span style="color:#0000ff">const</span> [<span style="color:#001080">key</span>, <span style="color:#001080">symValue</span>] of <span style="color:#001080">state</span>.<span style="color:#001080">symbolTable</span>) {
+          <span style="color:#af00db">if</span> (<span style="color:#001080">symValue</span> === <span style="color:#001080">value</span>) {
+            <span style="color:#001080">referencedPaths</span>.<span style="color:#795e26">add</span>(<span style="color:#001080">key</span>);
+          }
+        }
+      }
+    }
+  }
+
+  <span style="color:#0000ff">const</span> <span style="color:#001080">referencedFamilies</span> = <span style="color:#0000ff">new</span> <span style="color:#267f99">Set</span>&lt;<span style="color:#267f99">string</span>&gt;();
+  <span style="color:#af00db">for</span> (<span style="color:#0000ff">const</span> <span style="color:#001080">path</span> of <span style="color:#001080">referencedPaths</span>) {
+    <span style="color:#af00db">if</span> (<span style="color:#001080">path</span>.<span style="color:#795e26">startsWith</span>(<span style="color:#a31515">'colors.'</span>)) {
+      <span style="color:#001080">referencedFamilies</span>.<span style="color:#795e26">add</span>(
+        <span style="color:#795e26">colorFamily</span>(<span style="color:#001080">path</span>.<span style="color:#795e26">slice</span>(<span style="color:#a31515">'colors.'</span>.<span style="color:#001080">length</span>))
+      );
+    }
+  }
+
+  <span style="color:#0000ff">const</span> <span style="color:#001080">findings</span>: <span style="color:#267f99">RuleFinding</span>[] = [];
+  <span style="color:#af00db">for</span> (<span style="color:#0000ff">const</span> [<span style="color:#001080">name</span>] of <span style="color:#001080">state</span>.<span style="color:#001080">colors</span>) {
+    <span style="color:#0000ff">const</span> <span style="color:#001080">path</span> = <span style="color:#a31515">`colors.</span>${<span style="color:#001080">name</span>}<span style="color:#a31515">`</span>;
+    <span style="color:#af00db">if</span> (<span style="color:#001080">referencedPaths</span>.<span style="color:#795e26">has</span>(<span style="color:#001080">path</span>)) <span style="color:#af00db">continue</span>;
+    <span style="color:#0000ff">const</span> <span style="color:#001080">family</span> = <span style="color:#795e26">colorFamily</span>(<span style="color:#001080">name</span>);
+    <span style="color:#af00db">if</span> (<span style="color:#001080">referencedFamilies</span>.<span style="color:#795e26">has</span>(<span style="color:#001080">family</span>)) <span style="color:#af00db">continue</span>;
+    <span style="color:#af00db">if</span> (<span style="color:#001080">MD3_STANDARD_FAMILIES</span>.<span style="color:#795e26">has</span>(<span style="color:#001080">family</span>)) <span style="color:#af00db">continue</span>;
+    <span style="color:#001080">findings</span>.<span style="color:#795e26">push</span>({
+      <span style="color:#001080">path</span>,
+      <span style="color:#001080">message</span>:
+        <span style="color:#a31515">`'</span>${<span style="color:#001080">name</span>}<span style="color:#a31515">' is defined but never `</span> +
+        <span style="color:#a31515">`referenced by any component.`</span>,
+    });
+  }
+  <span style="color:#af00db">return</span> <span style="color:#001080">findings</span>;
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Scans all component property values to collect referenced symbol paths, derives their color family names by stripping MD3 role prefixes, then flags any defined color whose family appears nowhere in component usage and isn't a Material Design 3 standard color.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Prevents design-system drift by catching color tokens defined but never wired to a component — otherwise the token set silently bloats, and AI agents reading DESIGN.md would generate UI using colors the design system has functionally abandoned.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The <code>colorFamily()</code> function strips MD3 role prefixes (<code>on-</code>, <code>inverse-</code>, <code>-container</code>, <code>-fixed</code>, <code>-dim</code>) before comparing — so if <code>primary-container</code> is referenced, <code>primary</code> counts as covered even if it appears nowhere directly. This prevents false positives for role-variant token families.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/google-labs-code/design.md" style="color:#0969da;text-decoration:none;">google-labs-code/design.md</a> — <a href="https://github.com/google-labs-code/design.md/blob/main/packages/cli/src/linter/linter/rules/orphaned-tokens.ts" style="color:#0969da;text-decoration:none;">packages/cli/src/linter/linter/rules/orphaned-tokens.ts</a>. A format specification from Google Labs that gives AI coding agents a persistent, structured description of a project's visual identity — developers write a DESIGN.md file once, and tools like GitHub Copilot, Cursor, or Claude Code read it to generate visually consistent UI without repeated manual prompting.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

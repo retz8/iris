@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snippet #20 — Python: LLM resume evaluation orchestrator</title>
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;margin:0 0 24px 0;"><span style="color:#0000ff">def</span> <span style="color:#795e26">evaluate_resume</span>(
+    <span style="color:#001080">self</span>, <span style="color:#001080">resume_text</span>: <span style="color:#267f99">str</span>
+) -&gt; <span style="color:#267f99">EvaluationData</span>:
+    <span style="color:#001080">self</span>.<span style="color:#001080">_last_resume_text</span> = <span style="color:#001080">resume_text</span>
+    <span style="color:#001080">full_prompt</span> = <span style="color:#001080">self</span>.<span style="color:#795e26">_load_evaluation_prompt</span>(<span style="color:#001080">resume_text</span>)
+    <span style="color:#af00db">try</span>:
+        <span style="color:#001080">system_message</span> = <span style="color:#001080">self</span>.<span style="color:#001080">template_manager</span>.<span style="color:#795e26">render_template</span>(
+            <span style="color:#a31515">"resume_evaluation_system_message"</span>
+        )
+        <span style="color:#af00db">if</span> <span style="color:#001080">system_message</span> is <span style="color:#0000ff">None</span>:
+            <span style="color:#af00db">raise</span> <span style="color:#267f99">ValueError</span>(
+                <span style="color:#a31515">"Failed to load resume evaluation "</span>
+                <span style="color:#a31515">"system message template"</span>
+            )
+
+        <span style="color:#001080">chat_params</span> = {
+            <span style="color:#a31515">"model"</span>: <span style="color:#001080">self</span>.<span style="color:#001080">model_name</span>,
+            <span style="color:#a31515">"messages"</span>: [
+                {
+                    <span style="color:#a31515">"role"</span>: <span style="color:#a31515">"system"</span>,
+                    <span style="color:#a31515">"content"</span>: <span style="color:#001080">system_message</span>,
+                },
+                {
+                    <span style="color:#a31515">"role"</span>: <span style="color:#a31515">"user"</span>,
+                    <span style="color:#a31515">"content"</span>: <span style="color:#001080">full_prompt</span>,
+                },
+            ],
+            <span style="color:#a31515">"options"</span>: {
+                <span style="color:#a31515">"stream"</span>: <span style="color:#0000ff">False</span>,
+                <span style="color:#a31515">"temperature"</span>: <span style="color:#001080">self</span>.<span style="color:#001080">model_params</span>.<span style="color:#795e26">get</span>(
+                    <span style="color:#a31515">"temperature"</span>, <span style="color:#098658">0.5</span>
+                ),
+                <span style="color:#a31515">"top_p"</span>: <span style="color:#001080">self</span>.<span style="color:#001080">model_params</span>.<span style="color:#795e26">get</span>(
+                    <span style="color:#a31515">"top_p"</span>, <span style="color:#098658">0.9</span>
+                ),
+            },
+        }
+
+        <span style="color:#001080">kwargs</span> = {
+            <span style="color:#a31515">"format"</span>: <span style="color:#267f99">EvaluationData</span>.<span style="color:#795e26">model_json_schema</span>()
+        }
+        <span style="color:#001080">response</span> = <span style="color:#001080">self</span>.<span style="color:#001080">provider</span>.<span style="color:#795e26">chat</span>(
+            **<span style="color:#001080">chat_params</span>, **<span style="color:#001080">kwargs</span>
+        )
+
+        <span style="color:#001080">response_text</span> = <span style="color:#001080">response</span>[<span style="color:#a31515">"message"</span>][<span style="color:#a31515">"content"</span>]
+        <span style="color:#001080">response_text</span> = <span style="color:#795e26">extract_json_from_response</span>(
+            <span style="color:#001080">response_text</span>
+        )
+
+        <span style="color:#001080">evaluation_dict</span> = <span style="color:#001080">json</span>.<span style="color:#795e26">loads</span>(<span style="color:#001080">response_text</span>)
+        <span style="color:#001080">evaluation_data</span> = <span style="color:#267f99">EvaluationData</span>(**<span style="color:#001080">evaluation_dict</span>)
+
+        <span style="color:#af00db">return</span> <span style="color:#001080">evaluation_data</span>
+
+    <span style="color:#af00db">except</span> <span style="color:#267f99">Exception</span> as <span style="color:#001080">e</span>:
+        <span style="color:#001080">logger</span>.<span style="color:#795e26">error</span>(<span style="color:#a31515">f"Error evaluating resume: {str(e)}"</span>)
+        <span style="color:#af00db">raise</span></div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Assembles a chat request from a rendered system prompt template and the candidate's resume text, invokes the configured LLM provider with structured JSON output mode, parses and validates the response into a typed `EvaluationData` object.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> The central scoring call in the hiring pipeline — it turns a raw resume string into a validated, type-safe evaluation record that downstream steps use for scoring, comparison, and explainability reporting.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The `kwargs` split keeps the provider interface generic: schema-aware backends use `format: EvaluationData.model_json_schema()` to enforce JSON output structure; others silently ignore it. Actual validation falls to `EvaluationData(**evaluation_dict)` — Pydantic rejects malformed responses before they reach scoring.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/interviewstreet/hiring-agent" style="color:#0969da;text-decoration:none;">interviewstreet/hiring-agent</a> — <a href="https://github.com/interviewstreet/hiring-agent/blob/main/evaluator.py" style="color:#0969da;text-decoration:none;">evaluator.py</a>. InterviewStreet (the company behind HackerEarth) open-sourced this AI pipeline to automate technical resume screening: it parses PDFs via a local Ollama or hosted Gemini model, enriches each candidate with live GitHub contribution signals, and returns an explainable score with per-category evidence rather than a black-box ranking.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>
