@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff">function</span> <span style="color:#795e26">normalizeHermesEvent</span>(
+  <span style="color:#001080">state</span>: <span style="color:#267f99">HookListenerState</span>,
+  <span style="color:#001080">eventName</span>: <span style="color:#0000ff">unknown</span>,
+  <span style="color:#001080">promptText</span>: <span style="color:#0000ff">string</span>,
+  <span style="color:#001080">paneKey</span>: <span style="color:#0000ff">string</span>,
+  <span style="color:#001080">hookPayload</span>: <span style="color:#267f99">Record</span>&lt;<span style="color:#0000ff">string</span>, <span style="color:#0000ff">unknown</span>&gt;
+): <span style="color:#267f99">ParsedAgentStatusPayload</span> | <span style="color:#0000ff">null</span> {
+  <span style="color:#0000ff">const</span> <span style="color:#001080">stateName</span> =
+    <span style="color:#001080">eventName</span> === <span style="color:#a31515">'pre_approval_request'</span>
+      ? <span style="color:#a31515">'waiting'</span>
+      : <span style="color:#001080">eventName</span> === <span style="color:#a31515">'post_llm_call'</span> ||
+          <span style="color:#001080">eventName</span> === <span style="color:#a31515">'on_session_end'</span> ||
+          <span style="color:#001080">eventName</span> === <span style="color:#a31515">'on_session_finalize'</span> ||
+          <span style="color:#001080">eventName</span> === <span style="color:#a31515">'on_session_reset'</span>
+        ? <span style="color:#a31515">'done'</span>
+        : <span style="color:#001080">eventName</span> === <span style="color:#a31515">'on_session_start'</span> ||
+            <span style="color:#001080">eventName</span> === <span style="color:#a31515">'pre_llm_call'</span> ||
+            <span style="color:#001080">eventName</span> === <span style="color:#a31515">'pre_tool_call'</span> ||
+            <span style="color:#001080">eventName</span> === <span style="color:#a31515">'post_tool_call'</span> ||
+            <span style="color:#001080">eventName</span> === <span style="color:#a31515">'post_approval_response'</span>
+          ? <span style="color:#a31515">'working'</span>
+          : <span style="color:#0000ff">null</span>
+
+  <span style="color:#af00db">if</span> (!<span style="color:#001080">stateName</span>) {
+    <span style="color:#af00db">return</span> <span style="color:#0000ff">null</span>
+  }
+
+  <span style="color:#0000ff">const</span> <span style="color:#001080">snapshot</span> = <span style="color:#795e26">resolveToolState</span>(
+    <span style="color:#001080">state</span>,
+    <span style="color:#001080">paneKey</span>,
+    <span style="color:#795e26">extractToolFields</span>(<span style="color:#a31515">'hermes'</span>, <span style="color:#001080">eventName</span>, <span style="color:#001080">hookPayload</span>),
+    { <span style="color:#001080">resetOnNewTurn</span>: <span style="color:#795e26">isNewTurnEvent</span>(<span style="color:#a31515">'hermes'</span>, <span style="color:#001080">eventName</span>) }
+  )
+
+  <span style="color:#af00db">return</span> <span style="color:#795e26">parseAgentStatusPayload</span>(
+    <span style="color:#001080">JSON</span>.<span style="color:#795e26">stringify</span>({
+      <span style="color:#001080">state</span>: <span style="color:#001080">stateName</span>,
+      <span style="color:#001080">prompt</span>: <span style="color:#795e26">resolvePrompt</span>(<span style="color:#001080">state</span>, <span style="color:#001080">paneKey</span>, <span style="color:#001080">promptText</span>, {
+        <span style="color:#001080">resetOnNewTurn</span>: <span style="color:#795e26">isNewTurnEvent</span>(<span style="color:#a31515">'hermes'</span>, <span style="color:#001080">eventName</span>)
+      }),
+      <span style="color:#001080">agentType</span>: <span style="color:#a31515">'hermes'</span>,
+      <span style="color:#001080">toolName</span>: <span style="color:#001080">snapshot</span>.<span style="color:#001080">toolName</span>,
+      <span style="color:#001080">toolInput</span>: <span style="color:#001080">snapshot</span>.<span style="color:#001080">toolInput</span>,
+      <span style="color:#001080">interactivePrompt</span>: <span style="color:#001080">snapshot</span>.<span style="color:#001080">interactivePrompt</span>,
+      <span style="color:#001080">lastAssistantMessage</span>: <span style="color:#001080">snapshot</span>.<span style="color:#001080">lastAssistantMessage</span>
+    })
+  )
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Maps raw Hermes agent lifecycle event names to a three-state model (waiting, working, done), then assembles a normalized ParsedAgentStatusPayload capturing current tool state and prompt — returning null for unrecognized events.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Translates Hermes-specific event vocabulary into a unified status format consumed by the UI — letting the pane view render agent progress without coupling to Hermes's internal event schema, enabling orca to support multiple agent types with the same display logic.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> eventName is typed as unknown rather than a string union, so the compiler doesn't enforce an exhaustive event mapping — intentional for IPC-delivered events whose schema can change at runtime, with the null fallthrough ensuring new or malformed events fail silently rather than crashing the listener.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/stablyai/orca" style="color:#0969da;text-decoration:none;">stablyai/orca</a> — <a href="https://github.com/stablyai/orca/blob/main/src/shared/agent-hook-listener.ts" style="color:#0969da;text-decoration:none;">src/shared/agent-hook-listener.ts</a>. Orca is an open-source Agent Development Environment that runs fleets of parallel coding agents — Claude Code, Codex, Cursor CLI, and 30+ others — across isolated git worktrees simultaneously with side-by-side diff comparison and mobile monitoring.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#001080">std</span>::<span style="color:#267f99">string</span> <span style="color:#795e26">unescape</span>(<span style="color:#0000ff">const</span> <span style="color:#001080">std</span>::<span style="color:#267f99">string_view</span> <span style="color:#001080">data</span>)
+{
+    <span style="color:#001080">std</span>::<span style="color:#267f99">string</span> <span style="color:#001080">result</span>{};
+    <span style="color:#001080">result</span>.<span style="color:#795e26">reserve</span>(<span style="color:#001080">data</span>.<span style="color:#795e26">size</span>());
+
+    <span style="color:#267f99">bool</span> <span style="color:#001080">xor_next</span> = <span style="color:#0000ff">false</span>;
+
+    <span style="color:#af00db">for</span> (<span style="color:#0000ff">auto</span> <span style="color:#001080">value</span> : <span style="color:#001080">data</span>)
+    {
+        <span style="color:#af00db">if</span> (<span style="color:#001080">xor_next</span>)
+        {
+            <span style="color:#001080">value</span> ^= <span style="color:#098658">0x20</span>;
+            <span style="color:#001080">xor_next</span> = <span style="color:#0000ff">false</span>;
+        }
+        <span style="color:#af00db">else</span> <span style="color:#af00db">if</span> (<span style="color:#001080">value</span> == <span style="color:#a31515">'}'</span>)
+        {
+            <span style="color:#001080">xor_next</span> = <span style="color:#0000ff">true</span>;
+            <span style="color:#af00db">continue</span>;
+        }
+
+        <span style="color:#001080">result</span>.<span style="color:#795e26">push_back</span>(<span style="color:#001080">value</span>);
+    }
+
+    <span style="color:#795e26">rt_assert</span>(!<span style="color:#001080">xor_next</span>);
+
+    <span style="color:#af00db">return</span> <span style="color:#001080">result</span>;
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Decodes GDB remote serial protocol escape sequences character-by-character — when a } escape prefix is found, the next byte is XOR'd with 0x20 to recover the original; an assertion at the end catches a trailing escape marker with no following byte.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Part of sogen's GDB stub, this handles the transport layer of the GDB remote serial protocol — letting security researchers attach real debuggers to the emulated process and inspect execution state as if it were a native process.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> result.reserve(data.size()) pre-allocates the maximum possible output size upfront — since GDB escaping expands the encoded length by inserting } markers, the unescaped output can never exceed the input length, making this reserve a safe upper bound that eliminates all reallocations.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/momo5502/sogen" style="color:#0969da;text-decoration:none;">momo5502/sogen</a> — <a href="https://github.com/momo5502/sogen/blob/main/src/gdb-stub/gdb_stub.cpp" style="color:#0969da;text-decoration:none;">src/gdb-stub/gdb_stub.cpp</a>. sogen is a Windows and Linux userspace emulator that loads real OS DLLs and intercepts execution at the syscall level, giving security researchers and malware analysts fully deterministic, reproducible runs where every instruction and API call can be hooked or inspected.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

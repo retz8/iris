@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;margin:0 0 24px 0;"><span style="color:#0000ff">def</span> <span style="color:#795e26">_decode_chars_escape</span>(<span style="color:#001080">s</span>: <span style="color:#267f99">str</span>) -> <span style="color:#267f99">str</span>:
+    <span style="color:#af00db">if</span> <span style="color:#a31515">"\\"</span> <span style="color:#0000ff">not</span> <span style="color:#0000ff">in</span> <span style="color:#001080">s</span>:
+        <span style="color:#af00db">return</span> <span style="color:#001080">s</span>
+
+    <span style="color:#0000ff">def</span> <span style="color:#795e26">sub</span>(<span style="color:#001080">match</span>: <span style="color:#001080">re</span>.<span style="color:#267f99">Match</span>[<span style="color:#267f99">str</span>]) -> <span style="color:#267f99">str</span>:
+        <span style="color:#001080">token</span> = <span style="color:#001080">match</span>.<span style="color:#795e26">group</span>(<span style="color:#098658">0</span>)
+        <span style="color:#af00db">if</span> <span style="color:#001080">token</span> <span style="color:#0000ff">in</span> <span style="color:#001080">_CHARS_ESCAPE_MAP</span>:
+            <span style="color:#af00db">return</span> <span style="color:#001080">_CHARS_ESCAPE_MAP</span>[<span style="color:#001080">token</span>]
+        <span style="color:#af00db">if</span> <span style="color:#001080">token</span>.<span style="color:#795e26">startswith</span>((<span style="color:#a31515">"\\u"</span>, <span style="color:#a31515">"\\x"</span>)):
+            <span style="color:#af00db">return</span> <span style="color:#795e26">chr</span>(<span style="color:#267f99">int</span>(<span style="color:#001080">token</span>[<span style="color:#098658">2</span>:], <span style="color:#098658">16</span>))
+        <span style="color:#af00db">return</span> <span style="color:#001080">token</span>
+
+    <span style="color:#af00db">return</span> <span style="color:#001080">_CHARS_ESCAPE_RE</span>.<span style="color:#795e26">sub</span>(<span style="color:#001080">sub</span>, <span style="color:#001080">s</span>)</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Decodes backslash escape sequences in a string — mapping named escapes via a lookup table and converting \uXXXX/\xXX hex escapes to their Unicode characters, returning the input unchanged if no backslash is present.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> In a penetration testing agent factory, this normalizes raw strings — configuration values, prompt templates, or captured payloads — before they enter the LLM pipeline, ensuring escape sequences resolve to their intended characters rather than corrupting structured inputs.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> Unrecognized escape sequences fall through to <code style="font-family:Consolas,monospace;font-size:14px;">return token</code>, preserving them verbatim rather than raising or stripping — letting the function handle partially-escaped strings from LLM outputs or user inputs without crashing on unknown tokens.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/usestrix/strix" style="color:#0969da;text-decoration:none;">usestrix/strix</a> — <a href="https://github.com/usestrix/strix/blob/main/strix/agents/factory.py" style="color:#0969da;text-decoration:none;">strix/agents/factory.py</a>. Strix is an open-source, agent-driven penetration testing tool that autonomously finds, validates, and exploits vulnerabilities in web applications — used by security teams who want proof-of-concept exploits rather than false-positive-heavy scanner reports.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

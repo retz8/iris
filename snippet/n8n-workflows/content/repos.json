@@ -695,5 +695,41 @@
     "snippets": [
       "NVIDIA-AI-Blueprints/video-search-and-summarization/blob/main/services/vios/src/modules/rtsp_server/H264ByteStreamSource.cpp"
     ]
+  },
+  "usestrix/strix": {
+    "count": 1,
+    "snippets": [
+      "usestrix/strix/blob/main/strix/agents/factory.py"
+    ]
+  },
+  "topoteretes/cognee": {
+    "count": 1,
+    "snippets": [
+      "topoteretes/cognee/blob/main/cognee/modules/retrieval/hybrid/results.py"
+    ]
+  },
+  "diegosouzapw/OmniRoute": {
+    "count": 1,
+    "snippets": [
+      "diegosouzapw/OmniRoute/blob/main/@omniroute/opencode-plugin/src/index.ts"
+    ]
+  },
+  "stablyai/orca": {
+    "count": 1,
+    "snippets": [
+      "stablyai/orca/blob/main/src/shared/agent-hook-listener.ts"
+    ]
+  },
+  "shadps4-emu/shadPS4": {
+    "count": 1,
+    "snippets": [
+      "shadps4-emu/shadPS4/blob/main/src/core/aerolib/stubs.cpp"
+    ]
+  },
+  "momo5502/sogen": {
+    "count": 1,
+    "snippets": [
+      "momo5502/sogen/blob/main/src/gdb-stub/gdb_stub.cpp"
+    ]
   }
 }

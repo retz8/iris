@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#267f99">u64</span> <span style="color:#795e26">GetStub</span>(<span style="color:#0000ff">const</span> <span style="color:#267f99">char</span>* <span style="color:#001080">nid</span>) {
+    <span style="color:#af00db">if</span> (<span style="color:#001080">UsedStubEntries</span> &gt;= <span style="color:#001080">MAX_STUBS</span>) {
+        <span style="color:#af00db">return</span> (<span style="color:#267f99">u64</span>)&amp;<span style="color:#001080">UnknownStub</span>;
+    }
+
+    <span style="color:#0000ff">const</span> <span style="color:#0000ff">auto</span> <span style="color:#001080">entry</span> = <span style="color:#795e26">FindByNid</span>(<span style="color:#001080">nid</span>);
+    <span style="color:#af00db">if</span> (!<span style="color:#001080">entry</span>) {
+        <span style="color:#001080">stub_nids_unknown</span>[<span style="color:#001080">UsedStubEntries</span>] = <span style="color:#001080">nid</span>;
+    } <span style="color:#af00db">else</span> {
+        <span style="color:#001080">stub_nids</span>[<span style="color:#001080">UsedStubEntries</span>] = <span style="color:#001080">entry</span>;
+    }
+
+    <span style="color:#af00db">return</span> (<span style="color:#267f99">u64</span>)<span style="color:#001080">stub_handlers</span>[<span style="color:#001080">UsedStubEntries</span>++];
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Allocates a stub handler for a PS4 system function by NID — recording it as known or unknown in the corresponding tracking array, then returning a type-erased pointer to the pre-allocated handler at that slot.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Provides safe fallbacks for PS4 system calls the emulator hasn't implemented — each game can invoke unresolved functions without crashing, while the recorded NID lists give developers a prioritized roadmap of what still needs real implementation.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> stub_handlers[UsedStubEntries++] post-increments after indexing, so each call claims a unique slot from a pre-allocated array without any dynamic allocation — the returned address stays valid for the emulator session because no reallocation can occur.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/shadps4-emu/shadPS4" style="color:#0969da;text-decoration:none;">shadps4-emu/shadPS4</a> — <a href="https://github.com/shadps4-emu/shadPS4/blob/main/src/core/aerolib/stubs.cpp" style="color:#0969da;text-decoration:none;">src/core/aerolib/stubs.cpp</a>. shadPS4 is a free, open-source PlayStation 4 emulator written in C++ that runs PS4 titles on Windows, Linux, macOS, and FreeBSD without hardware; it has reached playability on hundreds of titles and recently launched ShadNet for online multiplayer without PSN or PS Plus.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>
