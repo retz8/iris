@@ -3,7 +3,7 @@
 Issue: #22
 Date: 2026-07-10
 Language: C_Cpp
-Status: PENDING_SELECTION
+Status: COMPLETED
 
 ## Repo 1 — jrouwe/JoltPhysics
 
