@@ -731,5 +731,41 @@
     "snippets": [
       "momo5502/sogen/blob/main/src/gdb-stub/gdb_stub.cpp"
     ]
+  },
+  "bradautomates/claude-video": {
+    "count": 1,
+    "snippets": [
+      "bradautomates/claude-video/blob/main/skills/watch/scripts/whisper.py"
+    ]
+  },
+  "xbtlin/ai-berkshire": {
+    "count": 1,
+    "snippets": [
+      "xbtlin/ai-berkshire/blob/main/tools/ashare_data.py"
+    ]
+  },
+  "alibaba/page-agent": {
+    "count": 1,
+    "snippets": [
+      "alibaba/page-agent/blob/main/packages/page-controller/src/dom/dom_tree/index.js"
+    ]
+  },
+  "facebook/astryx": {
+    "count": 1,
+    "snippets": [
+      "facebook/astryx/blob/main/internal/vibe-tests/src/universal-compare.ts"
+    ]
+  },
+  "jrouwe/JoltPhysics": {
+    "count": 1,
+    "snippets": [
+      "jrouwe/JoltPhysics/blob/master/Jolt/Physics/IslandBuilder.cpp"
+    ]
+  },
+  "barry-ran/QtScrcpy": {
+    "count": 1,
+    "snippets": [
+      "barry-ran/QtScrcpyCore/blob/main/src/device/demuxer/demuxer.cpp"
+    ]
   }
 }
