@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">struct</span> <span style="color:#267f99;">pcg_xsl_rr_128_64</span> {
+  <span style="color:#0000ff;">using</span> <span style="color:#267f99;">state_type</span> = <span style="color:#267f99;">absl::uint128</span>;
+  <span style="color:#0000ff;">using</span> <span style="color:#267f99;">result_type</span> = <span style="color:#267f99;">uint64_t</span>;
+
+  <span style="color:#0000ff;">inline</span> <span style="color:#267f99;">uint64_t</span> <span style="color:#0000ff;">operator</span>()(<span style="color:#267f99;">state_type</span> <span style="color:#001080;">state</span>) {
+    <span style="color:#267f99;">uint64_t</span> <span style="color:#001080;">rotate</span> = <span style="color:#0000ff;">static_cast</span>&lt;<span style="color:#267f99;">uint64_t</span>&gt;(<span style="color:#001080;">state</span> &gt;&gt; <span style="color:#098658;">122u</span>);
+    <span style="color:#001080;">state</span> ^= <span style="color:#001080;">state</span> &gt;&gt; <span style="color:#098658;">64</span>;
+    <span style="color:#267f99;">uint64_t</span> <span style="color:#001080;">s</span> = <span style="color:#0000ff;">static_cast</span>&lt;<span style="color:#267f99;">uint64_t</span>&gt;(<span style="color:#001080;">state</span>);
+    <span style="color:#af00db;">return</span> <span style="color:#795e26;">rotr</span>(<span style="color:#001080;">s</span>, <span style="color:#0000ff;">static_cast</span>&lt;<span style="color:#267f99;">int</span>&gt;(<span style="color:#001080;">rotate</span>));
+  }
+};</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Implements the XSL-RR output function that converts a 128-bit PCG generator state into a 64-bit random value by XOR-shifting the two halves together and rotating the result by an amount derived from the top 6 state bits.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> The output mixer composed into Abseil's <code>absl::BitGen</code> and <code>absl::InsecureBitGen</code> random engines — this struct sits between the raw LCG state update and the final random value returned to callers across Chromium, TensorFlow, and gRPC.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The rotation amount is extracted from state before the XOR-shift runs, making it statistically independent of the shifted output — this is what distinguishes PCG from naive LCG truncation and prevents the periodic banding a fixed rotation cannot.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/abseil/abseil-cpp" style="color:#0969da;text-decoration:none;">abseil/abseil-cpp</a> — <a href="https://github.com/abseil/abseil-cpp/blob/master/absl/random/internal/pcg_engine.h" style="color:#0969da;text-decoration:none;">absl/random/internal/pcg_engine.h</a>. Google's production-grade C++ utility library, extracted from Google's internal codebase and deployed at scale in Chromium, TensorFlow, gRPC, and Protobuf — provides more robust alternatives to standard library containers, strings, synchronization primitives, and random number generation.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

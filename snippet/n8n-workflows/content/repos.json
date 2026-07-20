@@ -767,5 +767,41 @@
     "snippets": [
       "barry-ran/QtScrcpyCore/blob/main/src/device/demuxer/demuxer.cpp"
     ]
+  },
+  "virattt/ai-hedge-fund": {
+    "count": 1,
+    "snippets": [
+      "virattt/ai-hedge-fund/blob/main/src/graph/state.py"
+    ]
+  },
+  "FoundationAgents/OpenManus": {
+    "count": 1,
+    "snippets": [
+      "FoundationAgents/OpenManus/blob/main/app/agent/react.py"
+    ]
+  },
+  "OpenCut-app/OpenCut": {
+    "count": 1,
+    "snippets": [
+      "OpenCut-app/OpenCut/blob/domain-import-backup-before-main-merge/apps/web/src/timeline/update-pipeline.ts"
+    ]
+  },
+  "moeru-ai/airi": {
+    "count": 1,
+    "snippets": [
+      "moeru-ai/airi/blob/main/packages/core-agent/src/runtime/llm-marker-parser.ts"
+    ]
+  },
+  "abseil/abseil-cpp": {
+    "count": 1,
+    "snippets": [
+      "abseil/abseil-cpp/blob/master/absl/random/internal/pcg_engine.h"
+    ]
+  },
+  "nasa/fprime": {
+    "count": 1,
+    "snippets": [
+      "nasa/fprime/blob/devel/Svc/FpySequencer/FpySequencerStack.cpp"
+    ]
   }
 }

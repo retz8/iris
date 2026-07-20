@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;margin:0 0 24px 0;"><span style="color:#0000ff">function</span> <span style="color:#795e26">createPushStream</span>&lt;<span style="color:#267f99">T</span>&gt;(): <span style="color:#267f99">StreamController</span>&lt;<span style="color:#267f99">T</span>&gt; {
+  <span style="color:#0000ff">let</span> <span style="color:#001080">closed</span> = <span style="color:#0000ff">false</span>
+  <span style="color:#0000ff">let</span> <span style="color:#001080">controller</span>:
+    <span style="color:#267f99">ReadableStreamDefaultController</span>&lt;<span style="color:#267f99">T</span>&gt; | <span style="color:#0000ff">null</span> = <span style="color:#0000ff">null</span>
+
+  <span style="color:#0000ff">const</span> <span style="color:#001080">stream</span> = <span style="color:#0000ff">new</span> <span style="color:#267f99">ReadableStream</span>&lt;<span style="color:#267f99">T</span>&gt;({
+    <span style="color:#795e26">start</span>(<span style="color:#001080">ctrl</span>) {
+      <span style="color:#001080">controller</span> = <span style="color:#001080">ctrl</span>
+    },
+    <span style="color:#795e26">cancel</span>() {
+      <span style="color:#001080">closed</span> = <span style="color:#0000ff">true</span>
+    },
+  })
+
+  <span style="color:#af00db">return</span> {
+    <span style="color:#001080">stream</span>,
+    <span style="color:#795e26">write</span>(<span style="color:#001080">value</span>) {
+      <span style="color:#af00db">if</span> (!<span style="color:#001080">controller</span> || <span style="color:#001080">closed</span>)
+        <span style="color:#af00db">return</span>
+      <span style="color:#001080">controller</span>.<span style="color:#795e26">enqueue</span>(<span style="color:#001080">value</span>)
+    },
+    <span style="color:#795e26">close</span>() {
+      <span style="color:#af00db">if</span> (!<span style="color:#001080">controller</span> || <span style="color:#001080">closed</span>)
+        <span style="color:#af00db">return</span>
+      <span style="color:#001080">closed</span> = <span style="color:#0000ff">true</span>
+      <span style="color:#001080">controller</span>.<span style="color:#795e26">close</span>()
+    },
+    <span style="color:#795e26">error</span>(<span style="color:#001080">err</span>) {
+      <span style="color:#af00db">if</span> (!<span style="color:#001080">controller</span> || <span style="color:#001080">closed</span>)
+        <span style="color:#af00db">return</span>
+      <span style="color:#001080">closed</span> = <span style="color:#0000ff">true</span>
+      <span style="color:#001080">controller</span>.<span style="color:#795e26">error</span>(<span style="color:#001080">err</span>)
+    },
+  }
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Creates a ReadableStream paired with imperative write, close, and error controls, converting LLM token callbacks into a standard pull-readable stream that downstream parsers can consume without knowing the token source.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> The streaming primitive used by airi's LLM marker parser to process real-time token output from any AI provider — <code>write()</code> is called as tokens arrive and the stream is piped to downstream marker-detection logic.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The <code>closed</code> flag guards all three control methods rather than relying on the stream controller's own closed state — preventing a <code>TypeError: Controller is already closed</code> when network errors and timeout handlers race to terminate the same stream.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/moeru-ai/airi" style="color:#0969da;text-decoration:none;">moeru-ai/airi</a> — <a href="https://github.com/moeru-ai/airi/blob/main/packages/core-agent/src/runtime/llm-marker-parser.ts" style="color:#0969da;text-decoration:none;">packages/core-agent/src/runtime/llm-marker-parser.ts</a>. A self-hosted AI companion platform that combines real-time voice chat, Live2D/VRM character animation, and autonomous gaming (Minecraft, Factorio) — runs on your own hardware via WebGPU and supports 40+ LLM providers including local models.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

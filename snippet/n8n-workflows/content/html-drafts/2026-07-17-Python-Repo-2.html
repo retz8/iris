@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;margin:0 0 24px 0;"><span style="color:#0000ff;">class</span> <span style="color:#267f99;">ReActAgent</span>(<span style="color:#267f99;">BaseAgent</span>, <span style="color:#267f99;">ABC</span>):
+    <span style="color:#001080;">name</span>: <span style="color:#267f99;">str</span>
+    <span style="color:#001080;">description</span>: <span style="color:#267f99;">Optional</span>[<span style="color:#267f99;">str</span>] = <span style="color:#0000ff;">None</span>
+
+    <span style="color:#001080;">system_prompt</span>: <span style="color:#267f99;">Optional</span>[<span style="color:#267f99;">str</span>] = <span style="color:#0000ff;">None</span>
+    <span style="color:#001080;">next_step_prompt</span>: <span style="color:#267f99;">Optional</span>[<span style="color:#267f99;">str</span>] = <span style="color:#0000ff;">None</span>
+
+    <span style="color:#001080;">llm</span>: <span style="color:#267f99;">Optional</span>[<span style="color:#267f99;">LLM</span>] = <span style="color:#795e26;">Field</span>(<span style="color:#001080;">default_factory</span>=<span style="color:#267f99;">LLM</span>)
+    <span style="color:#001080;">memory</span>: <span style="color:#267f99;">Memory</span> = <span style="color:#795e26;">Field</span>(<span style="color:#001080;">default_factory</span>=<span style="color:#267f99;">Memory</span>)
+    <span style="color:#001080;">state</span>: <span style="color:#267f99;">AgentState</span> = <span style="color:#267f99;">AgentState</span>.<span style="color:#001080;">IDLE</span>
+
+    <span style="color:#001080;">max_steps</span>: <span style="color:#267f99;">int</span> = <span style="color:#098658;">10</span>
+    <span style="color:#001080;">current_step</span>: <span style="color:#267f99;">int</span> = <span style="color:#098658;">0</span>
+
+    @<span style="color:#795e26;">abstractmethod</span>
+    <span style="color:#0000ff;">async</span> <span style="color:#0000ff;">def</span> <span style="color:#795e26;">think</span>(<span style="color:#001080;">self</span>) -&gt; <span style="color:#267f99;">bool</span>:
+        <span style="color:#a31515;">"""Process current state and decide next action"""</span>
+
+    @<span style="color:#795e26;">abstractmethod</span>
+    <span style="color:#0000ff;">async</span> <span style="color:#0000ff;">def</span> <span style="color:#795e26;">act</span>(<span style="color:#001080;">self</span>) -&gt; <span style="color:#267f99;">str</span>:
+        <span style="color:#a31515;">"""Execute decided actions"""</span>
+
+    <span style="color:#0000ff;">async</span> <span style="color:#0000ff;">def</span> <span style="color:#795e26;">step</span>(<span style="color:#001080;">self</span>) -&gt; <span style="color:#267f99;">str</span>:
+        <span style="color:#a31515;">"""Execute a single step: think and act."""</span>
+        <span style="color:#001080;">should_act</span> = <span style="color:#0000ff;">await</span> <span style="color:#001080;">self</span>.<span style="color:#795e26;">think</span>()
+        <span style="color:#af00db;">if</span> <span style="color:#0000ff;">not</span> <span style="color:#001080;">should_act</span>:
+            <span style="color:#af00db;">return</span> <span style="color:#a31515;">"Thinking complete - no action needed"</span>
+        <span style="color:#af00db;">return</span> <span style="color:#0000ff;">await</span> <span style="color:#001080;">self</span>.<span style="color:#795e26;">act</span>()</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Defines the abstract base class for all ReAct-pattern agents in OpenManus, enforcing a separate think/act interface while providing shared Pydantic fields for LLM client, memory, state machine, and step counting.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> The root of the OpenManus agent class hierarchy — every specialized agent (browser controller, code executor, task planner) inherits its execution loop, lifecycle fields, and step-limit enforcement from this class.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> <code>think()</code> returns <code>bool</code> rather than an action — the boolean gates whether <code>act()</code> runs at all, letting subclasses signal task completion or a blocked state without raising an exception or checking a separate flag.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/FoundationAgents/OpenManus" style="color:#0969da;text-decoration:none;">FoundationAgents/OpenManus</a> — <a href="https://github.com/FoundationAgents/OpenManus/blob/main/app/agent/react.py" style="color:#0969da;text-decoration:none;">app/agent/react.py</a>. An open-source Python framework for building production-ready multi-agent systems that autonomously browse the web, execute code, and orchestrate complex pipelines — designed to move LLM-powered agent prototypes into engineering-grade deployments with flexible multi-provider LLM support.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

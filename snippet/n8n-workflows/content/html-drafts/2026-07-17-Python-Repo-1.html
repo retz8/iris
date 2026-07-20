@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;margin:0 0 24px 0;"><span style="color:#0000ff">def</span> <span style="color:#795e26">merge_dicts</span>(
+    <span style="color:#001080">a</span>: <span style="color:#267f99">dict</span>[<span style="color:#267f99">str</span>, <span style="color:#267f99">any</span>],
+    <span style="color:#001080">b</span>: <span style="color:#267f99">dict</span>[<span style="color:#267f99">str</span>, <span style="color:#267f99">any</span>],
+) -> <span style="color:#267f99">dict</span>[<span style="color:#267f99">str</span>, <span style="color:#267f99">any</span>]:
+    <span style="color:#af00db">return</span> {**<span style="color:#001080">a</span>, **<span style="color:#001080">b</span>}
+
+
+<span style="color:#6a9955"># Define agent state</span>
+<span style="color:#0000ff">class</span> <span style="color:#267f99">AgentState</span>(<span style="color:#267f99">TypedDict</span>):
+    <span style="color:#001080">messages</span>: <span style="color:#267f99">Annotated</span>[
+        <span style="color:#267f99">Sequence</span>[<span style="color:#267f99">BaseMessage</span>], <span style="color:#001080">operator</span>.<span style="color:#795e26">add</span>
+    ]
+    <span style="color:#001080">data</span>: <span style="color:#267f99">Annotated</span>[
+        <span style="color:#267f99">dict</span>[<span style="color:#267f99">str</span>, <span style="color:#267f99">any</span>], <span style="color:#795e26">merge_dicts</span>
+    ]
+    <span style="color:#001080">metadata</span>: <span style="color:#267f99">Annotated</span>[
+        <span style="color:#267f99">dict</span>[<span style="color:#267f99">str</span>, <span style="color:#267f99">any</span>], <span style="color:#795e26">merge_dicts</span>
+    ]</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Defines the state schema shared across all analyst agents in this LangGraph hedge fund — three fields each annotated with a reducer that controls how parallel agent outputs are merged at each graph step.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Acts as the shared state contract across all 18 analyst agents — every agent reads from and writes to these three fields during graph traversal, letting LangGraph route and merge outputs between steps.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> <code>merge_dicts</code> looks trivially simple, but its annotation on <code>data</code> and <code>metadata</code> signals LangGraph to invoke it automatically when parallel analyst branches complete — merging concurrent outputs without any explicit coordination logic in the agents themselves.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/virattt/ai-hedge-fund" style="color:#0969da;text-decoration:none;">virattt/ai-hedge-fund</a> — <a href="https://github.com/virattt/ai-hedge-fund/blob/main/src/graph/state.py" style="color:#0969da;text-decoration:none;">src/graph/state.py</a>. A Python simulation framework that orchestrates 18 LLM-powered analyst agents modeled after legendary investors to generate stock trading signals and portfolio allocations — used for research and educational exploration of AI in quantitative finance, with over 43,000 GitHub stars.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>
