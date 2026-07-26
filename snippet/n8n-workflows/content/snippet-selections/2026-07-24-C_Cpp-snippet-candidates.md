@@ -3,7 +3,7 @@
 Issue: #24
 Date: 2026-07-24
 Language: C_Cpp
-Status: PENDING_SELECTION
+Status: COMPLETED
 
 ## Repo 1 — moonshine-ai/moonshine
 
