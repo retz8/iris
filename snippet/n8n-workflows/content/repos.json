@@ -803,5 +803,41 @@
     "snippets": [
       "nasa/fprime/blob/devel/Svc/FpySequencer/FpySequencerStack.cpp"
     ]
+  },
+  "kvcache-ai/ktransformers": {
+    "count": 1,
+    "snippets": [
+      "kvcache-ai/ktransformers/blob/main/kt-kernel/python/experts_base.py"
+    ]
+  },
+  "dottxt-ai/outlines": {
+    "count": 1,
+    "snippets": [
+      "dottxt-ai/outlines/blob/main/src/outlines/types/json_schema_utils.py"
+    ]
+  },
+  "earendil-works/pi": {
+    "count": 1,
+    "snippets": [
+      "earendil-works/pi/blob/main/packages/ai/src/api/lazy.ts"
+    ]
+  },
+  "vercel-labs/deepsec": {
+    "count": 1,
+    "snippets": [
+      "vercel-labs/deepsec/blob/main/packages/scanner/src/matcher-registry.ts"
+    ]
+  },
+  "moonshine-ai/moonshine": {
+    "count": 1,
+    "snippets": [
+      "moonshine-ai/moonshine/blob/main/micro/klatt-tts/src/synth_internal.cc"
+    ]
+  },
+  "WerWolv/ImHex": {
+    "count": 1,
+    "snippets": [
+      "WerWolv/ImHex/blob/master/lib/libimhex/source/providers/undo/stack.cpp"
+    ]
   }
 }
