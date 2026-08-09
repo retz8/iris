@@ -3,9 +3,102 @@
 Issue: #25
 Date: 2026-08-07
 Language: Python
-Status: PENDING_SELECTION
+Status: COMPLETED
 
-## Repo 1 — huangruiteng/loopx
+## Repo 1 — livekit/agents
+
+### Candidate 1 (most important)
+
+- file_path: livekit-agents/livekit/agents/utils/aio/channel.py
+- snippet_url: https://github.com/livekit/agents/blob/main/livekit-agents/livekit/agents/utils/aio/channel.py
+- reasoning: `Chan.send` is the primary async communication primitive for every streaming component (STT, TTS, VAD, agent sessions); reveals Go-style backpressure in Python — parking callers as asyncio `Future` objects in a deque, waking them on capacity, and cleaning up on cancellation.
+
+```python
+    async def send(self, value: T) -> None:
+        while self.full() and not self._close_ev.is_set():
+            p = self._loop.create_future()
+            self._puts.append(p)
+            try:
+                await p
+            except ChanClosed:
+                raise
+            except:
+                p.cancel()
+                with contextlib.suppress(ValueError):
+                    self._puts.remove(p)
+
+                if not self.full() and not p.cancelled():
+                    self._wakeup_next(self._puts)
+                raise
+
+        self.send_nowait(value)
+```
+
+### Candidate 2
+
+- file_path: livekit-agents/livekit/agents/utils/aio/utils.py
+- snippet_url: https://github.com/livekit/agents/blob/main/livekit-agents/livekit/agents/utils/aio/utils.py
+- reasoning: `cancel_and_wait` is called in every critical shutdown path; shows the correct pattern for cancelling a batch of asyncio futures and waiting for them all to settle without re-raising exceptions.
+
+```python
+async def cancel_and_wait(
+    *futures: asyncio.Future[Any]
+) -> None:
+    loop = asyncio.get_running_loop()
+    waiters = []
+
+    for fut in futures:
+        waiter = loop.create_future()
+        cb = functools.partial(_release_waiter, waiter)
+        waiters.append((waiter, cb))
+        fut.add_done_callback(cb)
+        fut.cancel()
+
+    try:
+        for waiter, _ in waiters:
+            await waiter
+    finally:
+        for i, fut in enumerate(futures):
+            _, cb = waiters[i]
+            fut.remove_done_callback(cb)
+```
+
+### Candidate 3 (least important)
+
+- file_path: livekit-agents/livekit/agents/utils/moving_average.py
+- snippet_url: https://github.com/livekit/agents/blob/main/livekit-agents/livekit/agents/utils/moving_average.py
+- reasoning: Fixed-size circular buffer with O(1) running-sum updates used across the framework's metrics layer; the modulo-index ring, guarded eviction subtraction, and warm-up `size()` guard require careful tracing to verify correctness.
+
+```python
+class MovingAverage:
+    def __init__(self, window_size: int) -> None:
+        self._hist: list[float] = [0] * window_size
+        self._sum: float = 0
+        self._count: int = 0
+
+    def add_sample(self, sample: float) -> None:
+        self._count += 1
+        index = self._count % len(self._hist)
+        if self._count > len(self._hist):
+            self._sum -= self._hist[index]
+        self._sum += sample
+        self._hist[index] = sample
+
+    def get_avg(self) -> float:
+        if self._count == 0:
+            return 0
+        return self._sum / self.size()
+
+    def reset(self) -> None:
+        self._hist = [0.0] * len(self._hist)
+        self._count = 0
+        self._sum = 0
+
+    def size(self) -> int:
+        return min(self._count, len(self._hist))
+```
+
+## Repo 1 (original, replaced) — huangruiteng/loopx
 
 ### Candidate 1 (most important)
 
