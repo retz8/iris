@@ -839,5 +839,41 @@
     "snippets": [
       "WerWolv/ImHex/blob/master/lib/libimhex/source/providers/undo/stack.cpp"
     ]
+  },
+  "livekit/agents": {
+    "count": 1,
+    "snippets": [
+      "livekit/agents/blob/main/livekit-agents/livekit/agents/utils/aio/channel.py"
+    ]
+  },
+  "Zipstack/unstract": {
+    "count": 1,
+    "snippets": [
+      "Zipstack/unstract/blob/main/unstract/core/src/unstract/core/polling.py"
+    ]
+  },
+  "opengeos/GeoLibre": {
+    "count": 1,
+    "snippets": [
+      "opengeos/GeoLibre/blob/main/packages/map/src/geojson-vt-protocol.ts"
+    ]
+  },
+  "pingdotgg/t3code": {
+    "count": 1,
+    "snippets": [
+      "pingdotgg/t3code/blob/main/packages/shared/src/searchRanking.ts"
+    ]
+  },
+  "godotengine/godot": {
+    "count": 1,
+    "snippets": [
+      "godotengine/godot/blob/master/core/object/ref_counted.cpp"
+    ]
+  },
+  "microsoft/microsoft-ui-xaml": {
+    "count": 1,
+    "snippets": [
+      "microsoft/microsoft-ui-xaml/blob/main/dxaml/xcp/core/sw/utils.cpp"
+    ]
   }
 }
