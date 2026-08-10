@@ -3,7 +3,7 @@
 Issue: #25
 Date: 2026-08-07
 Language: Python
-Status: PENDING_APPROVAL
+Status: COMPLETED
 
 ## Repo 1 — livekit/agents
 
