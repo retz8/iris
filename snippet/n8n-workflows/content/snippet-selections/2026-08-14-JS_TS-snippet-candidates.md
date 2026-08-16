@@ -3,7 +3,7 @@
 Issue: #26
 Date: 2026-08-14
 Language: JS_TS
-Status: PENDING_SELECTION
+Status: COMPLETED
 
 ## Repo 1 — cloudflare/computer
 
