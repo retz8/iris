@@ -875,5 +875,41 @@
     "snippets": [
       "microsoft/microsoft-ui-xaml/blob/main/dxaml/xcp/core/sw/utils.cpp"
     ]
+  },
+  "cactus-compute/needle": {
+    "count": 1,
+    "snippets": [
+      "cactus-compute/needle/blob/main/needle/model/quantize.py"
+    ]
+  },
+  "goauthentik/authentik": {
+    "count": 1,
+    "snippets": [
+      "goauthentik/authentik/blob/main/authentik/core/expression/evaluator.py"
+    ]
+  },
+  "cloudflare/computer": {
+    "count": 1,
+    "snippets": [
+      "cloudflare/computer/blob/main/packages/rpc/src/sync-driver.ts"
+    ]
+  },
+  "corsairdev/corsair": {
+    "count": 1,
+    "snippets": [
+      "corsairdev/corsair/blob/main/packages/corsair/workflows/execute.ts"
+    ]
+  },
+  "opa334/Dopamine": {
+    "count": 1,
+    "snippets": [
+      "opa334/Dopamine/blob/main/BaseBin/forkfix/src/litehook.c"
+    ]
+  },
+  "microsoft/intelligent-terminal": {
+    "count": 1,
+    "snippets": [
+      "microsoft/intelligent-terminal/blob/main/src/cascadia/inc/CustomModelCredential.h"
+    ]
   }
 }
