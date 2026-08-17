@@ -3,7 +3,7 @@
 Issue: #26
 Date: 2026-08-14
 Language: JS/TS
-Status: PENDING_APPROVAL
+Status: COMPLETED
 
 ## Repo 1 — cloudflare/computer
 
