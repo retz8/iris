@@ -911,5 +911,41 @@
     "snippets": [
       "microsoft/intelligent-terminal/blob/main/src/cascadia/inc/CustomModelCredential.h"
     ]
+  },
+  "semantica-agi/semantica": {
+    "count": 1,
+    "snippets": [
+      "semantica-agi/semantica/blob/main/semantica/deduplication/similarity_calculator.py"
+    ]
+  },
+  "harry0703/MoneyPrinterTurbo": {
+    "count": 1,
+    "snippets": [
+      "harry0703/MoneyPrinterTurbo/blob/main/app/services/material.py"
+    ]
+  },
+  "elizaOS/eliza": {
+    "count": 1,
+    "snippets": [
+      "elizaOS/eliza/blob/develop/packages/core/src/capability-selection/retrieval.ts"
+    ]
+  },
+  "anomalyco/models.dev": {
+    "count": 1,
+    "snippets": [
+      "anomalyco/models.dev/blob/dev/packages/core/src/sync/index.ts"
+    ]
+  },
+  "deepseek-ai/3FS": {
+    "count": 1,
+    "snippets": [
+      "deepseek-ai/3FS/blob/main/src/common/utils/LruCache.h"
+    ]
+  },
+  "justcallmekoko/ESP32Marauder": {
+    "count": 1,
+    "snippets": [
+      "justcallmekoko/ESP32Marauder/blob/master/esp32_marauder/MarauderMacAddress.cpp"
+    ]
   }
 }
