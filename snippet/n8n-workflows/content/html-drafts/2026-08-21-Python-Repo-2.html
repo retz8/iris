@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;margin:0 0 24px 0;"><span style="color:#0000ff">def</span> <span style="color:#795e26">_matches_video_aspect</span>(
+    <span style="color:#001080">width</span>: <span style="color:#267f99">Any</span>,
+    <span style="color:#001080">height</span>: <span style="color:#267f99">Any</span>,
+    <span style="color:#001080">video_aspect</span>: <span style="color:#267f99">VideoAspect</span>,
+    *,
+    <span style="color:#001080">is_vertical</span>: <span style="color:#267f99">Any</span> = <span style="color:#0000ff">None</span>,
+) -> <span style="color:#267f99">bool</span>:
+    <span style="color:#001080">aspect</span> = <span style="color:#267f99">VideoAspect</span>(<span style="color:#001080">video_aspect</span>)
+    <span style="color:#af00db">try</span>:
+        <span style="color:#001080">normalized_width</span> = <span style="color:#795e26">int</span>(<span style="color:#795e26">float</span>(<span style="color:#001080">width</span>))
+        <span style="color:#001080">normalized_height</span> = <span style="color:#795e26">int</span>(<span style="color:#795e26">float</span>(<span style="color:#001080">height</span>))
+    <span style="color:#af00db">except</span> (<span style="color:#267f99">TypeError</span>, <span style="color:#267f99">ValueError</span>):
+        <span style="color:#001080">normalized_width</span> = <span style="color:#098658">0</span>
+        <span style="color:#001080">normalized_height</span> = <span style="color:#098658">0</span>
+
+    <span style="color:#af00db">if</span> <span style="color:#001080">normalized_width</span> > <span style="color:#098658">0</span> and <span style="color:#001080">normalized_height</span> > <span style="color:#098658">0</span>:
+        <span style="color:#af00db">if</span> <span style="color:#001080">aspect</span> == <span style="color:#267f99">VideoAspect</span>.<span style="color:#001080">portrait</span>:
+            <span style="color:#af00db">return</span> <span style="color:#001080">normalized_height</span> > <span style="color:#001080">normalized_width</span>
+        <span style="color:#af00db">if</span> <span style="color:#001080">aspect</span> == <span style="color:#267f99">VideoAspect</span>.<span style="color:#001080">landscape</span>:
+            <span style="color:#af00db">return</span> <span style="color:#001080">normalized_width</span> > <span style="color:#001080">normalized_height</span>
+        <span style="color:#af00db">return</span> <span style="color:#001080">normalized_width</span> == <span style="color:#001080">normalized_height</span>
+
+    <span style="color:#af00db">if</span> (
+        <span style="color:#795e26">isinstance</span>(<span style="color:#001080">is_vertical</span>, <span style="color:#267f99">bool</span>)
+        and <span style="color:#001080">aspect</span> != <span style="color:#267f99">VideoAspect</span>.<span style="color:#001080">square</span>
+    ):
+        <span style="color:#af00db">return</span> <span style="color:#001080">is_vertical</span> == (<span style="color:#001080">aspect</span> == <span style="color:#267f99">VideoAspect</span>.<span style="color:#001080">portrait</span>)
+    <span style="color:#af00db">return</span> <span style="color:#0000ff">False</span></div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Determines whether a video clip&#39;s dimensions match a target aspect ratio &#8212; portrait, landscape, or square. Falls back to a boolean <code>is_vertical</code> hint when numeric dimensions are unavailable or parse to zero.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Acts as the selection gate for stock footage in the automated video pipeline &#8212; only clips that pass this check are considered when assembling the final video for a given aspect ratio.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The <code>is_vertical</code> fallback path handles stock footage APIs that return non-numeric dimension metadata rather than failing. Square is explicitly excluded from this fallback because square orientation cannot be inferred from a portrait-vs-landscape boolean alone.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/harry0703/MoneyPrinterTurbo" style="color:#0969da;text-decoration:none;">harry0703/MoneyPrinterTurbo</a> &#8212; <a href="https://github.com/harry0703/MoneyPrinterTurbo/blob/main/app/services/material.py" style="color:#0969da;text-decoration:none;">app/services/material.py</a>. MoneyPrinterTurbo is an open-source Python pipeline that takes a topic keyword and generates a complete short-form video &#8212; script, stock footage, voiceover, subtitles, and background music &#8212; in a single automated workflow. Content creators and marketers use it to produce faceless social media videos and batch-generate marketing content without manual editing.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

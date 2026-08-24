@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff">function</span> <span style="color:#795e26">scoreEntry</span>(
+    <span style="color:#001080">entry</span>: <span style="color:#267f99">CapabilityCatalogEntry</span>,
+    <span style="color:#001080">queryTokens</span>: <span style="color:#0000ff">readonly</span> <span style="color:#267f99">string</span>[],
+): { <span style="color:#001080">score</span>: <span style="color:#267f99">number</span>; <span style="color:#001080">matchedTokens</span>: <span style="color:#267f99">string</span>[] } {
+    <span style="color:#0000ff">const</span> <span style="color:#001080">keywordSet</span> = <span style="color:#0000ff">new</span> <span style="color:#267f99">Set</span>(
+        <span style="color:#001080">entry</span>.<span style="color:#001080">keywords</span>.<span style="color:#795e26">map</span>((<span style="color:#001080">k</span>) =&gt; <span style="color:#001080">k</span>.<span style="color:#795e26">toLowerCase</span>()),
+    );
+    <span style="color:#0000ff">const</span> <span style="color:#001080">identityTokens</span> = <span style="color:#0000ff">new</span> <span style="color:#267f99">Set</span>([
+        ...<span style="color:#795e26">tokenizeCapabilityIntent</span>(<span style="color:#001080">entry</span>.<span style="color:#001080">capabilityId</span>),
+        ...<span style="color:#795e26">tokenizeCapabilityIntent</span>(<span style="color:#001080">entry</span>.<span style="color:#001080">domain</span>),
+    ]);
+    <span style="color:#0000ff">const</span> <span style="color:#001080">operationTokens</span> = <span style="color:#0000ff">new</span> <span style="color:#267f99">Set</span>(
+        <span style="color:#001080">entry</span>.<span style="color:#001080">operations</span>.<span style="color:#795e26">flatMap</span>((<span style="color:#001080">op</span>) =&gt;
+            <span style="color:#795e26">tokenizeCapabilityIntent</span>(<span style="color:#001080">op</span>),
+        ),
+    );
+    <span style="color:#0000ff">const</span> <span style="color:#001080">summaryTokens</span> = <span style="color:#0000ff">new</span> <span style="color:#267f99">Set</span>(
+        <span style="color:#795e26">tokenizeCapabilityIntent</span>(<span style="color:#001080">entry</span>.<span style="color:#001080">summary</span>),
+    );
+
+    <span style="color:#0000ff">let</span> <span style="color:#001080">score</span> = <span style="color:#098658">0</span>;
+    <span style="color:#0000ff">const</span> <span style="color:#001080">matchedTokens</span>: <span style="color:#267f99">string</span>[] = [];
+    <span style="color:#af00db">for</span> (<span style="color:#0000ff">const</span> <span style="color:#001080">token</span> <span style="color:#0000ff">of</span> <span style="color:#0000ff">new</span> <span style="color:#267f99">Set</span>(<span style="color:#001080">queryTokens</span>)) {
+        <span style="color:#0000ff">let</span> <span style="color:#001080">tokenScore</span> = <span style="color:#098658">0</span>;
+        <span style="color:#af00db">if</span> (<span style="color:#001080">keywordSet</span>.<span style="color:#795e26">has</span>(<span style="color:#001080">token</span>))
+            <span style="color:#001080">tokenScore</span> += <span style="color:#001080">KEYWORD_WEIGHT</span>;
+        <span style="color:#af00db">if</span> (<span style="color:#001080">identityTokens</span>.<span style="color:#795e26">has</span>(<span style="color:#001080">token</span>))
+            <span style="color:#001080">tokenScore</span> += <span style="color:#001080">IDENTITY_WEIGHT</span>;
+        <span style="color:#af00db">if</span> (<span style="color:#001080">operationTokens</span>.<span style="color:#795e26">has</span>(<span style="color:#001080">token</span>))
+            <span style="color:#001080">tokenScore</span> += <span style="color:#001080">OPERATION_WEIGHT</span>;
+        <span style="color:#af00db">if</span> (<span style="color:#001080">summaryTokens</span>.<span style="color:#795e26">has</span>(<span style="color:#001080">token</span>))
+            <span style="color:#001080">tokenScore</span> += <span style="color:#001080">SUMMARY_WEIGHT</span>;
+        <span style="color:#af00db">if</span> (<span style="color:#001080">tokenScore</span> &gt; <span style="color:#098658">0</span>) {
+            <span style="color:#001080">score</span> += <span style="color:#001080">tokenScore</span>;
+            <span style="color:#001080">matchedTokens</span>.<span style="color:#795e26">push</span>(<span style="color:#001080">token</span>);
+        }
+    }
+    <span style="color:#af00db">return</span> { <span style="color:#001080">score</span>, <span style="color:#001080">matchedTokens</span> };
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Scores a catalog entry against a set of query tokens by accumulating weighted points across four index tiers — keywords, identity (capabilityId + domain), operations, and summary text — then returns the total score and the matched tokens.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Provides the ranking signal for capability retrieval in ElizaOS — when an agent needs to find the right tool or action for a task, this function's scores determine which catalog entries surface first.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> Iterating over `new Set(queryTokens)` deduplicates the query before scoring, preventing repeated terms from inflating a score. The four-tier weight hierarchy encodes a deliberate trust ordering: explicit tags beat canonical identity, which beats operation names, which beats summary prose.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/elizaOS/eliza" style="color:#0969da;text-decoration:none;">elizaOS/eliza</a> — <a href="https://github.com/elizaOS/eliza/blob/develop/packages/core/src/capability-selection/retrieval.ts" style="color:#0969da;text-decoration:none;">packages/core/src/capability-selection/retrieval.ts</a>. ElizaOS is an open-source TypeScript runtime for building persistent autonomous AI agents that maintain memory across sessions and can interact with both web APIs and blockchain protocols. Teams use it to deploy agents for customer support, DAO governance, trading automation, and gaming NPCs.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

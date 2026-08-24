@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff">def</span> <span style="color:#795e26">_jaro_similarity</span>(<span style="color:#001080">self</span>, <span style="color:#001080">s1</span>: <span style="color:#267f99">str</span>, <span style="color:#001080">s2</span>: <span style="color:#267f99">str</span>) -> <span style="color:#267f99">float</span>:
+    <span style="color:#af00db">if</span> <span style="color:#001080">s1</span> == <span style="color:#001080">s2</span>:
+        <span style="color:#af00db">return</span> <span style="color:#098658">1.0</span>
+
+    <span style="color:#001080">match_window</span> = <span style="color:#795e26">max</span>(<span style="color:#795e26">len</span>(<span style="color:#001080">s1</span>), <span style="color:#795e26">len</span>(<span style="color:#001080">s2</span>)) // <span style="color:#098658">2</span> - <span style="color:#098658">1</span>
+    <span style="color:#af00db">if</span> <span style="color:#001080">match_window</span> &lt; <span style="color:#098658">0</span>:
+        <span style="color:#001080">match_window</span> = <span style="color:#098658">0</span>
+
+    <span style="color:#001080">s1_matches</span> = [<span style="color:#0000ff">False</span>] * <span style="color:#795e26">len</span>(<span style="color:#001080">s1</span>)
+    <span style="color:#001080">s2_matches</span> = [<span style="color:#0000ff">False</span>] * <span style="color:#795e26">len</span>(<span style="color:#001080">s2</span>)
+
+    <span style="color:#001080">matches</span> = <span style="color:#098658">0</span>
+    <span style="color:#001080">transpositions</span> = <span style="color:#098658">0</span>
+
+    <span style="color:#af00db">for</span> <span style="color:#001080">i</span> <span style="color:#0000ff">in</span> <span style="color:#795e26">range</span>(<span style="color:#795e26">len</span>(<span style="color:#001080">s1</span>)):
+        <span style="color:#001080">start</span> = <span style="color:#795e26">max</span>(<span style="color:#098658">0</span>, <span style="color:#001080">i</span> - <span style="color:#001080">match_window</span>)
+        <span style="color:#001080">end</span> = <span style="color:#795e26">min</span>(<span style="color:#001080">i</span> + <span style="color:#001080">match_window</span> + <span style="color:#098658">1</span>, <span style="color:#795e26">len</span>(<span style="color:#001080">s2</span>))
+        <span style="color:#af00db">for</span> <span style="color:#001080">j</span> <span style="color:#0000ff">in</span> <span style="color:#795e26">range</span>(<span style="color:#001080">start</span>, <span style="color:#001080">end</span>):
+            <span style="color:#af00db">if</span> <span style="color:#001080">s2_matches</span>[<span style="color:#001080">j</span>] <span style="color:#0000ff">or</span> <span style="color:#001080">s1</span>[<span style="color:#001080">i</span>] != <span style="color:#001080">s2</span>[<span style="color:#001080">j</span>]:
+                <span style="color:#af00db">continue</span>
+            <span style="color:#001080">s1_matches</span>[<span style="color:#001080">i</span>] = <span style="color:#0000ff">True</span>
+            <span style="color:#001080">s2_matches</span>[<span style="color:#001080">j</span>] = <span style="color:#0000ff">True</span>
+            <span style="color:#001080">matches</span> += <span style="color:#098658">1</span>
+            <span style="color:#af00db">break</span>
+
+    <span style="color:#af00db">if</span> <span style="color:#001080">matches</span> == <span style="color:#098658">0</span>:
+        <span style="color:#af00db">return</span> <span style="color:#098658">0.0</span>
+
+    <span style="color:#001080">k</span> = <span style="color:#098658">0</span>
+    <span style="color:#af00db">for</span> <span style="color:#001080">i</span> <span style="color:#0000ff">in</span> <span style="color:#795e26">range</span>(<span style="color:#795e26">len</span>(<span style="color:#001080">s1</span>)):
+        <span style="color:#af00db">if</span> <span style="color:#0000ff">not</span> <span style="color:#001080">s1_matches</span>[<span style="color:#001080">i</span>]:
+            <span style="color:#af00db">continue</span>
+        <span style="color:#af00db">while</span> <span style="color:#0000ff">not</span> <span style="color:#001080">s2_matches</span>[<span style="color:#001080">k</span>]:
+            <span style="color:#001080">k</span> += <span style="color:#098658">1</span>
+        <span style="color:#af00db">if</span> <span style="color:#001080">s1</span>[<span style="color:#001080">i</span>] != <span style="color:#001080">s2</span>[<span style="color:#001080">k</span>]:
+            <span style="color:#001080">transpositions</span> += <span style="color:#098658">1</span>
+        <span style="color:#001080">k</span> += <span style="color:#098658">1</span>
+
+    <span style="color:#001080">jaro</span> = (
+        <span style="color:#001080">matches</span> / <span style="color:#795e26">len</span>(<span style="color:#001080">s1</span>)
+        + <span style="color:#001080">matches</span> / <span style="color:#795e26">len</span>(<span style="color:#001080">s2</span>)
+        + (<span style="color:#001080">matches</span> - <span style="color:#001080">transpositions</span> / <span style="color:#098658">2</span>) / <span style="color:#001080">matches</span>
+    ) / <span style="color:#098658">3.0</span>
+    <span style="color:#af00db">return</span> <span style="color:#001080">jaro</span></div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Computes Jaro string similarity in two passes: first counting character matches within a per-position window, then counting transpositions in matched-character order. Returns a weighted average as a float between 0.0 and 1.0.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Provides the similarity primitive for deduplication in Semantica's context graph — called when the system must decide whether two concept nodes are near-duplicates before merging or linking them.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The monotonically advancing `k` pointer during the transposition pass is the non-obvious efficiency: it works only because matches are recorded left-to-right in the first pass. Without that ordering invariant, the linear-time count would produce wrong results.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/semantica-agi/semantica" style="color:#0969da;text-decoration:none;">semantica-agi/semantica</a> — <a href="https://github.com/semantica-agi/semantica/blob/main/semantica/deduplication/similarity_calculator.py" style="color:#0969da;text-decoration:none;">semantica/deduplication/similarity_calculator.py</a>. Semantica is an open-source infrastructure layer that sits beneath LLM-based agent stacks, providing a deterministic context graph where every agent decision is a traceable, causally linked node. Teams building on LangGraph, CrewAI, or LlamaIndex use it to add graph-based memory and decision provenance without an additional LLM call.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

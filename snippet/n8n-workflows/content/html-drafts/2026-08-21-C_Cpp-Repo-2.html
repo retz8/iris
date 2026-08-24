@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;margin:0 0 24px 0;"><span style="color:#267f99;">bool</span> <span style="color:#795e26;">formatMacAddress</span>(
+    <span style="color:#0000ff;">const</span> <span style="color:#267f99;">uint8_t</span> <span style="color:#001080;">mac</span>[<span style="color:#001080;">kMacAddressSize</span>],
+    <span style="color:#267f99;">char</span> <span style="color:#001080;">output</span>[<span style="color:#001080;">kMacAddressTextLength</span> + <span style="color:#098658;">1</span>]) {
+  <span style="color:#af00db;">if</span> (<span style="color:#001080;">mac</span> == <span style="color:#0000ff;">nullptr</span> || <span style="color:#001080;">output</span> == <span style="color:#0000ff;">nullptr</span>) {
+    <span style="color:#af00db;">return</span> <span style="color:#0000ff;">false</span>;
+  }
+  <span style="color:#af00db;">for</span> (<span style="color:#267f99;">size_t</span> <span style="color:#001080;">index</span> = <span style="color:#098658;">0</span>;
+       <span style="color:#001080;">index</span> &lt; <span style="color:#001080;">kMacAddressSize</span>; ++<span style="color:#001080;">index</span>) {
+    <span style="color:#0000ff;">const</span> <span style="color:#267f99;">size_t</span> <span style="color:#001080;">offset</span> = <span style="color:#001080;">index</span> * <span style="color:#098658;">3</span>;
+    <span style="color:#001080;">output</span>[<span style="color:#001080;">offset</span>] =
+        <span style="color:#001080;">kHexDigits</span>[(<span style="color:#001080;">mac</span>[<span style="color:#001080;">index</span>] &gt;&gt; <span style="color:#098658;">4</span>) &amp; <span style="color:#098658;">0x0F</span>];
+    <span style="color:#001080;">output</span>[<span style="color:#001080;">offset</span> + <span style="color:#098658;">1</span>] =
+        <span style="color:#001080;">kHexDigits</span>[<span style="color:#001080;">mac</span>[<span style="color:#001080;">index</span>] &amp; <span style="color:#098658;">0x0F</span>];
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">index</span> + <span style="color:#098658;">1</span> &lt; <span style="color:#001080;">kMacAddressSize</span>) {
+      <span style="color:#001080;">output</span>[<span style="color:#001080;">offset</span> + <span style="color:#098658;">2</span>] = <span style="color:#a31515;">':'</span>;
+    }
+  }
+  <span style="color:#001080;">output</span>[<span style="color:#001080;">kMacAddressTextLength</span>] = <span style="color:#a31515;">'\0'</span>;
+  <span style="color:#af00db;">return</span> <span style="color:#0000ff;">true</span>;
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Converts a 6-byte MAC address into a null-terminated AA:BB:CC:DD:EE:FF string using a pre-built hex digit lookup table, writing directly into a caller-provided output buffer without heap allocation.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Produces the human-readable MAC string used throughout ESP32Marauder's WiFi scan results — every access point and BLE device the firmware detects and logs passes through this function.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> Nibble extraction via >> 4 and &amp; 0x0F beats sprintf with zero allocation. The stride index * 3 covers both hex chars and colons in one pass. Conditionally omitting the colon only at the last byte prevents a trailing separator without branching outside the loop.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/justcallmekoko/ESP32Marauder" style="color:#0969da;text-decoration:none;">justcallmekoko/ESP32Marauder</a> — <a href="https://github.com/justcallmekoko/ESP32Marauder/blob/master/esp32_marauder/MarauderMacAddress.cpp" style="color:#0969da;text-decoration:none;">esp32_marauder/MarauderMacAddress.cpp</a>. ESP32Marauder is an open-source WiFi and Bluetooth security testing toolkit that runs on the ESP32 microcontroller. Security researchers and penetration testers flash it onto commodity hardware to perform 802.11 auditing, deauthentication testing, and BLE device scanning in the field without carrying full-sized equipment.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>
