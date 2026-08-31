@@ -174,9 +174,10 @@
     ]
   },
   "microsoft/TypeScript": {
-    "count": 1,
+    "count": 2,
     "snippets": [
-      "microsoft/TypeScript/blob/main/src/compiler/symbolWalker.ts"
+      "microsoft/TypeScript/blob/main/src/compiler/symbolWalker.ts",
+      "microsoft/TypeScript/blob/v5.8.3/src/compiler/path.ts"
     ]
   },
   "n8n-io/n8n": {
@@ -946,6 +947,36 @@
     "count": 1,
     "snippets": [
       "justcallmekoko/ESP32Marauder/blob/master/esp32_marauder/MarauderMacAddress.cpp"
+    ]
+  },
+  "jundot/omlx": {
+    "count": 1,
+    "snippets": [
+      "jundot/omlx/blob/main/omlx/output_collector.py"
+    ]
+  },
+  "shy3130/tick-stock-panel": {
+    "count": 1,
+    "snippets": [
+      "shy3130/tick-stock-panel/blob/main/backend/app/services/regime_builder.py"
+    ]
+  },
+  "apache/maka": {
+    "count": 1,
+    "snippets": [
+      "apache/maka/blob/main/packages/runtime/src/context-budget.ts"
+    ]
+  },
+  "vicinaehq/vicinae": {
+    "count": 1,
+    "snippets": [
+      "vicinaehq/vicinae/blob/main/src/lib/script-command/src/script-command.cpp"
+    ]
+  },
+  "MariaDB/server": {
+    "count": 1,
+    "snippets": [
+      "MariaDB/server/blob/main/sql/item_vectorfunc.cc"
     ]
   }
 }
