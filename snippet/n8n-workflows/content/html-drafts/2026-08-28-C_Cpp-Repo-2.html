@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#267f99">bool</span> <span style="color:#267f99">Item_func_vec_distance</span>::<span style="color:#795e26">fix_length_and_dec</span>(
+    <span style="color:#267f99">THD</span> *<span style="color:#001080">thd</span>)
+{
+  <span style="color:#af00db">switch</span> (<span style="color:#001080">kind</span>) {
+  <span style="color:#af00db">case</span> <span style="color:#001080">EUCLIDEAN</span>:
+    <span style="color:#001080">calc_distance</span>= <span style="color:#001080">calc_distance_euclidean</span>;
+    <span style="color:#af00db">break</span>;
+  <span style="color:#af00db">case</span> <span style="color:#001080">COSINE</span>:
+    <span style="color:#001080">calc_distance</span>= <span style="color:#001080">calc_distance_cosine</span>;
+    <span style="color:#af00db">break</span>;
+  <span style="color:#af00db">case</span> <span style="color:#001080">AUTO</span>:
+    <span style="color:#af00db">for</span> (<span style="color:#267f99">uint</span> <span style="color:#001080">i</span>=<span style="color:#098658">0</span>; <span style="color:#001080">i</span> &lt; <span style="color:#098658">2</span>; <span style="color:#001080">i</span>++)
+      <span style="color:#af00db">if</span> (<span style="color:#0000ff">auto</span> *<span style="color:#001080">item</span>=
+            <span style="color:#0000ff">dynamic_cast</span>&lt;<span style="color:#267f99">Item_field</span>*>(
+              <span style="color:#001080">args</span>[<span style="color:#001080">i</span>]-><span style="color:#795e26">real_item</span>()))
+      {
+        <span style="color:#267f99">TABLE_SHARE</span> *<span style="color:#001080">share</span>=
+          <span style="color:#001080">item</span>-><span style="color:#001080">field</span>-><span style="color:#001080">orig_table</span>-><span style="color:#001080">s</span>;
+        <span style="color:#af00db">if</span> (<span style="color:#001080">share</span>-><span style="color:#001080">tmp_table</span>)
+          <span style="color:#af00db">break</span>;
+        <span style="color:#267f99">Field</span> *<span style="color:#001080">f</span>=
+          <span style="color:#001080">share</span>-><span style="color:#001080">field</span>[
+            <span style="color:#001080">item</span>-><span style="color:#001080">field</span>-><span style="color:#001080">field_index</span>];
+        <span style="color:#267f99">KEY</span> *<span style="color:#001080">kinfo</span>= <span style="color:#001080">share</span>-><span style="color:#001080">key_info</span>;
+        <span style="color:#af00db">for</span> (<span style="color:#267f99">uint</span> <span style="color:#001080">j</span>= <span style="color:#001080">share</span>-><span style="color:#001080">keys</span>;
+             <span style="color:#001080">j</span> &lt; <span style="color:#001080">share</span>-><span style="color:#001080">total_keys</span>; <span style="color:#001080">j</span>++)
+          <span style="color:#af00db">if</span> (<span style="color:#001080">kinfo</span>[<span style="color:#001080">j</span>].<span style="color:#001080">algorithm</span>
+                == <span style="color:#001080">HA_KEY_ALG_VECTOR</span>
+              &amp;&amp; <span style="color:#001080">f</span>-><span style="color:#001080">key_start</span>.<span style="color:#795e26">is_set</span>(<span style="color:#001080">j</span>))
+          {
+            <span style="color:#001080">kind</span>= <span style="color:#795e26">mhnsw_uses_distance</span>(
+              <span style="color:#001080">f</span>-><span style="color:#001080">table</span>, <span style="color:#001080">kinfo</span> + <span style="color:#001080">j</span>);
+            <span style="color:#af00db">return</span> <span style="color:#795e26">fix_length_and_dec</span>(<span style="color:#001080">thd</span>);
+          }
+      }
+    <span style="color:#795e26">my_error</span>(<span style="color:#001080">ER_VEC_DISTANCE_TYPE</span>, <span style="color:#795e26">MYF</span>(<span style="color:#098658">0</span>));
+    <span style="color:#af00db">return</span> <span style="color:#098658">1</span>;
+  }
+  <span style="color:#795e26">set_maybe_null</span>();
+  <span style="color:#af00db">return</span> <span style="color:#267f99">Item_real_func</span>::<span style="color:#795e26">fix_length_and_dec</span>(
+    <span style="color:#001080">thd</span>);
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Binds the correct distance function — Euclidean or cosine — to a SQL <code>VEC_DISTANCE()</code> call at query-compile time. In AUTO mode, introspects both arguments' vector index metadata to pick the metric the index was built with.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Lets MariaDB query authors omit the distance metric in <code>VEC_DISTANCE()</code> calls on indexed columns, because the optimizer reads it from the index definition, making vector similarity queries semantically correct by default without extra syntax.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> AUTO mode resolves the metric by walking storage-level key metadata, then calls <code>fix_length_and_dec</code> recursively with the resolved kind. The second call always hits a non-AUTO branch — the recursion terminates exactly once, guaranteed by the switch structure.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/MariaDB/server" style="color:#0969da;text-decoration:none;">MariaDB/server</a> — <a href="https://github.com/MariaDB/server/blob/main/sql/item_vectorfunc.cc" style="color:#0969da;text-decoration:none;">sql/item_vectorfunc.cc</a>. MariaDB Server added native vector search with MHNSW indexing in version 11.7, enabling SQL databases to store and query embedding vectors directly alongside relational data, targeting RAG pipelines and AI workloads without introducing new infrastructure.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>
+
+---
+
+**Highlighting decisions worth noting:**
+
+- `bool`, `THD`, `TABLE_SHARE`, `Field`, `KEY`, `Item_field`, `Item_func_vec_distance`, `Item_real_func`, `uint` — all typed as types (`#267f99`), since they are C++ type names or typedefs.
+- `dynamic_cast` and `auto` — typed as keywords (`#0000ff`); `dynamic_cast` is a C++ cast operator keyword.
+- `switch`, `case`, `for`, `if`, `break`, `return` — control flow (`#af00db`).
+- `fix_length_and_dec`, `real_item`, `is_set`, `mhnsw_uses_distance`, `my_error`, `MYF`, `set_maybe_null` — function/method names at call or definition sites (`#795e26`).
+- `<` in loop conditions escaped as `&lt;`; `&&` escaped as `&amp;&amp;`; `dynamic_cast<Item_field*>` has its template bracket escaped as `&lt;` on the open side only (closing `>` is safe in HTML text nodes).
+- The file is saved at `/tmp/claude-0/-home-user-iris/f4be1a9a-5654-563b-9269-3fd0d64c2400/scratchpad/2026-08-28-C-CPP-Snippet-28.html`.
