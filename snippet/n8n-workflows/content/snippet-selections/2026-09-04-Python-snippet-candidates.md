@@ -3,7 +3,7 @@
 Issue: #29
 Date: 2026-09-04
 Language: Python
-Status: PENDING_SELECTION
+Status: COMPLETED
 
 ## Repo 1 — google-research/timesfm
 
