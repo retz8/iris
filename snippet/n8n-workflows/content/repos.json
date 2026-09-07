@@ -978,5 +978,41 @@
     "snippets": [
       "MariaDB/server/blob/main/sql/item_vectorfunc.cc"
     ]
+  },
+  "google-research/timesfm": {
+    "count": 1,
+    "snippets": [
+      "google-research/timesfm/blob/master/src/timesfm3/normalization.py"
+    ]
+  },
+  "MakazhanAlpamys/Soup": {
+    "count": 1,
+    "snippets": [
+      "MakazhanAlpamys/Soup/blob/main/src/soup_cli/registry/hashing.py"
+    ]
+  },
+  "tashfeenahmed/freellmapi": {
+    "count": 1,
+    "snippets": [
+      "tashfeenahmed/freellmapi/blob/main/server/src/lib/served-model.ts"
+    ]
+  },
+  "mlc-ai/web-llm": {
+    "count": 1,
+    "snippets": [
+      "mlc-ai/web-llm/blob/main/src/web_worker.ts"
+    ]
+  },
+  "fmtlib/fmt": {
+    "count": 1,
+    "snippets": [
+      "fmtlib/fmt/blob/master/include/fmt/chrono.h"
+    ]
+  },
+  "dragonflydb/dragonfly": {
+    "count": 1,
+    "snippets": [
+      "dragonflydb/dragonfly/blob/main/src/server/blocking_controller.cc"
+    ]
   }
 }
