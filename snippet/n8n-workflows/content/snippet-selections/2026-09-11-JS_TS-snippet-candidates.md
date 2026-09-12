@@ -3,7 +3,7 @@
 Issue: #30
 Date: 2026-09-11
 Language: JS_TS
-Status: PENDING_SELECTION
+Status: COMPLETED
 
 ## Repo 1 — heygen-com/hyperframes
 
