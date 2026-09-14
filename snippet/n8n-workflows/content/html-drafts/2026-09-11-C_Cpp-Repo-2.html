@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">bool</span> <span style="color:#795e26;">cancel</span>(<span style="color:#267f99;">task_id_t</span> <span style="color:#001080;">task_id</span>) {
+  std::<span style="color:#267f99;">lock_guard</span> <span style="color:#001080;">lg</span>(<span style="color:#001080;">_task_mutex</span>);
+
+  <span style="color:#0000ff;">auto</span> <span style="color:#001080;">it</span> = <span style="color:#001080;">_timer_tasks</span>.<span style="color:#795e26;">begin</span>();
+  <span style="color:#af00db;">for</span> (; <span style="color:#001080;">it</span> &lt; <span style="color:#001080;">_timer_tasks</span>.<span style="color:#795e26;">cend</span>(); ++<span style="color:#001080;">it</span>) {
+    <span style="color:#0000ff;">const</span> <span style="color:#267f99;">__task</span> &amp;<span style="color:#001080;">task</span> = std::<span style="color:#795e26;">get</span>&lt;1&gt;(*<span style="color:#001080;">it</span>);
+
+    <span style="color:#af00db;">if</span> (&amp;*<span style="color:#001080;">task</span> == <span style="color:#001080;">task_id</span>) {
+      <span style="color:#001080;">_timer_tasks</span>.<span style="color:#795e26;">erase</span>(<span style="color:#001080;">it</span>);
+
+      <span style="color:#af00db;">return</span> <span style="color:#0000ff;">true</span>;
+    }
+  }
+
+  <span style="color:#af00db;">return</span> <span style="color:#0000ff;">false</span>;
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Iterates through a mutex-protected list of scheduled timer tasks, compares raw pointers to find the one matching the given task ID, erases it from the list under the lock, and returns whether the cancellation succeeded.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Gives Sunshine's streaming session manager a way to abort pending scheduled operations—such as a timeout waiting for a client to reconnect—so that resources are released and the task queue doesn't grow unbounded during normal session teardown.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> The comparison `&amp;*task == task_id` dereferences a smart pointer to get the underlying raw pointer and immediately takes its address, effectively unwrapping the ownership wrapper to compare by object identity—a pattern that only works because `task_id` is typed as a raw `T*` rather than the smart handle itself.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/LizardByte/Sunshine" style="color:#0969da;text-decoration:none;">LizardByte/Sunshine</a> — <a href="https://github.com/LizardByte/Sunshine/blob/master/src/task_pool.h" style="color:#0969da;text-decoration:none;">src/task_pool.h</a>. Sunshine is a self-hosted game streaming server for the Moonlight client, used by gamers who want low-latency hardware-encoded streaming from their own PC to any device without depending on NVIDIA GeForce Experience's cloud infrastructure.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>
