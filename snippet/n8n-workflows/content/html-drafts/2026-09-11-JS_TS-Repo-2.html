@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff">export</span> <span style="color:#0000ff">function</span> <span style="color:#795e26">allocateBudget</span>(
+  <span style="color:#001080">measurements</span>: <span style="color:#267f99">Measurement</span>[],
+  <span style="color:#001080">budgetTokens</span>: <span style="color:#267f99">number</span>,
+): <span style="color:#267f99">number</span>[] {
+  <span style="color:#0000ff">const</span> <span style="color:#001080">n</span> = <span style="color:#001080">measurements</span>.<span style="color:#001080">length</span>
+  <span style="color:#af00db">if</span> (<span style="color:#001080">n</span> === <span style="color:#098658">0</span>) <span style="color:#af00db">return</span> []
+
+  <span style="color:#0000ff">const</span> <span style="color:#001080">allocations</span> = <span style="color:#0000ff">new</span> <span style="color:#267f99">Array</span>(<span style="color:#001080">n</span>).<span style="color:#795e26">fill</span>(<span style="color:#098658">0</span>)
+
+  <span style="color:#6a9955">// Sort by size (smallest first)</span>
+  <span style="color:#0000ff">const</span> <span style="color:#001080">indices</span> = <span style="color:#001080">measurements</span>.<span style="color:#795e26">map</span>((<span style="color:#001080">_</span>, <span style="color:#001080">i</span>) =&gt; <span style="color:#001080">i</span>)
+  <span style="color:#001080">indices</span>.<span style="color:#795e26">sort</span>(
+    (<span style="color:#001080">a</span>, <span style="color:#001080">b</span>) =&gt; <span style="color:#001080">measurements</span>[<span style="color:#001080">a</span>].<span style="color:#001080">size</span> - <span style="color:#001080">measurements</span>[<span style="color:#001080">b</span>].<span style="color:#001080">size</span>
+  )
+
+  <span style="color:#0000ff">let</span> <span style="color:#001080">remaining</span> = <span style="color:#001080">budgetTokens</span>
+  <span style="color:#0000ff">let</span> <span style="color:#001080">count</span> = <span style="color:#001080">n</span>
+
+  <span style="color:#af00db">for</span> (<span style="color:#0000ff">const</span> <span style="color:#001080">i</span> <span style="color:#0000ff">of</span> <span style="color:#001080">indices</span>) {
+    <span style="color:#0000ff">const</span> <span style="color:#001080">share</span> = <span style="color:#001080">remaining</span> / <span style="color:#001080">count</span>
+    <span style="color:#0000ff">const</span> <span style="color:#001080">m</span> = <span style="color:#001080">measurements</span>[<span style="color:#001080">i</span>]
+
+    <span style="color:#af00db">if</span> (!<span style="color:#001080">m</span>.<span style="color:#001080">exceeded</span> &amp;&amp; <span style="color:#001080">m</span>.<span style="color:#001080">size</span> &lt;= <span style="color:#001080">share</span>) {
+      <span style="color:#001080">allocations</span>[<span style="color:#001080">i</span>] = <span style="color:#001080">m</span>.<span style="color:#001080">size</span>
+      <span style="color:#001080">remaining</span> -= <span style="color:#001080">m</span>.<span style="color:#001080">size</span>
+    } <span style="color:#af00db">else</span> {
+      <span style="color:#001080">allocations</span>[<span style="color:#001080">i</span>] = <span style="color:#267f99">Math</span>.<span style="color:#795e26">floor</span>(<span style="color:#001080">share</span>)
+      <span style="color:#001080">remaining</span> -= <span style="color:#267f99">Math</span>.<span style="color:#795e26">floor</span>(<span style="color:#001080">share</span>)
+    }
+    <span style="color:#001080">count</span>--
+  }
+
+  <span style="color:#af00db">return</span> <span style="color:#001080">allocations</span>
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Distributes a fixed token budget across a list of items by sorting them smallest-first, granting each item its full measured size if it fits within the current per-item equal share, and capping the rest at a floor-divided share of what remains.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Prevents any single large context from consuming a disproportionate share of Magnitude's per-request token budget, ensuring that smaller, already-complete contexts get their exact allocation while oversized ones are trimmed fairly during an agent truncation pass.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> Sorting smallest-first before greedy allocation is the key mechanism: items small enough to be fully satisfied early free their unused portion of the equal share for redistribution, making the final allocation adaptive rather than a uniform cap—a fractional-knapsack approach applied to LLM context management.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/magnitudedev/magnitude" style="color:#0969da;text-decoration:none;">magnitudedev/magnitude</a> — <a href="https://github.com/magnitudedev/magnitude/blob/main/packages/agent/src/truncation/budget.ts" style="color:#0969da;text-decoration:none;">packages/agent/src/truncation/budget.ts</a>. Magnitude is an open-source local inference engine that profiles your GPU, CPU, and RAM, recommends compatible models, and serves them via an OpenAI-compatible API so coding agents like Claude Code and Cline can run private, zero-cost inference on your own hardware.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

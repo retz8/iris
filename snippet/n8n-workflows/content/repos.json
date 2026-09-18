@@ -1014,5 +1014,41 @@
     "snippets": [
       "dragonflydb/dragonfly/blob/main/src/server/blocking_controller.cc"
     ]
+  },
+  "debpalash/VoiceStudio": {
+    "count": 1,
+    "snippets": [
+      "debpalash/VoiceStudio/blob/main/backend/core/device_caps.py"
+    ]
+  },
+  "The-Swarm-Corporation/AutoHedge": {
+    "count": 1,
+    "snippets": [
+      "The-Swarm-Corporation/AutoHedge/blob/main/autohedge/tools/polygon_api.py"
+    ]
+  },
+  "heygen-com/hyperframes": {
+    "count": 1,
+    "snippets": [
+      "heygen-com/hyperframes/blob/main/packages/engine/src/services/chunkEncoder.ts"
+    ]
+  },
+  "magnitudedev/magnitude": {
+    "count": 1,
+    "snippets": [
+      "magnitudedev/magnitude/blob/main/packages/agent/src/truncation/budget.ts"
+    ]
+  },
+  "noctalia-dev/noctalia": {
+    "count": 1,
+    "snippets": [
+      "noctalia-dev/noctalia/blob/main/src/render/scene/node.cpp"
+    ]
+  },
+  "LizardByte/Sunshine": {
+    "count": 1,
+    "snippets": [
+      "LizardByte/Sunshine/blob/master/src/task_pool.h"
+    ]
   }
 }
