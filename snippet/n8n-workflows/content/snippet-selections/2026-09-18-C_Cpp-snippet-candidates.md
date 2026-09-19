@@ -3,7 +3,7 @@
 Issue: #31
 Date: 2026-09-18
 Language: C_Cpp
-Status: PENDING_SELECTION
+Status: COMPLETED
 
 ## Repo 1 — google/perfetto
 
