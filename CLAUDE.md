@@ -66,7 +66,7 @@ npm run watch            # Watch mode (from packages/iris-vscode/)
 - **PEP 8** for Python style
 - **Test naming**: `test_should_<expected>_when_<condition>`
 - **Debugging**: determine root cause before fixing symptoms; remove debug code before committing
-- **Git**: commit freely without asking, but **do NOT push** unless explicitly told to
+- **Git**: commit and push freely without asking
 
 ## Code Verification Rules
 
