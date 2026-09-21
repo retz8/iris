@@ -313,9 +313,10 @@
     ]
   },
   "microsoft/markitdown": {
-    "count": 1,
+    "count": 2,
     "snippets": [
-      "microsoft/markitdown/blob/main/packages/markitdown/src/markitdown/converter_utils/docx/math/omml.py"
+      "microsoft/markitdown/blob/main/packages/markitdown/src/markitdown/converter_utils/docx/math/omml.py",
+      "microsoft/markitdown/blob/main/packages/markitdown/src/markitdown/converters/_ipynb_converter.py"
     ]
   },
   "thedotmack/claude-mem": {
@@ -1049,6 +1050,36 @@
     "count": 1,
     "snippets": [
       "LizardByte/Sunshine/blob/master/src/task_pool.h"
+    ]
+  },
+  "multimodal-art-projection/YuE": {
+    "count": 1,
+    "snippets": [
+      "multimodal-art-projection/YuE/blob/main/src/yue2/sampling.py"
+    ]
+  },
+  "Tencent/BrowserSkill": {
+    "count": 1,
+    "snippets": [
+      "Tencent/BrowserSkill/blob/main/apps/extension/src/tools/observation.ts"
+    ]
+  },
+  "langwatch/langwatch": {
+    "count": 1,
+    "snippets": [
+      "langwatch/langwatch/blob/main/packages/redaction/src/secrets.ts"
+    ]
+  },
+  "google/perfetto": {
+    "count": 1,
+    "snippets": [
+      "google/perfetto/blob/main/src/trace_processor/util/galloping_search.h"
+    ]
+  },
+  "Neroued/ninfer": {
+    "count": 1,
+    "snippets": [
+      "Neroued/ninfer/blob/master/src/core/decode_graph.cpp"
     ]
   }
 }
