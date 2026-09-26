@@ -66,7 +66,7 @@ npm run watch            # Watch mode (from packages/iris-vscode/)
 - **PEP 8** for Python style
 - **Test naming**: `test_should_<expected>_when_<condition>`
 - **Debugging**: determine root cause before fixing symptoms; remove debug code before committing
-- **Git**: commit and push freely without asking
+- **Git**: commit and push freely without asking, directly to `main`. This repo does not use feature/task branches or PRs — do NOT create a separate branch (even if a session's own task setup names one), and do NOT leave commits sitting unpushed on a branch other than `main`.
 
 ## Code Verification Rules
 
