@@ -1050,5 +1050,41 @@
     "snippets": [
       "LizardByte/Sunshine/blob/master/src/task_pool.h"
     ]
+  },
+  "vectorize-io/hindsight": {
+    "count": 1,
+    "snippets": [
+      "vectorize-io/hindsight/blob/main/hindsight-api-slim/hindsight_api/engine/query_analyzer.py"
+    ]
+  },
+  "odoo/odoo": {
+    "count": 1,
+    "snippets": [
+      "odoo/odoo/blob/20.0/odoo/tools/set_expression.py"
+    ]
+  },
+  "paperclipai/paperclip": {
+    "count": 1,
+    "snippets": [
+      "paperclipai/paperclip/blob/master/server/src/services/authorization.ts"
+    ]
+  },
+  "vercel-labs/json-render": {
+    "count": 1,
+    "snippets": [
+      "vercel-labs/json-render/blob/main/packages/core/src/merge.ts"
+    ]
+  },
+  "keepassxreboot/keepassxc": {
+    "count": 1,
+    "snippets": [
+      "keepassxreboot/keepassxc/blob/develop/src/core/Group.cpp"
+    ]
+  },
+  "opencv/opencv": {
+    "count": 1,
+    "snippets": [
+      "opencv/opencv/blob/5.x/modules/imgproc/src/colormap.cpp"
+    ]
   }
 }
