@@ -1016,9 +1016,10 @@
     ]
   },
   "debpalash/VoiceStudio": {
-    "count": 1,
+    "count": 2,
     "snippets": [
-      "debpalash/VoiceStudio/blob/main/backend/core/device_caps.py"
+      "debpalash/VoiceStudio/blob/main/backend/core/device_caps.py",
+      "debpalash/VoiceStudio/blob/main/backend/worker/executor.py"
     ]
   },
   "The-Swarm-Corporation/AutoHedge": {
@@ -1085,6 +1086,36 @@
     "count": 1,
     "snippets": [
       "opencv/opencv/blob/5.x/modules/imgproc/src/colormap.cpp"
+    ]
+  },
+  "tile-ai/tilelang": {
+    "count": 1,
+    "snippets": [
+      "tile-ai/tilelang/blob/main/tilelang/carver/matmul_analysis.py"
+    ]
+  },
+  "anthropics/claude-code-action": {
+    "count": 1,
+    "snippets": [
+      "anthropics/claude-code-action/blob/main/src/github/token.ts"
+    ]
+  },
+  "oblien/openship": {
+    "count": 1,
+    "snippets": [
+      "oblien/openship/blob/main/packages/platform/src/engine/modules/github/clone-auth.ts"
+    ]
+  },
+  "deepseek-ai/FlashMLA": {
+    "count": 1,
+    "snippets": [
+      "deepseek-ai/FlashMLA/blob/main/csrc/api/common.h"
+    ]
+  },
+  "FreeRDP/FreeRDP": {
+    "count": 1,
+    "snippets": [
+      "FreeRDP/FreeRDP/blob/master/libfreerdp/core/nla.c"
     ]
   }
 }
