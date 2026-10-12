@@ -1117,5 +1117,41 @@
     "snippets": [
       "FreeRDP/FreeRDP/blob/master/libfreerdp/core/nla.c"
     ]
+  },
+  "Tracer-Cloud/opensre": {
+    "count": 1,
+    "snippets": [
+      "Tracer-Cloud/opensre/blob/main/core/tool/execution.py"
+    ]
+  },
+  "getsentry/sentry": {
+    "count": 1,
+    "snippets": [
+      "getsentry/sentry/blob/master/src/sentry/utils/numbers.py"
+    ]
+  },
+  "cloudflare/cloudflare-os": {
+    "count": 1,
+    "snippets": [
+      "cloudflare/cloudflare-os/blob/main/packages/gatekeeper-kit/src/simulation.ts"
+    ]
+  },
+  "nanobrowser/nanobrowser": {
+    "count": 1,
+    "snippets": [
+      "nanobrowser/nanobrowser/blob/master/src/background/agent/actions/builder.ts"
+    ]
+  },
+  "zeldaret/tww": {
+    "count": 1,
+    "snippets": [
+      "zeldaret/tww/blob/main/src/SSystem/SComponent/c_math.cpp"
+    ]
+  },
+  "hluk/CopyQ": {
+    "count": 1,
+    "snippets": [
+      "hluk/CopyQ/blob/master/src/common/command.cpp"
+    ]
   }
 }
