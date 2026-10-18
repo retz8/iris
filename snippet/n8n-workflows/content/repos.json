@@ -1153,5 +1153,41 @@
     "snippets": [
       "hluk/CopyQ/blob/master/src/common/command.cpp"
     ]
+  },
+  "earthtojake/text-to-cad": {
+    "count": 1,
+    "snippets": [
+      "earthtojake/text-to-cad/blob/main/packages/cadgen/src/cadgen/metadata.py"
+    ]
+  },
+  "ifixai-ai/iFixAi": {
+    "count": 1,
+    "snippets": [
+      "ifixai-ai/iFixAi/blob/main/ifixai/core/grounding.py"
+    ]
+  },
+  "morluto/rea": {
+    "count": 1,
+    "snippets": [
+      "morluto/rea/blob/main/src/application/native/NativeUiActionTrace.ts"
+    ]
+  },
+  "breferrari/obsidian-mind": {
+    "count": 1,
+    "snippets": [
+      "breferrari/obsidian-mind/blob/main/.claude/scripts/lib/active-hygiene.ts"
+    ]
+  },
+  "boykopovar/AnyPS5": {
+    "count": 1,
+    "snippets": [
+      "boykopovar/AnyPS5/blob/main/core/libs/nid/src/NidResolver.cpp"
+    ]
+  },
+  "DamRsn/NeuralNote": {
+    "count": 1,
+    "snippets": [
+      "DamRsn/NeuralNote/blob/main/NeuralNote/Source/TranscriptionManager.cpp"
+    ]
   }
 }
