@@ -1189,5 +1189,41 @@
     "snippets": [
       "DamRsn/NeuralNote/blob/main/NeuralNote/Source/TranscriptionManager.cpp"
     ]
+  },
+  "Comfy-Org/ComfyUI": {
+    "count": 1,
+    "snippets": [
+      "Comfy-Org/ComfyUI/blob/master/comfy/samplers.py"
+    ]
+  },
+  "Kruk2/jasna": {
+    "count": 1,
+    "snippets": [
+      "Kruk2/jasna/blob/main/jasna/media/splice.py"
+    ]
+  },
+  "elie222/rakazo": {
+    "count": 1,
+    "snippets": [
+      "elie222/rakazo/blob/main/packages/adapters/src/pi-runtime.ts"
+    ]
+  },
+  "citrolabs/ego-lite": {
+    "count": 1,
+    "snippets": [
+      "citrolabs/ego-lite/blob/main/package/ego-browser/src/snapshot-result.ts"
+    ]
+  },
+  "geode-sdk/geode": {
+    "count": 1,
+    "snippets": [
+      "geode-sdk/geode/blob/main/loader/src/server/Server.cpp"
+    ]
+  },
+  "Fincept-Corporation/FinceptTerminal": {
+    "count": 1,
+    "snippets": [
+      "Fincept-Corporation/FinceptTerminal/blob/main/fincept-qt/src/algo_engine/CandleAggregator.cpp"
+    ]
   }
 }
