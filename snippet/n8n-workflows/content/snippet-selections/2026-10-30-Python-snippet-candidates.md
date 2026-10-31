@@ -3,7 +3,7 @@
 Issue: #37
 Date: 2026-10-30
 Language: Python
-Status: PENDING_SELECTION
+Status: COMPLETED
 
 ## Repo 1 — sgl-project/sglang
 
