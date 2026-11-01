@@ -1225,5 +1225,41 @@
     "snippets": [
       "Fincept-Corporation/FinceptTerminal/blob/main/fincept-qt/src/algo_engine/CandleAggregator.cpp"
     ]
+  },
+  "sgl-project/sglang": {
+    "count": 1,
+    "snippets": [
+      "sgl-project/sglang/blob/main/python/sglang/srt/mem_cache/radix_cache.py"
+    ]
+  },
+  "HKUDS/DeepTutor": {
+    "count": 1,
+    "snippets": [
+      "HKUDS/DeepTutor/blob/main/deeptutor/agents/loop/context_budget.py"
+    ]
+  },
+  "google-gemini/gemini-cli": {
+    "count": 1,
+    "snippets": [
+      "google-gemini/gemini-cli/blob/main/packages/core/src/sandbox/utils/commandSafety.ts"
+    ]
+  },
+  "remotion-dev/remotion": {
+    "count": 1,
+    "snippets": [
+      "remotion-dev/remotion/blob/main/packages/core/src/interpolate-colors.ts"
+    ]
+  },
+  "OrcaSlicer/OrcaSlicer": {
+    "count": 1,
+    "snippets": [
+      "OrcaSlicer/OrcaSlicer/blob/main/src/libslic3r/Model.cpp"
+    ]
+  },
+  "obsproject/obs-studio": {
+    "count": 1,
+    "snippets": [
+      "obsproject/obs-studio/blob/master/libobs/graphics/graphics.c"
+    ]
   }
 }
