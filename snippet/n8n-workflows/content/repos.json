@@ -1245,9 +1245,10 @@
     ]
   },
   "remotion-dev/remotion": {
-    "count": 1,
+    "count": 2,
     "snippets": [
-      "remotion-dev/remotion/blob/main/packages/core/src/interpolate-colors.ts"
+      "remotion-dev/remotion/blob/main/packages/core/src/interpolate-colors.ts",
+      "remotion-dev/remotion/blob/main/packages/core/src/spring/measure-spring.ts"
     ]
   },
   "OrcaSlicer/OrcaSlicer": {
@@ -1260,6 +1261,36 @@
     "count": 1,
     "snippets": [
       "obsproject/obs-studio/blob/master/libobs/graphics/graphics.c"
+    ]
+  },
+  "NVIDIA/auto-ontology": {
+    "count": 1,
+    "snippets": [
+      "NVIDIA/auto-ontology/blob/main/auto_ontology/retrieval/text_to_sql/formatters_util.py"
+    ]
+  },
+  "guillaumemeyer/watermarks-remover": {
+    "count": 1,
+    "snippets": [
+      "guillaumemeyer/watermarks-remover/blob/main/service/scripts/detect_gumbel.py"
+    ]
+  },
+  "CopilotKit/OpenBot": {
+    "count": 1,
+    "snippets": [
+      "CopilotKit/OpenBot/blob/main/shared/routine-firing.ts"
+    ]
+  },
+  "k2-fsa/sherpa-onnx": {
+    "count": 1,
+    "snippets": [
+      "k2-fsa/sherpa-onnx/blob/master/sherpa-onnx/csrc/context-graph.cc"
+    ]
+  },
+  "rizinorg/rizin": {
+    "count": 1,
+    "snippets": [
+      "rizinorg/rizin/blob/dev/librz/util/debruijn.c"
     ]
   }
 }
