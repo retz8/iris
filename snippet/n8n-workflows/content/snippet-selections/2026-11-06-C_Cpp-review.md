@@ -3,7 +3,7 @@
 Issue: #38
 Date: 2026-11-06
 Language: C/C++
-Status: PENDING_APPROVAL
+Status: COMPLETED
 
 ## Repo 1 — k2-fsa/sherpa-onnx
 
