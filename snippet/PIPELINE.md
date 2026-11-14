@@ -1,100 +1,56 @@
 # Snippet Newsletter Pipeline
 
-Automated content generation for the Snippet newsletter. Heavy work (repo discovery, code exploration, breakdown generation) runs unattended at night. Human decisions (picking repos, picking snippets, approving breakdowns) happen in the morning as quick interactions.
+Since issue #39 (2026-11), each weekly issue is made in one chat with Claude using the `snippet-weekly` skill, and sending runs on Google Apps Script. The old Friday/Saturday/Sunday routines, the six discover/find/generate skills and n8n are retired.
 
-## Weekly Schedule
-
-```
-Fri 11pm KST   AUTO   /discover-oss-candidates runs in cloud
-                       → searches trending repos, validates via GitHub API
-                       → writes candidates file, pushes to GitHub
-
-Sat morning    YOU    git pull → run /discover-oss-candidates-select (~2 min)
-                       → review candidates, pick 2 repos per language
-                       → selection files written
-
-Sat 11pm KST   MANUAL run /find-snippet-candidates before bed
-               (AUTO when on Max plan)
-                       → 6 sub-agents explore repos via GitHub API
-                       → writes snippet candidate files, pushes to GitHub
-
-Sun morning    YOU    git pull → run /find-snippet-candidates-select (~5 min)
-                       → review ranked snippet candidates for all 3 languages
-                       → selections appended to files
-
-Sun 11pm KST   MANUAL run /generate-snippet-draft before bed
-               (AUTO when on Max plan)
-                       → reformats snippets, researches repos, generates breakdowns
-                       → writes review files, pushes to GitHub
-
-Mon morning    YOU    git pull → run /generate-snippet-draft-select (~5 min)
-                       → approve or give feedback on breakdowns
-                       → HTML drafts written to html-drafts/
-```
-
-## Skills Reference
-
-### Phase 1 — Automated (run at night)
-
-| Skill | When | What it does |
-|-------|------|--------------|
-| `/discover-oss-candidates` | Friday night | Searches GitHub Trending + dev news, validates repos via GitHub API, writes `{date}-candidates.md` |
-| `/find-snippet-candidates` | Saturday night | Spawns 6 parallel sub-agents to explore 6 repos via GitHub API, writes `{date}-{Lang}-snippet-candidates.md` for each language |
-| `/generate-snippet-draft` | Sunday night | Reformats snippets for mobile, researches repos, generates and self-refines breakdowns, writes `{date}-{Lang}-review.md` |
-
-### Phase 2 — Interactive (run in the morning, takes minutes)
-
-| Skill | When | What it does |
-|-------|------|--------------|
-| `/discover-oss-candidates-select` | Saturday morning | Reads candidates file, you pick 2 repos per language, writes 3 selection files, increments issue counter |
-| `/find-snippet-candidates-select` | Sunday morning | Shows all candidates (3 languages at once), you pick 1 snippet per repo, appends selections to files |
-| `/generate-snippet-draft-select` | Monday morning | Shows breakdowns for all 6 repos, you approve or give feedback, writes to `drafts.json`, `repos.json`, and `html-drafts/` |
-
-## File Flow
+## Weekly flow
 
 ```
-snippet/current-issue.txt               ← last completed issue number
-                                          (auto-incremented by /discover-oss-candidates-select)
+Weekend (chat)   snippet-weekly
+  1. Claude finds repo candidates          → YOU pick 2 repos per language
+  2. Claude finds 3 snippets per repo,
+     shows each one's code in chat         → YOU pick 1 snippet per repo
+  3. Claude writes breakdowns + HTML,
+     adds 6 rows to the drafts sheet
+     (status=draft), archives to this repo
+  4. "All written. Schedule?"              → YOU say yes / not yet
+        yes → rows become status=ready
 
+Tue 21:00 KST    Apps Script sendScheduled → sends ready rows with scheduled_day=tue
+Thu 21:00 KST    Apps Script sendScheduled → sends ready rows with scheduled_day=thu
+                 (row status becomes sent, or failed with a row in send_errors)
+```
+
+Only three answers are needed each week: repos, snippets, schedule. There is no breakdown review and no HTML preview.
+
+## Pieces
+
+| Piece | Where | Role |
+|---|---|---|
+| `snippet-weekly` skill | `.claude/skills/snippet-weekly/SKILL.md` | The whole weekly flow above |
+| `snippet-repo-explorer` agent | `.claude/agents/` | Finds 3 snippet candidates in one repo |
+| `snippet-html-generator` agent | `.claude/agents/` | Email HTML template, colors and subject rule |
+| Google Sheet `snippet newsletter` | Google Drive | `drafts` (issues, HTML, status), `subscribers`, `send_errors` |
+| Apps Script project `snippet` | newsletter Gmail account | Web app for subscribe / confirm / unsubscribe (the site calls it), and the Tue/Thu send trigger |
+
+`drafts` columns are read by header name, so don't rename, move or delete them: `issue_number, status, gmail_draft_id, file_intent, repository_name, repository_url, repository_description, programming_language, source, created_date, scheduled_day, sent_date, subject, html`.
+
+## Archive in this repo
+
+History only; nothing here is read for sending.
+
+```
+snippet/current-issue.txt                       ← last issue made
 snippet/n8n-workflows/content/
-├── snippet-selections/
-│   ├── {date}-candidates.md            ← Skill A P1 output (your picks go here)
-│   ├── {date}-Python.md                ← Skill A P2 output → B reads this
-│   ├── {date}-JS_TS.md
-│   ├── {date}-C_Cpp.md
-│   ├── {date}-Python-snippet-candidates.md   ← Skill B P1 output
-│   ├── {date}-JS_TS-snippet-candidates.md
-│   ├── {date}-C_Cpp-snippet-candidates.md
-│   ├── {date}-Python-review.md         ← Skill C P1 output (your approval goes here)
-│   ├── {date}-JS_TS-review.md
-│   └── {date}-C_Cpp-review.md
-├── repos.json                          ← tracks which repos have been used and how many times
-├── drafts.json                         ← archive of all generated drafts (gitignored)
-└── html-drafts/                        ← final Gmail-ready HTML files (gitignored)
-    └── {date}-{Language}-Repo-{1,2}.html
+├── snippet-selections/{date}-{Lang}.md        ← picks, breakdowns, snippet per language
+├── html-drafts/{date}-{Lang}-Repo-{1,2}.html  ← final emails (Repo 1 = Tue, Repo 2 = Thu)
+├── drafts.json                                ← all drafts as JSON
+└── repos.json                                 ← repos used and how many times
 ```
 
-## Scheduled Triggers
+Older weeks also have `*-candidates.md`, `*-snippet-candidates.md` and `*-review.md` files from the retired flow.
 
-| Trigger | Cron | Next Steps |
-|---------|------|------------|
-| `snippet-discover` (active) | Fri 11pm KST | Running — first fire: 2026-04-03 |
-| `snippet-find-candidates` | Sat 11pm KST | Create when upgrading to Max plan |
-| `snippet-generate-drafts` | Sun 11pm KST | Create when upgrading to Max plan |
+## Retired
 
-Manage triggers: https://claude.ai/code/scheduled
-
-## After Generating HTML Drafts
-
-1. Copy each `.html` file's contents into a new Gmail compose window
-2. Open Google Sheets → Newsletter Drafts tab
-3. Set `scheduled_day` and `status` for completed drafts
-
-## Notes
-
-- The pipeline has zero Chrome/browser dependency — everything uses GitHub API and WebSearch
-- Phase 1 skills automatically commit and push output to GitHub when done
-- After each Phase 1 run, do `git pull` before running the corresponding Phase 2 skill
-- If a Phase 1 run fails silently, check https://claude.ai/code/scheduled for run logs
-- `repos.json` tracks prior usage — repos used before get a soft warning during discovery
-- `current-issue.txt` tracks the last completed issue number (currently: `7`)
+- Skills `discover-oss-candidates`, `find-snippet-candidates`, `generate-snippet-draft` are now stubs that do nothing, so the old routines `snippet-discover`, `snippet-find-candidates` and `snippet-generate-drafts` stop cleanly if they still fire. Turn those routines off at https://claude.ai/code/routines, then delete the three stub folders.
+- The three `-select` skills are deleted.
+- n8n workflows (subscription, confirmation, unsubscribe, Gmail drafts → sheet, Tue/Thu send) are replaced by the Apps Script project. Their docs stay in `snippet/n8n-workflows/` for reference.

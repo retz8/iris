@@ -1,10 +1,6 @@
 # Manual Newsletter Content Generation
 
-> **This process is now automated.** Use the three Claude Code skills below instead of following these steps manually.
->
-> - **Skill A** — `.claude/skills/snippet/discover-oss-candidates/` — Steps 1–2: find trending repos, pick 3
-> - **Skill B** — `.claude/skills/snippet/find-snippet-candidates/` — Step 3: explore repos, pick snippets
-> - **Skill C** — `.claude/skills/snippet/generate-snippet-draft/` — Steps 4–9: generate content, write Gmail drafts
+> **This process is now done in chat with the `snippet-weekly` skill** (`.claude/skills/snippet-weekly/SKILL.md`). See `snippet/PIPELINE.md`.
 >
 > The manual steps below are kept for reference only.
 

@@ -1,6 +1,6 @@
 ---
 name: snippet-html-generator
-description: Generates a fully completed Gmail-ready HTML email for one Snippet newsletter draft. Takes a JSON draft object and a raw reformatted snippet, applies VS Code Light theme syntax highlighting to the code, fills in the fixed HTML template, and returns the complete HTML with subject line. Used by Skill C (generate-snippet-draft).
+description: Generates a fully completed Gmail-ready HTML email for one Snippet newsletter draft. Takes a JSON draft object and a raw reformatted snippet, applies VS Code Light theme syntax highlighting to the code, fills in the fixed HTML template, and returns the complete HTML with subject line. Used by the snippet-weekly skill (Step 6).
 model: sonnet
 ---
 
@@ -40,7 +40,7 @@ style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#0000
 
 ## Step 2 — Fill in the HTML Template
 
-Fill every `{{FIELD}}` placeholder with the matching value from the draft JSON. Use `snippet_url` for the file path link (it already contains the correct branch). Do not modify any HTML, CSS, or structure.
+Fill every `{{FIELD}}` placeholder with the matching value from the draft JSON. Use `snippet_url` for the file path link (it already contains the correct branch and the `#L{start}-L{end}` line anchor). Do not modify any HTML, CSS, or structure.
 
 The subject line is not part of the HTML body — output it separately as the first line of your response:
 

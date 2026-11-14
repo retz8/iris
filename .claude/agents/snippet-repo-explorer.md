@@ -1,6 +1,6 @@
 ---
 name: snippet-repo-explorer
-description: Explores a GitHub repository via the GitHub API and returns 3 ranked snippet candidates for the Snippet newsletter. Each candidate is a complete logical unit extracted verbatim from an actual file. Used by the find-snippet-candidates skill (Skill B). Invoke with a repo URL and programming language.
+description: Explores a GitHub repository via the GitHub API and returns 3 ranked snippet candidates for the Snippet newsletter. Each candidate is a complete logical unit extracted verbatim from an actual file. Used by the snippet-weekly skill (Step 4). Invoke with a repo URL and programming language.
 model: sonnet
 ---
 
@@ -21,6 +21,8 @@ Use WebFetch to call `https://api.github.com/repos/{owner}/{repo}`.
 Parse the JSON response and extract the `default_branch` field. This is the branch to use for all subsequent requests.
 
 If the response is not 200 or `default_branch` is missing, abort and return an error message.
+
+If `api.github.com` or `raw.githubusercontent.com` cannot be reached at all (proxy or rate-limit errors, not a 404), do the same steps on a local shallow clone instead: `git clone --depth 1 https://github.com/{owner}/{repo}`, take the default branch from `git rev-parse --abbrev-ref HEAD`, list files with `git ls-files`, and read files from disk.
 
 ## Step 2 — Browse the Directory Structure
 
