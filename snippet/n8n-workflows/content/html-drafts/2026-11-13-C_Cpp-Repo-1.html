@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#0000ff;">static</span> <span style="color:#0000ff;">void</span> <span style="color:#795e26;">fwht_inplace</span>(<span style="color:#267f99;">float</span>* <span style="color:#001080;">buf</span>, <span style="color:#267f99;">size_t</span> <span style="color:#001080;">n</span>) {
+    <span style="color:#af00db;">for</span> (<span style="color:#267f99;">size_t</span> <span style="color:#001080;">step</span> = <span style="color:#098658;">1</span>; <span style="color:#001080;">step</span> &lt; <span style="color:#001080;">n</span>; <span style="color:#001080;">step</span> *= <span style="color:#098658;">2</span>) {
+        <span style="color:#af00db;">for</span> (<span style="color:#267f99;">size_t</span> <span style="color:#001080;">i</span> = <span style="color:#098658;">0</span>; <span style="color:#001080;">i</span> &lt; <span style="color:#001080;">n</span>; <span style="color:#001080;">i</span> += <span style="color:#001080;">step</span> * <span style="color:#098658;">2</span>) {
+            <span style="color:#af00db;">for</span> (<span style="color:#267f99;">size_t</span> <span style="color:#001080;">j</span> = <span style="color:#001080;">i</span>; <span style="color:#001080;">j</span> &lt; <span style="color:#001080;">i</span> + <span style="color:#001080;">step</span>; <span style="color:#001080;">j</span>++) {
+                <span style="color:#267f99;">float</span> <span style="color:#001080;">a</span> = <span style="color:#001080;">buf</span>[<span style="color:#001080;">j</span>];
+                <span style="color:#267f99;">float</span> <span style="color:#001080;">b</span> = <span style="color:#001080;">buf</span>[<span style="color:#001080;">j</span> + <span style="color:#001080;">step</span>];
+                <span style="color:#001080;">buf</span>[<span style="color:#001080;">j</span>] = <span style="color:#001080;">a</span> + <span style="color:#001080;">b</span>;
+                <span style="color:#001080;">buf</span>[<span style="color:#001080;">j</span> + <span style="color:#001080;">step</span>] = <span style="color:#001080;">a</span> - <span style="color:#001080;">b</span>;
+            }
+        }
+    }
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Applies the Fast Walsh-Hadamard Transform in place: for block sizes 1, 2, 4 and up, it replaces each pair (a, b) with (a + b, a - b), mixing every input into every output in n log n steps.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> It powers Faiss's HadamardRotation, a cheap stand-in for a random rotation matrix. Three rounds of random sign flips plus this transform spread a vector's energy evenly across dimensions before quantization, without storing or multiplying a d-by-d matrix.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> It never multiplies, only adds and subtracts, so each pass scales the vector's norm by sqrt(2) and three full transforms by p^(3/2). The caller skips per-pass normalization and fixes the scale once at the end with a single multiply.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/facebookresearch/faiss" style="color:#0969da;text-decoration:none;">facebookresearch/faiss</a> — <a href="https://github.com/facebookresearch/faiss/blob/main/faiss/VectorTransform.cpp#L405-L416" style="color:#0969da;text-decoration:none;">faiss/VectorTransform.cpp</a>. Faiss is Meta's open-source library for similarity search and clustering of dense vectors, used to search billions of embeddings and a building block for many vector search systems.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#24292f;background:#ffffff;">
+  <div style="max-width:480px;margin:0 auto;padding:20px;">
+
+    <div style="font-family:'Consolas',Verdana;font-size:13px;line-height:1.5;color:#000000;white-space:pre;"><span style="color:#267f99;">uint8_t</span> <span style="color:#795e26;">LFULogIncr</span>(<span style="color:#267f99;">uint8_t</span> <span style="color:#001080;">counter</span>) {
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">counter</span> == <span style="color:#098658;">255</span>) <span style="color:#af00db;">return</span> <span style="color:#098658;">255</span>;
+    <span style="color:#267f99;">double</span> <span style="color:#001080;">r</span> = (<span style="color:#267f99;">double</span>)<span style="color:#795e26;">rand</span>()/<span style="color:#001080;">RAND_MAX</span>;
+    <span style="color:#267f99;">double</span> <span style="color:#001080;">baseval</span> = <span style="color:#001080;">counter</span> - <span style="color:#001080;">LFU_INIT_VAL</span>;
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">baseval</span> &lt; <span style="color:#098658;">0</span>) <span style="color:#001080;">baseval</span> = <span style="color:#098658;">0</span>;
+    <span style="color:#267f99;">double</span> <span style="color:#001080;">p</span> = <span style="color:#098658;">1.0</span>/(<span style="color:#001080;">baseval</span>*<span style="color:#001080;">server</span>.<span style="color:#001080;">lfu_log_factor</span>+<span style="color:#098658;">1</span>);
+    <span style="color:#af00db;">if</span> (<span style="color:#001080;">r</span> &lt; <span style="color:#001080;">p</span>) <span style="color:#001080;">counter</span>++;
+    <span style="color:#af00db;">return</span> <span style="color:#001080;">counter</span>;
+}</div>
+
+    <br><br><br>
+
+    <p style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:20px;text-align:center;margin:0 0 24px 0;">Before scrolling: what does this do?</p>
+
+    <div style="text-align:center;padding:32px 0;margin-bottom:48px;">
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto 8px;"></div>
+      <div style="width:4px;height:4px;background-color:#6e7781;border-radius:50%;opacity:0.4;margin:0 auto;"></div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">The Breakdown</h3>
+    <ul style="list-style:none;padding:0;margin:0;">
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">What it does:</strong> Increments an 8-bit access counter with a probability that shrinks as the counter grows: 1 / ((counter - 5) x lfu_log_factor + 1). Counters at or below the starting value 5 always go up; 255 never does.</li>
+      <li style="margin-bottom:24px;line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">Key responsibility:</strong> Redis calls it on every key access under the LFU eviction policies. Combined with a per-minute decay, the counter estimates how hot a key is, so when memory runs out Redis can evict the keys that are rarely used.</li>
+      <li style="line-height:1.7;font-size:16px;"><strong style="color:#24292f;font-weight:600;">The clever part:</strong> Eight bits can only count to 255, yet with the default lfu_log_factor of 10 the counter reaches 255 only after about a million hits. Making increments rarer at higher values buys a logarithmic scale for free.</li>
+    </ul>
+
+    <div style="height:1px;background-color:#d0d7de;margin:24px 0;"></div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#24292f;margin:0 0 16px 0;">Project Context</h3>
+    <p style="margin:0 0 32px 0;font-size:16px;color:#57606a;line-height:1.7;">
+      From <a href="https://github.com/redis/redis" style="color:#0969da;text-decoration:none;">redis/redis</a> — <a href="https://github.com/redis/redis/blob/unstable/src/evict.c#L292-L300" style="color:#0969da;text-decoration:none;">src/evict.c</a>. Redis is the widely used in-memory data store behind caches, session stores, queues and leaderboards; when it runs as a cache with a memory limit, its eviction policy decides which keys are thrown away first.
+    </p>
+
+    <div style="padding-top:20px;border-top:1px solid #d0d7de;font-size:13px;color:#57606a;">
+      LANGUAGES_LIST | <a href="https://iris-codes.com/snippet/unsubscribe?token=UNSUBSCRIBE_TOKEN" style="color:#57606a;text-decoration:none;">Unsubscribe</a>
+    </div>
+
+  </div>
+</body>
+</html>

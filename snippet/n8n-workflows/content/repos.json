@@ -1292,5 +1292,41 @@
     "snippets": [
       "rizinorg/rizin/blob/dev/librz/util/debruijn.c"
     ]
+  },
+  "D4Vinci/Scrapling": {
+    "count": 1,
+    "snippets": [
+      "D4Vinci/Scrapling/blob/main/scrapling/spiders/scheduler.py"
+    ]
+  },
+  "The-PR-Agent/pr-agent": {
+    "count": 1,
+    "snippets": [
+      "The-PR-Agent/pr-agent/blob/main/pr_agent/mosaico/dispatch.py"
+    ]
+  },
+  "openai/codex-security": {
+    "count": 1,
+    "snippets": [
+      "openai/codex-security/blob/main/plugins/codex-security/mcp-app/src/deep-scan/iteration.ts"
+    ]
+  },
+  "backnotprop/plannotator": {
+    "count": 1,
+    "snippets": [
+      "backnotprop/plannotator/blob/main/packages/server/json-edit.ts"
+    ]
+  },
+  "facebookresearch/faiss": {
+    "count": 1,
+    "snippets": [
+      "facebookresearch/faiss/blob/main/faiss/VectorTransform.cpp"
+    ]
+  },
+  "redis/redis": {
+    "count": 1,
+    "snippets": [
+      "redis/redis/blob/unstable/src/evict.c"
+    ]
   }
 }
