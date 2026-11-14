@@ -51,6 +51,5 @@ Older weeks also have `*-candidates.md`, `*-snippet-candidates.md` and `*-review
 
 ## Retired
 
-- Skills `discover-oss-candidates`, `find-snippet-candidates`, `generate-snippet-draft` are now stubs that do nothing, so the old routines `snippet-discover`, `snippet-find-candidates` and `snippet-generate-drafts` stop cleanly if they still fire. Turn those routines off at https://claude.ai/code/routines, then delete the three stub folders.
-- The three `-select` skills are deleted.
+- The six skills `discover-oss-candidates`, `find-snippet-candidates`, `generate-snippet-draft` and their `-select` pairs are deleted, and the routines `snippet-discover`, `snippet-find-candidates` and `snippet-generate-drafts` are turned off.
 - n8n workflows (subscription, confirmation, unsubscribe, Gmail drafts → sheet, Tue/Thu send) are replaced by the Apps Script project. Their docs stay in `snippet/n8n-workflows/` for reference.
